@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  nombre    String?
+  password  String
+  rol       String    @default("usuario")
+  campos    Campo[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Pais {
+  id        String   @id @default(uuid())
+  nombre    String
+  codigo    String   @unique
+  campos    Campo[]
+}
+
+model Campo {
+  id          String      @id @default(uuid())
+  nombre      String
+  pais        Pais        @relation(fields: [paisId], references: [id])
+  paisId      String
+  lotes       Lote[]
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  usuarioId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Lote {
+  id             String           @id @default(uuid())
+  nombre         String
+  area           Float
+  campo          Campo            @relation(fields: [campoId], references: [id])
+  campoId        String
+  tipoSemilla    String
+  cultivo        Cultivo          @relation(fields: [cultivoId], references: [id])
+  cultivoId      String
+  labores        Labor[]
+  analisisSuelo  AnalisisSuelo[]
+  avanceSiembra  AvanceSiembra[]
+  avanceCosecha  AvanceCosecha[]
+  monitoreos     Monitoreo[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model Cultivo {
+  id     String @id @default(uuid())
+  nombre String
+  lotes  Lote[]
+}
+
+model Labor {
+  id        String   @id @default(uuid())
+  lote      Lote     @relation(fields: [loteId], references: [id])
+  loteId    String
+  tipo      String
+  fecha     DateTime
+  notas     String?
+}
+
+model AnalisisSuelo {
+  id             String   @id @default(uuid())
+  lote           Lote     @relation(fields: [loteId], references: [id])
+  loteId         String
+  ph             Float?
+  materiaOrganica Float?
+  nitrogeno      Float?
+  fosforo        Float?
+  potasio        Float?
+  notas          String?
+  fecha          DateTime
+}
+
+model AvanceSiembra {
+  id        String   @id @default(uuid())
+  lote      Lote     @relation(fields: [loteId], references: [id])
+  loteId    String
+  fecha     DateTime
+  area      Float
+  createdAt DateTime @default(now())
+}
+
+model AvanceCosecha {
+  id        String   @id @default(uuid())
+  lote      Lote     @relation(fields: [loteId], references: [id])
+  loteId    String
+  fecha     DateTime
+  tonelaje  Float
+  humedad   Float?
+  camion    String?
+  notas     String?
+  createdAt DateTime @default(now())
+}
+
+model Monitoreo {
+  id           String   @id @default(uuid())
+  lote         Lote     @relation(fields: [loteId], references: [id])
+  loteId       String
+  tipo         String
+  severidad    String?
+  notas        String?
+  coordenadas  String?
+  fecha        DateTime
+  createdAt    DateTime @default(now())
+}
