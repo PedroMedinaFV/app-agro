@@ -5,6 +5,7 @@ type UsuarioAutenticado = {
   sub: string;
   email: string;
   rol?: string;
+  clienteId?: string;
 };
 
 type RequestConUsuario = Request & { user?: UsuarioAutenticado };

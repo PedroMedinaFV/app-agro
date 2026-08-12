@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4001';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
 type PeticionOptions = RequestInit & {
   body?: BodyInit;
@@ -39,6 +39,13 @@ export async function registrarUsuario(email: string, nombre: string, password: 
   return request<{ token: string; usuario: { id: string; email: string; nombre?: string | null } }>('/auth/registro', {
     method: 'POST',
     body: JSON.stringify({ email, nombre, password }),
+  });
+}
+
+export async function loginMicrosoft(idToken: string) {
+  return request<{ token: string; usuario: { id: string; email: string; nombre?: string | null } }>('/auth/microsoft', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
   });
 }
 

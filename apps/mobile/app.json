@@ -2,6 +2,7 @@
   "expo": {
     "name": "Agro App",
     "slug": "agro-app",
+    "scheme": "agroapp",
     "platforms": ["ios", "android", "web"]
   }
 }

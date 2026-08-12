@@ -2,21 +2,24 @@ const net = require('net');
 const { spawn } = require('child_process');
 const path = require('path');
 
-function isPortOpen(port) {
+function canListen(port, host) {
   return new Promise((resolve) => {
     const server = net.createServer();
     server.once('error', () => resolve(false));
     server.once('listening', () => {
       server.close(() => resolve(true));
     });
-    server.listen(port, '127.0.0.1');
+    server.listen(port, host);
   });
 }
 
 async function findFreePort(startPort) {
   let port = startPort;
   while (port < startPort + 20) {
-    if (await isPortOpen(port)) {
+    const ipv4Disponible = await canListen(port, '127.0.0.1');
+    const ipv6Disponible = await canListen(port, '::1');
+
+    if (ipv4Disponible && ipv6Disponible) {
       return port;
     }
     port += 1;
@@ -30,7 +33,6 @@ async function main() {
   const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   const args = ['expo', 'start', '--web', '--port', String(port)];
 
-  process.env.CI = '1';
   process.env.EXPO_NO_TELEMETRY = '1';
   console.log(`[expo-launcher] Starting Expo on port ${port}`);
 

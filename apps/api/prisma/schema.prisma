@@ -8,14 +8,70 @@ datasource db {
 }
 
 model Usuario {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  nombre    String?
-  password  String
-  rol       String    @default("usuario")
-  campos    Campo[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  email       String    @unique
+  nombre      String?
+  password    String?
+  microsoftId String?   @unique
+  rol         String    @default("usuario")
+  cliente     Cliente?  @relation(fields: [clienteId], references: [id])
+  clienteId   String?
+  campos      Campo[]
+  camposErpAsignados UsuarioCampoErp[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Cliente {
+  id               String            @id @default(uuid())
+  nombre           String
+  activo           Boolean           @default(true)
+  usuarios         Usuario[]
+  integracionesErp IntegracionErp[]
+  camposErpAsignados UsuarioCampoErp[]
+  empresasErpAsignadas ClienteEmpresaErp[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model UsuarioCampoErp {
+  id           String    @id @default(uuid())
+  cliente     Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId    String
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
+  usuarioId    String
+  campoErpId   String
+  asignadoPor  String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([clienteId, usuarioId, campoErpId])
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([campoErpId])
+}
+
+model IntegracionErp {
+  id                  String    @id @default(uuid())
+  cliente             Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId           String
+  baseUrl             String?
+  authMode            String    @default("mock")
+  apiKeyHeader        String    @default("x-api-key")
+  apiKeyCifrada       String?
+  bearerTokenCifrado  String?
+  usernameCifrado     String?
+  passwordCifrada     String?
+  timeoutMs           Int       @default(15000)
+  activo              Boolean   @default(true)
+  ultimoTestOk        Boolean?
+  ultimoTestEn        DateTime?
+  ultimoSyncEn        DateTime?
+  configuradoPor      String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([clienteId])
+  @@index([activo])
 }
 
 model Pais {
@@ -114,4 +170,143 @@ model Monitoreo {
   coordenadas  String?
   fecha        DateTime
   createdAt    DateTime @default(now())
+}
+
+model ErpCampo {
+  id             String    @id @default(uuid())
+  empresaErpId   String
+  erpId          String    @unique
+  idCampo        Int
+  idZona         Int?
+  idSubZona      Int?
+  codigo         String
+  nombre         String
+  paisCodigo     String?
+  sociedad       String?
+  admiteGanaderia Boolean?
+  domicilio      String?
+  codigoSima     Int?
+  idLocalidad    Int?
+  activo         Boolean   @default(true)
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+  lotes          ErpLote[]
+
+  @@index([codigo])
+  @@index([activo])
+  @@index([empresaErpId])
+}
+
+model ErpZona {
+  id           String   @id @default(uuid())
+  empresaErpId String
+  erpId        String   @unique
+  idZona       Int
+  codigo       String
+  nombre       String
+  activo       Boolean  @default(true)
+  importadoEn  DateTime @default(now())
+
+  @@index([codigo])
+  @@index([activo])
+  @@index([empresaErpId])
+}
+
+model ErpLote {
+  id             String         @id @default(uuid())
+  empresaErpId   String
+  erpId          String         @unique
+  idLote         Int
+  idCampo        Int
+  campoErpId     String
+  campo          ErpCampo       @relation(fields: [campoErpId], references: [erpId])
+  codigo         String
+  nombre         String
+  cultivoCodigo  String?
+  cultivoNombre  String?
+  areaHectareas  Float
+  hectareasProductivas Float?
+  admiteGanaderia Boolean?
+  admiteLecheria  Boolean?
+  codigoSima     Int?
+  activo         Boolean        @default(true)
+  actualizadoEn  DateTime
+  importadoEn    DateTime       @default(now())
+
+  @@index([idLote])
+  @@index([idCampo])
+  @@index([campoErpId])
+  @@index([codigo])
+  @@index([activo])
+  @@index([empresaErpId])
+}
+
+model ErpActividad {
+  id                String    @id @default(uuid())
+  empresaErpId      String
+  erpId             String    @unique
+  idActividad       Int
+  codigo            String
+  descripcion       String
+  activo            Boolean
+  habilitadoExportacionCrea Boolean
+  idEspecie         Int?
+  idTipoActividad   Int?
+  actualizadoEn     DateTime
+  importadoEn       DateTime  @default(now())
+
+  @@index([idActividad])
+  @@index([idTipoActividad])
+  @@index([activo])
+  @@index([empresaErpId])
+}
+
+model ErpEspecie {
+  id             String    @id @default(uuid())
+  empresaErpId   String
+  erpId          String    @unique
+  idEspecie      Int
+  codigo         String
+  nombre         String
+  activo         Boolean
+  codigoCot      String?
+  codigoAfip     Int?
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+
+  @@index([idEspecie])
+  @@index([codigo])
+  @@index([activo])
+  @@index([empresaErpId])
+}
+
+model ErpEmpresa {
+  id             String    @id @default(uuid())
+  erpId          String    @unique
+  idEmpresa      Int
+  codigo         String
+  nombre         String
+  activo         Boolean
+  cuit           String?
+  razonSocial    String?
+  email          String?
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+
+  @@index([idEmpresa])
+  @@index([codigo])
+  @@index([activo])
+}
+
+model ClienteEmpresaErp {
+  id           String    @id @default(uuid())
+  cliente      Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId    String
+  empresaErpId String
+  asignadoPor  String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([clienteId, empresaErpId])
+  @@index([clienteId])
+  @@index([empresaErpId])
 }

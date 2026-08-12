@@ -1,15 +1,34 @@
 # Agro App
 
-Monorepo para una aplicación agrícola de campo, con backend en TypeScript, frontend en React Native + web y datos productivos offline.
+Monorepo para una aplicacion agricola de campo, con backend en TypeScript, web React + Vite, mobile Expo/React Native y contratos compartidos.
 
 ## Estructura
 
-- `apps/api`: API en Node.js + TypeScript
-- `apps/mobile`: aplicación móvil/web en React Native
-- `packages/types`: tipos compartidos entre backend y frontend
+- `apps/api`: API en Node.js + TypeScript.
+- `apps/web`: aplicacion web React + Vite para validar pantallas y flujos.
+- `apps/mobile`: aplicacion mobile Expo/React Native para uso en campo.
+- `packages/tipos`: tipos compartidos entre backend, web y mobile.
+- `docs`: documentacion viva del MVP, flujos y decisiones.
+  - `docs/ROLES_Y_PERMISOS.md`: matriz inicial de permisos.
 
 ## Comandos
 
-- `pnpm install`
-- `pnpm dev`
-- `pnpm build`
+```bash
+pnpm install
+pnpm --filter agro-app-web dev
+pnpm --filter agro-app-mobile dev
+pnpm --filter agro-app-api dev
+pnpm build
+```
+
+## Desarrollo actual
+
+La web es el entorno principal de validacion rapida:
+
+```bash
+pnpm --filter agro-app-web dev
+```
+
+Abrir `http://localhost:5173`.
+
+La API acompana los contratos, pero la persistencia real queda pendiente hasta tener PostgreSQL disponible.

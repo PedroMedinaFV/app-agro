@@ -1,150 +1,99 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, ScrollView } from 'react-native';
-import {
-  guardarRegistroLocal,
-  leerRegistrosLocales,
-  RegistroLocal,
-} from './services/almacenamientoLocal';
-import { sincronizarPendientes } from './services/sincronizacion';
+import React, { useState } from 'react';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { obtenerPermisosRol, RolUsuario, SesionUsuario } from '@agro/tipos';
 
 export default function App() {
-  const [registros, setRegistros] = useState<RegistroLocal[]>([]);
-  const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState('Listo para operar en modo offline.');
+  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
+  const [email, setEmail] = useState('demo@agroapp.local');
+  const [rol, setRol] = useState<RolUsuario>('usuario');
 
-  const cargarRegistros = async () => {
-    const datos = await leerRegistrosLocales();
-    setRegistros(datos);
-  };
+  function entrarModoDemo() {
+    // Mobile mantiene el mismo contrato de sesion que web/backend mientras no haya API disponible.
+    setSesion({
+      token: 'demo-mobile-token',
+      usuario: { id: 'demo-mobile', email, nombre: 'Usuario Demo', rol },
+      origen: 'demo',
+      permisos: obtenerPermisosRol(rol),
+    });
+  }
 
-  useEffect(() => {
-    cargarRegistros();
-  }, []);
-
-  const crearRegistroOffline = async () => {
-    const nuevo: RegistroLocal = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      tipo: 'registro-campo',
-      payload: {
-        lote: `Lote ${registros.length + 1}`,
-        estado: 'pendiente',
-      },
-      creadoEn: new Date().toISOString(),
-      sincronizado: false,
-    };
-
-    await guardarRegistroLocal(nuevo);
-    setMensaje('Registro guardado localmente.');
-    cargarRegistros();
-  };
-
-  const ejecutarSincronizacion = async () => {
-    setCargando(true);
-    const resultado = await sincronizarPendientes();
-
-    if (resultado.ok) {
-      setMensaje(`Sincronizados ${resultado.sincronizados} registros.`);
-    } else {
-      Alert.alert('Sincronización', resultado.error || 'Error al sincronizar');
-      setMensaje('No se pudo sincronizar. Se conservaron los registros locales.');
-    }
-
-    await cargarRegistros();
-    setCargando(false);
-  };
+  if (sesion) {
+    return (
+      <View style={styles.page}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Panel mobile</Text>
+          <Text style={styles.subtitle}>Sesion demo activa para {sesion.usuario.email}</Text>
+          <Text style={styles.note}>Rol: {sesion.usuario.rol}</Text>
+          <Button title="Cerrar sesion" onPress={() => setSesion(null)} />
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Agro App Offline</Text>
-      <Text style={styles.subtitle}>{mensaje}</Text>
-
-      <View style={styles.botonera}>
-        <Button title="Guardar registro offline" onPress={crearRegistroOffline} disabled={cargando} />
+    <View style={styles.page}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Iniciar sesion</Text>
+        <Text style={styles.subtitle}>Agro App - mobile demo</Text>
+        <TextInput style={styles.input} placeholder="Correo" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        <TextInput style={styles.input} placeholder="Contrasena" secureTextEntry />
+        <View style={styles.buttonSpacing}>
+          <Button title={`Rol: ${rol}`} onPress={() => setRol(rol === 'admin' ? 'usuario' : 'admin')} />
+        </View>
+        <View style={styles.buttonSpacing}>
+          <Button title="Entrar en modo demo" onPress={entrarModoDemo} />
+        </View>
+        <View style={styles.buttonSpacing}>
+          <Button title="Continuar con Microsoft" onPress={() => {}} />
+        </View>
+        <Text style={styles.note}>Pantalla local de prueba. La autenticacion real se conecta despues con backend y Microsoft.</Text>
       </View>
-      <View style={styles.botonera}>
-        <Button title="Sincronizar pendientes" onPress={ejecutarSincronizacion} disabled={cargando || registros.length === 0} />
-      </View>
-
-      <View style={styles.cajaResumen}>
-        <Text style={styles.resumenTitulo}>Registros locales</Text>
-        {registros.length === 0 ? (
-          <Text style={styles.resumenTexto}>No hay registros pendientes.</Text>
-        ) : (
-          registros.map((registro) => (
-            <View key={registro.id} style={styles.registroCard}>
-              <Text style={styles.registroTipo}>{registro.tipo}</Text>
-              <Text style={styles.registroTexto}>{JSON.stringify(registro.payload)}</Text>
-              <Text style={styles.registroEstado}>
-                Estado: {registro.sincronizado ? 'sincronizado' : 'pendiente'}
-              </Text>
-            </View>
-          ))
-        )}
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: '#f4f8f3',
+  page: {
+    flex: 1,
+    minHeight: 720,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f7fb',
     padding: 24,
-    alignItems: 'stretch',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 24,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#14532d',
-    marginBottom: 12,
+    color: '#111827',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#334155',
-    marginBottom: 24,
+    color: '#4b5563',
+    marginBottom: 20,
   },
-  botonera: {
-    marginBottom: 14,
-  },
-  cajaResumen: {
-    marginTop: 16,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  resumenTitulo: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 10,
-    color: '#134e4a',
-  },
-  resumenTexto: {
-    color: '#475569',
-  },
-  registroCard: {
+  input: {
     borderWidth: 1,
-    borderColor: '#d1fae5',
-    backgroundColor: '#ecfdf5',
-    borderRadius: 12,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
   },
-  registroTipo: {
-    fontWeight: '700',
-    color: '#065f46',
+  buttonSpacing: {
+    marginTop: 12,
   },
-  registroTexto: {
-    marginTop: 6,
-    color: '#334155',
-  },
-  registroEstado: {
-    marginTop: 8,
+  note: {
+    marginTop: 18,
+    color: '#6b7280',
     fontSize: 13,
-    color: '#1d4ed8',
   },
 });

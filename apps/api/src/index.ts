@@ -14,8 +14,13 @@ import avancesSiembraRuta from './routes/avancesSiembra';
 import avancesCosechaRuta from './routes/avancesCosecha';
 import monitoreosRuta from './routes/monitoreos';
 import sincronizacionRuta from './routes/sincronizacion';
+import erpRuta from './routes/erp';
+import adminIntegracionErpRuta from './routes/adminIntegracionErp';
+import adminUsuariosCamposRuta from './routes/adminUsuariosCampos';
+import adminEmpresasErpRuta from './routes/adminEmpresasErp';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
+import { requierePermiso } from './middleware/permisos';
 
 const app = express();
 app.use(cors());
@@ -34,6 +39,10 @@ app.use('/avances-siembra', autenticacionBasica, avancesSiembraRuta);
 app.use('/avances-cosecha', autenticacionBasica, avancesCosechaRuta);
 app.use('/monitoreos', autenticacionBasica, monitoreosRuta);
 app.use('/sincronizacion', sincronizacionRuta);
+app.use('/erp', autenticacionBasica, requierePermiso('erp:leer'), erpRuta);
+app.use('/admin/integracion-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminIntegracionErpRuta);
+app.use('/admin/asignaciones', autenticacionBasica, requierePermiso('usuarios:asignar-campos'), adminUsuariosCamposRuta);
+app.use('/admin/empresas-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminEmpresasErpRuta);
 
 app.use(manejadorErrores);
 

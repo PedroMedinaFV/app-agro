@@ -6,3 +6,6 @@ export * from './models/cultivo';
 export * from './models/avanceSiembra';
 export * from './models/avanceCosecha';
 export * from './models/monitoreo';
+export type { LoginDemoRequest, Permiso, RolUsuario, SesionUsuario } from './auth';
+export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
+export * from './erp';

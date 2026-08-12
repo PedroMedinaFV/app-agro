@@ -1,6 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { loginUsuario, registrarUsuario, obtenerUsuarios } from '../services/api';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { loginUsuario, registrarUsuario, obtenerUsuarios, loginMicrosoft } from '../services/api';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const MICROSOFT_CLIENT_ID = process.env.EXPO_PUBLIC_MICROSOFT_CLIENT_ID || '';
+const MICROSOFT_TENANT_ID = process.env.EXPO_PUBLIC_MICROSOFT_TENANT_ID || 'common';
+const REDIRECT_URI = AuthSession.makeRedirectUri({
+  scheme: 'agroapp',
+  path: 'auth',
+});
 
 export function PantallaInicio() {
   const [email, setEmail] = useState('');
@@ -12,6 +23,15 @@ export function PantallaInicio() {
   const [mensaje, setMensaje] = useState('');
   const [token, setToken] = useState('');
   const [usuarios, setUsuarios] = useState<Array<{ id: string; email: string; nombre?: string | null }>>([]);
+  const discovery = AuthSession.useAutoDiscovery(`https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/v2.0`);
+  const [microsoftRequest, microsoftResponse, promptMicrosoft] = AuthSession.useAuthRequest(
+    {
+      clientId: MICROSOFT_CLIENT_ID,
+      scopes: ['openid', 'profile', 'email'],
+      redirectUri: REDIRECT_URI,
+    },
+    discovery,
+  );
 
   const cargarUsuarios = async (jwt: string) => {
     const datos = await obtenerUsuarios(jwt);
@@ -36,6 +56,63 @@ export function PantallaInicio() {
     } finally {
       setCargando(false);
     }
+  };
+
+  useEffect(() => {
+    const procesarLoginMicrosoft = async () => {
+      if (microsoftResponse?.type !== 'success' || !discovery || !microsoftRequest?.codeVerifier) {
+        return;
+      }
+
+      const code = microsoftResponse.params.code;
+
+      if (!code) {
+        Alert.alert('Microsoft', 'Microsoft no devolvio codigo de autorizacion.');
+        return;
+      }
+
+      setCargando(true);
+      try {
+        const tokens = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: MICROSOFT_CLIENT_ID,
+            code,
+            redirectUri: REDIRECT_URI,
+            extraParams: {
+              code_verifier: microsoftRequest.codeVerifier,
+            },
+          },
+          discovery,
+        );
+
+        const idToken = tokens.idToken;
+
+        if (!idToken) {
+          throw new Error('Microsoft no devolvio id_token.');
+        }
+
+        const data = await loginMicrosoft(idToken);
+        setToken(data.token);
+        setMensaje(`Bienvenido ${data.usuario?.nombre || data.usuario?.email}`);
+        setLogueado(true);
+        await cargarUsuarios(data.token);
+      } catch (error: any) {
+        Alert.alert('Microsoft', error.message || 'No se pudo iniciar sesion con Microsoft');
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    procesarLoginMicrosoft();
+  }, [microsoftResponse, discovery, microsoftRequest]);
+
+  const handleMicrosoft = async () => {
+    if (!MICROSOFT_CLIENT_ID) {
+      Alert.alert('Configuracion', 'Falta EXPO_PUBLIC_MICROSOFT_CLIENT_ID.');
+      return;
+    }
+
+    await promptMicrosoft();
   };
 
   const handleRegistro = async () => {
@@ -112,6 +189,14 @@ export function PantallaInicio() {
       {cargando ? <ActivityIndicator size="large" style={styles.spinner} /> : (
         <Button title={modoRegistro ? 'Registrar' : 'Entrar'} onPress={modoRegistro ? handleRegistro : handleLogin} />
       )}
+
+      <View style={styles.buttonSpacing}>
+        <Button
+          title="Continuar con Microsoft"
+          onPress={handleMicrosoft}
+          disabled={cargando || !microsoftRequest}
+        />
+      </View>
 
       <View style={styles.linkContainer}>
         <Text style={styles.linkText} onPress={() => setModoRegistro(!modoRegistro)}>

@@ -1,29 +1,46 @@
 import { PrismaClient } from '@prisma/client';
+import fs from 'node:fs';
+import path from 'node:path';
+
+function cargarEnvRaiz() {
+  const envPath = path.resolve(__dirname, '../../../.env');
+
+  if (!fs.existsSync(envPath)) {
+    return;
+  }
+
+  const contenido = fs.readFileSync(envPath, 'utf8');
+
+  for (const linea of contenido.split(/\r?\n/)) {
+    const match = linea.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (!match) {
+      continue;
+    }
+
+    const clave = match[1];
+    const valor = (match[2] || '').replace(/^["']|["']$/g, '');
+
+    if (!process.env[clave]) {
+      process.env[clave] = valor;
+    }
+  }
+}
+
+cargarEnvRaiz();
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('Falta DATABASE_URL. Copia .env.example a .env y configura la base PostgreSQL.');
+}
 
 const prisma = new PrismaClient({
   log: ['error'],
 });
 
-const memoriaUsuarios: Array<{ id: string; email: string; nombre?: string | null; password: string; rol?: string }> = [];
-
 async function obtenerUsuarioPorEmail(email: string) {
-  if (!process.env.DATABASE_URL) {
-    return memoriaUsuarios.find((usuario) => usuario.email === email) || null;
-  }
-
   return prisma.usuario.findUnique({ where: { email } });
 }
 
-async function crearUsuario(datos: { email: string; nombre?: string | null; password: string; rol?: string }) {
-  if (!process.env.DATABASE_URL) {
-    const nuevoUsuario = {
-      id: `dev-${Date.now()}`,
-      ...datos,
-    };
-    memoriaUsuarios.push(nuevoUsuario);
-    return nuevoUsuario;
-  }
-
+async function crearUsuario(datos: { email: string; nombre?: string | null; password?: string | null; rol?: string }) {
   return prisma.usuario.create({ data: datos });
 }
 
