@@ -106,6 +106,61 @@ export type ErpPadronEmpresa = {
   fechaUltimaActualizacion: string | null;
 };
 
+export type ErpPadronCampania = {
+  idCampania: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  esActual: boolean;
+  fechaUltimaActualizacion: string | null;
+  fechasCampanias: unknown[];
+};
+
+export type ErpPadronCultivo = {
+  idCultivo: number;
+  codigo: string;
+  nombre: string;
+  idCampo: number;
+  idLote: number;
+  idActividad: number | null;
+  idEspecie: number | null;
+  hectareas: number;
+  hectareasSembradas: number;
+  hectareasCosechadas: number;
+  idPuerto: number | null;
+  distanciaPuerto: number | null;
+  activo: boolean;
+  idCampania: number | null;
+  idPersonalResponsable: number | null;
+  esAgriculturaIntensiva: boolean;
+  fechaUltimaActualizacion: string | null;
+  socioEnFuncionAportes: boolean;
+  socios: unknown[];
+  rindes: unknown[];
+};
+
+export type ErpPadronInsumo = {
+  idInsumo: number;
+  idUnidadMedida: number | null;
+  idTipoInsumo: number | null;
+  idCategoriaInsumo: number | null;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  controlaStock: boolean;
+  esInsumoGenerico: boolean;
+  controlaPorLote: boolean;
+  precioUnitario: number | null;
+  precioUnitarioVenta: number | null;
+  unidadesBulto: number | null;
+  idMonedaPrecioUnitario: number | null;
+  iMonedaPrecioVenta: number | null;
+  idCuentaContable: number | null;
+  idInsumoBanda: number | null;
+  idInsumoEstandar: number | null;
+  fechaUltimaActualizacion: string | null;
+};
+
 export type ErpLote = {
   empresaErpId: string;
   erpId: string;
@@ -162,6 +217,69 @@ export type ErpEmpresa = {
   actualizadoEn: string;
 };
 
+export type ErpCampania = {
+  empresaErpId: string;
+  erpId: string;
+  idCampania: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  esActual: boolean;
+  actualizadoEn: string;
+};
+
+export type ErpCultivo = {
+  empresaErpId: string;
+  erpId: string;
+  idCultivo: number;
+  codigo: string;
+  nombre: string;
+  idCampo: number;
+  campoErpId: string;
+  idLote: number;
+  loteErpId: string;
+  idActividad?: number;
+  actividadErpId?: string;
+  idEspecie?: number;
+  especieErpId?: string;
+  idCampania?: number;
+  campaniaErpId?: string;
+  hectareas: number;
+  hectareasSembradas: number;
+  hectareasCosechadas: number;
+  idPuerto?: number;
+  distanciaPuerto?: number;
+  idPersonalResponsable?: number;
+  esAgriculturaIntensiva: boolean;
+  socioEnFuncionAportes: boolean;
+  activo: boolean;
+  actualizadoEn: string;
+};
+
+export type ErpInsumo = {
+  empresaErpId: string;
+  erpId: string;
+  idInsumo: number;
+  idUnidadMedida?: number;
+  idTipoInsumo?: number;
+  idCategoriaInsumo?: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  controlaStock: boolean;
+  esInsumoGenerico: boolean;
+  controlaPorLote: boolean;
+  precioUnitario?: number;
+  precioUnitarioVenta?: number;
+  unidadesBulto?: number;
+  idMonedaPrecioUnitario?: number;
+  idMonedaPrecioVenta?: number;
+  idCuentaContable?: number;
+  idInsumoBanda?: number;
+  idInsumoEstandar?: number;
+  actualizadoEn: string;
+};
+
 export type ErpSnapshot = {
   zonas: ErpZona[];
   campos: ErpCampo[];
@@ -169,6 +287,9 @@ export type ErpSnapshot = {
   actividades: ErpActividad[];
   especies: ErpEspecie[];
   empresas: ErpEmpresa[];
+  campanias: ErpCampania[];
+  cultivos: ErpCultivo[];
+  insumos: ErpInsumo[];
   sincronizadoEn: string;
 };
 

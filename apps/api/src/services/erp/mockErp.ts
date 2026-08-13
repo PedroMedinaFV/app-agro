@@ -1,7 +1,10 @@
 import { ErpSnapshot } from '@agro/tipos';
 import { mapearRespuestaAgriculturaActividades } from './mappers/agriculturaActividades';
+import { mapearRespuestaAgriculturaCampanias } from './mappers/agriculturaCampanias';
+import { mapearRespuestaAgriculturaCultivos } from './mappers/agriculturaCultivos';
 import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecies';
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
+import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
@@ -282,6 +285,161 @@ const respuestaSistemaEmpresasMock = {
   ],
 };
 
+const respuestaAgriculturaCampaniasMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 3,
+    totalPages: 1,
+    totalRecords: 3,
+  },
+  data: [
+    {
+      idCampania: 961,
+      codigo: '19/20',
+      nombre: '19/20',
+      activo: true,
+      esActual: true,
+      fechaUltimaActualizacion: '2023-07-31T20:48:19',
+      fechasCampanias: [],
+    },
+    {
+      idCampania: 967,
+      codigo: '25/26',
+      nombre: '25/26',
+      activo: true,
+      esActual: false,
+      fechaUltimaActualizacion: '2025-12-08T17:02:19',
+      fechasCampanias: [],
+    },
+    {
+      idCampania: 969,
+      codigo: '27/28',
+      nombre: '27/28',
+      activo: true,
+      esActual: false,
+      fechaUltimaActualizacion: '2023-07-31T20:48:19',
+      fechasCampanias: [],
+    },
+  ],
+};
+
+const respuestaAgriculturaCultivosMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 2,
+    totalPages: 1,
+    totalRecords: 2,
+  },
+  data: [
+    {
+      idCultivo: 576,
+      codigo: '00576',
+      nombre: 'DA C2 TRIGO 19/20',
+      idCampo: 242,
+      idLote: 765,
+      idActividad: 52,
+      idEspecie: 35,
+      hectareas: 53,
+      hectareasSembradas: 0,
+      hectareasCosechadas: 0,
+      idPuerto: 58,
+      distanciaPuerto: 35,
+      activo: true,
+      idCampania: 961,
+      idPersonalResponsable: 53,
+      esAgriculturaIntensiva: false,
+      fechaUltimaActualizacion: null,
+      socioEnFuncionAportes: true,
+      socios: [],
+      rindes: [],
+    },
+    {
+      idCultivo: 577,
+      codigo: '00577',
+      nombre: 'LP GIRASOL 19/20',
+      idCampo: 241,
+      idLote: 724,
+      idActividad: 48,
+      idEspecie: 33,
+      hectareas: 60,
+      hectareasSembradas: 60,
+      hectareasCosechadas: 0,
+      idPuerto: null,
+      distanciaPuerto: null,
+      activo: true,
+      idCampania: 961,
+      idPersonalResponsable: null,
+      esAgriculturaIntensiva: false,
+      fechaUltimaActualizacion: '2023-07-31T20:48:19',
+      socioEnFuncionAportes: true,
+      socios: [],
+      rindes: [],
+    },
+  ],
+};
+
+const respuestaPadronesInsumosMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 2,
+    totalPages: 1,
+    totalRecords: 2,
+  },
+  data: [
+    {
+      idInsumo: 674,
+      idUnidadMedida: 19,
+      idTipoInsumo: 83,
+      idCategoriaInsumo: 65,
+      codigo: '00008',
+      nombre: '2.4 D 100%',
+      activo: true,
+      controlaStock: true,
+      esInsumoGenerico: false,
+      controlaPorLote: false,
+      precioUnitario: 6.82,
+      precioUnitarioVenta: 0,
+      unidadesBulto: null,
+      idMonedaPrecioUnitario: 2,
+      iMonedaPrecioVenta: 2,
+      idCuentaContable: null,
+      idInsumoBanda: null,
+      idInsumoEstandar: null,
+      fechaUltimaActualizacion: '2023-12-15T10:21:51',
+    },
+    {
+      idInsumo: 675,
+      idUnidadMedida: 19,
+      idTipoInsumo: 84,
+      idCategoriaInsumo: 66,
+      codigo: '00009',
+      nombre: 'FERTILIZANTE DEMO',
+      activo: true,
+      controlaStock: true,
+      esInsumoGenerico: false,
+      controlaPorLote: true,
+      precioUnitario: 120,
+      precioUnitarioVenta: 0,
+      unidadesBulto: 1,
+      idMonedaPrecioUnitario: 2,
+      iMonedaPrecioVenta: 2,
+      idCuentaContable: null,
+      idInsumoBanda: null,
+      idInsumoEstandar: null,
+      fechaUltimaActualizacion: null,
+    },
+  ],
+};
+
 // Mock de contrato ERP. Reemplazar esta funcion por llamadas HTTP cuando tengamos credenciales reales.
 export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const campos = mapearRespuestaPadronesCampos(respuestaPadronesCamposMock);
@@ -290,6 +448,9 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const actividades = mapearRespuestaAgriculturaActividades(respuestaAgriculturaActividadesMock);
   const especies = mapearRespuestaAgriculturaEspecies(respuestaAgriculturaEspeciesMock);
   const empresas = mapearRespuestaSistemaEmpresas(respuestaSistemaEmpresasMock);
+  const campanias = mapearRespuestaAgriculturaCampanias(respuestaAgriculturaCampaniasMock);
+  const cultivos = mapearRespuestaAgriculturaCultivos(respuestaAgriculturaCultivosMock);
+  const insumos = mapearRespuestaPadronesInsumos(respuestaPadronesInsumosMock);
 
   return {
     sincronizadoEn: ahora,
@@ -299,5 +460,8 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
     actividades,
     especies,
     empresas,
+    campanias,
+    cultivos,
+    insumos,
   };
 }

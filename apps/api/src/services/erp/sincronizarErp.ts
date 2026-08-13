@@ -130,6 +130,106 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     `;
   }
 
+  for (const campania of snapshot.campanias) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpCampania" ("id", "empresaErpId", "erpId", "idCampania", "codigo", "nombre", "activo", "esActual", "actualizadoEn")
+      VALUES (${randomUUID()}, ${campania.empresaErpId}, ${campania.erpId}, ${campania.idCampania}, ${campania.codigo}, ${campania.nombre}, ${campania.activo}, ${campania.esActual}, ${new Date(campania.actualizadoEn)})
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "empresaErpId" = EXCLUDED."empresaErpId",
+        "idCampania" = EXCLUDED."idCampania",
+        "codigo" = EXCLUDED."codigo",
+        "nombre" = EXCLUDED."nombre",
+        "activo" = EXCLUDED."activo",
+        "esActual" = EXCLUDED."esActual",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
+  for (const cultivo of snapshot.cultivos) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpCultivo" (
+        "id", "empresaErpId", "erpId", "idCultivo", "codigo", "nombre", "idCampo", "campoErpId",
+        "idLote", "loteErpId", "idActividad", "actividadErpId", "idEspecie", "especieErpId",
+        "idCampania", "campaniaErpId", "hectareas", "hectareasSembradas", "hectareasCosechadas",
+        "idPuerto", "distanciaPuerto", "idPersonalResponsable", "esAgriculturaIntensiva",
+        "socioEnFuncionAportes", "activo", "actualizadoEn"
+      )
+      VALUES (
+        ${randomUUID()}, ${cultivo.empresaErpId}, ${cultivo.erpId}, ${cultivo.idCultivo}, ${cultivo.codigo}, ${cultivo.nombre}, ${cultivo.idCampo}, ${cultivo.campoErpId},
+        ${cultivo.idLote}, ${cultivo.loteErpId}, ${cultivo.idActividad ?? null}, ${cultivo.actividadErpId ?? null}, ${cultivo.idEspecie ?? null}, ${cultivo.especieErpId ?? null},
+        ${cultivo.idCampania ?? null}, ${cultivo.campaniaErpId ?? null}, ${cultivo.hectareas}, ${cultivo.hectareasSembradas}, ${cultivo.hectareasCosechadas},
+        ${cultivo.idPuerto ?? null}, ${cultivo.distanciaPuerto ?? null}, ${cultivo.idPersonalResponsable ?? null}, ${cultivo.esAgriculturaIntensiva},
+        ${cultivo.socioEnFuncionAportes}, ${cultivo.activo}, ${new Date(cultivo.actualizadoEn)}
+      )
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "empresaErpId" = EXCLUDED."empresaErpId",
+        "idCultivo" = EXCLUDED."idCultivo",
+        "codigo" = EXCLUDED."codigo",
+        "nombre" = EXCLUDED."nombre",
+        "idCampo" = EXCLUDED."idCampo",
+        "campoErpId" = EXCLUDED."campoErpId",
+        "idLote" = EXCLUDED."idLote",
+        "loteErpId" = EXCLUDED."loteErpId",
+        "idActividad" = EXCLUDED."idActividad",
+        "actividadErpId" = EXCLUDED."actividadErpId",
+        "idEspecie" = EXCLUDED."idEspecie",
+        "especieErpId" = EXCLUDED."especieErpId",
+        "idCampania" = EXCLUDED."idCampania",
+        "campaniaErpId" = EXCLUDED."campaniaErpId",
+        "hectareas" = EXCLUDED."hectareas",
+        "hectareasSembradas" = EXCLUDED."hectareasSembradas",
+        "hectareasCosechadas" = EXCLUDED."hectareasCosechadas",
+        "idPuerto" = EXCLUDED."idPuerto",
+        "distanciaPuerto" = EXCLUDED."distanciaPuerto",
+        "idPersonalResponsable" = EXCLUDED."idPersonalResponsable",
+        "esAgriculturaIntensiva" = EXCLUDED."esAgriculturaIntensiva",
+        "socioEnFuncionAportes" = EXCLUDED."socioEnFuncionAportes",
+        "activo" = EXCLUDED."activo",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
+  for (const insumo of snapshot.insumos) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpInsumo" (
+        "id", "empresaErpId", "erpId", "idInsumo", "idUnidadMedida", "idTipoInsumo", "idCategoriaInsumo",
+        "codigo", "nombre", "activo", "controlaStock", "esInsumoGenerico", "controlaPorLote",
+        "precioUnitario", "precioUnitarioVenta", "unidadesBulto", "idMonedaPrecioUnitario",
+        "idMonedaPrecioVenta", "idCuentaContable", "idInsumoBanda", "idInsumoEstandar", "actualizadoEn"
+      )
+      VALUES (
+        ${randomUUID()}, ${insumo.empresaErpId}, ${insumo.erpId}, ${insumo.idInsumo}, ${insumo.idUnidadMedida ?? null}, ${insumo.idTipoInsumo ?? null}, ${insumo.idCategoriaInsumo ?? null},
+        ${insumo.codigo}, ${insumo.nombre}, ${insumo.activo}, ${insumo.controlaStock}, ${insumo.esInsumoGenerico}, ${insumo.controlaPorLote},
+        ${insumo.precioUnitario ?? null}, ${insumo.precioUnitarioVenta ?? null}, ${insumo.unidadesBulto ?? null}, ${insumo.idMonedaPrecioUnitario ?? null},
+        ${insumo.idMonedaPrecioVenta ?? null}, ${insumo.idCuentaContable ?? null}, ${insumo.idInsumoBanda ?? null}, ${insumo.idInsumoEstandar ?? null}, ${new Date(insumo.actualizadoEn)}
+      )
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "empresaErpId" = EXCLUDED."empresaErpId",
+        "idInsumo" = EXCLUDED."idInsumo",
+        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
+        "idTipoInsumo" = EXCLUDED."idTipoInsumo",
+        "idCategoriaInsumo" = EXCLUDED."idCategoriaInsumo",
+        "codigo" = EXCLUDED."codigo",
+        "nombre" = EXCLUDED."nombre",
+        "activo" = EXCLUDED."activo",
+        "controlaStock" = EXCLUDED."controlaStock",
+        "esInsumoGenerico" = EXCLUDED."esInsumoGenerico",
+        "controlaPorLote" = EXCLUDED."controlaPorLote",
+        "precioUnitario" = EXCLUDED."precioUnitario",
+        "precioUnitarioVenta" = EXCLUDED."precioUnitarioVenta",
+        "unidadesBulto" = EXCLUDED."unidadesBulto",
+        "idMonedaPrecioUnitario" = EXCLUDED."idMonedaPrecioUnitario",
+        "idMonedaPrecioVenta" = EXCLUDED."idMonedaPrecioVenta",
+        "idCuentaContable" = EXCLUDED."idCuentaContable",
+        "idInsumoBanda" = EXCLUDED."idInsumoBanda",
+        "idInsumoEstandar" = EXCLUDED."idInsumoEstandar",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
   return {
     campos: snapshot.campos.length,
     zonas: snapshot.zonas.length,
@@ -137,6 +237,9 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     actividades: snapshot.actividades.length,
     especies: snapshot.especies.length,
     empresas: snapshot.empresas.length,
+    campanias: snapshot.campanias.length,
+    cultivos: snapshot.cultivos.length,
+    insumos: snapshot.insumos.length,
     sincronizadoEn: snapshot.sincronizadoEn,
   };
 }

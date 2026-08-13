@@ -18,6 +18,7 @@ import erpRuta from './routes/erp';
 import adminIntegracionErpRuta from './routes/adminIntegracionErp';
 import adminUsuariosCamposRuta from './routes/adminUsuariosCampos';
 import adminEmpresasErpRuta from './routes/adminEmpresasErp';
+import planificacionRuta from './routes/planificacion';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -43,6 +44,7 @@ app.use('/erp', autenticacionBasica, requierePermiso('erp:leer'), erpRuta);
 app.use('/admin/integracion-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminIntegracionErpRuta);
 app.use('/admin/asignaciones', autenticacionBasica, requierePermiso('usuarios:asignar-campos'), adminUsuariosCamposRuta);
 app.use('/admin/empresas-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminEmpresasErpRuta);
+app.use('/planificacion', autenticacionBasica, planificacionRuta);
 
 app.use(manejadorErrores);
 

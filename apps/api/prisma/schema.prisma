@@ -298,6 +298,96 @@ model ErpEmpresa {
   @@index([activo])
 }
 
+model ErpCampania {
+  id             String    @id @default(uuid())
+  empresaErpId   String
+  erpId          String    @unique
+  idCampania     Int
+  codigo         String
+  nombre         String
+  activo         Boolean
+  esActual       Boolean
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idCampania])
+  @@index([codigo])
+  @@index([activo])
+  @@index([esActual])
+}
+
+model ErpCultivo {
+  id                       String    @id @default(uuid())
+  empresaErpId             String
+  erpId                    String    @unique
+  idCultivo                Int
+  codigo                   String
+  nombre                   String
+  idCampo                  Int
+  campoErpId               String
+  idLote                   Int
+  loteErpId                String
+  idActividad              Int?
+  actividadErpId           String?
+  idEspecie                Int?
+  especieErpId             String?
+  idCampania               Int?
+  campaniaErpId            String?
+  hectareas                Float
+  hectareasSembradas       Float
+  hectareasCosechadas      Float
+  idPuerto                 Int?
+  distanciaPuerto          Float?
+  idPersonalResponsable    Int?
+  esAgriculturaIntensiva   Boolean
+  socioEnFuncionAportes    Boolean
+  activo                   Boolean
+  actualizadoEn            DateTime
+  importadoEn              DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idCultivo])
+  @@index([campoErpId])
+  @@index([loteErpId])
+  @@index([campaniaErpId])
+  @@index([activo])
+}
+
+model ErpInsumo {
+  id                      String    @id @default(uuid())
+  empresaErpId            String
+  erpId                   String    @unique
+  idInsumo                Int
+  idUnidadMedida          Int?
+  idTipoInsumo            Int?
+  idCategoriaInsumo       Int?
+  codigo                  String
+  nombre                  String
+  activo                  Boolean
+  controlaStock           Boolean
+  esInsumoGenerico        Boolean
+  controlaPorLote         Boolean
+  precioUnitario          Float?
+  precioUnitarioVenta     Float?
+  unidadesBulto           Float?
+  idMonedaPrecioUnitario  Int?
+  idMonedaPrecioVenta     Int?
+  idCuentaContable        Int?
+  idInsumoBanda           Int?
+  idInsumoEstandar        Int?
+  actualizadoEn           DateTime
+  importadoEn             DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idInsumo])
+  @@index([codigo])
+  @@index([nombre])
+  @@index([idTipoInsumo])
+  @@index([idCategoriaInsumo])
+  @@index([activo])
+}
+
 model ClienteEmpresaErp {
   id           String    @id @default(uuid())
   cliente      Cliente   @relation(fields: [clienteId], references: [id])

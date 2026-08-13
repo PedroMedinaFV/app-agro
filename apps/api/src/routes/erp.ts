@@ -16,12 +16,21 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
   }
 
   const lotesPermitidos = snapshot.lotes.filter((lote) => camposErpIds.includes(lote.campoErpId));
+  const camposPermitidos = snapshot.campos.filter((campo) => camposErpIds.includes(campo.erpId));
+  const empresasPermitidas = new Set(camposPermitidos.map((campo) => campo.empresaErpId));
+  const lotesPermitidosIds = new Set(lotesPermitidos.map((lote) => lote.erpId));
+
   return {
     ...snapshot,
-    zonas: snapshot.zonas,
-    campos: snapshot.campos.filter((campo) => camposErpIds.includes(campo.erpId)),
+    zonas: snapshot.zonas.filter((zona) => empresasPermitidas.has(zona.empresaErpId)),
+    campos: camposPermitidos,
     lotes: lotesPermitidos,
-    actividades: snapshot.actividades,
+    actividades: snapshot.actividades.filter((actividad) => empresasPermitidas.has(actividad.empresaErpId)),
+    especies: snapshot.especies.filter((especie) => empresasPermitidas.has(especie.empresaErpId)),
+    empresas: snapshot.empresas.filter((empresa) => empresasPermitidas.has(empresa.erpId)),
+    campanias: snapshot.campanias.filter((campania) => empresasPermitidas.has(campania.empresaErpId)),
+    cultivos: snapshot.cultivos.filter((cultivo) => lotesPermitidosIds.has(cultivo.loteErpId)),
+    insumos: snapshot.insumos.filter((insumo) => empresasPermitidas.has(insumo.empresaErpId)),
   };
 }
 

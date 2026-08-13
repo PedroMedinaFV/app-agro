@@ -9,3 +9,4 @@ export * from './models/monitoreo';
 export type { LoginDemoRequest, Permiso, RolUsuario, SesionUsuario } from './auth';
 export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
 export * from './erp';
+export * from './planificacion';

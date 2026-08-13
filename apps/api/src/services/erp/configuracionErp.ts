@@ -22,6 +22,9 @@ export type ConfiguracionErp = {
   pathLotes: string;
   pathActividades: string;
   pathEspecies: string;
+  pathCampanias: string;
+  pathCultivos: string;
+  pathInsumos: string;
   pathEmpresas: string;
 };
 
@@ -68,6 +71,9 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathLotes: process.env.ERP_PATH_LOTES || 'Padrones/Lotes',
     pathActividades: process.env.ERP_PATH_ACTIVIDADES || 'Agricultura/Actividades',
     pathEspecies: process.env.ERP_PATH_ESPECIES || 'Agricultura/Especies',
+    pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
+    pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
+    pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
   };
 }
@@ -109,6 +115,9 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathLotes: process.env.ERP_PATH_LOTES || 'Padrones/Lotes',
     pathActividades: process.env.ERP_PATH_ACTIVIDADES || 'Agricultura/Actividades',
     pathEspecies: process.env.ERP_PATH_ESPECIES || 'Agricultura/Especies',
+    pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
+    pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
+    pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
   };
 }

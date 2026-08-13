@@ -11,6 +11,12 @@ export type Permiso =
   | 'campos:leer'
   | 'lotes:leer'
   | 'actividades:leer'
+  | 'planificacion:leer'
+  | 'planificacion:editar'
+  | 'planificacion:aprobar'
+  | 'planificacion:cerrar'
+  | 'planificacion:configurar'
+  | 'padrones-base:gestionar'
   | 'registros:crear'
   | 'registros:sincronizar';
 
@@ -24,6 +30,12 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'campos:leer',
     'lotes:leer',
     'actividades:leer',
+    'planificacion:leer',
+    'planificacion:editar',
+    'planificacion:aprobar',
+    'planificacion:cerrar',
+    'planificacion:configurar',
+    'padrones-base:gestionar',
     'registros:crear',
     'registros:sincronizar',
   ],
@@ -32,6 +44,8 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'campos:leer',
     'lotes:leer',
     'actividades:leer',
+    'planificacion:leer',
+    'planificacion:editar',
     'registros:crear',
     'registros:sincronizar',
   ],

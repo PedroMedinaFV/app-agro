@@ -101,6 +101,93 @@ Para especies, `erpId` se deriva como `especie:${idEspecie}`.
 
 El arreglo `precios` queda fuera del contrato interno del MVP hasta definir si Agro App debe mostrar precios, sincronizarlos o solo usarlos como referencia.
 
+### Agricultura/Campanias
+
+El contrato de `Agricultura/Campanias` trae campañas agrícolas por empresa ERP.
+
+Campos relevantes:
+
+- `idCampania`
+- `codigo`
+- `nombre`
+- `activo`
+- `esActual`
+- `fechaUltimaActualizacion`
+- `fechasCampanias`
+
+Para campañas, `erpId` se deriva como `empresa:<idEmpresa>:campania:<idCampania>`.
+
+El campo `esActual` se conserva porque permite sugerir una campaña por defecto en la carga de registros. El arreglo `fechasCampanias` queda fuera del contrato interno del MVP hasta definir si se usará para validar fechas operativas.
+
+### Agricultura/Cultivos
+
+El contrato de `Agricultura/Cultivos` trae cultivos agrícolas por empresa ERP y es un padrón clave para futuras cargas operativas.
+
+Campos relevantes:
+
+- `idCultivo`
+- `codigo`
+- `nombre`
+- `idCampo`
+- `idLote`
+- `idActividad`
+- `idEspecie`
+- `idCampania`
+- `hectareas`
+- `hectareasSembradas`
+- `hectareasCosechadas`
+- `idPuerto`
+- `distanciaPuerto`
+- `idPersonalResponsable`
+- `esAgriculturaIntensiva`
+- `socioEnFuncionAportes`
+- `activo`
+- `fechaUltimaActualizacion`
+- `socios`
+- `rindes`
+
+Para cultivos, `erpId` se deriva como `empresa:<idEmpresa>:cultivo:<idCultivo>`.
+
+Tambien se guardan referencias internas derivadas:
+
+- `campoErpId`
+- `loteErpId`
+- `actividadErpId`
+- `especieErpId`
+- `campaniaErpId`
+
+En esta etapa solo se guarda el padrón principal. Los subcontratos `socios` y `rindes` quedan fuera del MVP hasta definir los requerimientos derivados.
+
+### Padrones/Insumos
+
+El contrato de `Padrones/Insumos` trae insumos por empresa ERP y requiere `x-company`.
+
+Campos relevantes:
+
+- `idInsumo`
+- `idUnidadMedida`
+- `idTipoInsumo`
+- `idCategoriaInsumo`
+- `codigo`
+- `nombre`
+- `activo`
+- `controlaStock`
+- `esInsumoGenerico`
+- `controlaPorLote`
+- `precioUnitario`
+- `precioUnitarioVenta`
+- `unidadesBulto`
+- `idMonedaPrecioUnitario`
+- `iMonedaPrecioVenta`
+- `idCuentaContable`
+- `idInsumoBanda`
+- `idInsumoEstandar`
+- `fechaUltimaActualizacion`
+
+Para insumos, `erpId` se deriva como `empresa:<idEmpresa>:insumo:<idInsumo>`.
+
+El precio unitario del ERP se guarda como referencia. Cuando un insumo se use en un protocolo o planificacion, el costo debe copiarse a una version editable para evitar que cambios posteriores del ERP modifiquen supuestos historicos.
+
 ### Sistema/Empresas
 
 El contrato de `Sistema/Empresas` trae todas las empresas dadas de alta en el ERP.
@@ -136,6 +223,9 @@ El identificador interno de los datos por empresa incluye la empresa para evitar
 - `empresa:1:campo:241`
 - `empresa:1:lote:724`
 - `empresa:1:especie:33`
+- `empresa:1:campania:961`
+- `empresa:1:cultivo:576`
+- `empresa:1:insumo:674`
 
 Si una sincronizacion se repite para la misma empresa y el mismo identificador ERP, se actualiza el registro existente. Si otra empresa devuelve datos para el mismo identificador numerico, se guarda como otro registro porque pertenece a otra empresa ERP.
 
@@ -149,6 +239,9 @@ Se agregan tablas separadas:
 - `ErpActividad`
 - `ErpEspecie`
 - `ErpEmpresa`
+- `ErpCampania`
+- `ErpCultivo`
+- `ErpInsumo`
 
 Estas tablas guardan una copia importada del ERP. Estan separadas de `Campo`, `Lote` y modelos operativos porque representan datos maestros externos, no datos propios generados por Agro App.
 
@@ -173,6 +266,9 @@ Cuando `ERP_AUTH_MODE` no es `mock`, `clienteErp.ts` consulta endpoints reales d
 - `Padrones/Lotes`
 - `Agricultura/Actividades`
 - `Agricultura/Especies`
+- `Agricultura/Campanias`
+- `Agricultura/Cultivos`
+- `Padrones/Insumos`
 - `Sistema/Empresas`
 
 Luego mapea cada respuesta al contrato interno:
@@ -182,6 +278,9 @@ Luego mapea cada respuesta al contrato interno:
 - `mapearRespuestaPadronesLotes`
 - `mapearRespuestaAgriculturaActividades`
 - `mapearRespuestaAgriculturaEspecies`
+- `mapearRespuestaAgriculturaCampanias`
+- `mapearRespuestaAgriculturaCultivos`
+- `mapearRespuestaPadronesInsumos`
 - `mapearRespuestaSistemaEmpresas`
 
 El mock queda disponible solo para desarrollo local.
@@ -224,6 +323,9 @@ ERP_PATH_CAMPOS="Padrones/Campos"
 ERP_PATH_LOTES="Padrones/Lotes"
 ERP_PATH_ACTIVIDADES="Agricultura/Actividades"
 ERP_PATH_ESPECIES="Agricultura/Especies"
+ERP_PATH_CAMPANIAS="Agricultura/Campanias"
+ERP_PATH_CULTIVOS="Agricultura/Cultivos"
+ERP_PATH_INSUMOS="Padrones/Insumos"
 ERP_PATH_EMPRESAS="Sistema/Empresas"
 ```
 
@@ -263,6 +365,20 @@ Endpoints admin preparados:
 - `POST /admin/integracion-erp/:clienteId/probar`
 - `GET /admin/empresas-erp/:clienteId/empresas`
 - `PUT /admin/empresas-erp/:clienteId/empresas`
+
+## Pantalla web Empresas ERP
+
+La web incluye una pantalla administrativa `Empresas ERP`, visible solo para usuarios con permiso `erp:configurar`.
+
+La pantalla permite:
+
+- Ver empresas disponibles del ERP.
+- Ver el valor `idEmpresa` que se enviara como `x-company`.
+- Marcar que empresas pertenecen a AGRO.
+- Guardar la seleccion en backend cuando PostgreSQL este disponible.
+- Mantener una seleccion local en modo demo si la base no esta levantada.
+
+La persistencia definitiva se realiza en `ClienteEmpresaErp`.
 
 Estos endpoints devuelven solamente estado publico de configuracion. Nunca devuelven API keys, tokens ni passwords.
 

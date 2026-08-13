@@ -271,6 +271,81 @@ CREATE TABLE "ErpEmpresa" (
     CONSTRAINT "ErpEmpresa_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "ErpCampania" (
+    "id" TEXT NOT NULL,
+    "empresaErpId" TEXT NOT NULL,
+    "erpId" TEXT NOT NULL,
+    "idCampania" INTEGER NOT NULL,
+    "codigo" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "activo" BOOLEAN NOT NULL,
+    "esActual" BOOLEAN NOT NULL,
+    "actualizadoEn" TIMESTAMP(3) NOT NULL,
+    "importadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ErpCampania_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "ErpCultivo" (
+    "id" TEXT NOT NULL,
+    "empresaErpId" TEXT NOT NULL,
+    "erpId" TEXT NOT NULL,
+    "idCultivo" INTEGER NOT NULL,
+    "codigo" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "idCampo" INTEGER NOT NULL,
+    "campoErpId" TEXT NOT NULL,
+    "idLote" INTEGER NOT NULL,
+    "loteErpId" TEXT NOT NULL,
+    "idActividad" INTEGER,
+    "actividadErpId" TEXT,
+    "idEspecie" INTEGER,
+    "especieErpId" TEXT,
+    "idCampania" INTEGER,
+    "campaniaErpId" TEXT,
+    "hectareas" DOUBLE PRECISION NOT NULL,
+    "hectareasSembradas" DOUBLE PRECISION NOT NULL,
+    "hectareasCosechadas" DOUBLE PRECISION NOT NULL,
+    "idPuerto" INTEGER,
+    "distanciaPuerto" DOUBLE PRECISION,
+    "idPersonalResponsable" INTEGER,
+    "esAgriculturaIntensiva" BOOLEAN NOT NULL,
+    "socioEnFuncionAportes" BOOLEAN NOT NULL,
+    "activo" BOOLEAN NOT NULL,
+    "actualizadoEn" TIMESTAMP(3) NOT NULL,
+    "importadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ErpCultivo_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "ErpInsumo" (
+    "id" TEXT NOT NULL,
+    "empresaErpId" TEXT NOT NULL,
+    "erpId" TEXT NOT NULL,
+    "idInsumo" INTEGER NOT NULL,
+    "idUnidadMedida" INTEGER,
+    "idTipoInsumo" INTEGER,
+    "idCategoriaInsumo" INTEGER,
+    "codigo" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "activo" BOOLEAN NOT NULL,
+    "controlaStock" BOOLEAN NOT NULL,
+    "esInsumoGenerico" BOOLEAN NOT NULL,
+    "controlaPorLote" BOOLEAN NOT NULL,
+    "precioUnitario" DOUBLE PRECISION,
+    "precioUnitarioVenta" DOUBLE PRECISION,
+    "unidadesBulto" DOUBLE PRECISION,
+    "idMonedaPrecioUnitario" INTEGER,
+    "idMonedaPrecioVenta" INTEGER,
+    "idCuentaContable" INTEGER,
+    "idInsumoBanda" INTEGER,
+    "idInsumoEstandar" INTEGER,
+    "actualizadoEn" TIMESTAMP(3) NOT NULL,
+    "importadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ErpInsumo_pkey" PRIMARY KEY ("id")
+);
+
 CREATE UNIQUE INDEX "Usuario_email_key" ON "Usuario"("email");
 CREATE UNIQUE INDEX "Usuario_microsoftId_key" ON "Usuario"("microsoftId");
 CREATE UNIQUE INDEX "IntegracionErp_clienteId_key" ON "IntegracionErp"("clienteId");
@@ -312,6 +387,27 @@ CREATE UNIQUE INDEX "ErpEmpresa_erpId_key" ON "ErpEmpresa"("erpId");
 CREATE INDEX "ErpEmpresa_idEmpresa_idx" ON "ErpEmpresa"("idEmpresa");
 CREATE INDEX "ErpEmpresa_codigo_idx" ON "ErpEmpresa"("codigo");
 CREATE INDEX "ErpEmpresa_activo_idx" ON "ErpEmpresa"("activo");
+CREATE UNIQUE INDEX "ErpCampania_erpId_key" ON "ErpCampania"("erpId");
+CREATE INDEX "ErpCampania_empresaErpId_idx" ON "ErpCampania"("empresaErpId");
+CREATE INDEX "ErpCampania_idCampania_idx" ON "ErpCampania"("idCampania");
+CREATE INDEX "ErpCampania_codigo_idx" ON "ErpCampania"("codigo");
+CREATE INDEX "ErpCampania_activo_idx" ON "ErpCampania"("activo");
+CREATE INDEX "ErpCampania_esActual_idx" ON "ErpCampania"("esActual");
+CREATE UNIQUE INDEX "ErpCultivo_erpId_key" ON "ErpCultivo"("erpId");
+CREATE INDEX "ErpCultivo_empresaErpId_idx" ON "ErpCultivo"("empresaErpId");
+CREATE INDEX "ErpCultivo_idCultivo_idx" ON "ErpCultivo"("idCultivo");
+CREATE INDEX "ErpCultivo_campoErpId_idx" ON "ErpCultivo"("campoErpId");
+CREATE INDEX "ErpCultivo_loteErpId_idx" ON "ErpCultivo"("loteErpId");
+CREATE INDEX "ErpCultivo_campaniaErpId_idx" ON "ErpCultivo"("campaniaErpId");
+CREATE INDEX "ErpCultivo_activo_idx" ON "ErpCultivo"("activo");
+CREATE UNIQUE INDEX "ErpInsumo_erpId_key" ON "ErpInsumo"("erpId");
+CREATE INDEX "ErpInsumo_empresaErpId_idx" ON "ErpInsumo"("empresaErpId");
+CREATE INDEX "ErpInsumo_idInsumo_idx" ON "ErpInsumo"("idInsumo");
+CREATE INDEX "ErpInsumo_codigo_idx" ON "ErpInsumo"("codigo");
+CREATE INDEX "ErpInsumo_nombre_idx" ON "ErpInsumo"("nombre");
+CREATE INDEX "ErpInsumo_idTipoInsumo_idx" ON "ErpInsumo"("idTipoInsumo");
+CREATE INDEX "ErpInsumo_idCategoriaInsumo_idx" ON "ErpInsumo"("idCategoriaInsumo");
+CREATE INDEX "ErpInsumo_activo_idx" ON "ErpInsumo"("activo");
 
 ALTER TABLE "Usuario" ADD CONSTRAINT "Usuario_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "IntegracionErp" ADD CONSTRAINT "IntegracionErp_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

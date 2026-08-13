@@ -94,6 +94,16 @@ h1 {
   font-size: 14px;
 }
 
+.status-error {
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #8a1f1f;
+  background: #fff0f0;
+  border: 1px solid #f4b4b4;
+  font-size: 14px;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -111,6 +121,12 @@ input {
   outline: 0;
 }
 
+input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #2d6a4f;
+}
+
 input:focus {
   border-color: #2d6a4f;
   box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.15);
@@ -119,7 +135,8 @@ input:focus {
 .primary,
 .secondary,
 .ghost,
-.small {
+.small,
+.danger {
   min-height: 40px;
   border-radius: 8px;
   padding: 0 14px;
@@ -136,6 +153,17 @@ input:focus {
 .small {
   background: #eaf1eb;
   color: #234235;
+}
+
+.danger {
+  background: #fff0f0;
+  color: #8a1f1f;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .app-shell {
@@ -173,6 +201,7 @@ nav a {
   padding: 11px 12px;
   border-radius: 8px;
   color: #d8e8de;
+  cursor: pointer;
 }
 
 nav a.active {
@@ -298,6 +327,290 @@ nav a.active {
   color: #64736a;
 }
 
+.company-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 160px));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.company-summary article {
+  padding: 14px;
+  border: 1px solid #dce5de;
+  border-radius: 8px;
+  background: #f6f8f6;
+}
+
+.company-summary span,
+.company-row span {
+  display: block;
+  color: #64736a;
+  font-size: 13px;
+}
+
+.company-summary strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.company-table {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.company-row {
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #edf1ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.company-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.company-row em {
+  color: #276749;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.planning-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.planning-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #dce5de;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.planning-hero h2 {
+  margin-bottom: 6px;
+  font-size: 22px;
+}
+
+.compact-field {
+  width: min(100%, 220px);
+}
+
+.status-pill {
+  min-width: 110px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #234235;
+  background: #eaf1eb;
+  text-align: center;
+  font-weight: 800;
+}
+
+.status-pill.locked {
+  color: #6a4a12;
+  background: #fff7df;
+}
+
+.protocol-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.protocol-stages {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.protocol-stage {
+  padding: 14px;
+  border: 1px solid #edf1ee;
+  border-radius: 8px;
+  background: #f9fbf9;
+}
+
+.protocol-stage-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.protocol-stage-header span {
+  color: #64736a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.protocol-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.panel-header.inline {
+  margin-bottom: 10px;
+}
+
+.panel-header.inline h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.protocol-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 110px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid #edf1ee;
+}
+
+.protocol-item span {
+  color: #64736a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.protocol-table {
+  display: grid;
+  margin-top: 18px;
+  overflow-x: auto;
+}
+
+.protocol-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.8fr) minmax(160px, 1fr) minmax(150px, 1fr) 110px 110px 150px;
+  min-width: 980px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid #edf1ee;
+}
+
+.protocol-row.selected {
+  margin: 0 -10px;
+  padding-right: 10px;
+  padding-left: 10px;
+  border-radius: 8px;
+  background: #f3f8f4;
+}
+
+.protocol-head {
+  padding-top: 0;
+  color: #64736a;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.protocol-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.protocol-row span,
+.protocol-row em {
+  color: #64736a;
+  font-size: 13px;
+}
+
+.protocol-row em {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.planning-metrics {
+  margin-bottom: 0;
+}
+
+.planning-table {
+  display: grid;
+  margin-top: 18px;
+  overflow-x: auto;
+}
+
+.planning-row {
+  display: grid;
+  grid-template-columns: 190px 150px 150px 150px 95px 95px 100px 110px 190px 120px 86px;
+  min-width: 1480px;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #edf1ee;
+  align-items: start;
+}
+
+.planning-row.duplicated {
+  margin: 0 -10px;
+  padding-right: 10px;
+  padding-left: 10px;
+  border-radius: 8px;
+  background: #fff8f8;
+}
+
+.planning-head {
+  padding-top: 0;
+  color: #64736a;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.planning-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.planning-row input,
+.planning-row select {
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.planning-row span {
+  color: #64736a;
+  font-size: 13px;
+}
+
+.planning-row .cell-error {
+  color: #8a1f1f;
+  font-weight: 800;
+}
+
+.planning-row em {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #276749;
+  background: #eaf1eb;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.row-actions {
+  align-items: start;
+}
+
 @media (max-width: 860px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -312,7 +625,38 @@ nav a.active {
   }
 
   .metrics,
-  .content-grid {
+  .content-grid,
+  .company-summary {
     grid-template-columns: 1fr;
+  }
+
+  .company-row {
+    grid-template-columns: 22px 1fr;
+  }
+
+  .company-row em {
+    grid-column: 2;
+  }
+
+  .planning-hero,
+  .topbar,
+  .panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .protocol-form,
+  .protocol-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .protocol-stage-header,
+  .protocol-item {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
