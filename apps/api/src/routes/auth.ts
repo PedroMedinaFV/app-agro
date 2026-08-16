@@ -9,9 +9,9 @@ import { validarIdTokenMicrosoft } from '../services/microsoftIdentity';
 const router = Router();
 const SECRET = process.env.JWT_SECRET || 'secret-dev';
 
-function crearTokenSesion(usuario: { id: string; email: string; rol?: string; clienteId?: string }) {
+function crearTokenSesion(usuario: { id: string; email: string; rol?: string; clienteId?: string | null }) {
   return jwt.sign(
-    { sub: usuario.id, email: usuario.email, rol: usuario.rol || 'usuario', clienteId: usuario.clienteId },
+    { sub: usuario.id, email: usuario.email, rol: usuario.rol || 'usuario', clienteId: usuario.clienteId || undefined },
     SECRET,
     { expiresIn: '8h' },
   );

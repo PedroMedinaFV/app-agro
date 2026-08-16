@@ -6,6 +6,7 @@ import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecie
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
+import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
 
@@ -440,6 +441,38 @@ const respuestaPadronesInsumosMock = {
   ],
 };
 
+const respuestaPadronesUnidadesMedidaMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 100,
+    totalPages: 1,
+    totalRecords: 18,
+  },
+  data: [
+    { idUnidadMedida: 17, codigo: 'Bls', codigoSifen: null, descripcion: 'Bolsas', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 18, codigo: 'Kgs', codigoSifen: null, descripcion: 'Kilos', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 19, codigo: 'Lts', codigoSifen: null, descripcion: 'Litros', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 20, codigo: 'Mts', codigoSifen: null, descripcion: 'Metros', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 21, codigo: 'Pck', codigoSifen: null, descripcion: 'Packs', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 22, codigo: 'Sbr', codigoSifen: null, descripcion: 'Sobres', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 23, codigo: 'GRAL', codigoSifen: null, descripcion: 'General', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 24, codigo: 'Ha', codigoSifen: null, descripcion: 'Hectarea', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 25, codigo: 'Tn', codigoSifen: null, descripcion: 'Toneladas', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 26, codigo: 'Ds', codigoSifen: null, descripcion: 'Dosis', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 27, codigo: 'Hs', codigoSifen: null, descripcion: 'Horas', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 28, codigo: 'Unid', codigoSifen: null, descripcion: 'Unidades', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 29, codigo: 'Km', codigoSifen: null, descripcion: 'Kilometros', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 30, codigo: 'GR', codigoSifen: null, descripcion: 'Gramos', activo: true, fechaUltimaActualizacion: null },
+    { idUnidadMedida: 31, codigo: 'ROLLO', codigoSifen: null, descripcion: 'Rollo', activo: true, fechaUltimaActualizacion: '2021-10-22T10:48:16' },
+    { idUnidadMedida: 32, codigo: 'MEGAFARDO', codigoSifen: null, descripcion: 'Megafardo', activo: true, fechaUltimaActualizacion: '2021-10-22T10:48:29' },
+    { idUnidadMedida: 33, codigo: 'MM', codigoSifen: null, descripcion: 'Milimetros', activo: true, fechaUltimaActualizacion: '2024-01-23T16:40:15' },
+    { idUnidadMedida: 34, codigo: 'Fco', codigoSifen: null, descripcion: 'Frasco', activo: true, fechaUltimaActualizacion: '2026-07-05T19:01:56' },
+  ],
+};
+
 // Mock de contrato ERP. Reemplazar esta funcion por llamadas HTTP cuando tengamos credenciales reales.
 export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const campos = mapearRespuestaPadronesCampos(respuestaPadronesCamposMock);
@@ -451,6 +484,7 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const campanias = mapearRespuestaAgriculturaCampanias(respuestaAgriculturaCampaniasMock);
   const cultivos = mapearRespuestaAgriculturaCultivos(respuestaAgriculturaCultivosMock);
   const insumos = mapearRespuestaPadronesInsumos(respuestaPadronesInsumosMock);
+  const unidadesMedida = mapearRespuestaPadronesUnidadesMedida(respuestaPadronesUnidadesMedidaMock);
 
   return {
     sincronizadoEn: ahora,
@@ -463,5 +497,7 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
     campanias,
     cultivos,
     insumos,
+    servicios: [],
+    unidadesMedida,
   };
 }

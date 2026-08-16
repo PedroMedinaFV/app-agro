@@ -161,6 +161,31 @@ export type ErpPadronInsumo = {
   fechaUltimaActualizacion: string | null;
 };
 
+export type ErpPadronServicio = {
+  idServicio: number;
+  idTipoServicio: number | null;
+  codigo: string;
+  descripcion: string;
+  descripcionAbreviada: string | null;
+  idUnidadMedida: number | null;
+  idMoneda: number | null;
+  precioUnitario: number | null;
+  idMonedaPersonal: number | null;
+  importePersonal: number | null;
+  activo: boolean;
+  imputaDosis: boolean;
+  fechaUltimaActualizacion: string | null;
+};
+
+export type ErpPadronUnidadMedida = {
+  idUnidadMedida: number;
+  codigo: string;
+  codigoSifen: string | null;
+  descripcion: string;
+  activo: boolean;
+  fechaUltimaActualizacion: string | null;
+};
+
 export type ErpLote = {
   empresaErpId: string;
   erpId: string;
@@ -280,6 +305,35 @@ export type ErpInsumo = {
   actualizadoEn: string;
 };
 
+export type ErpServicio = {
+  empresaErpId: string;
+  erpId: string;
+  idServicio: number;
+  idTipoServicio?: number;
+  codigo: string;
+  descripcion: string;
+  descripcionAbreviada?: string;
+  idUnidadMedida?: number;
+  idMoneda?: number;
+  precioUnitario?: number;
+  idMonedaPersonal?: number;
+  importePersonal?: number;
+  activo: boolean;
+  imputaDosis: boolean;
+  actualizadoEn: string;
+};
+
+export type ErpUnidadMedida = {
+  empresaErpId: string;
+  erpId: string;
+  idUnidadMedida: number;
+  codigo: string;
+  codigoSifen?: string;
+  descripcion: string;
+  activo: boolean;
+  actualizadoEn: string;
+};
+
 export type ErpSnapshot = {
   zonas: ErpZona[];
   campos: ErpCampo[];
@@ -290,6 +344,8 @@ export type ErpSnapshot = {
   campanias: ErpCampania[];
   cultivos: ErpCultivo[];
   insumos: ErpInsumo[];
+  servicios: ErpServicio[];
+  unidadesMedida: ErpUnidadMedida[];
   sincronizadoEn: string;
 };
 

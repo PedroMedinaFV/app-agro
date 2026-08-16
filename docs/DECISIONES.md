@@ -4,6 +4,16 @@
 
 Se crea `apps/web` con React + Vite para validar rapido pantallas y flujos desde navegador. Expo queda enfocado en mobile, donde aporta mas valor para uso de campo y offline-first.
 
+## Web y mobile no son replicas exactas
+
+Web queda orientada a administracion, configuracion, planificacion, analisis, auditoria y trabajo de escritorio.
+
+Mobile queda orientada a operacion diaria de campo: georreferenciacion, recorridas, observaciones, fotos, comentarios y captura rapida sobre lotes asignados.
+
+La informacion generada desde mobile debe poder consultarse y analizarse desde web. Algunas acciones operativas tambien pueden existir en web cuando aporten comodidad, revision o control.
+
+El detalle del acuerdo queda en `docs/ESTRATEGIA_WEB_MOBILE.md`.
+
 ## Login demo como desbloqueo
 
 Mientras la base PostgreSQL y Microsoft Entra ID no esten disponibles, usamos un modo demo documentado y aislado. No reemplaza la autenticacion final; permite avanzar en UX, contratos y navegacion.
@@ -77,11 +87,25 @@ Los insumos deberan venir idealmente del ERP mediante un padron especifico pendi
 
 ## Precios de referencia y supuestos congelados
 
-La planificacion agricola usara una tabla de precios de referencia por actividad/cultivo y destino de venta.
+Agro App tendra una entidad transversal de precios de referencia por actividad/cultivo y destino de venta. No pertenece exclusivamente a planificacion.
+
+La planificacion agricola consumira esa entidad para proponer precios.
 
 Al crear una linea de planificacion, el sistema propone un precio desde esa tabla, pero copia el valor a la linea para conservar el supuesto original. El usuario puede modificar el precio manualmente.
 
 Los cambios posteriores en la tabla de precios no deben reescribir planificaciones aprobadas. Sirven para calcular margen bruto actualizado y comparar contra el margen bruto planificado.
+
+## Gastos comerciales de referencia
+
+Agro App tendra una entidad de gastos comerciales de referencia para modelar flete, acondicionamiento, comisiones y otros gastos de venta.
+
+La planificacion agricola consumira esa entidad para proponer gastos segun campania, actividad, destino y alcance. Al crear una linea se copia el resultado calculado para conservar el supuesto original.
+
+Los gastos comerciales pertenecen a una campania agricola porque los costos comerciales pueden cambiar entre campanias. Pueden aplicar a todas las zonas, a una zona especifica o a un campo especifico; campo tiene prioridad sobre zona. Para el MVP, cada item se carga como valor por tonelada. Se evita exponer tipos de calculo y unidad hasta que exista una necesidad operativa concreta.
+
+Los conceptos de gastos comerciales se administran como maestro propio por cliente. En la carga normal se seleccionan desde un listado, no como texto libre, para evitar variantes de escritura y facilitar reportes consistentes.
+
+La administracion web se realiza desde una tabla con alta/edicion en modal. Toda alta o modificacion debe persistirse desde backend y auditarse.
 
 ## Destino de venta sugerido
 
@@ -102,3 +126,82 @@ Agro App permitira crear zonas, campos, lotes, especies, actividades e insumos p
 Esta decision evita frenar la planificacion por demoras administrativas o de carga en el ERP.
 
 La regla no aplica a datos operativos importados desde endpoints como `Agricultura/Cultivos`.
+
+## Administracion de padrones maestros
+
+Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.
+
+Esto incluye, como minimo:
+
+- zonas de planificacion;
+- campos de planificacion;
+- lotes de planificacion;
+- especies de planificacion;
+- actividades de planificacion;
+- insumos de planificacion;
+- destinos de venta;
+- conceptos de gastos comerciales;
+- labores de referencia;
+- estadios fenologicos de referencia cuando se administren localmente.
+
+Cada pantalla debe permitir listar, crear, editar, activar/desactivar y vincular contra ERP cuando corresponda. Las altas y modificaciones deben persistirse desde backend, validar `clienteId`, aplicar permisos declarativos y registrar auditoria.
+
+Las pantallas no deben reemplazar la sincronizacion ERP: son herramientas para administrar datos propios, datos provisorios y reglas internas que permiten operar aunque el ERP todavia no tenga todo cargado.
+
+## Vinculacion de labores con ERP
+
+Las labores propias de Agro App se sincronizaran con servicios del ERP desde `Padrones/Servicios`.
+
+Proceso acordado:
+
+- Si una labor todavia no existe en el ERP, un usuario autorizado puede crearla en Agro App como provisoria.
+- La labor provisoria puede usarse inmediatamente en protocolos.
+- Cuando la sincronizacion ERP trae un servicio compatible, el sistema no debe reemplazar la labor en silencio.
+- El sistema debe generar una sugerencia de vinculacion y una notificacion para usuarios autorizados.
+- La sugerencia debe mostrar labor Agro App, servicio ERP, empresa ERP, codigo, descripcion, unidad, precio y nivel de confianza.
+- La vinculacion se confirma o rechaza manualmente.
+- Al confirmar, se guarda `servicioErpId` y metadatos ERP en la labor, se cambia el estado a `vinculado_erp` y se audita el cambio.
+- Al rechazar, la sugerencia queda cerrada y la labor sigue como provisoria.
+- Protocolos y planificaciones ya cerradas conservan los valores copiados originalmente.
+
+Criterios de sugerencia:
+
+- coincidencia fuerte: mismo codigo normalizado dentro de la empresa ERP;
+- coincidencia media: descripcion normalizada muy similar y unidad compatible;
+- coincidencia baja: descripcion parcial o tipo de servicio compatible, requiere revision cuidadosa.
+
+Para el MVP no se hara auto-vinculacion. La confirmacion manual reduce errores y mantiene trazabilidad.
+
+Primer padron implementado:
+
+- conceptos de gastos comerciales;
+- pantalla web `Padrones`;
+- alta/edicion en modal;
+- baja logica mediante campo `activo`;
+- persistencia backend en `/conceptos-gastos-comerciales/:id`;
+- auditoria obligatoria por backend.
+
+Segundo padron implementado:
+
+- destinos de venta;
+- pantalla web `Padrones > Destinos`;
+- alta/edicion en modal;
+- baja logica mediante campo `activo`;
+- persistencia backend en `/destinos-venta/:id`;
+- auditoria obligatoria por backend.
+
+Las reglas para sugerir destino por zona, campo, actividad o cultivo se implementaran como una capa posterior que referencie el destino maestro, sin duplicar nombres de destino.
+
+El padron maestro de destinos no expone prioridad. Si mas adelante se necesita resolver empates o reglas multiples, ese orden pertenecera a la regla de sugerencia y no al destino.
+
+Tercer padron implementado:
+
+- labores de referencia;
+- pantalla web `Padrones > Labores`;
+- alta/edicion en modal;
+- baja logica mediante campo `activo`;
+- estados `provisorio`, `vinculado_erp` y `archivado`;
+- origen `provisorio`, `semilla` o `erp`;
+- persistencia backend en `/labores-referencia/:id`;
+- auditoria obligatoria por backend;
+- mapper ERP preparado para `Padrones/Servicios`.

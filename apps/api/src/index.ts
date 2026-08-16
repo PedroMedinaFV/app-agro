@@ -19,6 +19,12 @@ import adminIntegracionErpRuta from './routes/adminIntegracionErp';
 import adminUsuariosCamposRuta from './routes/adminUsuariosCampos';
 import adminEmpresasErpRuta from './routes/adminEmpresasErp';
 import planificacionRuta from './routes/planificacion';
+import preciosReferenciaRuta from './routes/preciosReferencia';
+import gastosComercialesReferenciaRuta from './routes/gastosComercialesReferencia';
+import conceptosGastosComercialesRuta from './routes/conceptosGastosComerciales';
+import destinosVentaRuta from './routes/destinosVenta';
+import laboresReferenciaRuta from './routes/laboresReferencia';
+import insumosPlanificacionRuta from './routes/insumosPlanificacion';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -45,6 +51,12 @@ app.use('/admin/integracion-erp', autenticacionBasica, requierePermiso('erp:conf
 app.use('/admin/asignaciones', autenticacionBasica, requierePermiso('usuarios:asignar-campos'), adminUsuariosCamposRuta);
 app.use('/admin/empresas-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminEmpresasErpRuta);
 app.use('/planificacion', autenticacionBasica, planificacionRuta);
+app.use('/precios-referencia', autenticacionBasica, preciosReferenciaRuta);
+app.use('/gastos-comerciales-referencia', autenticacionBasica, gastosComercialesReferenciaRuta);
+app.use('/conceptos-gastos-comerciales', autenticacionBasica, conceptosGastosComercialesRuta);
+app.use('/destinos-venta', autenticacionBasica, destinosVentaRuta);
+app.use('/labores-referencia', autenticacionBasica, laboresReferenciaRuta);
+app.use('/insumos-planificacion', autenticacionBasica, insumosPlanificacionRuta);
 
 app.use(manejadorErrores);
 

@@ -18,6 +18,7 @@ model Usuario {
   clienteId   String?
   campos      Campo[]
   camposErpAsignados UsuarioCampoErp[]
+  notificaciones NotificacionUsuario[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -30,6 +31,23 @@ model Cliente {
   integracionesErp IntegracionErp[]
   camposErpAsignados UsuarioCampoErp[]
   empresasErpAsignadas ClienteEmpresaErp[]
+  zonasPlanificacion ZonaPlanificacion[]
+  camposPlanificacion CampoPlanificacion[]
+  lotesPlanificacion LotePlanificacion[]
+  especiesPlanificacion EspeciePlanificacion[]
+  actividadesPlanificacion ActividadPlanificacion[]
+  insumosPlanificacion InsumoPlanificacion[]
+  estadiosReferencia EstadioFenologicoReferencia[]
+  laboresReferencia LaborReferencia[]
+  protocolosProductivos ProtocoloProductivo[]
+  planificacionesAgricolas PlanificacionAgricola[]
+  preciosReferencia PrecioReferencia[]
+  destinosVentaReferencia DestinoVentaReferencia[]
+  conceptosGastosComerciales ConceptoGastoComercial[]
+  gastosComercialesReferencia GastosComercialesReferencia[]
+  vinculacionesErpSugeridas VinculacionErpSugerida[]
+  notificaciones NotificacionUsuario[]
+  auditoriaEventos AuditoriaEvento[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 }
@@ -399,4 +417,581 @@ model ClienteEmpresaErp {
   @@unique([clienteId, empresaErpId])
   @@index([clienteId])
   @@index([empresaErpId])
+}
+
+model ZonaPlanificacion {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  empresaErpId      String
+  zonaErpId         String?
+  nombre            String
+  codigoInterno     String?
+  estadoVinculacion String   @default("provisorio")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  campos            CampoPlanificacion[]
+  protocolos        ProtocoloProductivo[]
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([zonaErpId])
+  @@index([estadoVinculacion])
+}
+
+model CampoPlanificacion {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  empresaErpId      String
+  campoErpId        String?
+  zonaPlanificacion ZonaPlanificacion? @relation(fields: [zonaPlanificacionId], references: [id])
+  zonaPlanificacionId String?
+  zonaErpId         String?
+  nombre            String
+  codigoInterno     String?
+  estadoVinculacion String   @default("provisorio")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lotes             LotePlanificacion[]
+  protocolos        ProtocoloProductivo[]
+  lineasPlanificacion PlanificacionAgricolaLinea[]
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([campoErpId])
+  @@index([zonaPlanificacionId])
+  @@index([estadoVinculacion])
+}
+
+model LotePlanificacion {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  campo             CampoPlanificacion @relation(fields: [campoPlanificacionId], references: [id])
+  campoPlanificacionId String
+  loteErpId         String?
+  nombre            String
+  codigoInterno     String?
+  superficieTotal   Float
+  superficieProductiva Float
+  estadoVinculacion String   @default("provisorio")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lineasPlanificacion PlanificacionAgricolaLinea[]
+
+  @@index([clienteId])
+  @@index([campoPlanificacionId])
+  @@index([loteErpId])
+  @@index([estadoVinculacion])
+}
+
+model EspeciePlanificacion {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  empresaErpId      String
+  especieErpId      String?
+  nombre            String
+  codigoInterno     String?
+  estadoVinculacion String   @default("provisorio")
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  actividades       ActividadPlanificacion[]
+  preciosReferencia PrecioReferencia[]
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([especieErpId])
+  @@index([estadoVinculacion])
+}
+
+model ActividadPlanificacion {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String
+  actividadErpId        String?
+  especiePlanificacion  EspeciePlanificacion? @relation(fields: [especiePlanificacionId], references: [id])
+  especiePlanificacionId String?
+  especieErpId          String?
+  nombre                String
+  codigoInterno         String?
+  estadoVinculacion     String   @default("provisorio")
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  protocolos            ProtocoloProductivo[]
+  lineasPlanificacion   PlanificacionAgricolaLinea[]
+  destinosReferencia    DestinoVentaReferencia[]
+  preciosReferencia     PrecioReferencia[]
+  gastosReferencia      GastosComercialesReferencia[]
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([actividadErpId])
+  @@index([especiePlanificacionId])
+  @@index([estadoVinculacion])
+}
+
+model InsumoPlanificacion {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String
+  insumoErpId           String?
+  nombre                String
+  codigoInterno         String?
+  tipo                  String?
+  unidad                String
+  precioUnitarioEstimado Float?
+  moneda                String?
+  estadoVinculacion     String   @default("provisorio")
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  insumosProtocolo      ProtocoloInsumo[]
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([insumoErpId])
+  @@index([estadoVinculacion])
+}
+
+model EstadioFenologicoReferencia {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  idEstadio         Int
+  actividadErpId    String?
+  codigo            String
+  nombre            String
+  ordenCronologico  Int
+  empresaErpId      String?
+  activo            Boolean  @default(true)
+  origen            String   @default("semilla")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  etapas            ProtocoloEtapa[]
+
+  @@unique([clienteId, idEstadio])
+  @@index([clienteId])
+  @@index([actividadErpId])
+  @@index([codigo])
+  @@index([ordenCronologico])
+  @@index([activo])
+}
+
+model LaborReferencia {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String?
+  servicioErpId         String?
+  idServicio            Int?
+  idTipoServicio        Int?
+  codigo                String
+  nombre                String
+  descripcionAbreviada  String?
+  idUnidadMedida        Int?
+  idMoneda              Int?
+  unidadSugerida        String
+  costoUnitarioSugerido Float?
+  imputaDosis           Boolean?
+  estadoVinculacion     String   @default("provisorio")
+  activo                Boolean  @default(true)
+  origen                String   @default("semilla")
+  fechaUltimaActualizacionErp DateTime?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  labores               ProtocoloLabor[]
+
+  @@unique([clienteId, codigo])
+  @@unique([clienteId, servicioErpId])
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([servicioErpId])
+  @@index([nombre])
+  @@index([estadoVinculacion])
+  @@index([activo])
+}
+
+model ProtocoloProductivo {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  nombre                String
+  descripcion           String
+  protocoloOrigenId     String?
+  empresaErpId          String?
+  campaniaErpId         String
+  actividadPlanificacion ActividadPlanificacion @relation(fields: [actividadPlanificacionId], references: [id])
+  actividadPlanificacionId String
+  actividadErpId        String?
+  tipoFecha             String
+  fechaSiembra          DateTime?
+  zonaPlanificacion     ZonaPlanificacion? @relation(fields: [zonaPlanificacionId], references: [id])
+  zonaPlanificacionId   String?
+  campoPlanificacion    CampoPlanificacion? @relation(fields: [campoPlanificacionId], references: [id])
+  campoPlanificacionId  String?
+  costoEstimadoPorHa    Float    @default(0)
+  activo                Boolean  @default(true)
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  etapas                ProtocoloEtapa[]
+  lineasPlanificacion   PlanificacionAgricolaLinea[]
+
+  @@index([clienteId])
+  @@index([campaniaErpId])
+  @@index([actividadPlanificacionId])
+  @@index([actividadErpId])
+  @@index([zonaPlanificacionId])
+  @@index([campoPlanificacionId])
+  @@index([activo])
+}
+
+model ProtocoloEtapa {
+  id                    String   @id @default(uuid())
+  protocolo             ProtocoloProductivo @relation(fields: [protocoloId], references: [id])
+  protocoloId           String
+  estadioReferencia     EstadioFenologicoReferencia? @relation(fields: [estadioReferenciaId], references: [id])
+  estadioReferenciaId   String?
+  estadioCodigo         String?
+  orden                 Int
+  nombre                String
+  descripcion           String?
+  fechaObjetivo         DateTime?
+  diasDesdeSiembra      Int?
+  observaciones         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  labores               ProtocoloLabor[]
+  insumos               ProtocoloInsumo[]
+
+  @@unique([protocoloId, estadioReferenciaId])
+  @@index([protocoloId])
+  @@index([estadioReferenciaId])
+  @@index([orden])
+}
+
+model ProtocoloLabor {
+  id                    String   @id @default(uuid())
+  etapa                 ProtocoloEtapa @relation(fields: [etapaId], references: [id])
+  etapaId               String
+  laborReferencia       LaborReferencia? @relation(fields: [laborReferenciaId], references: [id])
+  laborReferenciaId     String?
+  indiceAplicacion      Float
+  nombre                String
+  descripcion           String?
+  unidad                String
+  cantidadPorHa         Float
+  costoUnitario         Float
+  costoPorHa            Float
+  momentoEstimado       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([etapaId])
+  @@index([laborReferenciaId])
+  @@index([indiceAplicacion])
+}
+
+model ProtocoloInsumo {
+  id                    String   @id @default(uuid())
+  etapa                 ProtocoloEtapa @relation(fields: [etapaId], references: [id])
+  etapaId               String
+  indiceAplicacion      Float
+  insumoPlanificacion   InsumoPlanificacion @relation(fields: [insumoPlanificacionId], references: [id])
+  insumoPlanificacionId String
+  insumoErpId           String?
+  nombre                String
+  tipo                  String?
+  unidad                String
+  dosisPorHa            Float
+  precioUnitarioEstimado Float
+  costoPorHa            Float
+  momentoEstimado       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([etapaId])
+  @@index([insumoPlanificacionId])
+  @@index([insumoErpId])
+  @@index([indiceAplicacion])
+}
+
+model PlanificacionAgricola {
+  id              String   @id @default(uuid())
+  cliente         Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId       String
+  campaniaErpId   String
+  nombre          String
+  descripcion     String?
+  estado          String   @default("borrador")
+  cerradaPor      String?
+  cerradaAt       DateTime?
+  motivoCierre    String?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lineas          PlanificacionAgricolaLinea[]
+
+  @@index([clienteId])
+  @@index([campaniaErpId])
+  @@index([estado])
+}
+
+model PlanificacionAgricolaLinea {
+  id                          String   @id @default(uuid())
+  planificacion               PlanificacionAgricola @relation(fields: [planificacionId], references: [id])
+  planificacionId             String
+  empresaErpId                String
+  campoPlanificacion          CampoPlanificacion @relation(fields: [campoPlanificacionId], references: [id])
+  campoPlanificacionId        String
+  campoErpId                  String?
+  lotePlanificacion           LotePlanificacion @relation(fields: [lotePlanificacionId], references: [id])
+  lotePlanificacionId         String
+  loteErpId                   String?
+  actividadPlanificacion      ActividadPlanificacion @relation(fields: [actividadPlanificacionId], references: [id])
+  actividadPlanificacionId    String
+  actividadErpId              String?
+  cultivoErpId                String?
+  destinoReferenciaId         String?
+  destinoVenta                String
+  destinoVentaManual          Boolean  @default(false)
+  precioReferenciaId          String?
+  precioVentaEstimado         Float
+  precioVentaManual           Boolean  @default(false)
+  hectareasPlanificadas       Float
+  rindeEstimado               Float
+  gastosComercialesReferenciaId String?
+  gastosComercialesEstimados  Float
+  protocolo                   ProtocoloProductivo? @relation(fields: [protocoloId], references: [id])
+  protocoloId                 String?
+  ingresoBrutoEstimado        Float
+  ingresoNetoEstimado         Float
+  costoProduccionEstimado     Float
+  margenBrutoEstimado         Float
+  margenBrutoActualizado      Float?
+  estado                      String   @default("borrador")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@unique([planificacionId, campoPlanificacionId, lotePlanificacionId, actividadPlanificacionId])
+  @@index([planificacionId])
+  @@index([campoPlanificacionId])
+  @@index([lotePlanificacionId])
+  @@index([actividadPlanificacionId])
+  @@index([actividadErpId])
+  @@index([protocoloId])
+}
+
+model DestinoVentaReferencia {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String?
+  zonaErpId             String?
+  campoPlanificacionId  String?
+  campoErpId            String?
+  actividadPlanificacion ActividadPlanificacion? @relation(fields: [actividadPlanificacionId], references: [id])
+  actividadPlanificacionId String?
+  actividadErpId        String?
+  especieErpId          String?
+  cultivoErpId          String?
+  destinoVenta          String
+  destinoVentaNormalizado String
+  descripcion           String?
+  activo                Boolean  @default(true)
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([campoPlanificacionId])
+  @@index([actividadPlanificacionId])
+  @@index([actividadErpId])
+  @@index([activo])
+  @@unique([clienteId, destinoVentaNormalizado])
+}
+
+model PrecioReferencia {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String?
+  actividadPlanificacion ActividadPlanificacion @relation(fields: [actividadPlanificacionId], references: [id])
+  actividadPlanificacionId String
+  actividadErpId        String?
+  especiePlanificacion  EspeciePlanificacion? @relation(fields: [especiePlanificacionId], references: [id])
+  especiePlanificacionId String?
+  especieErpId          String?
+  cultivoErpId          String?
+  destinoVenta          String
+  valor                 Float
+  moneda                String
+  unidad                String
+  fuente                String
+  observaciones         String?
+  activo                Boolean  @default(true)
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([actividadPlanificacionId])
+  @@index([actividadErpId])
+  @@index([destinoVenta])
+  @@index([activo])
+}
+
+model ConceptoGastoComercial {
+  id                String   @id @default(uuid())
+  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId         String
+  codigo            String
+  nombre            String
+  nombreNormalizado String
+  descripcion       String?
+  activo            Boolean  @default(true)
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([clienteId, nombreNormalizado])
+  @@index([clienteId])
+  @@index([codigo])
+  @@index([activo])
+}
+
+model GastosComercialesReferencia {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  campaniaErpId         String
+  empresaErpId          String
+  zonaPlanificacionId   String?
+  zonaErpId             String?
+  campoPlanificacionId  String?
+  campoErpId            String?
+  actividadPlanificacion ActividadPlanificacion @relation(fields: [actividadPlanificacionId], references: [id])
+  actividadPlanificacionId String
+  actividadErpId        String?
+  destinoVenta          String?
+  descripcion           String
+  items                 Json
+  activo                Boolean  @default(true)
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([campaniaErpId])
+  @@index([empresaErpId])
+  @@index([zonaPlanificacionId])
+  @@index([campoPlanificacionId])
+  @@index([actividadPlanificacionId])
+  @@index([actividadErpId])
+  @@index([activo])
+}
+
+model VinculacionErpSugerida {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  empresaErpId          String
+  entidadTipo           String
+  entidadPlanificacionId String
+  entidadErpId          String
+  entidadErpSnapshot    Json
+  puntajeCoincidencia   Float
+  criterioCoincidencia  Json
+  estado                String   @default("pendiente")
+  revisadaPor           String?
+  revisadaAt            DateTime?
+  motivoResolucion      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  notificaciones        NotificacionUsuario[]
+
+  @@unique([clienteId, entidadTipo, entidadPlanificacionId, entidadErpId])
+  @@index([clienteId])
+  @@index([empresaErpId])
+  @@index([entidadTipo])
+  @@index([entidadPlanificacionId])
+  @@index([entidadErpId])
+  @@index([estado])
+  @@index([puntajeCoincidencia])
+}
+
+model NotificacionUsuario {
+  id                      String   @id @default(uuid())
+  cliente                 Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId               String
+  usuario                 Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId               String?
+  tipo                    String
+  titulo                  String
+  mensaje                 String
+  prioridad               String   @default("normal")
+  estado                  String   @default("pendiente")
+  vinculacionSugerida     VinculacionErpSugerida? @relation(fields: [vinculacionSugeridaId], references: [id])
+  vinculacionSugeridaId   String?
+  leidaAt                 DateTime?
+  resueltaAt              DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([estado])
+  @@index([prioridad])
+  @@index([vinculacionSugeridaId])
+  @@index([createdAt])
+}
+
+model AuditoriaEvento {
+  id              String   @id @default(uuid())
+  cliente         Cliente? @relation(fields: [clienteId], references: [id])
+  clienteId       String?
+  usuarioId       String?
+  entidad         String
+  entidadId       String
+  accion          String
+  origen          String
+  motivo          String?
+  valoresAntes    Json?
+  valoresDespues  Json?
+  metadata        Json?
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([entidad])
+  @@index([entidadId])
+  @@index([accion])
+  @@index([createdAt])
 }

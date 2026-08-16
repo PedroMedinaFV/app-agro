@@ -2,10 +2,28 @@ import {
   EmpresaErpCliente,
   ErpEmpresa,
   ErpSnapshot,
+  CerrarPlanificacionRequest,
+  CerrarPlanificacionResponse,
+  ConceptoGastoComercial,
+  DestinoVentaReferencia,
+  GuardarConceptoGastoComercialRequest,
+  GuardarConceptoGastoComercialResponse,
+  GuardarDestinoVentaReferenciaRequest,
+  GuardarDestinoVentaReferenciaResponse,
+  GuardarGastosComercialesReferenciaRequest,
+  GuardarGastosComercialesReferenciaResponse,
+  GuardarInsumoPlanificacionRequest,
+  GuardarInsumoPlanificacionResponse,
+  GuardarLaborReferenciaRequest,
+  GuardarLaborReferenciaResponse,
   GuardarPlanificacionRequest,
   GuardarPlanificacionResponse,
+  GuardarPrecioReferenciaRequest,
+  GuardarPrecioReferenciaResponse,
   GuardarProtocoloRequest,
   GuardarProtocoloResponse,
+  LaborReferencia,
+  InsumoPlanificacion,
   LoginDemoRequest,
   PlanificacionSnapshot,
   ProtocolosSnapshot,
@@ -66,6 +84,107 @@ export async function obtenerPlanificacionSnapshot(token?: string): Promise<Plan
 
 export async function guardarPlanificacion(id: string, datos: GuardarPlanificacionRequest, token?: string): Promise<GuardarPlanificacionResponse> {
   return request<GuardarPlanificacionResponse>(`/planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacionRequest, token?: string): Promise<CerrarPlanificacionResponse> {
+  return request<CerrarPlanificacionResponse>(`/planificacion/${id}/cerrar`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function guardarPrecioReferencia(id: string, datos: GuardarPrecioReferenciaRequest, token?: string): Promise<GuardarPrecioReferenciaResponse> {
+  return request<GuardarPrecioReferenciaResponse>(`/precios-referencia/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function guardarGastoComercialReferencia(
+  id: string,
+  datos: GuardarGastosComercialesReferenciaRequest,
+  token?: string,
+): Promise<GuardarGastosComercialesReferenciaResponse> {
+  return request<GuardarGastosComercialesReferenciaResponse>(`/gastos-comerciales-referencia/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type ConceptosGastosComercialesResponse = {
+  conceptos: ConceptoGastoComercial[];
+};
+
+export async function obtenerConceptosGastosComerciales(token?: string): Promise<ConceptosGastosComercialesResponse> {
+  return request<ConceptosGastosComercialesResponse>('/conceptos-gastos-comerciales', {}, token);
+}
+
+export async function guardarConceptoGastoComercial(
+  id: string,
+  datos: GuardarConceptoGastoComercialRequest,
+  token?: string,
+): Promise<GuardarConceptoGastoComercialResponse> {
+  return request<GuardarConceptoGastoComercialResponse>(`/conceptos-gastos-comerciales/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type DestinosVentaResponse = {
+  destinos: DestinoVentaReferencia[];
+};
+
+export async function obtenerDestinosVenta(token?: string): Promise<DestinosVentaResponse> {
+  return request<DestinosVentaResponse>('/destinos-venta', {}, token);
+}
+
+export async function guardarDestinoVenta(
+  id: string,
+  datos: GuardarDestinoVentaReferenciaRequest,
+  token?: string,
+): Promise<GuardarDestinoVentaReferenciaResponse> {
+  return request<GuardarDestinoVentaReferenciaResponse>(`/destinos-venta/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type LaboresReferenciaResponse = {
+  labores: LaborReferencia[];
+};
+
+export async function obtenerLaboresReferencia(token?: string): Promise<LaboresReferenciaResponse> {
+  return request<LaboresReferenciaResponse>('/labores-referencia', {}, token);
+}
+
+export async function guardarLaborReferencia(
+  id: string,
+  datos: GuardarLaborReferenciaRequest,
+  token?: string,
+): Promise<GuardarLaborReferenciaResponse> {
+  return request<GuardarLaborReferenciaResponse>(`/labores-referencia/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type InsumosPlanificacionResponse = {
+  insumos: InsumoPlanificacion[];
+};
+
+export async function obtenerInsumosPlanificacion(token?: string): Promise<InsumosPlanificacionResponse> {
+  return request<InsumosPlanificacionResponse>('/insumos-planificacion', {}, token);
+}
+
+export async function guardarInsumoPlanificacion(
+  id: string,
+  datos: GuardarInsumoPlanificacionRequest,
+  token?: string,
+): Promise<GuardarInsumoPlanificacionResponse> {
+  return request<GuardarInsumoPlanificacionResponse>(`/insumos-planificacion/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

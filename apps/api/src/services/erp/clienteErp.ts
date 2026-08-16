@@ -7,6 +7,8 @@ import {
   ErpPadronEspecie,
   ErpPadronInsumo,
   ErpPadronLote,
+  ErpPadronServicio,
+  ErpPadronUnidadMedida,
   ErpPadronZona,
   ErpRespuestaPaginada,
   ErpSnapshot,
@@ -19,6 +21,8 @@ import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecie
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
+import { mapearRespuestaPadronesServicios } from './mappers/padronesServicios';
+import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
 import { obtenerSnapshotErpMock } from './mockErp';
@@ -191,7 +195,7 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
 
   const snapshotsPorEmpresa = await Promise.all(
     empresasAgro.map(async (empresaErpId) => {
-      const [respuestaZonas, respuestaCampos, respuestaLotes, respuestaActividades, respuestaEspecies, respuestaCampanias, respuestaCultivos, respuestaInsumos] = await Promise.all([
+      const [respuestaZonas, respuestaCampos, respuestaLotes, respuestaActividades, respuestaEspecies, respuestaCampanias, respuestaCultivos, respuestaInsumos, respuestaServicios, respuestaUnidadesMedida] = await Promise.all([
         getErpPaginado<ErpPadronZona>(configuracion, configuracion.pathZonas, empresaErpId),
         getErpPaginado<ErpPadronCampo>(configuracion, configuracion.pathCampos, empresaErpId),
         getErpPaginado<ErpPadronLote>(configuracion, configuracion.pathLotes, empresaErpId),
@@ -200,6 +204,8 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
         getErpPaginado<ErpPadronCampania>(configuracion, configuracion.pathCampanias, empresaErpId),
         getErpPaginado<ErpPadronCultivo>(configuracion, configuracion.pathCultivos, empresaErpId),
         getErpPaginado<ErpPadronInsumo>(configuracion, configuracion.pathInsumos, empresaErpId),
+        getErpPaginado<ErpPadronServicio>(configuracion, configuracion.pathServicios, empresaErpId),
+        getErpPaginado<ErpPadronUnidadMedida>(configuracion, configuracion.pathUnidadesMedida, empresaErpId),
       ]);
 
       return {
@@ -211,6 +217,8 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
         campanias: mapearRespuestaAgriculturaCampanias(respuestaCampanias, empresaErpId),
         cultivos: mapearRespuestaAgriculturaCultivos(respuestaCultivos, empresaErpId),
         insumos: mapearRespuestaPadronesInsumos(respuestaInsumos, empresaErpId),
+        servicios: mapearRespuestaPadronesServicios(respuestaServicios, empresaErpId),
+        unidadesMedida: mapearRespuestaPadronesUnidadesMedida(respuestaUnidadesMedida, empresaErpId),
       };
     }),
   );
@@ -224,6 +232,8 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
     campanias: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campanias),
     cultivos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.cultivos),
     insumos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos),
+    servicios: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios),
+    unidadesMedida: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida),
     empresas,
     sincronizadoEn: new Date().toISOString(),
   };

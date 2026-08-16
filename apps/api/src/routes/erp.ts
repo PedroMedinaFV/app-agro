@@ -31,6 +31,8 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
     campanias: snapshot.campanias.filter((campania) => empresasPermitidas.has(campania.empresaErpId)),
     cultivos: snapshot.cultivos.filter((cultivo) => lotesPermitidosIds.has(cultivo.loteErpId)),
     insumos: snapshot.insumos.filter((insumo) => empresasPermitidas.has(insumo.empresaErpId)),
+    servicios: snapshot.servicios.filter((servicio) => empresasPermitidas.has(servicio.empresaErpId)),
+    unidadesMedida: snapshot.unidadesMedida.filter((unidad) => empresasPermitidas.has(unidad.empresaErpId)),
   };
 }
 

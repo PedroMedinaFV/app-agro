@@ -11,7 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@agro/tipos": ["packages/tipos/src"]
+      "@agro/tipos": ["packages/tipos/src/index.ts"]
     }
   },
   "include": ["packages/**/*", "apps/**/*"]

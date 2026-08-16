@@ -25,6 +25,8 @@ export type ConfiguracionErp = {
   pathCampanias: string;
   pathCultivos: string;
   pathInsumos: string;
+  pathServicios: string;
+  pathUnidadesMedida: string;
   pathEmpresas: string;
 };
 
@@ -74,6 +76,8 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
+    pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
+    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
   };
 }
@@ -118,6 +122,8 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
+    pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
+    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
   };
 }

@@ -49,7 +49,9 @@ Campos sugeridos:
 
 - `id`
 - `clienteId`
+- `campaniaErpId`
 - `empresaErpId`
+- `zonaPlanificacionId` opcional
 - `zonaErpId` opcional
 - `nombre`
 - `codigoInterno`
@@ -206,6 +208,8 @@ Reglas:
 - Al usarlo en un protocolo o planificacion, se copia precio/costo estimado para conservar el supuesto.
 - Cuando el ERP devuelva el insumo real, un usuario autorizado puede vincularlo.
 - La vinculacion debe auditarse.
+- En web se administra desde `Padrones > Insumos` con permisos de configuracion de planificacion.
+- La unidad se selecciona desde `ErpUnidadMedida` cuando el snapshot ERP lo tenga disponible y se copia como codigo operativo.
 
 ## Vinculacion con ERP
 
@@ -218,11 +222,75 @@ La herramienta de vinculacion debe permitir:
 - confirmar vinculacion;
 - auditar quien vinculo, cuando y que entidades se vincularon.
 
+Tambien debe existir un vinculador asistido por sistema.
+
+Flujo propuesto:
+
+1. Se ejecuta una sincronizacion de padrones ERP.
+2. El backend compara los registros ERP nuevos o actualizados contra padrones provisorios de Agro App.
+3. Si encuentra una posible coincidencia, crea una `VinculacionErpSugerida` con puntaje, criterios usados y snapshot del registro ERP.
+4. El sistema genera una notificacion para administradores o usuarios con permiso de vinculacion.
+5. El usuario autorizado revisa la propuesta en una pantalla de comparacion.
+6. El usuario puede aceptar, rechazar o dejar pendiente la sugerencia.
+7. Si acepta, se actualiza el `erpId` del padron provisorio y el estado pasa a `vinculado_erp`.
+8. La decision queda auditada con valores antes/despues.
+
+La sugerencia del sistema no debe vincular automaticamente en el MVP. La confirmacion humana reduce riesgos de asociar mal actividades, lotes o insumos con nombres parecidos.
+
+Entidades soportadas por el vinculador:
+
+- `zona`
+- `campo`
+- `lote`
+- `especie`
+- `actividad`
+- `insumo`
+
+Criterios de coincidencia sugeridos:
+
+- misma empresa ERP;
+- codigo igual o muy similar;
+- nombre normalizado igual o muy similar;
+- relacion jerarquica compatible, por ejemplo lote dentro del campo correcto;
+- superficie similar para lotes;
+- especie compatible para actividades;
+- tipo/unidad compatible para insumos.
+
+Estados de una sugerencia:
+
+- `pendiente`
+- `aceptada`
+- `rechazada`
+- `expirada`
+
+La sugerencia debe tener una restriccion unica por cliente, tipo de entidad, entidad provisoria y entidad ERP para evitar duplicados cuando se ejecutan varias sincronizaciones.
+
+### Notificaciones de vinculacion
+
+Cuando el sistema detecta coincidencias probables debe crear una notificacion interna.
+
+Reglas:
+
+- la notificacion debe pertenecer al `clienteId`;
+- puede estar dirigida a un usuario especifico o a una bandeja general de administradores;
+- debe indicar tipo de padron, nombre provisorio, posible match ERP y nivel de confianza;
+- debe permitir navegar a la pantalla de comparacion;
+- debe poder marcarse como leida, resuelta o descartada;
+- aceptar o rechazar una sugerencia debe cerrar la notificacion asociada.
+
+Tipos iniciales:
+
+- `vinculacion_erp_sugerida`
+- `vinculacion_erp_resuelta`
+
 Reglas de seguridad:
 
 - Solo usuarios autorizados pueden vincular padrones base provisorios con ERP.
 - No se debe vincular un padron base a una empresa ERP no asociada al cliente.
 - Si un padron base provisorio ya fue usado en planificaciones aprobadas, la vinculacion no debe alterar supuestos historicos.
+- La aceptacion o rechazo de una sugerencia debe validar permisos en backend.
+- La pantalla debe mostrar diferencias relevantes antes de permitir aceptar.
+- Si el puntaje de coincidencia es bajo, la sugerencia debe quedar como baja prioridad o requerir doble confirmacion futura.
 
 ## PlanificacionAgricola
 
@@ -302,53 +370,56 @@ Reglas:
 - Si usa padrones base provisorios, debe conservar esas referencias aunque luego se vinculen al ERP.
 - Si se aprueba, no debe cambiar automaticamente ante cambios de precio, destino, protocolo o vinculacion ERP.
 - Si la planificacion esta cerrada, no se puede modificar ninguna linea.
-- Para una misma `campaniaErpId`, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` no puede existir mas de una linea.
+- Para una misma planificacion, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` no puede existir mas de una linea.
 - Toda modificacion debe auditarse.
 
 ## DestinoVentaReferencia
 
-Tabla propia para sugerir destino de venta.
+Catalogo propio de destinos de venta.
+
+El destino es unico por cliente y nombre normalizado. No depende de actividad, zona, campo, cultivo ni empresa. Esas dimensiones pueden usarse para reglas de sugerencia, pero no para crear duplicados del mismo destino.
 
 Campos sugeridos:
 
 - `id`
 - `clienteId`
-- `empresaErpId`
-- `zonaErpId` opcional
-- `campoPlanificacionId` opcional
-- `campoErpId` opcional
-- `actividadErpId`
-- `especieErpId` opcional
-- `cultivoErpId` opcional
 - `destinoVenta`
+- `destinoVentaNormalizado`
 - `descripcion`
-- `prioridad`
 - `activo`
 - `createdBy`
 - `updatedBy`
 - `createdAt`
 - `updatedAt`
 
+Reglas:
+
+- `clienteId` + `destinoVentaNormalizado` debe ser unico.
+- `destinoVentaNormalizado` se calcula en backend con trim, espacios simples, sin tildes y uppercase.
+- Si un precio crea un destino nuevo, se crea el destino global sin asociarlo obligatoriamente a la actividad del precio.
+- Si se necesita sugerir destinos por zona/campo/actividad, esa configuracion debe vivir en una tabla de reglas que referencie el destino global y no duplicarlo.
+- El padron maestro no expone prioridad al usuario. Si una regla de sugerencia necesitara orden, esa prioridad pertenecera a la regla, no al destino.
+
 ## PrecioReferencia
 
-Tabla propia para sugerir precios de venta y seguir valores durante la campania.
+Entidad transversal de Agro App para sugerir precios de venta y seguir valores comerciales.
+
+Planificacion la consume para proponer precios y calcular margen bruto, pero la entidad no pertenece exclusivamente al modulo de planificacion.
 
 Campos sugeridos:
 
 - `id`
 - `clienteId`
-- `campaniaErpId`
 - `empresaErpId` opcional
-- `actividadErpId`
-- `especieErpId`
+- `actividadPlanificacionId`
+- `actividadErpId` opcional
+- `especiePlanificacionId` opcional
+- `especieErpId` opcional
 - `cultivoErpId` opcional
 - `destinoVenta`
-- `tipoPrecio`
 - `valor`
 - `moneda`
 - `unidad`
-- `fechaVigenciaDesde`
-- `fechaVigenciaHasta` opcional
 - `fuente`
 - `observaciones`
 - `activo`
@@ -356,6 +427,19 @@ Campos sugeridos:
 - `updatedBy`
 - `createdAt`
 - `updatedAt`
+
+Reglas:
+
+- No depende de una campania agricola.
+- `createdAt` y `updatedAt` se generan automaticamente.
+- `destinoVenta` debe seleccionarse desde catalogo; si no existe, se debe crear desde la misma experiencia.
+- En MVP no se expone `tipoPrecio` al usuario. Si mas adelante se necesita distinguir mercado, forward, fijado o estimado, se reabrira la decision con un nombre funcional claro.
+- Toda alta o modificacion debe auditarse con valores previos y posteriores.
+- Editar un precio de referencia solo cambia propuestas futuras y calculos actualizados; no modifica supuestos copiados en planificaciones aprobadas o cerradas.
+
+Endpoint MVP:
+
+- `PUT /precios-referencia/:id`
 
 ## GastosComercialesReferencia
 
@@ -369,7 +453,8 @@ Campos sugeridos:
 - `zonaErpId` opcional
 - `campoPlanificacionId` opcional
 - `campoErpId` opcional
-- `actividadErpId`
+- `actividadPlanificacionId`
+- `actividadErpId` opcional
 - `destinoVenta` opcional
 - `descripcion`
 - `items`
@@ -379,16 +464,33 @@ Campos sugeridos:
 - `createdAt`
 - `updatedAt`
 
-Cada item debe guardar `concepto`, `tipoCalculo`, `valor`, `moneda` y unidad opcional.
+Cada item debe guardar `conceptoGastoComercialId`, `conceptoNombre`, `valorPorTonelada`, `moneda` y `observaciones` opcional.
 
-Tipos de calculo:
+El concepto se elige desde un maestro `ConceptoGastoComercial`; no se carga como texto libre. El nombre queda copiado en el item como snapshot legible para reportes y auditoria, pero la referencia principal es el ID del maestro.
 
-- `por_ha`
-- `por_tn`
-- `porcentaje_ingreso`
-- `importe_fijo`
+Decision MVP:
+
+- Los gastos comerciales pertenecen a una campania agricola.
+- Pueden configurarse para todas las zonas, para una zona especifica o para un campo especifico.
+- Campo tiene prioridad sobre zona al sugerir gastos en una linea de planificacion.
+- Todos los gastos comerciales se cargan como valor por tonelada.
+- Los items se seleccionan desde un listado maestro para evitar variantes escritas por el usuario.
+- El sistema calcula el total multiplicando la produccion estimada en toneladas por la suma de los valores por tonelada.
+- No se expone `tipoCalculo` ni `unidad` en el MVP para reducir carga cognitiva.
+- Si mas adelante aparece la necesidad real, se podran sumar calculos por hectarea, porcentaje de ingreso o importe fijo.
 
 La linea de planificacion guarda `gastosComercialesReferenciaId` y copia el total calculado en `gastosComercialesEstimados`.
+
+Reglas:
+
+- Toda alta o modificacion debe auditarse con valores previos y posteriores.
+- Los items no pueden tener concepto maestro vacio ni valor por tonelada negativo.
+- La pantalla web principal es una grilla con alta/edicion en modal.
+- Editar la referencia solo cambia propuestas futuras o recalculos explicitos; no modifica supuestos copiados en planificaciones aprobadas o cerradas.
+
+Endpoint MVP:
+
+- `PUT /gastos-comerciales-referencia/:id`
 
 ## ProtocoloProductivo
 
@@ -402,10 +504,11 @@ Campos sugeridos:
 - `descripcion`
 - `protocoloOrigenId` opcional
 - `empresaErpId` opcional
-- `campaniaErpId` opcional
-- `actividadErpId`
-- `especieErpId` opcional
-- `zonaErpId` opcional
+- `campaniaErpId`
+- `actividadPlanificacionId`
+- `actividadErpId` opcional
+- `tipoFecha`
+- `fechaSiembra` opcional
 - `zonaPlanificacionId` opcional
 - `campoPlanificacionId` opcional
 - `activo`
@@ -416,11 +519,15 @@ Campos sugeridos:
 
 Reglas:
 
-- Todo protocolo debe estar asociado a una actividad.
+- Todo protocolo debe estar asociado a una actividad de planificacion.
+- Todo protocolo debe estar asociado a una campania.
+- No se guarda `especieErpId` como referencia principal en el protocolo porque la especie se deriva de la actividad de planificacion.
+- `tipoFecha` se define a nivel protocolo y puede ser `absoluta` o `relativa_siembra`.
+- `fechaSiembra` es la fecha base para calcular etapas relativas a siembra.
 - Un protocolo puede estar asociado a una zona.
 - Un protocolo puede estar asociado a un campo.
 - Si `campoPlanificacionId` es null, el protocolo aplica a todos los campos compatibles segun zona/actividad.
-- Si `zonaErpId`/`zonaPlanificacionId` tambien es null, el protocolo aplica de forma general para esa actividad.
+- Si `zonaPlanificacionId` tambien es null, el protocolo aplica de forma general para esa actividad dentro de la campania.
 - Al seleccionar una actividad en la planificacion, el select de protocolos debe mostrar solo protocolos compatibles con actividad, zona y/o campo.
 - Los protocolos compatibles deben ordenarse por `updatedAt` descendente; si no existe, usar `createdAt` descendente.
 - El primer protocolo compatible se puede proponer automaticamente, pero el usuario puede elegir otro compatible.
@@ -436,10 +543,47 @@ Campos sugeridos:
 
 - `id`
 - `protocoloId`
+- `estadioReferenciaId`
+- `estadioCodigo` opcional
 - `orden`
 - `nombre`
 - `descripcion`
+- `fechaObjetivo`
+- `diasDesdeSiembra`
 - `observaciones`
+
+Reglas de fecha:
+
+- El tipo de fecha se define en `ProtocoloProductivo.tipoFecha`, no en cada etapa.
+- Si el protocolo tiene `tipoFecha = absoluta`, cada etapa debe tener `fechaObjetivo`.
+- Si el protocolo tiene `tipoFecha = relativa_siembra`, cada etapa debe tener `diasDesdeSiembra`.
+- `diasDesdeSiembra` debe ser entero y puede ser negativo, cero o positivo.
+- La etapa `Siembra` o `Siembra directa` usa `diasDesdeSiembra = 0` cuando se trabaja con fechas relativas.
+- Si el protocolo relativo tiene etapa `Siembra` o `Siembra directa`, debe tener `fechaSiembra` antes de guardarse como listo para uso operativo.
+
+## EstadioFenologicoReferencia
+
+Padron inicial propio para seleccionar estadios en protocolos.
+
+Campos sugeridos:
+
+- `id`
+- `idEstadio`
+- `actividadErpId` opcional
+- `codigo`
+- `nombre`
+- `ordenCronologico`
+- `empresaErpId` opcional
+- `activo`
+- `origen`
+
+Reglas:
+
+- Inicialmente se carga como semilla desde `AlborExcel.xlsx`.
+- Si mas adelante el ERP expone un endpoint de estadios, se podra sincronizar como padron ERP.
+- Cada etapa debe referenciar un estadio mediante `estadioReferenciaId`.
+- La etapa copia `estadioCodigo`, `nombre` y `orden` para conservar contexto historico.
+- En un mismo protocolo no debe repetirse `estadioReferenciaId`.
 
 ## ProtocoloLabor
 
@@ -447,6 +591,8 @@ Campos sugeridos:
 
 - `id`
 - `etapaId`
+- `laborReferenciaId` opcional
+- `indiceAplicacion`
 - `nombre`
 - `descripcion`
 - `unidad`
@@ -455,12 +601,23 @@ Campos sugeridos:
 - `costoPorHa`
 - `momentoEstimado`
 
+Reglas:
+
+- La labor debe seleccionarse desde un padron cuando sea posible.
+- Al seleccionar una labor, el protocolo copia `laborReferenciaId`, `nombre`, `descripcion`, `unidad` y `costoUnitario` sugerido.
+- La copia queda editable dentro del protocolo para reflejar condiciones puntuales sin modificar el padron maestro.
+- Cambios posteriores en el padron de labores no deben modificar protocolos existentes sin accion explicita.
+- `indiceAplicacion` debe ser un numero decimal entre `0` y `1`.
+- Por defecto, `indiceAplicacion = 1`.
+- El costo por hectarea se calcula como `cantidadPorHa * costoUnitario * indiceAplicacion`.
+
 ## ProtocoloInsumo
 
 Campos sugeridos:
 
 - `id`
 - `etapaId`
+- `indiceAplicacion`
 - `insumoPlanificacionId`
 - `insumoErpId`
 - `nombre`
@@ -475,8 +632,89 @@ Reglas:
 
 - `insumoPlanificacionId` es la referencia operativa principal.
 - `insumoErpId` queda opcional y existe solo si el insumo esta vinculado al ERP.
-- El precio del insumo se copia al protocolo como referencia editable.
+- Al seleccionar un insumo, el protocolo copia `insumoPlanificacionId`, `insumoErpId`, `nombre`, `tipo`, `unidad` y `precioUnitarioEstimado`.
+- La copia de dosis y precio unitario queda editable dentro del protocolo para reflejar condiciones puntuales sin modificar el padron maestro.
 - Cambios posteriores en `ErpInsumo` no modifican protocolos ni planificaciones aprobadas sin accion explicita.
+- `indiceAplicacion` debe ser un numero decimal entre `0` y `1`.
+- Por defecto, `indiceAplicacion = 1`.
+- El costo por hectarea se calcula como `dosisPorHa * precioUnitarioEstimado * indiceAplicacion`.
+
+Endpoint MVP de administracion:
+
+- `GET /insumos-planificacion`
+- `PUT /insumos-planificacion/:id`
+
+Toda alta o modificacion de `InsumoPlanificacion` debe auditarse con usuario, origen, motivo, valores previos y valores nuevos.
+
+## LaborReferencia
+
+Padron de labores para seleccionar trabajos en protocolos.
+
+Campos sugeridos:
+
+- `id`
+- `clienteId`
+- `empresaErpId` opcional
+- `servicioErpId` opcional
+- `idServicio` opcional
+- `idTipoServicio` opcional
+- `codigo`
+- `nombre`
+- `descripcionAbreviada` opcional
+- `idUnidadMedida` opcional
+- `idMoneda` opcional
+- `unidadSugerida`
+- `costoUnitarioSugerido`
+- `imputaDosis` opcional
+- `estadoVinculacion`
+- `activo`
+- `origen`: `semilla`, `provisorio` o `erp`
+- `fechaUltimaActualizacionErp` opcional
+
+Reglas:
+
+- Inicialmente puede cargarse como semilla propia de Agro App.
+- El ERP expone labores mediante `Padrones/Servicios`.
+- Una labor puede crearse en Agro App como `origen = provisorio` y `estadoVinculacion = provisorio` si aun no existe en el ERP.
+- Cuando la sincronizacion ERP encuentra un servicio similar, debe crear una sugerencia de vinculacion y notificar al usuario autorizado.
+- La vinculacion confirmada completa `servicioErpId`, `empresaErpId` y metadatos ERP, y cambia `estadoVinculacion` a `vinculado_erp`.
+- No se debe vincular automaticamente si hay ambiguedad.
+- No se deben modificar protocolos o planificaciones aprobadas/cerradas por vincular una labor al ERP.
+- El protocolo copia nombre, unidad y costo sugerido al momento de agregar la labor.
+- `unidadSugerida` se selecciona desde `ErpUnidadMedida` cuando el snapshot ERP lo tenga disponible y se guarda como codigo copiado.
+
+## ErpUnidadMedida
+
+Padron ERP consultado desde `Padrones/UnidadesMedidas`.
+
+Campos sugeridos:
+
+- `empresaErpId`
+- `erpId`
+- `idUnidadMedida`
+- `codigo`
+- `codigoSifen` opcional
+- `descripcion`
+- `activo`
+- `actualizadoEn`
+
+Reglas:
+
+- Requiere header `x-company`.
+- Respeta el parametro `NoPaginate`.
+- Alimenta selects de unidades para labores e insumos.
+- No reemplaza automaticamente unidades ya copiadas en protocolos o planificaciones cerradas.
+
+Proceso simple de vinculacion:
+
+1. El usuario crea la labor en Agro App porque todavia no esta en el ERP.
+2. La labor queda disponible inmediatamente para protocolos como provisoria.
+3. La sincronizacion consulta `Padrones/Servicios` por empresa AGRO.
+4. El backend compara por `codigo` normalizado, `nombre/descripcion` normalizados, unidad y tipo de servicio.
+5. Si hay una coincidencia confiable, crea una sugerencia de vinculacion.
+6. El usuario autorizado confirma o rechaza desde una pantalla de vinculaciones/notificaciones.
+7. Al confirmar, Agro App vincula la labor con el servicio ERP, registra auditoria y conserva los datos historicos copiados en protocolos.
+8. Al rechazar, la sugerencia queda cerrada y la labor sigue provisoria.
 
 ## Copia de protocolo a planificacion
 
@@ -494,7 +732,11 @@ Todas estas entidades deben auditar altas, modificaciones, bajas logicas, cambio
 Eventos clave:
 
 - crear zona/campo/lote/especie/actividad/insumo provisorio;
+- crear sugerencia de vinculacion ERP;
 - vincular zona/campo/lote/especie/actividad/insumo provisorio con ERP;
+- rechazar sugerencia de vinculacion ERP;
+- expirar sugerencia de vinculacion ERP;
+- crear, leer y resolver notificacion de vinculacion;
 - crear planificacion;
 - modificar linea;
 - cambiar destino sugerido;
@@ -512,5 +754,5 @@ Eventos clave:
 
 - Definir si los padrones base provisorios pueden crearse desde web solamente o tambien mobile.
 - Definir permisos especificos para vincular padrones base provisorios con ERP.
-- Definir si la vinculacion ERP puede ser sugerida automaticamente por similitud.
 - Definir pantalla de comparacion para vincular entidades provisorias.
+- Definir umbrales de puntaje para sugerencias altas, medias y bajas.

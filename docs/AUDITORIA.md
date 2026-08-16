@@ -107,10 +107,18 @@ Segunda etapa:
 - Los logs deben poder filtrarse por cliente, usuario, entidad, accion y rango de fechas.
 - La auditoria debe respetar multi-cliente: ningun cliente debe poder ver eventos de otro cliente.
 
+## Implementacion actual
+
+- La tabla Prisma se llama `AuditoriaEvento`.
+- Protocolos productivos registran auditoria al crear, actualizar y copiar.
+- Planificaciones agricolas registran auditoria al crear, actualizar, cerrar y bloquear intentos de edicion sobre planificaciones cerradas.
+- La escritura de auditoria se hace desde backend y dentro de la misma transaccion cuando acompania una operacion critica.
+- Existe helper backend compartido para registrar eventos de planificacion.
+
 ## Pendientes de implementacion
 
-- Definir tabla `AuditLog` en Prisma.
-- Agregar helper backend para registrar eventos.
 - Incorporar middleware o wrapper transaccional para rutas criticas.
 - Definir retencion de logs.
 - Definir pantalla admin de consulta de auditoria.
+- Capturar `ip`, `userAgent` y `requestId` desde middleware HTTP.
+- Extender el helper a integracion ERP, asignaciones y configuracion.

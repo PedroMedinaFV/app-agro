@@ -74,6 +74,14 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - El bloqueo de planificaciones cerradas debe validarse en backend, no solo en la interfaz.
 - Cerrar una planificacion debe requerir el permiso especifico `planificacion:cerrar` y quedar auditado.
 
+## Padrones maestros
+
+- Las pantallas de padrones maestros son administrativas y deben estar protegidas por permisos especificos.
+- El backend debe validar `clienteId` en cada alta, edicion, baja logica o vinculacion ERP.
+- Un usuario sin permiso administrativo no debe poder crear, modificar, desactivar ni vincular padrones maestros.
+- Las pantallas pueden ocultar acciones no permitidas, pero la autorizacion real debe estar en backend.
+- Toda modificacion de padrones maestros debe auditarse.
+
 ## Auditoria
 
 - Toda alta, modificacion, baja logica, cambio de estado, asignacion o aprobacion debe registrar quien hizo el cambio, cuando y sobre que entidad.

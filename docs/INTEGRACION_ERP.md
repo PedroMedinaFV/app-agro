@@ -119,6 +119,41 @@ Para campañas, `erpId` se deriva como `empresa:<idEmpresa>:campania:<idCampania
 
 El campo `esActual` se conserva porque permite sugerir una campaña por defecto en la carga de registros. El arreglo `fechasCampanias` queda fuera del contrato interno del MVP hasta definir si se usará para validar fechas operativas.
 
+### Padrones/Servicios
+
+El contrato de `Padrones/Servicios` trae servicios del ERP que Agro App usara como fuente para el padron de labores.
+
+Parametros:
+
+- header `x-company`: obligatorio, indica la empresa ERP consultada.
+- query `NoPaginate`: puede ser `true`, `false` o vacio.
+
+Campos relevantes:
+
+- `idServicio`
+- `idTipoServicio`
+- `codigo`
+- `descripcion`
+- `descripcionAbreviada`
+- `idUnidadMedida`
+- `idMoneda`
+- `precioUnitario`
+- `idMonedaPersonal`
+- `importePersonal`
+- `activo`
+- `imputaDosis`
+- `fechaUltimaActualizacion`
+
+Para servicios/labores, `erpId` se deriva como `empresa:<idEmpresa>:servicio:<idServicio>`.
+
+Reglas de sincronizacion:
+
+- Se consulta por cada empresa ERP marcada como AGRO porque el endpoint requiere `x-company`.
+- Si el mismo servicio aparece en mas de una empresa, Agro App conserva la procedencia con `empresaErpId`.
+- El servicio ERP no reemplaza automaticamente una labor creada manualmente en Agro App.
+- Si una labor provisoria coincide con un servicio ERP, el sistema debe generar una sugerencia de vinculacion para que un usuario autorizado confirme o rechace.
+- El precio ERP se usa como costo sugerido para nuevas selecciones, pero no debe modificar protocolos o planificaciones cerradas.
+
 ### Agricultura/Cultivos
 
 El contrato de `Agricultura/Cultivos` trae cultivos agrícolas por empresa ERP y es un padrón clave para futuras cargas operativas.
@@ -187,6 +222,31 @@ Campos relevantes:
 Para insumos, `erpId` se deriva como `empresa:<idEmpresa>:insumo:<idInsumo>`.
 
 El precio unitario del ERP se guarda como referencia. Cuando un insumo se use en un protocolo o planificacion, el costo debe copiarse a una version editable para evitar que cambios posteriores del ERP modifiquen supuestos historicos.
+
+### Padrones/UnidadesMedidas
+
+El contrato de `Padrones/UnidadesMedidas` trae unidades de medida por empresa ERP y requiere `x-company`.
+
+Parametros:
+
+- `NoPaginate`
+- header `x-company`
+
+Campos relevantes:
+
+- `idUnidadMedida`
+- `codigo`
+- `codigoSifen`
+- `descripcion`
+- `activo`
+- `fechaUltimaActualizacion`
+
+Uso en Agro App:
+
+- se expone en `ErpSnapshot.unidadesMedida`;
+- alimenta los selects de unidad en `Padrones > Labores` y `Padrones > Insumos`;
+- al guardar una labor o insumo propio, Agro App copia el `codigo` de la unidad en el campo operativo (`unidadSugerida` o `unidad`);
+- cambios posteriores del ERP no modifican protocolos o planificaciones historicas sin accion explicita.
 
 ### Sistema/Empresas
 
@@ -326,6 +386,8 @@ ERP_PATH_ESPECIES="Agricultura/Especies"
 ERP_PATH_CAMPANIAS="Agricultura/Campanias"
 ERP_PATH_CULTIVOS="Agricultura/Cultivos"
 ERP_PATH_INSUMOS="Padrones/Insumos"
+ERP_PATH_SERVICIOS="Padrones/Servicios"
+ERP_PATH_UNIDADES_MEDIDA="Padrones/UnidadesMedidas"
 ERP_PATH_EMPRESAS="Sistema/Empresas"
 ```
 

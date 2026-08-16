@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@agro/tipos': path.resolve(__dirname, '../../packages/tipos/src'),
+      '@agro/tipos': path.resolve(__dirname, '../../packages/tipos/src/index.ts'),
     },
   },
   server: {

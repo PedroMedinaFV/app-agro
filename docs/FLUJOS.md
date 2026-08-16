@@ -133,3 +133,24 @@ Los insumos se integran desde `Padrones/Insumos` como referencia para protocolos
 13. Mobile muestra el protocolo asociado como consulta/resumen, dejando la edicion avanzada para web.
 
 En modo demo, el backend guarda en memoria para validar UX y contratos. En persistencia real, el guardado debe ser transaccional para evitar protocolos parcialmente actualizados.
+
+## Observaciones de campo mobile-web
+
+1. El usuario operativo inicia sesion desde mobile.
+2. Backend devuelve campos y lotes asignados segun permisos y alcance.
+3. Mobile muestra los lotes en listado y, cuando exista georreferenciacion, en mapa.
+4. El usuario selecciona un lote/cultivo.
+5. Mobile permite cargar una observacion con:
+   - tipo de observacion;
+   - comentario;
+   - fotos;
+   - ubicacion GPS;
+   - fecha/hora;
+   - estado fenologico cuando aplique.
+6. Mobile envia la observacion al backend con origen `mobile`.
+7. Backend valida autenticacion, permisos y alcance sobre el lote.
+8. Backend persiste la observacion, adjuntos y auditoria.
+9. Web permite consultar la informacion generada en mobile por campo, lote, cultivo, campania, usuario, fecha y tipo.
+10. Web puede permitir correccion, clasificacion, revision o informes si el usuario tiene permisos.
+
+La captura nace naturalmente en mobile, pero la consulta, analisis y revision pueden realizarse desde web.

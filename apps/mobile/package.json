@@ -5,7 +5,7 @@
   "main": "src/App.tsx",
   "scripts": {
     "dev": "node ../../scripts/run-expo.js",
-    "build": "expo build:web"
+    "build": "expo export"
   },
   "dependencies": {
     "@agro/tipos": "workspace:*",
