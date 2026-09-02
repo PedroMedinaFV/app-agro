@@ -1,9 +1,81 @@
 import { randomUUID } from 'node:crypto';
+import type { ErpEmpresa } from '@agro/tipos';
 import { prisma } from '../../prisma';
-import { obtenerSnapshotErp } from './clienteErp';
+import { obtenerEmpresasSistemaErp, obtenerSnapshotErp } from './clienteErp';
+
+type ErpEmpresaRow = {
+  erpId: string;
+  idEmpresa: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  cuit: string | null;
+  razonSocial: string | null;
+  email: string | null;
+  actualizadoEn: Date;
+};
+
+function mapearEmpresaRow(row: ErpEmpresaRow): ErpEmpresa {
+  return {
+    erpId: row.erpId,
+    idEmpresa: row.idEmpresa,
+    codigo: row.codigo,
+    nombre: row.nombre,
+    activo: row.activo,
+    cuit: row.cuit || undefined,
+    razonSocial: row.razonSocial || undefined,
+    email: row.email || undefined,
+    actualizadoEn: row.actualizadoEn.toISOString(),
+  };
+}
+
+export async function listarEmpresasErpImportadas() {
+  const rows = await prisma.$queryRaw<ErpEmpresaRow[]>`
+    SELECT "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn"
+    FROM "ErpEmpresa"
+    ORDER BY "idEmpresa" ASC
+  `;
+
+  return rows.map(mapearEmpresaRow);
+}
+
+async function guardarEmpresasErp(empresas: Awaited<ReturnType<typeof obtenerEmpresasSistemaErp>>) {
+  for (const empresa of empresas) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpEmpresa" ("id", "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn")
+      VALUES (${randomUUID()}, ${empresa.erpId}, ${empresa.idEmpresa}, ${empresa.codigo}, ${empresa.nombre}, ${empresa.activo}, ${empresa.cuit ?? null}, ${empresa.razonSocial ?? null}, ${empresa.email ?? null}, ${new Date(empresa.actualizadoEn)})
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "idEmpresa" = EXCLUDED."idEmpresa",
+        "codigo" = EXCLUDED."codigo",
+        "nombre" = EXCLUDED."nombre",
+        "activo" = EXCLUDED."activo",
+        "cuit" = EXCLUDED."cuit",
+        "razonSocial" = EXCLUDED."razonSocial",
+        "email" = EXCLUDED."email",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
+  return empresas.length;
+}
+
+export async function sincronizarEmpresasErp(clienteId?: string) {
+  const empresas = await obtenerEmpresasSistemaErp(clienteId);
+  const cantidad = await guardarEmpresasErp(empresas);
+
+  return {
+    empresas: cantidad,
+    importadas: await listarEmpresasErpImportadas(),
+    sincronizadoEn: new Date().toISOString(),
+  };
+}
 
 export async function sincronizarSnapshotErp(clienteId?: string) {
   const snapshot = await obtenerSnapshotErp(clienteId);
+  const camposImportables = new Set(snapshot.campos.map((campo) => campo.erpId));
+  const lotesConCampo = snapshot.lotes.filter((lote) => camposImportables.has(lote.campoErpId));
+  const lotesOmitidosPorCampo = snapshot.lotes.length - lotesConCampo.length;
 
   for (const zona of snapshot.zonas) {
     await prisma.$executeRaw`
@@ -48,7 +120,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     `;
   }
 
-  for (const lote of snapshot.lotes) {
+  for (const lote of lotesConCampo) {
     await prisma.$executeRaw`
       INSERT INTO "ErpLote" (
         "id", "empresaErpId", "erpId", "idLote", "idCampo", "campoErpId", "codigo", "nombre", "cultivoCodigo", "cultivoNombre",
@@ -113,22 +185,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     `;
   }
 
-  for (const empresa of snapshot.empresas) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpEmpresa" ("id", "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn")
-      VALUES (${randomUUID()}, ${empresa.erpId}, ${empresa.idEmpresa}, ${empresa.codigo}, ${empresa.nombre}, ${empresa.activo}, ${empresa.cuit ?? null}, ${empresa.razonSocial ?? null}, ${empresa.email ?? null}, ${new Date(empresa.actualizadoEn)})
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "idEmpresa" = EXCLUDED."idEmpresa",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "activo" = EXCLUDED."activo",
-        "cuit" = EXCLUDED."cuit",
-        "razonSocial" = EXCLUDED."razonSocial",
-        "email" = EXCLUDED."email",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await guardarEmpresasErp(snapshot.empresas);
 
   for (const campania of snapshot.campanias) {
     await prisma.$executeRaw`
@@ -230,16 +287,82 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     `;
   }
 
+  for (const servicio of snapshot.servicios) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpServicio" (
+        "id", "empresaErpId", "erpId", "idServicio", "idTipoServicio", "codigo", "descripcion",
+        "descripcionAbreviada", "idUnidadMedida", "idMoneda", "precioUnitario",
+        "idMonedaPersonal", "importePersonal", "activo", "imputaDosis", "actualizadoEn"
+      )
+      VALUES (
+        ${randomUUID()}, ${servicio.empresaErpId}, ${servicio.erpId}, ${servicio.idServicio}, ${servicio.idTipoServicio ?? null}, ${servicio.codigo}, ${servicio.descripcion},
+        ${servicio.descripcionAbreviada ?? null}, ${servicio.idUnidadMedida ?? null}, ${servicio.idMoneda ?? null}, ${servicio.precioUnitario ?? null},
+        ${servicio.idMonedaPersonal ?? null}, ${servicio.importePersonal ?? null}, ${servicio.activo}, ${servicio.imputaDosis}, ${new Date(servicio.actualizadoEn)}
+      )
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "empresaErpId" = EXCLUDED."empresaErpId",
+        "idServicio" = EXCLUDED."idServicio",
+        "idTipoServicio" = EXCLUDED."idTipoServicio",
+        "codigo" = EXCLUDED."codigo",
+        "descripcion" = EXCLUDED."descripcion",
+        "descripcionAbreviada" = EXCLUDED."descripcionAbreviada",
+        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
+        "idMoneda" = EXCLUDED."idMoneda",
+        "precioUnitario" = EXCLUDED."precioUnitario",
+        "idMonedaPersonal" = EXCLUDED."idMonedaPersonal",
+        "importePersonal" = EXCLUDED."importePersonal",
+        "activo" = EXCLUDED."activo",
+        "imputaDosis" = EXCLUDED."imputaDosis",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
+  for (const unidad of snapshot.unidadesMedida) {
+    await prisma.$executeRaw`
+      INSERT INTO "ErpUnidadMedida" (
+        "id", "empresaErpId", "erpId", "idUnidadMedida", "codigo", "codigoSifen",
+        "descripcion", "activo", "actualizadoEn"
+      )
+      VALUES (
+        ${randomUUID()}, ${unidad.empresaErpId}, ${unidad.erpId}, ${unidad.idUnidadMedida}, ${unidad.codigo}, ${unidad.codigoSifen ?? null},
+        ${unidad.descripcion}, ${unidad.activo}, ${new Date(unidad.actualizadoEn)}
+      )
+      ON CONFLICT ("erpId") DO UPDATE SET
+        "empresaErpId" = EXCLUDED."empresaErpId",
+        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
+        "codigo" = EXCLUDED."codigo",
+        "codigoSifen" = EXCLUDED."codigoSifen",
+        "descripcion" = EXCLUDED."descripcion",
+        "activo" = EXCLUDED."activo",
+        "actualizadoEn" = EXCLUDED."actualizadoEn",
+        "importadoEn" = CURRENT_TIMESTAMP
+    `;
+  }
+
+  if (clienteId) {
+    await prisma.$executeRaw`
+      UPDATE "IntegracionErp"
+      SET "ultimoSyncEn" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "clienteId" = ${clienteId}
+    `;
+  }
+
   return {
     campos: snapshot.campos.length,
     zonas: snapshot.zonas.length,
-    lotes: snapshot.lotes.length,
+    lotes: lotesConCampo.length,
     actividades: snapshot.actividades.length,
     especies: snapshot.especies.length,
     empresas: snapshot.empresas.length,
     campanias: snapshot.campanias.length,
     cultivos: snapshot.cultivos.length,
     insumos: snapshot.insumos.length,
+    servicios: snapshot.servicios.length,
+    unidadesMedida: snapshot.unidadesMedida.length,
+    omitidos: {
+      lotesSinCampo: lotesOmitidosPorCampo,
+    },
     sincronizadoEn: snapshot.sincronizadoEn,
   };
 }

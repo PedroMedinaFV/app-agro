@@ -349,7 +349,7 @@ export type ErpSnapshot = {
   sincronizadoEn: string;
 };
 
-export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic';
+export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic' | 'login';
 
 export type Cliente = {
   id: string;
@@ -361,6 +361,7 @@ export type IntegracionErpPublica = {
   id: string;
   clienteId: string;
   baseUrl?: string;
+  authBaseUrl?: string;
   authMode: ErpAuthMode;
   apiKeyHeader: string;
   timeoutMs: number;
@@ -368,6 +369,7 @@ export type IntegracionErpPublica = {
   apiKeyConfigurada: boolean;
   bearerTokenConfigurado: boolean;
   basicConfigurado: boolean;
+  loginConfigurado: boolean;
   ultimoTestOk?: boolean;
   ultimoTestEn?: string;
   ultimoSyncEn?: string;
@@ -383,6 +385,10 @@ export type IntegracionErpInput = {
   bearerToken?: string;
   username?: string;
   password?: string;
+  loginKey?: string;
+  loginPassword?: string;
+  loginApp?: string;
+  loginInstallation?: string;
   timeoutMs?: number;
   activo?: boolean;
 };

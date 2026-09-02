@@ -20,9 +20,7 @@ function cargarEnvRaiz() {
     const clave = match[1];
     const valor = (match[2] || '').replace(/^["']|["']$/g, '');
 
-    if (!process.env[clave]) {
-      process.env[clave] = valor;
-    }
+    process.env[clave] = valor;
   }
 }
 

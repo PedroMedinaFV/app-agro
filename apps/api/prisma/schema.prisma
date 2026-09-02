@@ -406,6 +406,52 @@ model ErpInsumo {
   @@index([activo])
 }
 
+model ErpServicio {
+  id                    String    @id @default(uuid())
+  empresaErpId          String
+  erpId                 String    @unique
+  idServicio            Int
+  idTipoServicio        Int?
+  codigo                String
+  descripcion           String
+  descripcionAbreviada  String?
+  idUnidadMedida        Int?
+  idMoneda              Int?
+  precioUnitario        Float?
+  idMonedaPersonal      Int?
+  importePersonal       Float?
+  activo                Boolean
+  imputaDosis           Boolean
+  actualizadoEn         DateTime
+  importadoEn           DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idServicio])
+  @@index([codigo])
+  @@index([descripcion])
+  @@index([idTipoServicio])
+  @@index([idUnidadMedida])
+  @@index([activo])
+}
+
+model ErpUnidadMedida {
+  id                    String    @id @default(uuid())
+  empresaErpId          String
+  erpId                 String    @unique
+  idUnidadMedida        Int
+  codigo                String
+  codigoSifen           String?
+  descripcion           String
+  activo                Boolean
+  actualizadoEn         DateTime
+  importadoEn           DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idUnidadMedida])
+  @@index([codigo])
+  @@index([activo])
+}
+
 model ClienteEmpresaErp {
   id           String    @id @default(uuid())
   cliente      Cliente   @relation(fields: [clienteId], references: [id])

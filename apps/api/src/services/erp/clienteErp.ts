@@ -28,13 +28,24 @@ import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
 import { obtenerSnapshotErpMock } from './mockErp';
 import { listarEmpresasErpCliente } from './empresasCliente';
 
-function crearHeadersAutenticacion(configuracion: ConfiguracionErp): Record<string, string> {
+let tokenLoginCache: { clave: string; token: string; expiraEn: number } | null = null;
+
+function crearHeadersConToken(configuracion: ConfiguracionErp, token: string): Record<string, string> {
+  const valor = configuracion.tokenPrefix ? `${configuracion.tokenPrefix} ${token}` : token;
+  return { [configuracion.tokenHeader]: valor };
+}
+
+function crearHeadersAutenticacion(configuracion: ConfiguracionErp, tokenLogin?: string): Record<string, string> {
   if (configuracion.authMode === 'apiKey') {
     return { [configuracion.apiKeyHeader]: configuracion.apiKey || '' };
   }
 
-  if (configuracion.authMode === 'bearer') {
+  if (configuracion.authMode === 'bearer' && configuracion.bearerToken) {
     return { Authorization: `Bearer ${configuracion.bearerToken}` };
+  }
+
+  if (configuracion.authMode === 'login' && tokenLogin) {
+    return crearHeadersConToken(configuracion, tokenLogin);
   }
 
   if (configuracion.authMode === 'basic') {
@@ -63,6 +74,20 @@ async function fetchConTimeout(url: string, init: RequestInit, timeoutMs: number
   }
 }
 
+async function leerErrorSeguro(respuesta: Response) {
+  const texto = await respuesta.text().catch(() => '');
+
+  if (!texto) {
+    return '';
+  }
+
+  return texto
+    .replace(/"token"\s*:\s*"[^"]+"/gi, '"token":"<redactado>"')
+    .replace(/"refreshToken"\s*:\s*"[^"]+"/gi, '"refreshToken":"<redactado>"')
+    .replace(/"password"\s*:\s*"[^"]+"/gi, '"password":"<redactado>"')
+    .slice(0, 500);
+}
+
 function construirUrl(baseUrl: string, path: string) {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
 }
@@ -77,19 +102,98 @@ function construirUrlConQuery(baseUrl: string, path: string, query?: Record<stri
   return url.toString();
 }
 
+function extraerTokenLogin(body: unknown): { token?: string; expiraEn?: number } {
+  if (!body || typeof body !== 'object') {
+    return {};
+  }
+
+  const registro = body as Record<string, unknown>;
+  const data = registro.data as Record<string, unknown> | undefined;
+  const candidatos = [
+    registro.token,
+    registro.accessToken,
+    registro.access_token,
+    registro.jwt,
+    data?.token,
+    data?.accessToken,
+    data?.access_token,
+  ];
+  const expirationTime = data?.expirationTime || registro.expirationTime || data?.expiresAt || registro.expiresAt;
+  const expiraEn = typeof expirationTime === 'string' ? new Date(expirationTime).getTime() : undefined;
+
+  return {
+    token: candidatos.find((valor): valor is string => typeof valor === 'string' && valor.length > 0),
+    expiraEn: expiraEn && Number.isFinite(expiraEn) ? expiraEn : undefined,
+  };
+}
+
+async function obtenerTokenLogin(configuracion: ConfiguracionErp) {
+  if (configuracion.authMode !== 'login') {
+    return undefined;
+  }
+
+  validarConfiguracionErp(configuracion);
+
+  const claveCache = [
+    configuracion.authBaseUrl,
+    configuracion.loginKey,
+    configuracion.loginApp,
+    configuracion.loginInstallation,
+  ].join('|');
+
+  if (tokenLoginCache?.clave === claveCache && Date.now() < tokenLoginCache.expiraEn - 60 * 1000) {
+    return tokenLoginCache.token;
+  }
+
+  const respuesta = await fetchConTimeout(construirUrl(configuracion.authBaseUrl as string, configuracion.pathLogin), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      key: configuracion.loginKey,
+      password: configuracion.loginPassword,
+      app: configuracion.loginApp,
+      installation: configuracion.loginInstallation,
+    }),
+  }, configuracion.timeoutMs);
+
+  if (!respuesta.ok) {
+    const detalle = await leerErrorSeguro(respuesta);
+    throw new Error(`ERP respondio ${respuesta.status} al autenticar en ${configuracion.pathLogin}.${detalle ? ` Detalle: ${detalle}` : ''}`);
+  }
+
+  const body = await respuesta.json();
+  const { token, expiraEn } = extraerTokenLogin(body);
+
+  if (!token) {
+    throw new Error('El login del ERP respondio OK pero no se encontro un token en la respuesta.');
+  }
+
+  tokenLoginCache = {
+    clave: claveCache,
+    token,
+    expiraEn: expiraEn || Date.now() + 10 * 60 * 1000,
+  };
+  return token;
+}
+
 async function getErp<T>(configuracion: ConfiguracionErp, path: string): Promise<T> {
   validarConfiguracionErp(configuracion);
+  const tokenLogin = await obtenerTokenLogin(configuracion);
 
   const respuesta = await fetchConTimeout(construirUrl(configuracion.baseUrl as string, path), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
-      ...crearHeadersAutenticacion(configuracion),
+      ...crearHeadersAutenticacion(configuracion, tokenLogin),
     },
   }, configuracion.timeoutMs);
 
   if (!respuesta.ok) {
-    throw new Error(`ERP respondio ${respuesta.status} al consultar ${path}.`);
+    const detalle = await leerErrorSeguro(respuesta);
+    throw new Error(`ERP respondio ${respuesta.status} al consultar ${path}.${detalle ? ` Detalle: ${detalle}` : ''}`);
   }
 
   return respuesta.json() as Promise<T>;
@@ -102,18 +206,20 @@ async function getErpConQuery<T>(
   empresaErpId?: string,
 ): Promise<T> {
   validarConfiguracionErp(configuracion);
+  const tokenLogin = await obtenerTokenLogin(configuracion);
 
   const respuesta = await fetchConTimeout(construirUrlConQuery(configuracion.baseUrl as string, path, query), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
-      ...crearHeadersAutenticacion(configuracion),
+      ...crearHeadersAutenticacion(configuracion, tokenLogin),
       ...(empresaErpId ? { 'x-company': obtenerIdEmpresaHeader(empresaErpId) } : {}),
     },
   }, configuracion.timeoutMs);
 
   if (!respuesta.ok) {
-    throw new Error(`ERP respondio ${respuesta.status} al consultar ${path}.`);
+    const detalle = await leerErrorSeguro(respuesta);
+    throw new Error(`ERP respondio ${respuesta.status} al consultar ${path}.${detalle ? ` Detalle: ${detalle}` : ''}`);
   }
 
   return respuesta.json() as Promise<T>;

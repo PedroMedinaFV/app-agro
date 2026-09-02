@@ -57,6 +57,7 @@ router.get('/configuracion', (req, res) => {
     apiKeyConfigurada: Boolean(configuracion.apiKey),
     bearerTokenConfigurado: Boolean(configuracion.bearerToken),
     basicConfigurado: Boolean(configuracion.username && configuracion.password),
+    loginConfigurado: Boolean(configuracion.loginKey && configuracion.loginPassword && configuracion.loginApp && configuracion.loginInstallation),
     timeoutMs: configuracion.timeoutMs,
   });
 });

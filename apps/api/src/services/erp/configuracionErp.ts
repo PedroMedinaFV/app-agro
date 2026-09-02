@@ -3,17 +3,24 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '../../prisma';
 import { cifrarSecreto, descifrarSecreto } from '../seguridad/cifradoSecretos';
 
-export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic';
+export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic' | 'login';
 
 export type ConfiguracionErp = {
   clienteId?: string;
   baseUrl?: string;
+  authBaseUrl?: string;
   authMode: ErpAuthMode;
   apiKey?: string;
   apiKeyHeader: string;
   bearerToken?: string;
   username?: string;
   password?: string;
+  loginKey?: string;
+  loginPassword?: string;
+  loginApp?: string;
+  loginInstallation?: string;
+  tokenHeader: string;
+  tokenPrefix: string;
   timeoutMs: number;
   pageSize: number;
   noPaginate: boolean;
@@ -28,6 +35,7 @@ export type ConfiguracionErp = {
   pathServicios: string;
   pathUnidadesMedida: string;
   pathEmpresas: string;
+  pathLogin: string;
 };
 
 type IntegracionErpRow = {
@@ -49,7 +57,7 @@ type IntegracionErpRow = {
 };
 
 function leerAuthMode(valor?: string): ErpAuthMode {
-  if (valor === 'apiKey' || valor === 'bearer' || valor === 'basic') {
+  if (valor === 'apiKey' || valor === 'bearer' || valor === 'basic' || valor === 'login') {
     return valor;
   }
 
@@ -59,12 +67,19 @@ function leerAuthMode(valor?: string): ErpAuthMode {
 export function obtenerConfiguracionErp(): ConfiguracionErp {
   return {
     baseUrl: process.env.ERP_BASE_URL || undefined,
+    authBaseUrl: process.env.ERP_AUTH_BASE_URL || process.env.ERP_BASE_URL || undefined,
     authMode: leerAuthMode(process.env.ERP_AUTH_MODE),
     apiKey: process.env.ERP_API_KEY || undefined,
     apiKeyHeader: process.env.ERP_API_KEY_HEADER || 'x-api-key',
     bearerToken: process.env.ERP_BEARER_TOKEN || undefined,
     username: process.env.ERP_USERNAME || undefined,
     password: process.env.ERP_PASSWORD || undefined,
+    loginKey: process.env.ERP_LOGIN_KEY || undefined,
+    loginPassword: process.env.ERP_LOGIN_PASSWORD || undefined,
+    loginApp: process.env.ERP_LOGIN_APP || undefined,
+    loginInstallation: process.env.ERP_LOGIN_INSTALLATION || undefined,
+    tokenHeader: process.env.ERP_TOKEN_HEADER || 'Authorization',
+    tokenPrefix: process.env.ERP_TOKEN_PREFIX ?? 'Bearer',
     timeoutMs: Number(process.env.ERP_TIMEOUT_MS || 15000),
     pageSize: Number(process.env.ERP_PAGE_SIZE || 500),
     noPaginate: process.env.ERP_NO_PAGINATE === 'true',
@@ -79,6 +94,7 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
+    pathLogin: process.env.ERP_PATH_LOGIN || 'auth/login',
   };
 }
 
@@ -87,6 +103,7 @@ function mapearRowAPublica(row: IntegracionErpRow): IntegracionErpPublica {
     id: row.id,
     clienteId: row.clienteId,
     baseUrl: row.baseUrl || undefined,
+    authBaseUrl: process.env.ERP_AUTH_BASE_URL || row.baseUrl || undefined,
     authMode: leerAuthMode(row.authMode),
     apiKeyHeader: row.apiKeyHeader,
     timeoutMs: row.timeoutMs,
@@ -94,6 +111,7 @@ function mapearRowAPublica(row: IntegracionErpRow): IntegracionErpPublica {
     apiKeyConfigurada: Boolean(row.apiKeyCifrada),
     bearerTokenConfigurado: Boolean(row.bearerTokenCifrado),
     basicConfigurado: Boolean(row.usernameCifrado && row.passwordCifrada),
+    loginConfigurado: leerAuthMode(row.authMode) === 'login' && Boolean(row.usernameCifrado && row.passwordCifrada),
     ultimoTestOk: row.ultimoTestOk ?? undefined,
     ultimoTestEn: row.ultimoTestEn?.toISOString(),
     ultimoSyncEn: row.ultimoSyncEn?.toISOString(),
@@ -111,6 +129,12 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     bearerToken: descifrarSecreto(row.bearerTokenCifrado),
     username: descifrarSecreto(row.usernameCifrado),
     password: descifrarSecreto(row.passwordCifrada),
+    loginKey: descifrarSecreto(row.usernameCifrado),
+    loginPassword: descifrarSecreto(row.passwordCifrada),
+    loginApp: process.env.ERP_LOGIN_APP || undefined,
+    loginInstallation: process.env.ERP_LOGIN_INSTALLATION || undefined,
+    tokenHeader: process.env.ERP_TOKEN_HEADER || 'Authorization',
+    tokenPrefix: process.env.ERP_TOKEN_PREFIX ?? 'Bearer',
     timeoutMs: row.timeoutMs,
     pageSize: Number(process.env.ERP_PAGE_SIZE || 500),
     noPaginate: process.env.ERP_NO_PAGINATE === 'true',
@@ -125,6 +149,7 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
+    pathLogin: process.env.ERP_PATH_LOGIN || 'auth/Login',
   };
 }
 
@@ -152,6 +177,8 @@ export async function guardarIntegracionErp(input: IntegracionErpInput, configur
   const existente = await obtenerIntegracionErpPublica(input.clienteId);
   const id = existente?.id || randomUUID();
   const authMode = input.authMode || 'mock';
+  const username = authMode === 'login' ? input.loginKey : input.username;
+  const password = authMode === 'login' ? input.loginPassword : input.password;
   const apiKeyHeader = input.apiKeyHeader || 'x-api-key';
   const timeoutMs = input.timeoutMs || 15000;
   const activo = input.activo ?? true;
@@ -164,7 +191,7 @@ export async function guardarIntegracionErp(input: IntegracionErpInput, configur
     )
     VALUES (
       ${id}, ${input.clienteId}, ${input.baseUrl || null}, ${authMode}, ${apiKeyHeader}, ${cifrarSecreto(input.apiKey)},
-      ${cifrarSecreto(input.bearerToken)}, ${cifrarSecreto(input.username)}, ${cifrarSecreto(input.password)}, ${timeoutMs},
+      ${cifrarSecreto(input.bearerToken)}, ${cifrarSecreto(username)}, ${cifrarSecreto(password)}, ${timeoutMs},
       ${activo}, ${configuradoPor || null}, CURRENT_TIMESTAMP
     )
     ON CONFLICT ("clienteId") DO UPDATE SET
@@ -203,5 +230,13 @@ export function validarConfiguracionErp(configuracion = obtenerConfiguracionErp(
 
   if (configuracion.authMode === 'basic' && (!configuracion.username || !configuracion.password)) {
     throw new Error('Faltan ERP_USERNAME y ERP_PASSWORD para autenticar contra el ERP.');
+  }
+
+  if (configuracion.authMode === 'login' && (!configuracion.loginKey || !configuracion.loginPassword || !configuracion.loginApp || !configuracion.loginInstallation)) {
+    throw new Error('Faltan ERP_LOGIN_KEY, ERP_LOGIN_PASSWORD, ERP_LOGIN_APP o ERP_LOGIN_INSTALLATION para autenticar contra el ERP.');
+  }
+
+  if (configuracion.authMode === 'login' && !configuracion.authBaseUrl) {
+    throw new Error('Falta ERP_AUTH_BASE_URL para autenticar contra el ERP.');
   }
 }

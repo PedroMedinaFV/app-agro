@@ -302,6 +302,8 @@ Se agregan tablas separadas:
 - `ErpCampania`
 - `ErpCultivo`
 - `ErpInsumo`
+- `ErpServicio`
+- `ErpUnidadMedida`
 
 Estas tablas guardan una copia importada del ERP. Estan separadas de `Campo`, `Lote` y modelos operativos porque representan datos maestros externos, no datos propios generados por Agro App.
 
@@ -315,7 +317,68 @@ Tambien se agregan tablas de configuracion por cliente:
 - `POST /erp/sincronizar`: toma el mock y lo persiste en las tablas `Erp*`.
 - `GET /erp/configuracion`: devuelve estado de configuracion sin exponer secretos.
 
-`POST /erp/sincronizar` requiere PostgreSQL disponible. `GET /erp/snapshot` funciona sin base de datos y permite avanzar en front.
+`POST /erp/sincronizar` requiere PostgreSQL disponible. Cuando `ERP_AUTH_MODE` no es `mock`, consulta el ERP real y guarda/actualiza la copia local en tablas `Erp*`.
+
+La respuesta de sincronizacion devuelve cantidades importadas por padron para validar rapido el resultado.
+
+Si un registro dependiente llega sin su dato padre en la misma sincronizacion, no debe bloquear toda la corrida. Por ejemplo, si un lote referencia un campo que no vino en `Padrones/Campos`, el lote se omite y se informa en `omitidos.lotesSinCampo`. Esto evita guardar relaciones inconsistentes y permite revisar diferencias entre padrones del ERP.
+
+## Sincronizacion desde terminal
+
+Para validar solamente la conexion con el ERP, sin guardar datos:
+
+```powershell
+pnpm --filter agro-app-api erp:test
+```
+
+Este comando consulta `Sistema/Empresas` y muestra estado de configuracion, cantidad de empresas y una muestra de los primeros registros. No imprime API keys, tokens ni passwords.
+
+Para traer y guardar solamente las empresas reales del ERP:
+
+```powershell
+pnpm --filter agro-app-api erp:sync:empresas
+```
+
+Este paso hace `GET Sistema/Empresas`, persiste los registros en `ErpEmpresa` usando `erpId` como clave de upsert y no sincroniza todavia campos, lotes ni padrones dependientes. Es el primer paso recomendado antes de que un administrador marque que empresas pertenecen a AGRO.
+
+La pantalla administrativa de empresas lee desde `ErpEmpresa`, no desde el ERP en vivo. Esto hace que el flujo sea predecible: primero se importa el padron, luego el administrador marca las empresas AGRO sobre los datos ya guardados.
+
+En modo demo, el seed crea el tenant `cliente-demo` y asocia el usuario demo a ese cliente. Esto permite guardar la seleccion de empresas AGRO en `ClienteEmpresaErp` respetando las claves foraneas de la base.
+
+Para verificar lo importado en base:
+
+```powershell
+pnpm --filter agro-app-api erp:list:empresas
+```
+
+Desde API, la misma accion queda disponible para administradores en:
+
+```http
+POST /admin/empresas-erp/:clienteId/importar
+```
+
+Para pruebas controladas se puede ejecutar la sincronizacion sin levantar la web:
+
+```powershell
+pnpm --filter agro-app-api erp:sync
+```
+
+Si se quiere sincronizar usando la configuracion de un cliente/tenant especifico:
+
+```powershell
+pnpm --filter agro-app-api erp:sync -- --clienteId=<clienteId>
+```
+
+El comando usa la misma logica que `POST /erp/sincronizar`:
+
+- con `ERP_AUTH_MODE=mock`, importa datos demo y sirve para validar la base;
+- con `ERP_AUTH_MODE=apiKey`, `bearer`, `basic` o `login`, llama al ERP real;
+- con `clienteId`, resuelve la configuracion de `IntegracionErp` y sincroniza solo las empresas marcadas como AGRO en `ClienteEmpresaErp`;
+- sin `clienteId`, usa la configuracion global de `.env`.
+
+Los secretos deben cargarse en `.env` o en `IntegracionErp`; nunca se imprimen en consola.
+
+En desarrollo local, el backend carga el `.env` de la raiz del proyecto y esos valores prevalecen sobre variables viejas que puedan quedar en la terminal. Esto evita probar por error contra `ERP_AUTH_MODE=mock` cuando el archivo local ya fue configurado para el ERP real.
 
 ## Cliente HTTP real
 
@@ -329,6 +392,8 @@ Cuando `ERP_AUTH_MODE` no es `mock`, `clienteErp.ts` consulta endpoints reales d
 - `Agricultura/Campanias`
 - `Agricultura/Cultivos`
 - `Padrones/Insumos`
+- `Padrones/Servicios`
+- `Padrones/UnidadesMedidas`
 - `Sistema/Empresas`
 
 Luego mapea cada respuesta al contrato interno:
@@ -341,6 +406,8 @@ Luego mapea cada respuesta al contrato interno:
 - `mapearRespuestaAgriculturaCampanias`
 - `mapearRespuestaAgriculturaCultivos`
 - `mapearRespuestaPadronesInsumos`
+- `mapearRespuestaPadronesServicios`
+- `mapearRespuestaPadronesUnidadesMedida`
 - `mapearRespuestaSistemaEmpresas`
 
 El mock queda disponible solo para desarrollo local.
@@ -369,12 +436,19 @@ Variables disponibles:
 
 ```env
 ERP_BASE_URL=""
+ERP_AUTH_BASE_URL=""
 ERP_AUTH_MODE="mock"
 ERP_API_KEY=""
 ERP_API_KEY_HEADER="x-api-key"
 ERP_BEARER_TOKEN=""
 ERP_USERNAME=""
 ERP_PASSWORD=""
+ERP_LOGIN_KEY=""
+ERP_LOGIN_PASSWORD=""
+ERP_LOGIN_APP=""
+ERP_LOGIN_INSTALLATION=""
+ERP_TOKEN_HEADER="Authorization"
+ERP_TOKEN_PREFIX="Bearer"
 ERP_TIMEOUT_MS=15000
 ERP_PAGE_SIZE=500
 ERP_NO_PAGINATE=false
@@ -389,6 +463,7 @@ ERP_PATH_INSUMOS="Padrones/Insumos"
 ERP_PATH_SERVICIOS="Padrones/Servicios"
 ERP_PATH_UNIDADES_MEDIDA="Padrones/UnidadesMedidas"
 ERP_PATH_EMPRESAS="Sistema/Empresas"
+ERP_PATH_LOGIN="auth/Login"
 ```
 
 Modos de autenticacion soportados:
@@ -397,6 +472,35 @@ Modos de autenticacion soportados:
 - `apiKey`: envia `ERP_API_KEY` en el header definido por `ERP_API_KEY_HEADER`.
 - `bearer`: envia `Authorization: Bearer <ERP_BEARER_TOKEN>`.
 - `basic`: envia `Authorization: Basic` usando `ERP_USERNAME` y `ERP_PASSWORD`.
+- `login`: primero hace `POST auth/Login` contra `ERP_AUTH_BASE_URL` con `key`, `password`, `app` e `installation`; luego envia el token recibido a `ERP_BASE_URL` en el header configurado por `ERP_TOKEN_HEADER` y `ERP_TOKEN_PREFIX`.
+
+Para `login`, el body enviado al ERP es:
+
+```json
+{
+  "key": "<ERP_LOGIN_KEY>",
+  "password": "<ERP_LOGIN_PASSWORD>",
+  "app": "<ERP_LOGIN_APP>",
+  "installation": "<ERP_LOGIN_INSTALLATION>"
+}
+```
+
+El token se mantiene en memoria por pocos minutos para no autenticar en cada endpoint durante una misma sincronizacion. No se guarda en base de datos ni se imprime en logs.
+
+La respuesta esperada del login puede venir, por ejemplo, con esta forma:
+
+```json
+{
+  "succeeded": true,
+  "data": {
+    "token": "...",
+    "refreshToken": "...",
+    "expirationTime": "2026-09-02T23:12:29.9098452+00:00"
+  }
+}
+```
+
+Agro App usa `data.token` para autenticar los GET posteriores y toma `data.expirationTime` para renovar el token cuando corresponda. El `refreshToken` no se persiste ni se usa en el MVP.
 
 El endpoint `GET /erp/configuracion` sirve para verificar que las variables estan cargadas sin devolver valores sensibles.
 

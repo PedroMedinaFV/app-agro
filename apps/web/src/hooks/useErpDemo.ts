@@ -22,18 +22,22 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
       try {
         const datosErp = await obtenerSnapshotErp(sesion.token);
         setSnapshot(datosErp);
-        setEmpresasDisponibles(datosErp.empresas);
-        setEmpresasSeleccionadas((actuales) => actuales.length ? actuales : datosErp.empresas.slice(0, 1).map((empresa) => empresa.erpId));
+        if (!puedeConfigurarErp) {
+          setEmpresasDisponibles(datosErp.empresas);
+          setEmpresasSeleccionadas((actuales) => actuales.length ? actuales : datosErp.empresas.slice(0, 1).map((empresa) => empresa.erpId));
+        }
         setErpEstado('Datos ERP desde API mock');
       } catch (error) {
         setSnapshot(snapshotFallback);
-        setEmpresasDisponibles(snapshotFallback.empresas);
+        if (!puedeConfigurarErp) {
+          setEmpresasDisponibles(snapshotFallback.empresas);
+        }
         setErpEstado('API ERP no disponible. Usando mock local.');
       }
     }
 
     cargarDatosErp();
-  }, [sesion]);
+  }, [sesion, puedeConfigurarErp]);
 
   useEffect(() => {
     async function cargarEmpresasAdmin() {
@@ -80,11 +84,12 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
         mensaje: 'La seleccion AGRO fue persistida en backend.',
       });
     } catch (error) {
-      setEstadoEmpresas('Seleccion guardada localmente para esta demo. Falta PostgreSQL para persistir.');
+      const mensaje = error instanceof Error ? error.message : 'No se pudo guardar la seleccion.';
+      setEstadoEmpresas(`No se pudo guardar la seleccion: ${mensaje}`);
       notificar?.({
-        tipo: 'info',
-        titulo: 'Seleccion local',
-        mensaje: 'No hay base disponible. La seleccion queda solo para validar la demo.',
+        tipo: 'error',
+        titulo: 'No se guardo la seleccion',
+        mensaje,
       });
     } finally {
       setGuardandoEmpresas(false);

@@ -60,7 +60,7 @@ router.post('/registro', async (req, res) => {
   res.status(201).json({
     mensaje: 'Usuario creado',
     token,
-    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario' },
+    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
     origen: 'email',
     permisos: obtenerPermisosRol(usuario.rol),
   });
@@ -88,7 +88,7 @@ router.post('/login', async (req, res) => {
   res.json({
     mensaje: 'Login correcto',
     token,
-    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario' },
+    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
     origen: 'email',
     permisos: obtenerPermisosRol(usuario.rol),
   });
@@ -122,7 +122,7 @@ router.post('/microsoft', async (req, res, next) => {
     res.json({
       mensaje: 'Login Microsoft correcto',
       token,
-      usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario' },
+      usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
       origen: 'microsoft',
       permisos: obtenerPermisosRol(usuario.rol),
     });
