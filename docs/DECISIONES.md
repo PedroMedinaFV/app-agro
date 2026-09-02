@@ -56,6 +56,16 @@ Los IDs internos importados incluyen la empresa, por ejemplo `empresa:1:campo:24
 
 La seguridad no se trata como mejora posterior. Toda funcionalidad administrativa debe validar autenticacion, permisos, no exponer secretos y dejar preparada la trazabilidad de cambios sensibles.
 
+## Supabase como base remota de pruebas
+
+Se usara Supabase PostgreSQL para comenzar pruebas reales de persistencia sin depender de PostgreSQL local ni Docker.
+
+Prisma sigue siendo la capa de acceso a datos del backend. Web y mobile no deben conectarse directo a Supabase para datos sensibles; consumen la API propia.
+
+La conexion se configura en `.env` mediante `DATABASE_URL`, usando la cadena `Session pooler` del boton `Connect` de Supabase. Las migraciones existentes se aplican con `pnpm --filter agro-app-api db:deploy`.
+
+La guia operativa queda documentada en `docs/SUPABASE.md`.
+
 ## Auditoria obligatoria
 
 Toda edicion de datos realizada por un usuario debe generar un registro de auditoria desde backend.
