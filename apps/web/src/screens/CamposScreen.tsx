@@ -17,6 +17,7 @@ type ZonaSeleccionable = {
   empresaErpId: string;
   nombre: string;
   codigo?: string;
+  idZona?: number;
   origen: 'erp' | 'agro';
   zonaErpId?: string;
   zonaPlanificacionId?: string;
@@ -31,6 +32,12 @@ function normalizarCodigo(valor: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
+}
+
+function obtenerIdZonaDesdeErpId(zonaErpId?: string) {
+  const match = zonaErpId?.match(/zona:(\d+)$/);
+
+  return match ? Number(match[1]) : undefined;
 }
 
 function crearCampoNuevo(clienteId: string, empresaErpId: string): CampoPlanificacion {
@@ -56,6 +63,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   const [guardando, setGuardando] = useState(false);
   const [campoEnEdicion, setCampoEnEdicion] = useState<CampoPlanificacion | null>(null);
   const [filtro, setFiltro] = useState('');
+  const [filtroZonaClave, setFiltroZonaClave] = useState('');
 
   useEffect(() => {
     async function cargarCampos() {
@@ -87,6 +95,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       empresaErpId: zona.empresaErpId,
       nombre: zona.nombre,
       codigo: zona.codigo,
+      idZona: zona.idZona,
       origen: 'erp' as const,
       zonaErpId: zona.erpId,
     }));
@@ -95,6 +104,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       empresaErpId: zona.empresaErpId,
       nombre: zona.nombre,
       codigo: zona.codigoInterno,
+      idZona: obtenerIdZonaDesdeErpId(zona.zonaErpId),
       origen: 'agro' as const,
       zonaErpId: zona.zonaErpId,
       zonaPlanificacionId: zona.id,
@@ -120,12 +130,21 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   const camposVinculados = useMemo(() => new Set(camposPropios.map((campo) => campo.campoErpId).filter(Boolean)), [camposPropios]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const camposErpFiltrados = camposErp.filter((campo) => {
+    const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
     const texto = normalizarCodigo(`${campo.codigo} ${campo.nombre} ${empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId}`);
-    return texto.includes(filtroNormalizado);
+    const coincideZona = !zonaFiltrada || zonaFiltrada.idZona === campo.idZona;
+
+    return texto.includes(filtroNormalizado) && coincideZona;
   });
   const camposPropiosFiltrados = camposPropios.filter((campo) => {
+    const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
     const texto = normalizarCodigo(`${campo.codigoInterno || ''} ${campo.nombre} ${campo.empresaErpId}`);
-    return texto.includes(filtroNormalizado);
+    const idZonaCampo = obtenerIdZonaDesdeErpId(campo.zonaErpId);
+    const coincideZona = !zonaFiltrada
+      || filtroZonaClave === obtenerClaveZona(campo)
+      || Boolean(zonaFiltrada.idZona && idZonaCampo === zonaFiltrada.idZona);
+
+    return texto.includes(filtroNormalizado) && coincideZona;
   });
 
   function abrirNuevoCampo() {
@@ -156,8 +175,14 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   }
 
   function obtenerNombreZonaErp(campo: ErpCampo) {
-    const zonaErpId = campo.idZona ? `${campo.empresaErpId}:zona:${campo.idZona}` : undefined;
-    return zonaErpId ? zonasPorClave.get(`erp:${zonaErpId}`)?.nombre || `Zona ${campo.idZona}` : 'Sin zona';
+    const zonaErpIdGlobal = campo.idZona ? `zona:${campo.idZona}` : undefined;
+    const zonaErpIdLegacy = campo.idZona ? `${campo.empresaErpId}:zona:${campo.idZona}` : undefined;
+
+    return zonaErpIdGlobal
+      ? zonasPorClave.get(`erp:${zonaErpIdGlobal}`)?.nombre
+        || zonasPorClave.get(`erp:${zonaErpIdLegacy}`)?.nombre
+        || `Zona ${campo.idZona}`
+      : 'Sin zona';
   }
 
   function seleccionarZona(claveZona: string) {
@@ -247,6 +272,17 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, nombre o empresa" />
+            </label>
+            <label className="compact-field">
+              Zona
+              <select value={filtroZonaClave} onChange={(event) => setFiltroZonaClave(event.target.value)}>
+                <option value="">Todas</option>
+                {zonasDisponibles.map((zona) => (
+                  <option key={`${zona.origen}:${zona.id}`} value={`${zona.origen}:${zona.id}`}>
+                    {zona.codigo ? `${zona.codigo} - ` : ''}{zona.nombre} ({zona.origen === 'erp' ? 'ERP' : 'Agro App'})
+                  </option>
+                ))}
+              </select>
             </label>
             <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoCampo}>
               Nuevo campo
@@ -356,7 +392,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 <select value={obtenerClaveZona(campoEnEdicion)} onChange={(event) => seleccionarZona(event.target.value)}>
                   <option value="">Sin zona</option>
                   {zonasDisponibles
-                    .filter((zona) => zona.empresaErpId === campoEnEdicion.empresaErpId)
+                    .filter((zona) => zona.empresaErpId === 'global' || zona.empresaErpId === campoEnEdicion.empresaErpId)
                     .map((zona) => (
                       <option key={`${zona.origen}:${zona.id}`} value={`${zona.origen}:${zona.id}`}>
                         {zona.codigo ? `${zona.codigo} - ` : ''}{zona.nombre} ({zona.origen === 'erp' ? 'ERP' : 'Agro App'})

@@ -76,6 +76,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const [guardando, setGuardando] = useState(false);
   const [loteEnEdicion, setLoteEnEdicion] = useState<LotePlanificacion | null>(null);
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
+  const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [filtro, setFiltro] = useState('');
 
   useEffect(() => {
@@ -134,17 +135,49 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     () => new Map(camposSeleccionables.map((campo) => [campo.clave, campo])),
     [camposSeleccionables],
   );
+  const camposParaFiltrar = useMemo<CampoSeleccionable[]>(() => {
+    const propios = camposPropiosActuales.map((campo) => ({
+      clave: `agro:${campo.id}`,
+      campoPlanificacionId: campo.id,
+      campoErpId: campo.campoErpId,
+      empresaErpId: campo.empresaErpId,
+      codigo: campo.codigoInterno,
+      nombre: campo.nombre,
+      origen: 'agro' as const,
+    }));
+    const importados = camposErp.map((campo) => ({
+      clave: `erp:${campo.erpId}`,
+      campoErpId: campo.erpId,
+      empresaErpId: campo.empresaErpId,
+      codigo: campo.codigo,
+      nombre: campo.nombre,
+      origen: 'erp' as const,
+    }));
+
+    return [...propios, ...importados].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [camposErp, camposPropiosActuales]);
+  const camposParaFiltrarPorClave = useMemo(
+    () => new Map(camposParaFiltrar.map((campo) => [campo.clave, campo])),
+    [camposParaFiltrar],
+  );
   const lotesVinculados = useMemo(() => new Set(lotesPropios.map((lote) => lote.loteErpId).filter(Boolean)), [lotesPropios]);
   const filtroNormalizado = normalizarCodigo(filtro);
+  const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
   const lotesErpFiltrados = lotesErp.filter((lote) => {
     const campo = camposErpPorId.get(lote.campoErpId);
     const texto = normalizarCodigo(`${lote.codigo} ${lote.nombre} ${campo?.nombre || ''} ${empresasPorId.get(lote.empresaErpId)?.nombre || lote.empresaErpId}`);
-    return texto.includes(filtroNormalizado);
+    const coincideCampo = !campoFiltrado || lote.campoErpId === campoFiltrado.campoErpId;
+
+    return texto.includes(filtroNormalizado) && coincideCampo;
   });
   const lotesPropiosFiltrados = lotesPropios.filter((lote) => {
     const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
     const texto = normalizarCodigo(`${lote.codigoInterno || ''} ${lote.nombre} ${campo?.nombre || ''}`);
-    return texto.includes(filtroNormalizado);
+    const coincideCampo = !campoFiltrado
+      || lote.campoPlanificacionId === campoFiltrado.campoPlanificacionId
+      || Boolean(campoFiltrado.campoErpId && campo?.campoErpId === campoFiltrado.campoErpId);
+
+    return texto.includes(filtroNormalizado) && coincideCampo;
   });
 
   function abrirNuevoLote() {
@@ -213,7 +246,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       campoErpId: campoErp.erpId,
       nombre: campoErp.nombre,
       codigoInterno: normalizarCodigo(campoErp.codigo),
-      zonaErpId: campoErp.idZona ? `${campoErp.empresaErpId}:zona:${campoErp.idZona}` : undefined,
+      zonaErpId: campoErp.idZona ? `zona:${campoErp.idZona}` : undefined,
       estadoVinculacion: 'vinculado_erp',
       createdAt: ahora,
       updatedAt: ahora,
@@ -329,6 +362,17 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, lote, campo o empresa" />
+            </label>
+            <label className="compact-field">
+              Campo
+              <select value={filtroCampoClave} onChange={(event) => setFiltroCampoClave(event.target.value)}>
+                <option value="">Todos</option>
+                {camposParaFiltrar.map((campo) => (
+                  <option key={campo.clave} value={campo.clave}>
+                    {campo.codigo ? `${campo.codigo} - ` : ''}{campo.nombre} ({campo.origen === 'erp' ? 'ERP' : 'Agro App'})
+                  </option>
+                ))}
+              </select>
             </label>
             <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoLote}>
               Nuevo lote

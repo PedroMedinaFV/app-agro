@@ -17,6 +17,14 @@ El contrato de `Padrones/Zonas` trae:
 
 Para zonas, `erpId` se deriva como `zona:${idZona}`.
 
+Decision de sincronizacion:
+
+- `Padrones/Zonas` requiere `x-company`, pero ALBOR devuelve el mismo padron completo independientemente de la empresa enviada.
+- Agro App no guarda una copia de zona por cada empresa sincronizada.
+- Durante la sincronizacion, las zonas se deduplican por `idZona` y solo se conservan las zonas usadas por los campos importados.
+- En la cache `ErpZona`, `empresaErpId` se guarda como `global` para dejar claro que no representa la procedencia real de una empresa.
+- Los campos conservan su `empresaErpId` real y su `idZona`; la asociacion campo-zona se resuelve por `idZona`.
+
 ### Padrones/Campos
 
 El primer contrato mock simula respuestas reales del ERP. Para `Padrones/Campos`, la respuesta tiene esta forma general:
@@ -277,6 +285,8 @@ Por eso el flujo queda asi:
 2. El administrador marca qué empresas ERP corresponden a AGRO mediante `ClienteEmpresaErp`.
 3. Para cada empresa seleccionada, Agro App consulta los padrones operativos enviando `x-company: <idEmpresa>`.
 4. Cada registro importado guarda `empresaErpId` para saber desde qué empresa vino.
+
+Excepcion: `Padrones/Zonas` se trata como padron global deduplicado porque ALBOR devuelve todas las zonas sin importar el `x-company`. En ese caso, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
 
 El identificador interno de los datos por empresa incluye la empresa para evitar colisiones:
 

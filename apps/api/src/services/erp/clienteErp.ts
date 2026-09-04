@@ -28,6 +28,28 @@ import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
 import { obtenerSnapshotErpMock } from './mockErp';
 import { listarEmpresasErpCliente } from './empresasCliente';
 
+function deduplicarZonasDeSnapshot<T extends { idZona: number; erpId: string; empresaErpId: string }>(
+  zonas: T[],
+  campos: Array<{ idZona?: number }>,
+) {
+  const zonasUsadasPorCampos = new Set(campos.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number'));
+  const zonasPorId = new Map<number, T>();
+
+  for (const zona of zonas) {
+    if (!zonasUsadasPorCampos.has(zona.idZona) || zonasPorId.has(zona.idZona)) {
+      continue;
+    }
+
+    zonasPorId.set(zona.idZona, {
+      ...zona,
+      empresaErpId: 'global',
+      erpId: `zona:${zona.idZona}`,
+    });
+  }
+
+  return Array.from(zonasPorId.values()).sort((a, b) => a.idZona - b.idZona);
+}
+
 let tokenLoginCache: { clave: string; token: string; expiraEn: number } | null = null;
 
 function crearHeadersConToken(configuracion: ConfiguracionErp, token: string): Record<string, string> {
@@ -338,9 +360,12 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
     });
   }
 
+  const campos = snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campos);
+  const zonas = deduplicarZonasDeSnapshot(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.zonas), campos);
+
   return {
-    zonas: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.zonas),
-    campos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campos),
+    zonas,
+    campos,
     lotes: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.lotes),
     actividades: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.actividades),
     especies: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.especies),

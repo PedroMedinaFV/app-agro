@@ -161,7 +161,8 @@ Criterio de aceptacion:
 Validacion realizada:
 
 - `erp:sync -- --clienteId=cliente-demo` importo datos reales para `empresa:1`, `empresa:3` y `empresa:19`;
-- conteos filtrados por empresas AGRO: 18 zonas, 24 campos, 846 lotes, 216 actividades, 138 especies, 48 campanias, 3269 cultivos, 2965 insumos, 441 servicios/labores y 54 unidades de medida;
+- conteos filtrados por empresas AGRO antes de deduplicar zonas globales: 18 zonas, 24 campos, 846 lotes, 216 actividades, 138 especies, 48 campanias, 3269 cultivos, 2965 insumos, 441 servicios/labores y 54 unidades de medida;
+- ajuste posterior: `Padrones/Zonas` se deduplica por `idZona` porque ALBOR devuelve todas las zonas para cualquier `x-company`;
 - `erp:verify` confirma `ultimoSyncEn` en `IntegracionErp`;
 - las tablas `Erp*` se refrescan como cache por empresa y las ediciones de usuario quedan fuera de esa cache.
 

@@ -125,10 +125,23 @@ router.get('/zonas-importadas', async (req, res, next) => {
 
     const empresasSeleccionadas = await listarEmpresasErpCliente(clienteId);
     const empresaErpIds = empresasSeleccionadas.map((empresa) => empresa.empresaErpId);
-    const zonas = await prisma.erpZona.findMany({
+    const campos = await prisma.erpCampo.findMany({
       where: {
         empresaErpId: { in: empresaErpIds },
       },
+      select: { idZona: true },
+    });
+    const zonasUsadasIds = Array.from(
+      new Set(campos.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number')),
+    );
+    const zonas = await prisma.erpZona.findMany({
+      where: {
+        OR: [
+          { idZona: { in: zonasUsadasIds } },
+          { empresaErpId: { in: empresaErpIds } },
+        ],
+      },
+      distinct: ['idZona'],
       orderBy: [{ nombre: 'asc' }],
     });
 

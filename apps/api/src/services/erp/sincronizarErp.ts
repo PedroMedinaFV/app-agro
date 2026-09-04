@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import type { ErpEmpresa } from '@agro/tipos';
+import type { ErpCampo, ErpEmpresa, ErpZona } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { obtenerEmpresasSistemaErp, obtenerSnapshotErp } from './clienteErp';
 
@@ -65,6 +65,26 @@ async function crearEnBloques<T>(
   }
 }
 
+function deduplicarZonasGlobales(zonas: ErpZona[], campos: ErpCampo[]) {
+  const zonasPorId = new Map<number, ErpZona>();
+  const zonasUsadasPorCampos = new Set(campos.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number'));
+
+  for (const zona of zonas) {
+    if (!zonasUsadasPorCampos.has(zona.idZona) || zonasPorId.has(zona.idZona)) {
+      continue;
+    }
+
+    // ALBOR devuelve todas las zonas para cualquier x-company; por eso se cachean como padron global por idZona.
+    zonasPorId.set(zona.idZona, {
+      ...zona,
+      empresaErpId: 'global',
+      erpId: `zona:${zona.idZona}`,
+    });
+  }
+
+  return Array.from(zonasPorId.values()).sort((a, b) => a.idZona - b.idZona);
+}
+
 export async function listarEmpresasErpImportadas() {
   const rows = await prisma.$queryRaw<ErpEmpresaRow[]>`
     SELECT "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn"
@@ -107,12 +127,12 @@ export async function sincronizarEmpresasErp(clienteId?: string) {
 
 export async function sincronizarSnapshotErp(clienteId?: string) {
   const snapshot = await obtenerSnapshotErp(clienteId);
+  const zonasSincronizadas = deduplicarZonasGlobales(snapshot.zonas, snapshot.campos);
   const camposImportables = new Set(snapshot.campos.map((campo) => campo.erpId));
   const lotesConCampo = snapshot.lotes.filter((lote) => camposImportables.has(lote.campoErpId));
   const lotesOmitidosPorCampo = snapshot.lotes.length - lotesConCampo.length;
   const empresaErpIds = Array.from(
     new Set([
-      ...snapshot.zonas.map((registro) => registro.empresaErpId),
       ...snapshot.campos.map((registro) => registro.empresaErpId),
       ...snapshot.lotes.map((registro) => registro.empresaErpId),
       ...snapshot.actividades.map((registro) => registro.empresaErpId),
@@ -129,7 +149,14 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
   console.log(`[erp-sync] Refrescando cache ERP para ${empresaErpIds.length} empresas`);
   await prisma.$transaction([
     prisma.erpLote.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpZona.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpZona.deleteMany({
+      where: {
+        OR: [
+          { erpId: { in: zonasSincronizadas.map((zona) => zona.erpId) } },
+          { empresaErpId: { in: empresaErpIds } },
+        ],
+      },
+    }),
     prisma.erpCampo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
     prisma.erpActividad.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
     prisma.erpEspecie.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
@@ -140,7 +167,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     prisma.erpUnidadMedida.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
   ]);
 
-  await crearEnBloques('zonas', snapshot.zonas, (bloque) =>
+  await crearEnBloques('zonas', zonasSincronizadas, (bloque) =>
     prisma.erpZona.createMany({
       data: bloque.map((zona) => ({
         empresaErpId: zona.empresaErpId,
@@ -363,7 +390,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
 
   return {
     campos: snapshot.campos.length,
-    zonas: snapshot.zonas.length,
+    zonas: zonasSincronizadas.length,
     lotes: lotesConCampo.length,
     actividades: snapshot.actividades.length,
     especies: snapshot.especies.length,
