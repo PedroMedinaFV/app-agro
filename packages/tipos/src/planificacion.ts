@@ -428,6 +428,18 @@ export type GuardarCampoPlanificacionResponse = {
   mensaje: string;
 };
 
+export type GuardarLotePlanificacionRequest = {
+  lote: LotePlanificacion;
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarLotePlanificacionResponse = {
+  lote: LotePlanificacion;
+  auditado: boolean;
+  mensaje: string;
+};
+
 export type CerrarPlanificacionRequest = {
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';

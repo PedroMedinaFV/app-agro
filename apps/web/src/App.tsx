@@ -12,6 +12,7 @@ import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
 import { InsumosPlanificacionScreen } from './screens/InsumosPlanificacionScreen';
 import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
 import { CamposScreen } from './screens/CamposScreen';
+import { LotesScreen } from './screens/LotesScreen';
 import { ToastViewport } from './components/ToastViewport';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
@@ -20,7 +21,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'campos' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
+type Vista = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -51,6 +52,8 @@ export function App() {
     ? 'Empresas ERP'
     : vista === 'campos'
       ? 'Campos'
+    : vista === 'lotes'
+      ? 'Lotes'
     : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos'
       ? 'Padrones maestros'
     : vista === 'precios'
@@ -68,6 +71,8 @@ export function App() {
     ? erp.estadoEmpresas
     : vista === 'campos'
       ? 'Padron de campos ERP y campos propios de Agro App'
+    : vista === 'lotes'
+      ? 'Padron de lotes ERP y lotes propios de Agro App'
     : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos'
       ? 'Administracion de maestros propios con permisos y auditoria'
     : vista === 'precios'
@@ -128,6 +133,16 @@ export function App() {
           sesion={sesion}
           empresas={erp.empresasDisponibles}
           zonasPropias={planificacionDemo.planificacion.zonasPlanificacion || []}
+          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          notificar={toast.notify}
+        />
+      )}
+
+      {vista === 'lotes' && (
+        <LotesScreen
+          sesion={sesion}
+          empresas={erp.empresasDisponibles}
+          camposPropios={planificacionDemo.planificacion.camposPlanificacion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />

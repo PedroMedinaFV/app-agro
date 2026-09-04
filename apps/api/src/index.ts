@@ -26,6 +26,7 @@ import destinosVentaRuta from './routes/destinosVenta';
 import laboresReferenciaRuta from './routes/laboresReferencia';
 import insumosPlanificacionRuta from './routes/insumosPlanificacion';
 import camposPlanificacionRuta from './routes/camposPlanificacion';
+import lotesPlanificacionRuta from './routes/lotesPlanificacion';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -59,6 +60,7 @@ app.use('/destinos-venta', autenticacionBasica, destinosVentaRuta);
 app.use('/labores-referencia', autenticacionBasica, laboresReferenciaRuta);
 app.use('/insumos-planificacion', autenticacionBasica, insumosPlanificacionRuta);
 app.use('/campos-planificacion', autenticacionBasica, camposPlanificacionRuta);
+app.use('/lotes-planificacion', autenticacionBasica, lotesPlanificacionRuta);
 
 app.use(manejadorErrores);
 

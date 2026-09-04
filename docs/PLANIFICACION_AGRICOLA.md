@@ -55,6 +55,10 @@ Agro App debe permitir crear registros provisorios para:
 
 Al crear un campo provisorio, la zona se selecciona desde un padron combinado de zonas ERP sincronizadas y zonas propias creadas en Agro App. No se carga como texto libre para evitar errores de escritura y facilitar la vinculacion posterior.
 
+Al crear un lote provisorio, el campo se selecciona desde los campos propios de Agro App. Ese campo puede estar vinculado al ERP o seguir provisorio, pero el lote no debe quedar sin campo operativo. El lote guarda superficie total y superficie productiva; la superficie productiva no puede superar la superficie total.
+
+La pantalla web de `Lotes` debe cargar los campos propios desde el backend de padrones (`/campos-planificacion`) al abrirse, no desde el snapshot demo de planificacion. Esto evita que el select muestre datos incompletos cuando ya existen campos reales persistidos en la base.
+
 Cuando el registro aparezca mas adelante en los padrones del ERP, un usuario autorizado debe poder vincular el registro provisorio con el registro ERP correspondiente.
 
 La vinculacion no debe alterar planificaciones historicas sin accion explicita y siempre debe quedar auditada.
@@ -252,6 +256,8 @@ Mientras la linea esta en borrador y mantiene `gastosComercialesReferenciaId`, l
 
 Estado UX actual:
 
+- web cuenta con pantalla `Campos` para ver campos ERP sincronizados, crear campos propios y asignar zona desde select ERP/Agro App;
+- web cuenta con pantalla `Lotes` para ver lotes ERP sincronizados y crear lotes propios asociados a campos propios;
 - web cuenta con pantalla `Gastos` para administrar gastos comerciales de referencia por campania;
 - web cuenta con pantalla `Padrones` para administrar el maestro de conceptos de gastos comerciales;
 - web cuenta con pantalla `Padrones > Destinos` para administrar el catalogo maestro de destinos de venta;

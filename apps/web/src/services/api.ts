@@ -3,6 +3,7 @@ import {
   ErpEmpresa,
   ErpCampo,
   ErpZona,
+  ErpLote,
   ErpSnapshot,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
@@ -13,6 +14,8 @@ import {
   GuardarConceptoGastoComercialResponse,
   GuardarCampoPlanificacionRequest,
   GuardarCampoPlanificacionResponse,
+  GuardarLotePlanificacionRequest,
+  GuardarLotePlanificacionResponse,
   GuardarDestinoVentaReferenciaRequest,
   GuardarDestinoVentaReferenciaResponse,
   GuardarGastosComercialesReferenciaRequest,
@@ -29,6 +32,7 @@ import {
   GuardarProtocoloResponse,
   LaborReferencia,
   InsumoPlanificacion,
+  LotePlanificacion,
   LoginDemoRequest,
   PlanificacionSnapshot,
   ProtocolosSnapshot,
@@ -73,6 +77,14 @@ export type CamposErpImportadosResponse = {
 
 export async function obtenerCamposErpImportados(token?: string): Promise<CamposErpImportadosResponse> {
   return request<CamposErpImportadosResponse>('/erp/campos-importados', {}, token);
+}
+
+export type LotesErpImportadosResponse = {
+  lotes: ErpLote[];
+};
+
+export async function obtenerLotesErpImportados(token?: string): Promise<LotesErpImportadosResponse> {
+  return request<LotesErpImportadosResponse>('/erp/lotes-importados', {}, token);
 }
 
 export type ZonasErpImportadasResponse = {
@@ -225,6 +237,25 @@ export async function guardarCampoPlanificacion(
   token?: string,
 ): Promise<GuardarCampoPlanificacionResponse> {
   return request<GuardarCampoPlanificacionResponse>(`/campos-planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type LotesPlanificacionResponse = {
+  lotes: LotePlanificacion[];
+};
+
+export async function obtenerLotesPlanificacion(token?: string): Promise<LotesPlanificacionResponse> {
+  return request<LotesPlanificacionResponse>('/lotes-planificacion', {}, token);
+}
+
+export async function guardarLotePlanificacion(
+  id: string,
+  datos: GuardarLotePlanificacionRequest,
+  token?: string,
+): Promise<GuardarLotePlanificacionResponse> {
+  return request<GuardarLotePlanificacionResponse>(`/lotes-planificacion/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

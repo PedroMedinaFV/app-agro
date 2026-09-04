@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'campos' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
+type VistaApp = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -33,6 +33,8 @@ export function Layout({
   const [padronesAbierto, setPadronesAbierto] = useState(vista.startsWith('padrones-'));
   const navItems = [
     { vista: 'inicio' as const, label: 'Inicio', icon: 'IN' },
+    { vista: 'campos' as const, label: 'Campos', icon: 'CA' },
+    { vista: 'lotes' as const, label: 'Lotes', icon: 'LO' },
     { vista: 'planificacion' as const, label: 'Planificacion', icon: 'PL' },
     { vista: 'protocolos' as const, label: 'Protocolos', icon: 'PR' },
     { vista: 'precios' as const, label: 'Precios', icon: 'US' },
@@ -49,7 +51,7 @@ export function Layout({
     { label: 'Estadios' },
     { label: 'Zonas' },
     { vista: 'campos' as const, label: 'Campos' },
-    { label: 'Lotes' },
+    { vista: 'lotes' as const, label: 'Lotes' },
     { label: 'Especies' },
     { label: 'Actividades' },
   ];

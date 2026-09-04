@@ -147,6 +147,51 @@ router.get('/zonas-importadas', async (req, res, next) => {
   }
 });
 
+router.get('/lotes-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const empresasSeleccionadas = await listarEmpresasErpCliente(clienteId);
+    const empresaErpIds = empresasSeleccionadas.map((empresa) => empresa.empresaErpId);
+    const camposAsignados = user ? await obtenerCamposAsignados(user) : null;
+    const lotes = await prisma.erpLote.findMany({
+      where: {
+        empresaErpId: { in: empresaErpIds },
+        ...(camposAsignados ? { campoErpId: { in: camposAsignados } } : {}),
+      },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      lotes: lotes.map((lote) => ({
+        empresaErpId: lote.empresaErpId,
+        erpId: lote.erpId,
+        idLote: lote.idLote,
+        idCampo: lote.idCampo,
+        campoErpId: lote.campoErpId,
+        codigo: lote.codigo,
+        nombre: lote.nombre,
+        cultivoCodigo: lote.cultivoCodigo ?? undefined,
+        cultivoNombre: lote.cultivoNombre ?? undefined,
+        areaHectareas: lote.areaHectareas,
+        hectareasProductivas: lote.hectareasProductivas ?? undefined,
+        admiteGanaderia: lote.admiteGanaderia ?? undefined,
+        admiteLecheria: lote.admiteLecheria ?? undefined,
+        codigoSima: lote.codigoSima ?? undefined,
+        activo: lote.activo,
+        actualizadoEn: lote.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;
