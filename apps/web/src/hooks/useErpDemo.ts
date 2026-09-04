@@ -15,7 +15,7 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
 
   useEffect(() => {
     async function cargarDatosErp() {
-      if (!sesion) {
+      if (!sesion || puedeConfigurarErp) {
         return;
       }
 
@@ -26,7 +26,7 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
           setEmpresasDisponibles(datosErp.empresas);
           setEmpresasSeleccionadas((actuales) => actuales.length ? actuales : datosErp.empresas.slice(0, 1).map((empresa) => empresa.erpId));
         }
-        setErpEstado('Datos ERP desde API mock');
+        setErpEstado('Datos ERP desde backend');
       } catch (error) {
         setSnapshot(snapshotFallback);
         if (!puedeConfigurarErp) {

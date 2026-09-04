@@ -685,7 +685,7 @@ Reglas:
 
 ## ErpUnidadMedida
 
-Padron ERP consultado desde `Padrones/UnidadesMedidas`.
+Padron ERP consultado desde `Padrones/UnidadesMedida`.
 
 Campos sugeridos:
 

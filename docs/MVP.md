@@ -74,3 +74,4 @@ Proxima pantalla sugerida:
 Premisas transversales:
 
 - Toda edicion de datos de usuario debe quedar auditada.
+- El plan de avance por sprints queda documentado en `docs/PLAN_MVP_SPRINTS.md`.

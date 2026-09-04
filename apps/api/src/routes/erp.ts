@@ -6,6 +6,8 @@ import { obtenerConfiguracionErp } from '../services/erp/configuracionErp';
 import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
 import { requierePermiso } from '../middleware/permisos';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
+import { listarEmpresasErpCliente } from '../services/erp/empresasCliente';
+import { prisma } from '../prisma';
 
 const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
@@ -39,7 +41,13 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
 router.get('/snapshot', async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;
-    const snapshot = await obtenerSnapshotErp(req.query.clienteId as string | undefined);
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const snapshot = await obtenerSnapshotErp(clienteId);
     const camposAsignados = user ? await obtenerCamposAsignados(user) : null;
 
     res.json(filtrarSnapshotPorCampos(snapshot, camposAsignados));
@@ -62,11 +70,95 @@ router.get('/configuracion', (req, res) => {
   });
 });
 
+router.get('/campos-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const empresasSeleccionadas = await listarEmpresasErpCliente(clienteId);
+    const empresaErpIds = empresasSeleccionadas.map((empresa) => empresa.empresaErpId);
+    const camposAsignados = user ? await obtenerCamposAsignados(user) : null;
+    const campos = await prisma.erpCampo.findMany({
+      where: {
+        empresaErpId: { in: empresaErpIds },
+        ...(camposAsignados ? { erpId: { in: camposAsignados } } : {}),
+      },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      campos: campos.map((campo) => ({
+        empresaErpId: campo.empresaErpId,
+        erpId: campo.erpId,
+        idCampo: campo.idCampo,
+        idZona: campo.idZona ?? undefined,
+        idSubZona: campo.idSubZona ?? undefined,
+        codigo: campo.codigo,
+        nombre: campo.nombre,
+        paisCodigo: campo.paisCodigo ?? undefined,
+        sociedad: campo.sociedad ?? undefined,
+        activo: campo.activo,
+        admiteGanaderia: campo.admiteGanaderia ?? undefined,
+        domicilio: campo.domicilio ?? undefined,
+        codigoSima: campo.codigoSima ?? undefined,
+        idLocalidad: campo.idLocalidad ?? undefined,
+        actualizadoEn: campo.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/zonas-importadas', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const empresasSeleccionadas = await listarEmpresasErpCliente(clienteId);
+    const empresaErpIds = empresasSeleccionadas.map((empresa) => empresa.empresaErpId);
+    const zonas = await prisma.erpZona.findMany({
+      where: {
+        empresaErpId: { in: empresaErpIds },
+      },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      zonas: zonas.map((zona) => ({
+        empresaErpId: zona.empresaErpId,
+        erpId: zona.erpId,
+        idZona: zona.idZona,
+        codigo: zona.codigo,
+        nombre: zona.nombre,
+        activo: zona.activo,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res, next) => {
   try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
     res.json({
       ok: true,
-      resultado: await sincronizarSnapshotErp(req.query.clienteId as string | undefined),
+      resultado: await sincronizarSnapshotErp(clienteId),
     });
   } catch (error) {
     next(error);

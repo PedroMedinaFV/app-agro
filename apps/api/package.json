@@ -14,7 +14,8 @@
     "erp:test": "ts-node-dev --transpile-only --exit-child src/scripts/probarConexionErpCli.ts",
     "erp:list:empresas": "ts-node-dev --transpile-only --exit-child src/scripts/listarEmpresasErpCli.ts",
     "erp:sync:empresas": "ts-node-dev --transpile-only --exit-child src/scripts/sincronizarEmpresasErpCli.ts",
-    "erp:sync": "ts-node-dev --transpile-only --exit-child src/scripts/sincronizarErpCli.ts"
+    "erp:sync": "ts-node-dev --transpile-only --exit-child src/scripts/sincronizarErpCli.ts",
+    "erp:verify": "ts-node-dev --transpile-only --exit-child src/scripts/verificarSyncErpCli.ts"
   },
   "prisma": {
     "seed": "ts-node-dev --transpile-only --exit-child prisma/seed.ts"

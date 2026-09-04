@@ -11,6 +11,7 @@ import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
 import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
 import { InsumosPlanificacionScreen } from './screens/InsumosPlanificacionScreen';
 import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
+import { CamposScreen } from './screens/CamposScreen';
 import { ToastViewport } from './components/ToastViewport';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
@@ -19,7 +20,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
+type Vista = 'inicio' | 'campos' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -48,6 +49,8 @@ export function App() {
   const campaniaActual = erp.snapshot.campanias.find((campania) => campania.esActual);
   const tituloVista = vista === 'empresas-erp'
     ? 'Empresas ERP'
+    : vista === 'campos'
+      ? 'Campos'
     : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos'
       ? 'Padrones maestros'
     : vista === 'precios'
@@ -63,6 +66,8 @@ export function App() {
           : 'Resumen de campo';
   const descripcionVista = vista === 'empresas-erp'
     ? erp.estadoEmpresas
+    : vista === 'campos'
+      ? 'Padron de campos ERP y campos propios de Agro App'
     : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos'
       ? 'Administracion de maestros propios con permisos y auditoria'
     : vista === 'precios'
@@ -117,6 +122,16 @@ export function App() {
             zonasPorEmpresaYId={zonasPorEmpresaYId}
           />
         )}
+
+      {vista === 'campos' && (
+        <CamposScreen
+          sesion={sesion}
+          empresas={erp.empresasDisponibles}
+          zonasPropias={planificacionDemo.planificacion.zonasPlanificacion || []}
+          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          notificar={toast.notify}
+        />
+      )}
 
       {vista === 'planificacion' && (
         <PlanificacionScreen

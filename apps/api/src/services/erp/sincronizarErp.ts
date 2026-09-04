@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
 import type { ErpEmpresa } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { obtenerEmpresasSistemaErp, obtenerSnapshotErp } from './clienteErp';
@@ -29,6 +30,41 @@ function mapearEmpresaRow(row: ErpEmpresaRow): ErpEmpresa {
   };
 }
 
+async function ejecutarEnBloques<T>(
+  nombre: string,
+  registros: T[],
+  crearOperacion: (registro: T) => Prisma.PrismaPromise<number>,
+  tamanioBloque = 100,
+) {
+  console.log(`[erp-sync] Guardando ${nombre}: ${registros.length}`);
+
+  for (let inicio = 0; inicio < registros.length; inicio += tamanioBloque) {
+    const bloque = registros.slice(inicio, inicio + tamanioBloque);
+
+    // Se agrupa cada tanda en una transaccion para evitar miles de viajes individuales a Supabase.
+    await prisma.$transaction(bloque.map(crearOperacion));
+
+    console.log(`[erp-sync] ${nombre}: ${Math.min(inicio + bloque.length, registros.length)}/${registros.length}`);
+  }
+}
+
+async function crearEnBloques<T>(
+  nombre: string,
+  registros: T[],
+  insertarBloque: (bloque: T[]) => Promise<unknown>,
+  tamanioBloque = 1000,
+) {
+  console.log(`[erp-sync] Insertando ${nombre}: ${registros.length}`);
+
+  for (let inicio = 0; inicio < registros.length; inicio += tamanioBloque) {
+    const bloque = registros.slice(inicio, inicio + tamanioBloque);
+
+    await insertarBloque(bloque);
+
+    console.log(`[erp-sync] ${nombre}: ${Math.min(inicio + bloque.length, registros.length)}/${registros.length}`);
+  }
+}
+
 export async function listarEmpresasErpImportadas() {
   const rows = await prisma.$queryRaw<ErpEmpresaRow[]>`
     SELECT "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn"
@@ -40,8 +76,7 @@ export async function listarEmpresasErpImportadas() {
 }
 
 async function guardarEmpresasErp(empresas: Awaited<ReturnType<typeof obtenerEmpresasSistemaErp>>) {
-  for (const empresa of empresas) {
-    await prisma.$executeRaw`
+  await ejecutarEnBloques('empresas', empresas, (empresa) => prisma.$executeRaw`
       INSERT INTO "ErpEmpresa" ("id", "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn")
       VALUES (${randomUUID()}, ${empresa.erpId}, ${empresa.idEmpresa}, ${empresa.codigo}, ${empresa.nombre}, ${empresa.activo}, ${empresa.cuit ?? null}, ${empresa.razonSocial ?? null}, ${empresa.email ?? null}, ${new Date(empresa.actualizadoEn)})
       ON CONFLICT ("erpId") DO UPDATE SET
@@ -54,8 +89,7 @@ async function guardarEmpresasErp(empresas: Awaited<ReturnType<typeof obtenerEmp
         "email" = EXCLUDED."email",
         "actualizadoEn" = EXCLUDED."actualizadoEn",
         "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+    `);
 
   return empresas.length;
 }
@@ -76,276 +110,255 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
   const camposImportables = new Set(snapshot.campos.map((campo) => campo.erpId));
   const lotesConCampo = snapshot.lotes.filter((lote) => camposImportables.has(lote.campoErpId));
   const lotesOmitidosPorCampo = snapshot.lotes.length - lotesConCampo.length;
+  const empresaErpIds = Array.from(
+    new Set([
+      ...snapshot.zonas.map((registro) => registro.empresaErpId),
+      ...snapshot.campos.map((registro) => registro.empresaErpId),
+      ...snapshot.lotes.map((registro) => registro.empresaErpId),
+      ...snapshot.actividades.map((registro) => registro.empresaErpId),
+      ...snapshot.especies.map((registro) => registro.empresaErpId),
+      ...snapshot.campanias.map((registro) => registro.empresaErpId),
+      ...snapshot.cultivos.map((registro) => registro.empresaErpId),
+      ...snapshot.insumos.map((registro) => registro.empresaErpId),
+      ...snapshot.servicios.map((registro) => registro.empresaErpId),
+      ...snapshot.unidadesMedida.map((registro) => registro.empresaErpId),
+    ]),
+  );
 
-  for (const zona of snapshot.zonas) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpZona" ("id", "empresaErpId", "erpId", "idZona", "codigo", "nombre", "activo")
-      VALUES (${randomUUID()}, ${zona.empresaErpId}, ${zona.erpId}, ${zona.idZona}, ${zona.codigo}, ${zona.nombre}, ${zona.activo})
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idZona" = EXCLUDED."idZona",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "activo" = EXCLUDED."activo",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  // Las tablas Erp* funcionan como cache importada: se refrescan por empresa y no guardan ediciones del usuario.
+  console.log(`[erp-sync] Refrescando cache ERP para ${empresaErpIds.length} empresas`);
+  await prisma.$transaction([
+    prisma.erpLote.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpZona.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpCampo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpActividad.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpEspecie.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpCampania.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpCultivo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpInsumo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpServicio.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpUnidadMedida.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+  ]);
 
-  for (const campo of snapshot.campos) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpCampo" (
-        "id", "empresaErpId", "erpId", "idCampo", "idZona", "idSubZona", "codigo", "nombre", "paisCodigo", "sociedad",
-        "admiteGanaderia", "domicilio", "codigoSima", "idLocalidad", "activo", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${campo.empresaErpId}, ${campo.erpId}, ${campo.idCampo}, ${campo.idZona || null}, ${campo.idSubZona || null}, ${campo.codigo}, ${campo.nombre}, ${campo.paisCodigo || null}, ${campo.sociedad || null},
-        ${campo.admiteGanaderia ?? null}, ${campo.domicilio || null}, ${campo.codigoSima || null}, ${campo.idLocalidad || null}, ${campo.activo}, ${new Date(campo.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idCampo" = EXCLUDED."idCampo",
-        "idZona" = EXCLUDED."idZona",
-        "idSubZona" = EXCLUDED."idSubZona",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "paisCodigo" = EXCLUDED."paisCodigo",
-        "sociedad" = EXCLUDED."sociedad",
-        "admiteGanaderia" = EXCLUDED."admiteGanaderia",
-        "domicilio" = EXCLUDED."domicilio",
-        "codigoSima" = EXCLUDED."codigoSima",
-        "idLocalidad" = EXCLUDED."idLocalidad",
-        "activo" = EXCLUDED."activo",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('zonas', snapshot.zonas, (bloque) =>
+    prisma.erpZona.createMany({
+      data: bloque.map((zona) => ({
+        empresaErpId: zona.empresaErpId,
+        erpId: zona.erpId,
+        idZona: zona.idZona,
+        codigo: zona.codigo,
+        nombre: zona.nombre,
+        activo: zona.activo,
+      })),
+    }),
+  );
 
-  for (const lote of lotesConCampo) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpLote" (
-        "id", "empresaErpId", "erpId", "idLote", "idCampo", "campoErpId", "codigo", "nombre", "cultivoCodigo", "cultivoNombre",
-        "areaHectareas", "hectareasProductivas", "admiteGanaderia", "admiteLecheria", "codigoSima", "activo", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${lote.empresaErpId}, ${lote.erpId}, ${lote.idLote}, ${lote.idCampo}, ${lote.campoErpId}, ${lote.codigo}, ${lote.nombre}, ${lote.cultivoCodigo || null}, ${lote.cultivoNombre || null},
-        ${lote.areaHectareas}, ${lote.hectareasProductivas ?? null}, ${lote.admiteGanaderia ?? null}, ${lote.admiteLecheria ?? null}, ${lote.codigoSima ?? null}, ${lote.activo}, ${new Date(lote.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idLote" = EXCLUDED."idLote",
-        "idCampo" = EXCLUDED."idCampo",
-        "campoErpId" = EXCLUDED."campoErpId",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "cultivoCodigo" = EXCLUDED."cultivoCodigo",
-        "cultivoNombre" = EXCLUDED."cultivoNombre",
-        "areaHectareas" = EXCLUDED."areaHectareas",
-        "hectareasProductivas" = EXCLUDED."hectareasProductivas",
-        "admiteGanaderia" = EXCLUDED."admiteGanaderia",
-        "admiteLecheria" = EXCLUDED."admiteLecheria",
-        "codigoSima" = EXCLUDED."codigoSima",
-        "activo" = EXCLUDED."activo",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('campos', snapshot.campos, (bloque) =>
+    prisma.erpCampo.createMany({
+      data: bloque.map((campo) => ({
+        empresaErpId: campo.empresaErpId,
+        erpId: campo.erpId,
+        idCampo: campo.idCampo,
+        idZona: campo.idZona || null,
+        idSubZona: campo.idSubZona || null,
+        codigo: campo.codigo,
+        nombre: campo.nombre,
+        paisCodigo: campo.paisCodigo || null,
+        sociedad: campo.sociedad || null,
+        admiteGanaderia: campo.admiteGanaderia ?? null,
+        domicilio: campo.domicilio || null,
+        codigoSima: campo.codigoSima || null,
+        idLocalidad: campo.idLocalidad || null,
+        activo: campo.activo,
+        actualizadoEn: new Date(campo.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const actividad of snapshot.actividades) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpActividad" ("id", "empresaErpId", "erpId", "idActividad", "codigo", "descripcion", "activo", "habilitadoExportacionCrea", "idEspecie", "idTipoActividad", "actualizadoEn")
-      VALUES (${randomUUID()}, ${actividad.empresaErpId}, ${actividad.erpId}, ${actividad.idActividad}, ${actividad.codigo}, ${actividad.descripcion}, ${actividad.activo}, ${actividad.habilitadoExportacionCrea}, ${actividad.idEspecie ?? null}, ${actividad.idTipoActividad ?? null}, ${new Date(actividad.actualizadoEn)})
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idActividad" = EXCLUDED."idActividad",
-        "codigo" = EXCLUDED."codigo",
-        "descripcion" = EXCLUDED."descripcion",
-        "activo" = EXCLUDED."activo",
-        "habilitadoExportacionCrea" = EXCLUDED."habilitadoExportacionCrea",
-        "idEspecie" = EXCLUDED."idEspecie",
-        "idTipoActividad" = EXCLUDED."idTipoActividad",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('lotes', lotesConCampo, (bloque) =>
+    prisma.erpLote.createMany({
+      data: bloque.map((lote) => ({
+        empresaErpId: lote.empresaErpId,
+        erpId: lote.erpId,
+        idLote: lote.idLote,
+        idCampo: lote.idCampo,
+        campoErpId: lote.campoErpId,
+        codigo: lote.codigo,
+        nombre: lote.nombre,
+        cultivoCodigo: lote.cultivoCodigo || null,
+        cultivoNombre: lote.cultivoNombre || null,
+        areaHectareas: lote.areaHectareas,
+        hectareasProductivas: lote.hectareasProductivas ?? null,
+        admiteGanaderia: lote.admiteGanaderia ?? null,
+        admiteLecheria: lote.admiteLecheria ?? null,
+        codigoSima: lote.codigoSima ?? null,
+        activo: lote.activo,
+        actualizadoEn: new Date(lote.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const especie of snapshot.especies) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpEspecie" ("id", "empresaErpId", "erpId", "idEspecie", "codigo", "nombre", "activo", "codigoCot", "codigoAfip", "actualizadoEn")
-      VALUES (${randomUUID()}, ${especie.empresaErpId}, ${especie.erpId}, ${especie.idEspecie}, ${especie.codigo}, ${especie.nombre}, ${especie.activo}, ${especie.codigoCot ?? null}, ${especie.codigoAfip ?? null}, ${new Date(especie.actualizadoEn)})
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idEspecie" = EXCLUDED."idEspecie",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "activo" = EXCLUDED."activo",
-        "codigoCot" = EXCLUDED."codigoCot",
-        "codigoAfip" = EXCLUDED."codigoAfip",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('actividades', snapshot.actividades, (bloque) =>
+    prisma.erpActividad.createMany({
+      data: bloque.map((actividad) => ({
+        empresaErpId: actividad.empresaErpId,
+        erpId: actividad.erpId,
+        idActividad: actividad.idActividad,
+        codigo: actividad.codigo,
+        descripcion: actividad.descripcion,
+        activo: actividad.activo,
+        habilitadoExportacionCrea: actividad.habilitadoExportacionCrea,
+        idEspecie: actividad.idEspecie ?? null,
+        idTipoActividad: actividad.idTipoActividad ?? null,
+        actualizadoEn: new Date(actividad.actualizadoEn),
+      })),
+    }),
+  );
+
+  await crearEnBloques('especies', snapshot.especies, (bloque) =>
+    prisma.erpEspecie.createMany({
+      data: bloque.map((especie) => ({
+        empresaErpId: especie.empresaErpId,
+        erpId: especie.erpId,
+        idEspecie: especie.idEspecie,
+        codigo: especie.codigo,
+        nombre: especie.nombre,
+        activo: especie.activo,
+        codigoCot: especie.codigoCot ?? null,
+        codigoAfip: especie.codigoAfip ?? null,
+        actualizadoEn: new Date(especie.actualizadoEn),
+      })),
+    }),
+  );
 
   await guardarEmpresasErp(snapshot.empresas);
 
-  for (const campania of snapshot.campanias) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpCampania" ("id", "empresaErpId", "erpId", "idCampania", "codigo", "nombre", "activo", "esActual", "actualizadoEn")
-      VALUES (${randomUUID()}, ${campania.empresaErpId}, ${campania.erpId}, ${campania.idCampania}, ${campania.codigo}, ${campania.nombre}, ${campania.activo}, ${campania.esActual}, ${new Date(campania.actualizadoEn)})
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idCampania" = EXCLUDED."idCampania",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "activo" = EXCLUDED."activo",
-        "esActual" = EXCLUDED."esActual",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('campanias', snapshot.campanias, (bloque) =>
+    prisma.erpCampania.createMany({
+      data: bloque.map((campania) => ({
+        empresaErpId: campania.empresaErpId,
+        erpId: campania.erpId,
+        idCampania: campania.idCampania,
+        codigo: campania.codigo,
+        nombre: campania.nombre,
+        activo: campania.activo,
+        esActual: campania.esActual,
+        actualizadoEn: new Date(campania.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const cultivo of snapshot.cultivos) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpCultivo" (
-        "id", "empresaErpId", "erpId", "idCultivo", "codigo", "nombre", "idCampo", "campoErpId",
-        "idLote", "loteErpId", "idActividad", "actividadErpId", "idEspecie", "especieErpId",
-        "idCampania", "campaniaErpId", "hectareas", "hectareasSembradas", "hectareasCosechadas",
-        "idPuerto", "distanciaPuerto", "idPersonalResponsable", "esAgriculturaIntensiva",
-        "socioEnFuncionAportes", "activo", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${cultivo.empresaErpId}, ${cultivo.erpId}, ${cultivo.idCultivo}, ${cultivo.codigo}, ${cultivo.nombre}, ${cultivo.idCampo}, ${cultivo.campoErpId},
-        ${cultivo.idLote}, ${cultivo.loteErpId}, ${cultivo.idActividad ?? null}, ${cultivo.actividadErpId ?? null}, ${cultivo.idEspecie ?? null}, ${cultivo.especieErpId ?? null},
-        ${cultivo.idCampania ?? null}, ${cultivo.campaniaErpId ?? null}, ${cultivo.hectareas}, ${cultivo.hectareasSembradas}, ${cultivo.hectareasCosechadas},
-        ${cultivo.idPuerto ?? null}, ${cultivo.distanciaPuerto ?? null}, ${cultivo.idPersonalResponsable ?? null}, ${cultivo.esAgriculturaIntensiva},
-        ${cultivo.socioEnFuncionAportes}, ${cultivo.activo}, ${new Date(cultivo.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idCultivo" = EXCLUDED."idCultivo",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "idCampo" = EXCLUDED."idCampo",
-        "campoErpId" = EXCLUDED."campoErpId",
-        "idLote" = EXCLUDED."idLote",
-        "loteErpId" = EXCLUDED."loteErpId",
-        "idActividad" = EXCLUDED."idActividad",
-        "actividadErpId" = EXCLUDED."actividadErpId",
-        "idEspecie" = EXCLUDED."idEspecie",
-        "especieErpId" = EXCLUDED."especieErpId",
-        "idCampania" = EXCLUDED."idCampania",
-        "campaniaErpId" = EXCLUDED."campaniaErpId",
-        "hectareas" = EXCLUDED."hectareas",
-        "hectareasSembradas" = EXCLUDED."hectareasSembradas",
-        "hectareasCosechadas" = EXCLUDED."hectareasCosechadas",
-        "idPuerto" = EXCLUDED."idPuerto",
-        "distanciaPuerto" = EXCLUDED."distanciaPuerto",
-        "idPersonalResponsable" = EXCLUDED."idPersonalResponsable",
-        "esAgriculturaIntensiva" = EXCLUDED."esAgriculturaIntensiva",
-        "socioEnFuncionAportes" = EXCLUDED."socioEnFuncionAportes",
-        "activo" = EXCLUDED."activo",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('cultivos', snapshot.cultivos, (bloque) =>
+    prisma.erpCultivo.createMany({
+      data: bloque.map((cultivo) => ({
+        empresaErpId: cultivo.empresaErpId,
+        erpId: cultivo.erpId,
+        idCultivo: cultivo.idCultivo,
+        codigo: cultivo.codigo,
+        nombre: cultivo.nombre,
+        idCampo: cultivo.idCampo,
+        campoErpId: cultivo.campoErpId,
+        idLote: cultivo.idLote,
+        loteErpId: cultivo.loteErpId,
+        idActividad: cultivo.idActividad ?? null,
+        actividadErpId: cultivo.actividadErpId ?? null,
+        idEspecie: cultivo.idEspecie ?? null,
+        especieErpId: cultivo.especieErpId ?? null,
+        idCampania: cultivo.idCampania ?? null,
+        campaniaErpId: cultivo.campaniaErpId ?? null,
+        hectareas: cultivo.hectareas ?? 0,
+        hectareasSembradas: cultivo.hectareasSembradas ?? 0,
+        hectareasCosechadas: cultivo.hectareasCosechadas ?? 0,
+        idPuerto: cultivo.idPuerto ?? null,
+        distanciaPuerto: cultivo.distanciaPuerto ?? null,
+        idPersonalResponsable: cultivo.idPersonalResponsable ?? null,
+        esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
+        socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
+        activo: cultivo.activo,
+        actualizadoEn: new Date(cultivo.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const insumo of snapshot.insumos) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpInsumo" (
-        "id", "empresaErpId", "erpId", "idInsumo", "idUnidadMedida", "idTipoInsumo", "idCategoriaInsumo",
-        "codigo", "nombre", "activo", "controlaStock", "esInsumoGenerico", "controlaPorLote",
-        "precioUnitario", "precioUnitarioVenta", "unidadesBulto", "idMonedaPrecioUnitario",
-        "idMonedaPrecioVenta", "idCuentaContable", "idInsumoBanda", "idInsumoEstandar", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${insumo.empresaErpId}, ${insumo.erpId}, ${insumo.idInsumo}, ${insumo.idUnidadMedida ?? null}, ${insumo.idTipoInsumo ?? null}, ${insumo.idCategoriaInsumo ?? null},
-        ${insumo.codigo}, ${insumo.nombre}, ${insumo.activo}, ${insumo.controlaStock}, ${insumo.esInsumoGenerico}, ${insumo.controlaPorLote},
-        ${insumo.precioUnitario ?? null}, ${insumo.precioUnitarioVenta ?? null}, ${insumo.unidadesBulto ?? null}, ${insumo.idMonedaPrecioUnitario ?? null},
-        ${insumo.idMonedaPrecioVenta ?? null}, ${insumo.idCuentaContable ?? null}, ${insumo.idInsumoBanda ?? null}, ${insumo.idInsumoEstandar ?? null}, ${new Date(insumo.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idInsumo" = EXCLUDED."idInsumo",
-        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
-        "idTipoInsumo" = EXCLUDED."idTipoInsumo",
-        "idCategoriaInsumo" = EXCLUDED."idCategoriaInsumo",
-        "codigo" = EXCLUDED."codigo",
-        "nombre" = EXCLUDED."nombre",
-        "activo" = EXCLUDED."activo",
-        "controlaStock" = EXCLUDED."controlaStock",
-        "esInsumoGenerico" = EXCLUDED."esInsumoGenerico",
-        "controlaPorLote" = EXCLUDED."controlaPorLote",
-        "precioUnitario" = EXCLUDED."precioUnitario",
-        "precioUnitarioVenta" = EXCLUDED."precioUnitarioVenta",
-        "unidadesBulto" = EXCLUDED."unidadesBulto",
-        "idMonedaPrecioUnitario" = EXCLUDED."idMonedaPrecioUnitario",
-        "idMonedaPrecioVenta" = EXCLUDED."idMonedaPrecioVenta",
-        "idCuentaContable" = EXCLUDED."idCuentaContable",
-        "idInsumoBanda" = EXCLUDED."idInsumoBanda",
-        "idInsumoEstandar" = EXCLUDED."idInsumoEstandar",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('insumos', snapshot.insumos, (bloque) =>
+    prisma.erpInsumo.createMany({
+      data: bloque.map((insumo) => ({
+        empresaErpId: insumo.empresaErpId,
+        erpId: insumo.erpId,
+        idInsumo: insumo.idInsumo,
+        idUnidadMedida: insumo.idUnidadMedida ?? null,
+        idTipoInsumo: insumo.idTipoInsumo ?? null,
+        idCategoriaInsumo: insumo.idCategoriaInsumo ?? null,
+        codigo: insumo.codigo,
+        nombre: insumo.nombre,
+        activo: insumo.activo,
+        controlaStock: insumo.controlaStock,
+        esInsumoGenerico: insumo.esInsumoGenerico,
+        controlaPorLote: insumo.controlaPorLote,
+        precioUnitario: insumo.precioUnitario ?? null,
+        precioUnitarioVenta: insumo.precioUnitarioVenta ?? null,
+        unidadesBulto: insumo.unidadesBulto ?? null,
+        idMonedaPrecioUnitario: insumo.idMonedaPrecioUnitario ?? null,
+        idMonedaPrecioVenta: insumo.idMonedaPrecioVenta ?? null,
+        idCuentaContable: insumo.idCuentaContable ?? null,
+        idInsumoBanda: insumo.idInsumoBanda ?? null,
+        idInsumoEstandar: insumo.idInsumoEstandar ?? null,
+        actualizadoEn: new Date(insumo.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const servicio of snapshot.servicios) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpServicio" (
-        "id", "empresaErpId", "erpId", "idServicio", "idTipoServicio", "codigo", "descripcion",
-        "descripcionAbreviada", "idUnidadMedida", "idMoneda", "precioUnitario",
-        "idMonedaPersonal", "importePersonal", "activo", "imputaDosis", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${servicio.empresaErpId}, ${servicio.erpId}, ${servicio.idServicio}, ${servicio.idTipoServicio ?? null}, ${servicio.codigo}, ${servicio.descripcion},
-        ${servicio.descripcionAbreviada ?? null}, ${servicio.idUnidadMedida ?? null}, ${servicio.idMoneda ?? null}, ${servicio.precioUnitario ?? null},
-        ${servicio.idMonedaPersonal ?? null}, ${servicio.importePersonal ?? null}, ${servicio.activo}, ${servicio.imputaDosis}, ${new Date(servicio.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idServicio" = EXCLUDED."idServicio",
-        "idTipoServicio" = EXCLUDED."idTipoServicio",
-        "codigo" = EXCLUDED."codigo",
-        "descripcion" = EXCLUDED."descripcion",
-        "descripcionAbreviada" = EXCLUDED."descripcionAbreviada",
-        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
-        "idMoneda" = EXCLUDED."idMoneda",
-        "precioUnitario" = EXCLUDED."precioUnitario",
-        "idMonedaPersonal" = EXCLUDED."idMonedaPersonal",
-        "importePersonal" = EXCLUDED."importePersonal",
-        "activo" = EXCLUDED."activo",
-        "imputaDosis" = EXCLUDED."imputaDosis",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('servicios', snapshot.servicios, (bloque) =>
+    prisma.erpServicio.createMany({
+      data: bloque.map((servicio) => ({
+        empresaErpId: servicio.empresaErpId,
+        erpId: servicio.erpId,
+        idServicio: servicio.idServicio,
+        idTipoServicio: servicio.idTipoServicio ?? null,
+        codigo: servicio.codigo,
+        descripcion: servicio.descripcion,
+        descripcionAbreviada: servicio.descripcionAbreviada ?? null,
+        idUnidadMedida: servicio.idUnidadMedida ?? null,
+        idMoneda: servicio.idMoneda ?? null,
+        precioUnitario: servicio.precioUnitario ?? null,
+        idMonedaPersonal: servicio.idMonedaPersonal ?? null,
+        importePersonal: servicio.importePersonal ?? null,
+        activo: servicio.activo,
+        imputaDosis: servicio.imputaDosis,
+        actualizadoEn: new Date(servicio.actualizadoEn),
+      })),
+    }),
+  );
 
-  for (const unidad of snapshot.unidadesMedida) {
-    await prisma.$executeRaw`
-      INSERT INTO "ErpUnidadMedida" (
-        "id", "empresaErpId", "erpId", "idUnidadMedida", "codigo", "codigoSifen",
-        "descripcion", "activo", "actualizadoEn"
-      )
-      VALUES (
-        ${randomUUID()}, ${unidad.empresaErpId}, ${unidad.erpId}, ${unidad.idUnidadMedida}, ${unidad.codigo}, ${unidad.codigoSifen ?? null},
-        ${unidad.descripcion}, ${unidad.activo}, ${new Date(unidad.actualizadoEn)}
-      )
-      ON CONFLICT ("erpId") DO UPDATE SET
-        "empresaErpId" = EXCLUDED."empresaErpId",
-        "idUnidadMedida" = EXCLUDED."idUnidadMedida",
-        "codigo" = EXCLUDED."codigo",
-        "codigoSifen" = EXCLUDED."codigoSifen",
-        "descripcion" = EXCLUDED."descripcion",
-        "activo" = EXCLUDED."activo",
-        "actualizadoEn" = EXCLUDED."actualizadoEn",
-        "importadoEn" = CURRENT_TIMESTAMP
-    `;
-  }
+  await crearEnBloques('unidadesMedida', snapshot.unidadesMedida, (bloque) =>
+    prisma.erpUnidadMedida.createMany({
+      data: bloque.map((unidad) => ({
+        empresaErpId: unidad.empresaErpId,
+        erpId: unidad.erpId,
+        idUnidadMedida: unidad.idUnidadMedida,
+        codigo: unidad.codigo,
+        codigoSifen: unidad.codigoSifen ?? null,
+        descripcion: unidad.descripcion,
+        activo: unidad.activo,
+        actualizadoEn: new Date(unidad.actualizadoEn),
+      })),
+    }),
+  );
 
   if (clienteId) {
-    await prisma.$executeRaw`
-      UPDATE "IntegracionErp"
-      SET "ultimoSyncEn" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "clienteId" = ${clienteId}
-    `;
+    await prisma.integracionErp.upsert({
+      where: { clienteId },
+      create: {
+        clienteId,
+        baseUrl: process.env.ERP_BASE_URL || null,
+        authMode: process.env.ERP_AUTH_MODE || 'mock',
+        activo: true,
+        ultimoSyncEn: new Date(),
+      },
+      update: {
+        ultimoSyncEn: new Date(),
+      },
+    });
   }
 
   return {

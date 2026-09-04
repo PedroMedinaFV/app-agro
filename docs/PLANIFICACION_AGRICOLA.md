@@ -38,7 +38,7 @@ La planificacion se apoya en padrones ya integrados o previstos:
 
 Tambien se integra `Padrones/Insumos` del ERP para usar insumos como referencia al armar protocolos.
 
-Tambien se integra `Padrones/UnidadesMedidas` del ERP para seleccionar unidades en labores e insumos. La unidad se elige desde el padron ERP y se copia como codigo operativo en Agro App.
+Tambien se integra `Padrones/UnidadesMedida` del ERP para seleccionar unidades en labores e insumos. La unidad se elige desde el padron ERP y se copia como codigo operativo en Agro App.
 
 ## Padrones base no registrados en ERP
 
@@ -52,6 +52,8 @@ Agro App debe permitir crear registros provisorios para:
 - especies;
 - actividades;
 - insumos.
+
+Al crear un campo provisorio, la zona se selecciona desde un padron combinado de zonas ERP sincronizadas y zonas propias creadas en Agro App. No se carga como texto libre para evitar errores de escritura y facilitar la vinculacion posterior.
 
 Cuando el registro aparezca mas adelante en los padrones del ERP, un usuario autorizado debe poder vincular el registro provisorio con el registro ERP correspondiente.
 
@@ -545,7 +547,7 @@ Labores e insumos:
 - No deben cargarse como texto libre por defecto.
 - Las labores deben seleccionarse desde un padron de labores.
 - Los insumos deben seleccionarse desde el padron de insumos ERP cuando exista.
-- Las unidades de labores e insumos deben seleccionarse desde `Padrones/UnidadesMedidas` cuando el snapshot ERP lo tenga disponible.
+- Las unidades de labores e insumos deben seleccionarse desde `Padrones/UnidadesMedida` cuando el snapshot ERP lo tenga disponible.
 - Las labores se sincronizan desde `Padrones/Servicios` del ERP cuando esten disponibles.
 - Mientras una labor no exista en el ERP, Agro App permite crearla como provisoria para no bloquear protocolos.
 - Cuando la labor aparezca en el ERP, Agro App debe proponer una vinculacion simple y auditada.
@@ -562,7 +564,7 @@ Las labores representan tareas o servicios necesarios.
 
 La fuente ERP sera `Padrones/Servicios`. En Agro App se gestionan como padron propio porque una labor puede necesitarse antes de estar dada de alta en el ERP.
 
-La unidad sugerida de la labor se selecciona desde `Padrones/UnidadesMedidas` y se guarda como codigo copiado, por ejemplo `Ha`, `Hs` o `Unid`.
+La unidad sugerida de la labor se selecciona desde `Padrones/UnidadesMedida` y se guarda como codigo copiado, por ejemplo `Ha`, `Hs` o `Unid`.
 
 Campos sugeridos:
 
@@ -624,7 +626,7 @@ La fuente ideal de insumos sera el ERP. Agro App guarda una copia local del padr
 
 La administracion web del padron se realiza desde `Padrones > Insumos`. Un usuario autorizado puede crear o editar nombre, codigo interno, empresa, tipo, unidad, precio estimado, moneda y estado de vinculacion.
 
-La unidad del insumo se selecciona desde `Padrones/UnidadesMedidas` y se guarda como codigo copiado, por ejemplo `Lts`, `Kgs`, `Bls` o `Unid`.
+La unidad del insumo se selecciona desde `Padrones/UnidadesMedida` y se guarda como codigo copiado, por ejemplo `Lts`, `Kgs`, `Bls` o `Unid`.
 
 Cuando un insumo se agrega a un protocolo, se selecciona desde el padron operativo `InsumoPlanificacion`. La linea del protocolo copia `insumoPlanificacionId`, `insumoErpId`, nombre, tipo, unidad y precio/costo estimado. El protocolo no debe depender dinamicamente del precio ERP porque una planificacion aprobada debe conservar sus supuestos economicos.
 

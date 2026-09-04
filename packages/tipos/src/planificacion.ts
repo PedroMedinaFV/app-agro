@@ -416,6 +416,18 @@ export type GuardarInsumoPlanificacionResponse = {
   mensaje: string;
 };
 
+export type GuardarCampoPlanificacionRequest = {
+  campo: CampoPlanificacion;
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarCampoPlanificacionResponse = {
+  campo: CampoPlanificacion;
+  auditado: boolean;
+  mensaje: string;
+};
+
 export type CerrarPlanificacionRequest = {
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';

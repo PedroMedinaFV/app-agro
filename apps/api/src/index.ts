@@ -25,6 +25,7 @@ import conceptosGastosComercialesRuta from './routes/conceptosGastosComerciales'
 import destinosVentaRuta from './routes/destinosVenta';
 import laboresReferenciaRuta from './routes/laboresReferencia';
 import insumosPlanificacionRuta from './routes/insumosPlanificacion';
+import camposPlanificacionRuta from './routes/camposPlanificacion';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -57,6 +58,7 @@ app.use('/conceptos-gastos-comerciales', autenticacionBasica, conceptosGastosCom
 app.use('/destinos-venta', autenticacionBasica, destinosVentaRuta);
 app.use('/labores-referencia', autenticacionBasica, laboresReferenciaRuta);
 app.use('/insumos-planificacion', autenticacionBasica, insumosPlanificacionRuta);
+app.use('/campos-planificacion', autenticacionBasica, camposPlanificacionRuta);
 
 app.use(manejadorErrores);
 

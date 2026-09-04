@@ -223,9 +223,9 @@ Para insumos, `erpId` se deriva como `empresa:<idEmpresa>:insumo:<idInsumo>`.
 
 El precio unitario del ERP se guarda como referencia. Cuando un insumo se use en un protocolo o planificacion, el costo debe copiarse a una version editable para evitar que cambios posteriores del ERP modifiquen supuestos historicos.
 
-### Padrones/UnidadesMedidas
+### Padrones/UnidadesMedida
 
-El contrato de `Padrones/UnidadesMedidas` trae unidades de medida por empresa ERP y requiere `x-company`.
+El contrato de `Padrones/UnidadesMedida` trae unidades de medida por empresa ERP y requiere `x-company`.
 
 Parametros:
 
@@ -317,7 +317,9 @@ Tambien se agregan tablas de configuracion por cliente:
 - `POST /erp/sincronizar`: toma el mock y lo persiste en las tablas `Erp*`.
 - `GET /erp/configuracion`: devuelve estado de configuracion sin exponer secretos.
 
-`POST /erp/sincronizar` requiere PostgreSQL disponible. Cuando `ERP_AUTH_MODE` no es `mock`, consulta el ERP real y guarda/actualiza la copia local en tablas `Erp*`.
+`POST /erp/sincronizar` requiere PostgreSQL disponible. Cuando `ERP_AUTH_MODE` no es `mock`, consulta el ERP real y refresca la copia local en tablas `Erp*`.
+
+Las tablas `Erp*` se tratan como cache importada del ERP por empresa. En cada sincronizacion se reemplaza el snapshot de las empresas AGRO seleccionadas para mantener la copia consistente y agil contra Supabase. Las ediciones del usuario no se hacen sobre esas tablas: viven en las entidades propias de Agro App, por ejemplo `CampoPlanificacion`, `LotePlanificacion`, `ActividadPlanificacion`, `InsumoPlanificacion`, `LaborReferencia`, precios, gastos y protocolos.
 
 La respuesta de sincronizacion devuelve cantidades importadas por padron para validar rapido el resultado.
 
@@ -376,9 +378,19 @@ El comando usa la misma logica que `POST /erp/sincronizar`:
 - con `clienteId`, resuelve la configuracion de `IntegracionErp` y sincroniza solo las empresas marcadas como AGRO en `ClienteEmpresaErp`;
 - sin `clienteId`, usa la configuracion global de `.env`.
 
+En runtime web/API, las rutas autenticadas no deben consultar ni sincronizar datos reales sin `clienteId` asociado al usuario. Esto evita que una pantalla dispare consultas para todas las empresas importadas por accidente. El modo global sin `clienteId` queda reservado para scripts controlados de desarrollo.
+
 Los secretos deben cargarse en `.env` o en `IntegracionErp`; nunca se imprimen en consola.
 
 En desarrollo local, el backend carga el `.env` de la raiz del proyecto y esos valores prevalecen sobre variables viejas que puedan quedar en la terminal. Esto evita probar por error contra `ERP_AUTH_MODE=mock` cuando el archivo local ya fue configurado para el ERP real.
+
+Para verificar rapidamente que la sincronizacion quedo persistida en Supabase:
+
+```powershell
+pnpm --filter agro-app-api erp:verify
+```
+
+Este comando informa los conteos globales de tablas `Erp*`, los conteos filtrados por las empresas AGRO seleccionadas para `cliente-demo` y la fecha `ultimoSyncEn` de `IntegracionErp`.
 
 ## Cliente HTTP real
 
@@ -393,7 +405,7 @@ Cuando `ERP_AUTH_MODE` no es `mock`, `clienteErp.ts` consulta endpoints reales d
 - `Agricultura/Cultivos`
 - `Padrones/Insumos`
 - `Padrones/Servicios`
-- `Padrones/UnidadesMedidas`
+- `Padrones/UnidadesMedida`
 - `Sistema/Empresas`
 
 Luego mapea cada respuesta al contrato interno:
@@ -461,7 +473,7 @@ ERP_PATH_CAMPANIAS="Agricultura/Campanias"
 ERP_PATH_CULTIVOS="Agricultura/Cultivos"
 ERP_PATH_INSUMOS="Padrones/Insumos"
 ERP_PATH_SERVICIOS="Padrones/Servicios"
-ERP_PATH_UNIDADES_MEDIDA="Padrones/UnidadesMedidas"
+ERP_PATH_UNIDADES_MEDIDA="Padrones/UnidadesMedida"
 ERP_PATH_EMPRESAS="Sistema/Empresas"
 ERP_PATH_LOGIN="auth/Login"
 ```

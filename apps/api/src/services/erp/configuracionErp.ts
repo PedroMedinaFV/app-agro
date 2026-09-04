@@ -92,7 +92,7 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
-    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
+    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
     pathLogin: process.env.ERP_PATH_LOGIN || 'auth/login',
   };
@@ -147,7 +147,7 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
-    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedidas',
+    pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
     pathLogin: process.env.ERP_PATH_LOGIN || 'auth/Login',
   };

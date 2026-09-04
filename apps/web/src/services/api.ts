@@ -1,13 +1,18 @@
 import {
   EmpresaErpCliente,
   ErpEmpresa,
+  ErpCampo,
+  ErpZona,
   ErpSnapshot,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
+  CampoPlanificacion,
   ConceptoGastoComercial,
   DestinoVentaReferencia,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
+  GuardarCampoPlanificacionRequest,
+  GuardarCampoPlanificacionResponse,
   GuardarDestinoVentaReferenciaRequest,
   GuardarDestinoVentaReferenciaResponse,
   GuardarGastosComercialesReferenciaRequest,
@@ -60,6 +65,22 @@ export async function loginDemo(datos: LoginDemoRequest): Promise<SesionUsuario>
 
 export async function obtenerSnapshotErp(token?: string): Promise<ErpSnapshot> {
   return request<ErpSnapshot>('/erp/snapshot', {}, token);
+}
+
+export type CamposErpImportadosResponse = {
+  campos: ErpCampo[];
+};
+
+export async function obtenerCamposErpImportados(token?: string): Promise<CamposErpImportadosResponse> {
+  return request<CamposErpImportadosResponse>('/erp/campos-importados', {}, token);
+}
+
+export type ZonasErpImportadasResponse = {
+  zonas: ErpZona[];
+};
+
+export async function obtenerZonasErpImportadas(token?: string): Promise<ZonasErpImportadasResponse> {
+  return request<ZonasErpImportadasResponse>('/erp/zonas-importadas', {}, token);
 }
 
 export type EmpresasErpAdminResponse = {
@@ -185,6 +206,25 @@ export async function guardarInsumoPlanificacion(
   token?: string,
 ): Promise<GuardarInsumoPlanificacionResponse> {
   return request<GuardarInsumoPlanificacionResponse>(`/insumos-planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type CamposPlanificacionResponse = {
+  campos: CampoPlanificacion[];
+};
+
+export async function obtenerCamposPlanificacion(token?: string): Promise<CamposPlanificacionResponse> {
+  return request<CamposPlanificacionResponse>('/campos-planificacion', {}, token);
+}
+
+export async function guardarCampoPlanificacion(
+  id: string,
+  datos: GuardarCampoPlanificacionRequest,
+  token?: string,
+): Promise<GuardarCampoPlanificacionResponse> {
+  return request<GuardarCampoPlanificacionResponse>(`/campos-planificacion/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

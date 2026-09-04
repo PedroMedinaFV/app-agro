@@ -725,6 +725,48 @@ nav a.active .nav-icon,
   font-weight: 700;
 }
 
+.field-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.35fr) minmax(150px, 1fr) minmax(90px, 0.5fr) minmax(76px, 0.45fr) minmax(96px, 0.55fr) minmax(76px, 0.45fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #edf1ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.field-row > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.field-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.field-row span {
+  color: #64736a;
+  font-size: 13px;
+}
+
+.field-row em {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #234235;
+  background: #eaf1eb;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .planning-stack {
   display: grid;
   gap: 20px;
@@ -1394,6 +1436,7 @@ nav a.active .nav-icon,
   .reference-total,
   .reference-list-row,
   .master-list-row,
+  .field-row,
   .expense-list-row,
   .expense-item-row,
   .reference-modal-grid,
