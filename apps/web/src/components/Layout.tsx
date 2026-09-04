@@ -33,8 +33,6 @@ export function Layout({
   const [padronesAbierto, setPadronesAbierto] = useState(vista.startsWith('padrones-'));
   const navItems = [
     { vista: 'inicio' as const, label: 'Inicio', icon: 'IN' },
-    { vista: 'campos' as const, label: 'Campos', icon: 'CA' },
-    { label: 'Lotes', icon: 'LO' },
     { vista: 'planificacion' as const, label: 'Planificacion', icon: 'PL' },
     { vista: 'protocolos' as const, label: 'Protocolos', icon: 'PR' },
     { vista: 'precios' as const, label: 'Precios', icon: 'US' },
