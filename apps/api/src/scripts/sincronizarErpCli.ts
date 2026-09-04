@@ -1,5 +1,8 @@
+import { cargarEnvRaiz } from '../config/cargarEnvRaiz';
 import { prisma } from '../prisma';
 import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
+
+cargarEnvRaiz();
 
 function obtenerClienteIdDesdeArgs() {
   const argumento = process.argv.find((arg) => arg.startsWith('--clienteId='));

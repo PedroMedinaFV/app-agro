@@ -24,17 +24,17 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
 
   return {
     ...snapshot,
-    zonas: snapshot.zonas.filter((zona) => empresasPermitidas.has(zona.empresaErpId)),
+    zonas: snapshot.zonas.filter((zona) => zona.empresaErpId === 'global' || empresasPermitidas.has(zona.empresaErpId)),
     campos: camposPermitidos,
     lotes: lotesPermitidos,
-    actividades: snapshot.actividades.filter((actividad) => empresasPermitidas.has(actividad.empresaErpId)),
-    especies: snapshot.especies.filter((especie) => empresasPermitidas.has(especie.empresaErpId)),
+    actividades: snapshot.actividades,
+    especies: snapshot.especies,
     empresas: snapshot.empresas.filter((empresa) => empresasPermitidas.has(empresa.erpId)),
-    campanias: snapshot.campanias.filter((campania) => empresasPermitidas.has(campania.empresaErpId)),
+    campanias: snapshot.campanias,
     cultivos: snapshot.cultivos.filter((cultivo) => lotesPermitidosIds.has(cultivo.loteErpId)),
-    insumos: snapshot.insumos.filter((insumo) => empresasPermitidas.has(insumo.empresaErpId)),
-    servicios: snapshot.servicios.filter((servicio) => empresasPermitidas.has(servicio.empresaErpId)),
-    unidadesMedida: snapshot.unidadesMedida.filter((unidad) => empresasPermitidas.has(unidad.empresaErpId)),
+    insumos: snapshot.insumos,
+    servicios: snapshot.servicios,
+    unidadesMedida: snapshot.unidadesMedida,
   };
 }
 

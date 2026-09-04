@@ -6,8 +6,8 @@ function normalizarFecha(fecha: string | null) {
 
 export function mapearPadronUnidadMedida(unidad: ErpPadronUnidadMedida, empresaErpId = 'empresa:mock'): ErpUnidadMedida {
   return {
-    empresaErpId,
-    erpId: `${empresaErpId}:unidad-medida:${unidad.idUnidadMedida}`,
+    empresaErpId: 'global',
+    erpId: `unidad-medida:${unidad.idUnidadMedida}`,
     idUnidadMedida: unidad.idUnidadMedida,
     codigo: unidad.codigo,
     codigoSifen: unidad.codigoSifen || undefined,

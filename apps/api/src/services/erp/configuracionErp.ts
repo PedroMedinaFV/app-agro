@@ -120,17 +120,20 @@ function mapearRowAPublica(row: IntegracionErpRow): IntegracionErpPublica {
 }
 
 function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
+  const baseUrl = row.baseUrl || process.env.ERP_BASE_URL || undefined;
+
   return {
     clienteId: row.clienteId,
-    baseUrl: row.baseUrl || undefined,
+    baseUrl,
+    authBaseUrl: process.env.ERP_AUTH_BASE_URL || baseUrl,
     authMode: leerAuthMode(row.authMode),
-    apiKey: descifrarSecreto(row.apiKeyCifrada),
+    apiKey: descifrarSecreto(row.apiKeyCifrada) || process.env.ERP_API_KEY || undefined,
     apiKeyHeader: row.apiKeyHeader,
-    bearerToken: descifrarSecreto(row.bearerTokenCifrado),
-    username: descifrarSecreto(row.usernameCifrado),
-    password: descifrarSecreto(row.passwordCifrada),
-    loginKey: descifrarSecreto(row.usernameCifrado),
-    loginPassword: descifrarSecreto(row.passwordCifrada),
+    bearerToken: descifrarSecreto(row.bearerTokenCifrado) || process.env.ERP_BEARER_TOKEN || undefined,
+    username: descifrarSecreto(row.usernameCifrado) || process.env.ERP_USERNAME || undefined,
+    password: descifrarSecreto(row.passwordCifrada) || process.env.ERP_PASSWORD || undefined,
+    loginKey: descifrarSecreto(row.usernameCifrado) || process.env.ERP_LOGIN_KEY || undefined,
+    loginPassword: descifrarSecreto(row.passwordCifrada) || process.env.ERP_LOGIN_PASSWORD || undefined,
     loginApp: process.env.ERP_LOGIN_APP || undefined,
     loginInstallation: process.env.ERP_LOGIN_INSTALLATION || undefined,
     tokenHeader: process.env.ERP_TOKEN_HEADER || 'Authorization',

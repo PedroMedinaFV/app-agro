@@ -90,6 +90,8 @@ Campos relevantes:
 
 Para actividades, `erpId` se deriva como `actividad:${idActividad}`.
 
+Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
+
 ### Agricultura/Especies
 
 El contrato de `Agricultura/Especies` trae especies/cultivos maestros del ERP.
@@ -107,6 +109,8 @@ Campos relevantes:
 
 Para especies, `erpId` se deriva como `especie:${idEspecie}`.
 
+Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
+
 El arreglo `precios` queda fuera del contrato interno del MVP hasta definir si Agro App debe mostrar precios, sincronizarlos o solo usarlos como referencia.
 
 ### Agricultura/Campanias
@@ -123,7 +127,9 @@ Campos relevantes:
 - `fechaUltimaActualizacion`
 - `fechasCampanias`
 
-Para campañas, `erpId` se deriva como `empresa:<idEmpresa>:campania:<idCampania>`.
+Para campañas, `erpId` se deriva como `campania:${idCampania}`.
+
+Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
 El campo `esActual` se conserva porque permite sugerir una campaña por defecto en la carga de registros. El arreglo `fechasCampanias` queda fuera del contrato interno del MVP hasta definir si se usará para validar fechas operativas.
 
@@ -152,12 +158,12 @@ Campos relevantes:
 - `imputaDosis`
 - `fechaUltimaActualizacion`
 
-Para servicios/labores, `erpId` se deriva como `empresa:<idEmpresa>:servicio:<idServicio>`.
+Para servicios/labores, `erpId` se deriva como `servicio:${idServicio}`.
 
 Reglas de sincronizacion:
 
 - Se consulta por cada empresa ERP marcada como AGRO porque el endpoint requiere `x-company`.
-- Si el mismo servicio aparece en mas de una empresa, Agro App conserva la procedencia con `empresaErpId`.
+- Como ALBOR devuelve el mismo catalogo para distintas empresas, Agro App deduplica por `idServicio` y guarda `empresaErpId = global`.
 - El servicio ERP no reemplaza automaticamente una labor creada manualmente en Agro App.
 - Si una labor provisoria coincide con un servicio ERP, el sistema debe generar una sugerencia de vinculacion para que un usuario autorizado confirme o rechace.
 - El precio ERP se usa como costo sugerido para nuevas selecciones, pero no debe modificar protocolos o planificaciones cerradas.
@@ -227,7 +233,9 @@ Campos relevantes:
 - `idInsumoEstandar`
 - `fechaUltimaActualizacion`
 
-Para insumos, `erpId` se deriva como `empresa:<idEmpresa>:insumo:<idInsumo>`.
+Para insumos, `erpId` se deriva como `insumo:${idInsumo}`.
+
+Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
 El precio unitario del ERP se guarda como referencia. Cuando un insumo se use en un protocolo o planificacion, el costo debe copiarse a una version editable para evitar que cambios posteriores del ERP modifiquen supuestos historicos.
 
@@ -255,6 +263,10 @@ Uso en Agro App:
 - alimenta los selects de unidad en `Padrones > Labores` y `Padrones > Insumos`;
 - al guardar una labor o insumo propio, Agro App copia el `codigo` de la unidad en el campo operativo (`unidadSugerida` o `unidad`);
 - cambios posteriores del ERP no modifican protocolos o planificaciones historicas sin accion explicita.
+
+Para unidades de medida, `erpId` se deriva como `unidad-medida:${idUnidadMedida}`.
+
+Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
 ### Sistema/Empresas
 
@@ -286,18 +298,25 @@ Por eso el flujo queda asi:
 3. Para cada empresa seleccionada, Agro App consulta los padrones operativos enviando `x-company: <idEmpresa>`.
 4. Cada registro importado guarda `empresaErpId` para saber desde qué empresa vino.
 
-Excepcion: `Padrones/Zonas` se trata como padron global deduplicado porque ALBOR devuelve todas las zonas sin importar el `x-company`. En ese caso, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
+Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios` y `Padrones/UnidadesMedida` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
 
 El identificador interno de los datos por empresa incluye la empresa para evitar colisiones:
 
 - `empresa:1:campo:241`
 - `empresa:1:lote:724`
-- `empresa:1:especie:33`
-- `empresa:1:campania:961`
 - `empresa:1:cultivo:576`
-- `empresa:1:insumo:674`
 
-Si una sincronizacion se repite para la misma empresa y el mismo identificador ERP, se actualiza el registro existente. Si otra empresa devuelve datos para el mismo identificador numerico, se guarda como otro registro porque pertenece a otra empresa ERP.
+Los padrones globales usan identificadores sin empresa:
+
+- `zona:33`
+- `actividad:48`
+- `especie:33`
+- `campania:961`
+- `insumo:674`
+- `servicio:147`
+- `unidad-medida:24`
+
+Si una sincronizacion se repite para la misma empresa y el mismo identificador ERP, se actualiza el registro existente. Si otra empresa devuelve datos para el mismo identificador numerico en campos, lotes o cultivos, se guarda como otro registro porque pertenece a otra empresa ERP. En padrones globales, se deduplica y se conserva un unico registro.
 
 ## Tablas de snapshot
 
@@ -401,6 +420,14 @@ pnpm --filter agro-app-api erp:verify
 ```
 
 Este comando informa los conteos globales de tablas `Erp*`, los conteos filtrados por las empresas AGRO seleccionadas para `cliente-demo` y la fecha `ultimoSyncEn` de `IntegracionErp`.
+
+Para limpiar datos de desarrollo antes de una nueva sincronizacion real:
+
+```powershell
+pnpm --filter agro-app-api db:clean:dev
+```
+
+Este comando borra cache ERP dependiente, datos mock/operativos y datos propios de planificacion. Preserva `Cliente`, `Usuario`, `IntegracionErp`, `ErpEmpresa` y `ClienteEmpresaErp` para no perder credenciales ni seleccion de empresas AGRO durante desarrollo.
 
 ## Cliente HTTP real
 

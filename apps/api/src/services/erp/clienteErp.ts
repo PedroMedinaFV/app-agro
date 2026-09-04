@@ -50,6 +50,18 @@ function deduplicarZonasDeSnapshot<T extends { idZona: number; erpId: string; em
   return Array.from(zonasPorId.values()).sort((a, b) => a.idZona - b.idZona);
 }
 
+function deduplicarPorErpId<T extends { erpId: string }>(registros: T[]) {
+  const registrosPorId = new Map<string, T>();
+
+  for (const registro of registros) {
+    if (!registrosPorId.has(registro.erpId)) {
+      registrosPorId.set(registro.erpId, registro);
+    }
+  }
+
+  return Array.from(registrosPorId.values());
+}
+
 let tokenLoginCache: { clave: string; token: string; expiraEn: number } | null = null;
 
 function crearHeadersConToken(configuracion: ConfiguracionErp, token: string): Record<string, string> {
@@ -367,13 +379,13 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
     zonas,
     campos,
     lotes: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.lotes),
-    actividades: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.actividades),
-    especies: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.especies),
-    campanias: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campanias),
+    actividades: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.actividades)),
+    especies: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.especies)),
+    campanias: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campanias)),
     cultivos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.cultivos),
-    insumos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos),
-    servicios: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios),
-    unidadesMedida: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida),
+    insumos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos)),
+    servicios: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios)),
+    unidadesMedida: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida)),
     empresas,
     sincronizadoEn: new Date().toISOString(),
   };

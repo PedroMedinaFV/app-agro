@@ -135,15 +135,9 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     new Set([
       ...snapshot.campos.map((registro) => registro.empresaErpId),
       ...snapshot.lotes.map((registro) => registro.empresaErpId),
-      ...snapshot.actividades.map((registro) => registro.empresaErpId),
-      ...snapshot.especies.map((registro) => registro.empresaErpId),
-      ...snapshot.campanias.map((registro) => registro.empresaErpId),
       ...snapshot.cultivos.map((registro) => registro.empresaErpId),
-      ...snapshot.insumos.map((registro) => registro.empresaErpId),
-      ...snapshot.servicios.map((registro) => registro.empresaErpId),
-      ...snapshot.unidadesMedida.map((registro) => registro.empresaErpId),
     ]),
-  );
+  ).filter((empresaErpId) => empresaErpId !== 'global');
 
   // Las tablas Erp* funcionan como cache importada: se refrescan por empresa y no guardan ediciones del usuario.
   console.log(`[erp-sync] Refrescando cache ERP para ${empresaErpIds.length} empresas`);
@@ -158,13 +152,13 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
       },
     }),
     prisma.erpCampo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpActividad.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpEspecie.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpCampania.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpActividad.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
+    prisma.erpEspecie.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
+    prisma.erpCampania.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
     prisma.erpCultivo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpInsumo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpServicio.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpUnidadMedida.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
+    prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
+    prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
+    prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
   ]);
 
   await crearEnBloques('zonas', zonasSincronizadas, (bloque) =>

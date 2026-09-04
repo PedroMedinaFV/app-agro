@@ -6,8 +6,8 @@ function normalizarFecha(fecha: string | null) {
 
 export function mapearPadronServicio(servicio: ErpPadronServicio, empresaErpId = 'empresa:mock'): ErpServicio {
   return {
-    empresaErpId,
-    erpId: `${empresaErpId}:servicio:${servicio.idServicio}`,
+    empresaErpId: 'global',
+    erpId: `servicio:${servicio.idServicio}`,
     idServicio: servicio.idServicio,
     idTipoServicio: servicio.idTipoServicio ?? undefined,
     codigo: servicio.codigo.trim(),

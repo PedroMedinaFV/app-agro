@@ -6,8 +6,8 @@ function normalizarFecha(fecha: string | null) {
 
 export function mapearAgriculturaActividad(actividad: ErpPadronActividad, empresaErpId = 'empresa:mock'): ErpActividad {
   return {
-    empresaErpId,
-    erpId: `${empresaErpId}:actividad:${actividad.idActividad}`,
+    empresaErpId: 'global',
+    erpId: `actividad:${actividad.idActividad}`,
     idActividad: actividad.idActividad,
     codigo: actividad.codigo,
     descripcion: actividad.descripcion.trim(),

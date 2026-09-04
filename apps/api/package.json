@@ -11,6 +11,7 @@
     "db:migrate": "node ../../scripts/prisma-with-root-env.js migrate dev",
     "db:deploy": "node ../../scripts/prisma-with-root-env.js migrate deploy",
     "db:seed": "ts-node-dev --transpile-only --exit-child prisma/seed.ts",
+    "db:clean:dev": "ts-node-dev --transpile-only --exit-child src/scripts/limpiarDatosDevCli.ts",
     "erp:test": "ts-node-dev --transpile-only --exit-child src/scripts/probarConexionErpCli.ts",
     "erp:list:empresas": "ts-node-dev --transpile-only --exit-child src/scripts/listarEmpresasErpCli.ts",
     "erp:sync:empresas": "ts-node-dev --transpile-only --exit-child src/scripts/sincronizarEmpresasErpCli.ts",

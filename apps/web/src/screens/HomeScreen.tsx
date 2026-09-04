@@ -108,7 +108,7 @@ export function HomeScreen({
                   <p>
                     Tipo {actividad.idTipoActividad ?? '-'} / Especie{' '}
                     {snapshot.especies.find(
-                      (especie) => especie.empresaErpId === actividad.empresaErpId && especie.idEspecie === actividad.idEspecie
+                      (especie) => especie.idEspecie === actividad.idEspecie
                     )?.nombre || actividad.idEspecie || '-'}
                   </p>
                 </article>

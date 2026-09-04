@@ -6,8 +6,8 @@ function normalizarFecha(fecha: string | null) {
 
 export function mapearAgriculturaCampania(campania: ErpPadronCampania, empresaErpId = 'empresa:mock'): ErpCampania {
   return {
-    empresaErpId,
-    erpId: `${empresaErpId}:campania:${campania.idCampania}`,
+    empresaErpId: 'global',
+    erpId: `campania:${campania.idCampania}`,
     idCampania: campania.idCampania,
     codigo: campania.codigo,
     nombre: campania.nombre.trim(),

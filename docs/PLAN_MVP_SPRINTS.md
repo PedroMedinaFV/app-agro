@@ -160,9 +160,10 @@ Criterio de aceptacion:
 
 Validacion realizada:
 
-- `erp:sync -- --clienteId=cliente-demo` importo datos reales para `empresa:1`, `empresa:3` y `empresa:19`;
-- conteos filtrados por empresas AGRO antes de deduplicar zonas globales: 18 zonas, 24 campos, 846 lotes, 216 actividades, 138 especies, 48 campanias, 3269 cultivos, 2965 insumos, 441 servicios/labores y 54 unidades de medida;
-- ajuste posterior: `Padrones/Zonas` se deduplica por `idZona` porque ALBOR devuelve todas las zonas para cualquier `x-company`;
+- `db:clean:dev` limpio datos operativos/cache de desarrollo preservando cliente, usuario, configuracion ERP, empresas ERP y seleccion AGRO;
+- `erp:sync -- --clienteId=cliente-demo` importo datos reales para `empresa:1`, `empresa:3`, `empresa:18` y `empresa:19`;
+- conteos filtrados por empresas AGRO: 6 zonas, 25 campos, 847 lotes, 72 actividades, 46 especies, 16 campanias, 3267 cultivos, 991 insumos, 147 servicios/labores y 18 unidades de medida;
+- `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios` y `Padrones/UnidadesMedida` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
 - `erp:verify` confirma `ultimoSyncEn` en `IntegracionErp`;
 - las tablas `Erp*` se refrescan como cache por empresa y las ediciones de usuario quedan fuera de esa cache.
 

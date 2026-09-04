@@ -1,15 +1,26 @@
 import { prisma } from '../prisma';
 
+function obtenerClienteIdDesdeArgs() {
+  const argumento = process.argv.find((arg) => arg.startsWith('--clienteId='));
+
+  if (argumento) {
+    return argumento.split('=')[1] || undefined;
+  }
+
+  return process.env.CLIENTE_ID || 'cliente-demo';
+}
+
 async function main() {
+  const clienteId = obtenerClienteIdDesdeArgs();
   const empresasAgroSeleccionadas = await prisma.clienteEmpresaErp.findMany({
-    where: { clienteId: 'cliente-demo' },
+    where: { clienteId },
     select: { empresaErpId: true },
     orderBy: { empresaErpId: 'asc' },
   });
   const empresaErpIds = empresasAgroSeleccionadas.map((empresa) => empresa.empresaErpId);
   // Se consulta secuencialmente para no saturar el pooler de Supabase durante verificaciones locales.
   const empresas = await prisma.erpEmpresa.count();
-  const empresasAgro = await prisma.clienteEmpresaErp.count({ where: { clienteId: 'cliente-demo' } });
+  const empresasAgro = await prisma.clienteEmpresaErp.count({ where: { clienteId } });
   const zonas = await prisma.erpZona.count();
   const campos = await prisma.erpCampo.count();
   const lotes = await prisma.erpLote.count();
@@ -21,24 +32,34 @@ async function main() {
   const servicios = await prisma.erpServicio.count();
   const unidadesMedida = await prisma.erpUnidadMedida.count();
   const integracion = await prisma.integracionErp.findUnique({
-    where: { clienteId: 'cliente-demo' },
+    where: { clienteId },
     select: { ultimoSyncEn: true, ultimoTestOk: true, ultimoTestEn: true },
   });
-  const zonasAgro = await prisma.erpZona.count({ where: { empresaErpId: { in: empresaErpIds } } });
   const camposAgro = await prisma.erpCampo.count({ where: { empresaErpId: { in: empresaErpIds } } });
+  const zonasAgroIds = await prisma.erpCampo.findMany({
+    where: { empresaErpId: { in: empresaErpIds }, idZona: { not: null } },
+    distinct: ['idZona'],
+    select: { idZona: true },
+  });
+  const zonasAgro = await prisma.erpZona.count({
+    where: {
+      idZona: { in: zonasAgroIds.map((zona) => zona.idZona).filter((idZona): idZona is number => typeof idZona === 'number') },
+    },
+  });
   const lotesAgro = await prisma.erpLote.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const actividadesAgro = await prisma.erpActividad.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const especiesAgro = await prisma.erpEspecie.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const campaniasAgro = await prisma.erpCampania.count({ where: { empresaErpId: { in: empresaErpIds } } });
+  const actividadesAgro = await prisma.erpActividad.count({ where: { empresaErpId: 'global' } });
+  const especiesAgro = await prisma.erpEspecie.count({ where: { empresaErpId: 'global' } });
+  const campaniasAgro = await prisma.erpCampania.count({ where: { empresaErpId: 'global' } });
   const cultivosAgro = await prisma.erpCultivo.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const insumosAgro = await prisma.erpInsumo.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const serviciosAgro = await prisma.erpServicio.count({ where: { empresaErpId: { in: empresaErpIds } } });
-  const unidadesMedidaAgro = await prisma.erpUnidadMedida.count({ where: { empresaErpId: { in: empresaErpIds } } });
+  const insumosAgro = await prisma.erpInsumo.count({ where: { empresaErpId: 'global' } });
+  const serviciosAgro = await prisma.erpServicio.count({ where: { empresaErpId: 'global' } });
+  const unidadesMedidaAgro = await prisma.erpUnidadMedida.count({ where: { empresaErpId: 'global' } });
 
   console.log(
     JSON.stringify(
       {
         empresas,
+        clienteId,
         empresasAgro,
         empresaErpIds,
         zonas,

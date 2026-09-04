@@ -6,8 +6,8 @@ function normalizarFecha(fecha: string | null) {
 
 export function mapearAgriculturaEspecie(especie: ErpPadronEspecie, empresaErpId = 'empresa:mock'): ErpEspecie {
   return {
-    empresaErpId,
-    erpId: `${empresaErpId}:especie:${especie.idEspecie}`,
+    empresaErpId: 'global',
+    erpId: `especie:${especie.idEspecie}`,
     idEspecie: especie.idEspecie,
     codigo: especie.codigo,
     nombre: especie.nombre.trim(),
