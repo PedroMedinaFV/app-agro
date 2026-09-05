@@ -184,14 +184,17 @@ Objetivo:
 Incluye:
 
 - [ ] pantallas web de padrones propios: zonas, campos, lotes, especies, actividades, insumos y labores;
+- [x] pantalla web inicial de zonas con ERP sincronizado y zonas propias;
 - [x] pantalla web inicial de campos con ERP sincronizado y campos propios;
 - [x] pantalla web inicial de lotes con ERP sincronizado y lotes propios;
+- [x] alta provisoria de zonas globales del cliente;
 - [x] alta provisoria de campos;
 - [x] alta provisoria de lotes asociados a campos propios;
 - [x] seleccion de zona desde zonas ERP sincronizadas o zonas propias de Agro App;
 - estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
 - sugerencias iniciales de vinculacion por codigo/nombre/empresa;
 - notificaciones internas para revisar coincidencias;
+- [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de campos;
 - [x] auditoria de altas y ediciones de lotes;
 - [ ] auditoria de vinculaciones;
@@ -199,7 +202,8 @@ Incluye:
 
 Criterio de aceptacion:
 
-- [ ] se puede crear un campo/lote/actividad/insumo/labor provisorio;
+- [ ] se puede crear una zona/campo/lote/actividad/insumo/labor provisoria;
+- [x] se puede crear y editar una zona provisoria;
 - [x] se puede crear y editar un campo provisorio;
 - [x] se puede crear y editar un lote provisorio;
 - se puede usar en planificacion/protocolos;

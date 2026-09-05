@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'empresas-erp';
+type VistaApp = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -47,7 +47,7 @@ export function Layout({
     { vista: 'padrones-labores' as const, label: 'Labores' },
     { vista: 'padrones-insumos' as const, label: 'Insumos' },
     { label: 'Estadios' },
-    { label: 'Zonas' },
+    { vista: 'padrones-zonas' as const, label: 'Zonas' },
     { vista: 'campos' as const, label: 'Campos' },
     { vista: 'lotes' as const, label: 'Lotes' },
     { label: 'Especies' },

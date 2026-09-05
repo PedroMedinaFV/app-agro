@@ -16,6 +16,8 @@ import {
   GuardarCampoPlanificacionResponse,
   GuardarLotePlanificacionRequest,
   GuardarLotePlanificacionResponse,
+  GuardarZonaPlanificacionRequest,
+  GuardarZonaPlanificacionResponse,
   GuardarDestinoVentaReferenciaRequest,
   GuardarDestinoVentaReferenciaResponse,
   GuardarGastosComercialesReferenciaRequest,
@@ -37,6 +39,7 @@ import {
   PlanificacionSnapshot,
   ProtocolosSnapshot,
   SesionUsuario,
+  ZonaPlanificacion,
 } from '@agro/tipos';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -256,6 +259,25 @@ export type CamposPlanificacionResponse = {
 
 export async function obtenerCamposPlanificacion(token?: string): Promise<CamposPlanificacionResponse> {
   return request<CamposPlanificacionResponse>('/campos-planificacion', {}, token);
+}
+
+export type ZonasPlanificacionResponse = {
+  zonas: ZonaPlanificacion[];
+};
+
+export async function obtenerZonasPlanificacion(token?: string): Promise<ZonasPlanificacionResponse> {
+  return request<ZonasPlanificacionResponse>('/zonas-planificacion', {}, token);
+}
+
+export async function guardarZonaPlanificacion(
+  id: string,
+  datos: GuardarZonaPlanificacionRequest,
+  token?: string,
+): Promise<GuardarZonaPlanificacionResponse> {
+  return request<GuardarZonaPlanificacionResponse>(`/zonas-planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
 }
 
 export async function guardarCampoPlanificacion(

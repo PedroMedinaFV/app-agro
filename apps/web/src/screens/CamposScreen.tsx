@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
-import { guardarCampoPlanificacion, obtenerCamposErpImportados, obtenerCamposPlanificacion, obtenerZonasErpImportadas } from '../services/api';
+import { guardarCampoPlanificacion, obtenerCamposErpImportados, obtenerCamposPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -59,6 +59,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposPropios, setCamposPropios] = useState<CampoPlanificacion[]>([]);
+  const [zonasPropiasActuales, setZonasPropiasActuales] = useState<ZonaPlanificacion[]>(zonasPropias);
   const [estado, setEstado] = useState('Cargando campos sincronizados.');
   const [guardando, setGuardando] = useState(false);
   const [campoEnEdicion, setCampoEnEdicion] = useState<CampoPlanificacion | null>(null);
@@ -68,15 +69,17 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   useEffect(() => {
     async function cargarCampos() {
       try {
-        const [respuestaErp, respuestaZonasErp, respuestaPropios] = await Promise.all([
+        const [respuestaErp, respuestaZonasErp, respuestaPropios, respuestaZonasPropias] = await Promise.all([
           obtenerCamposErpImportados(sesion.token),
           obtenerZonasErpImportadas(sesion.token),
           obtenerCamposPlanificacion(sesion.token),
+          obtenerZonasPlanificacion(sesion.token),
         ]);
 
         setCamposErp(respuestaErp.campos);
         setZonasErp(respuestaZonasErp.zonas);
         setCamposPropios(respuestaPropios.campos);
+        setZonasPropiasActuales(respuestaZonasPropias.zonas);
         setEstado('Campos cargados desde Supabase.');
       } catch (error) {
         const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los campos.';
@@ -99,7 +102,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       origen: 'erp' as const,
       zonaErpId: zona.erpId,
     }));
-    const zonasDesdeAgro = zonasPropias.map((zona) => ({
+    const zonasDesdeAgro = zonasPropiasActuales.map((zona) => ({
       id: zona.id,
       empresaErpId: zona.empresaErpId,
       nombre: zona.nombre,
@@ -111,7 +114,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     }));
 
     return [...zonasDesdeAgro, ...zonasDesdeErp].sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [zonasErp, zonasPropias]);
+  }, [zonasErp, zonasPropiasActuales]);
   const zonasPorClave = useMemo(() => {
     const mapa = new Map<string, ZonaSeleccionable>();
 

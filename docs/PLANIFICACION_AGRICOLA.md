@@ -55,6 +55,8 @@ Agro App debe permitir crear registros provisorios para:
 
 Al crear un campo provisorio, la zona se selecciona desde un padron combinado de zonas ERP sincronizadas y zonas propias creadas en Agro App. No se carga como texto libre para evitar errores de escritura y facilitar la vinculacion posterior.
 
+Las zonas propias de Agro App se consideran globales dentro del cliente porque ALBOR devuelve el mismo padron de zonas para cualquier `x-company`. Por eso se guardan con `empresaErpId = global`, pueden usarse inmediatamente para crear campos y quedan en estado `provisorio` hasta que se vinculen con una zona ERP. La vinculacion futura debe ser propuesta por el sistema y confirmada por un usuario con permiso, nunca automatica en MVP.
+
 Al crear un lote provisorio, el campo se selecciona desde los campos propios de Agro App. Ese campo puede estar vinculado al ERP o seguir provisorio, pero el lote no debe quedar sin campo operativo. El lote guarda superficie total y superficie productiva; la superficie productiva no puede superar la superficie total.
 
 La pantalla web de `Lotes` debe cargar los campos propios desde el backend de padrones (`/campos-planificacion`) y los campos ERP sincronizados desde la cache local al abrirse, no desde el snapshot demo de planificacion. Esto evita que el select muestre datos incompletos cuando ya existen campos reales persistidos o sincronizados.
