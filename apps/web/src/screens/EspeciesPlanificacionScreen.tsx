@@ -150,12 +150,19 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
         </div>
 
         <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Especie</span><span>Origen</span><span>Estado</span><span>Actualizado</span><span>Accion</span>
+          <div className="field-row reference-list-head">
+            <span>Especie</span>
+            <span>Origen</span>
+            <span>Estado</span>
+            <span>Actualizado</span>
+            <span>Accion</span>
           </div>
           {especiesPropiasFiltradas.map((especie) => (
-            <div className="master-list-row" key={especie.id}>
-              <div><strong>{especie.nombre}</strong><span>{especie.codigoInterno || 'Sin codigo interno'}</span></div>
+            <div className="mfield-row" key={especie.id}>
+              <div>
+                <strong>{especie.nombre}</strong>
+                <span>{especie.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
               <span>Agro App</span>
               <em>{especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : especie.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP'}</em>
               <span>{new Intl.DateTimeFormat('es-AR').format(new Date(especie.updatedAt || especie.createdAt))}</span>
@@ -163,8 +170,11 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
             </div>
           ))}
           {especiesErpFiltradas.map((especie) => (
-            <div className="master-list-row" key={especie.erpId}>
-              <div><strong>{especie.nombre}</strong><span>{especie.codigo} - ALBOR #{especie.idEspecie}</span></div>
+            <div className="field-row" key={especie.erpId}>
+              <div>
+                <strong>{especie.nombre}</strong>
+                <span>{especie.codigo} - ALBOR #{especie.idEspecie}</span>
+              </div>
               <span>ERP</span>
               <em>{especiesVinculadas.has(especie.erpId) ? 'Vinculada' : 'Disponible'}</em>
               <span>{new Intl.DateTimeFormat('es-AR').format(new Date(especie.actualizadoEn))}</span>

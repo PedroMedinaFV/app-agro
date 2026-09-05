@@ -238,12 +238,19 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
         )}
 
         <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Actividad</span><span>Especie</span><span>Origen</span><span>Estado</span><span>Accion</span>
+          <div className="field-row reference-list-head">
+            <span>Actividad</span>
+            <span>Especie</span>
+            <span>Origen</span>
+            <span>Estado</span>
+            <span>Accion</span>
           </div>
           {actividadesPropiasFiltradas.map((actividad) => (
-            <div className="master-list-row" key={actividad.id}>
-              <div><strong>{actividad.nombre}</strong><span>{actividad.codigoInterno || 'Sin codigo interno'}</span></div>
+            <div className="field-row" key={actividad.id}>
+              <div>
+                <strong>{actividad.nombre}</strong>
+                <span>{actividad.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
               <span>{obtenerNombreEspecie(actividad)}</span>
               <span>Agro App</span>
               <em>{actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : actividad.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP'}</em>
@@ -251,8 +258,11 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
             </div>
           ))}
           {actividadesErpFiltradas.map((actividad) => (
-            <div className="master-list-row" key={actividad.erpId}>
-              <div><strong>{actividad.descripcion}</strong><span>{actividad.codigo} - ALBOR #{actividad.idActividad}</span></div>
+            <div className="field-row" key={actividad.erpId}>
+              <div>
+                <strong>{actividad.descripcion}</strong>
+                <span>{actividad.codigo} - ALBOR #{actividad.idActividad}</span>
+              </div>
               <span>{actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie'}</span>
               <span>ERP</span>
               <em>{actividadesVinculadas.has(actividad.erpId) ? 'Vinculada' : 'Disponible'}</em>
