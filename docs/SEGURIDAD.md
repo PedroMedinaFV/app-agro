@@ -33,6 +33,9 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - El backend solo debe sincronizar empresas ERP asociadas al cliente por un admin.
 - Cada registro importado guarda `empresaErpId` para trazabilidad.
 - Los identificadores internos incluyen empresa para evitar colisiones entre tenants o empresas.
+- Durante el MVP temprano, la sincronizacion manual bloquea corridas simultaneas por cliente en memoria.
+- Antes de produccion, el bloqueo de corridas simultaneas debe persistirse en base de datos para sobrevivir reinicios, multiples instancias y refrescos de navegador.
+- La sincronizacion futura debe guardar job, estado, usuario iniciador, fechas, conteos y errores sin exponer secretos ni tokens ERP.
 
 ## Datos y multi-cliente
 
@@ -93,6 +96,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 
 - Reemplazar modo demo por Microsoft Entra ID real.
 - Implementar tabla y servicio de auditoria transversal.
+- Implementar jobs persistidos para sincronizacion ERP con bloqueo por DB, historial y errores por empresa/padron.
 - Revisar rate limits y proteccion ante fuerza bruta.
 - Configurar CORS restrictivo por ambiente.
 - Definir politica de rotacion de secretos.

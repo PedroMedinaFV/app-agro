@@ -159,6 +159,11 @@ Criterio de aceptacion:
 - [ ] la web muestra historial de corridas y errores por empresa/padron;
 - [ ] usuario comun solo ve campos asignados.
 
+Decision de alcance:
+
+- La sincronizacion web queda sincrona para MVP temprano.
+- El job persistido con `syncId`, polling, historial, errores por empresa/padron y bloqueo por base de datos queda planteado para hardening antes de produccion.
+
 Validacion realizada:
 
 - `db:clean:dev` limpio datos operativos/cache de desarrollo preservando cliente, usuario, configuracion ERP, empresas ERP y seleccion AGRO;
@@ -371,6 +376,7 @@ Quedan para version posterior:
 ## Riesgos principales
 
 - Volumen y tiempos de sincronizacion por empresa.
+- Sincronizacion ERP sin job persistido todavia no sobrevive refrescos de navegador ni multiples instancias backend.
 - Diferencias de padrones entre empresas ALBOR.
 - Datos faltantes o inconsistentes en ALBOR.
 - Seguridad de secretos ERP y tokens.

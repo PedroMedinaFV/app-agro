@@ -599,6 +599,75 @@ La persistencia definitiva se realiza en `ClienteEmpresaErp`.
 
 La sincronizacion manual usa `POST /erp/sincronizar`, requiere permiso `erp:sincronizar` y no permite dos corridas simultaneas para el mismo cliente.
 
+## Sincronizacion asincronica futura
+
+Decision MVP:
+
+- La sincronizacion actual es manual y sincrona.
+- El administrador la dispara desde web y la pantalla espera la respuesta del backend.
+- Mientras la pestania siga abierta, la UI muestra estado de carga y luego conteos principales.
+- Si el usuario refresca el navegador, se pierde el estado visual de la corrida en curso.
+- El backend bloquea corridas simultaneas por cliente en memoria, suficiente para desarrollo/MVP temprano.
+
+Antes de produccion, la sincronizacion debe evolucionar a job persistido.
+
+Contrato futuro sugerido:
+
+```http
+POST /erp/sincronizaciones
+```
+
+Respuesta:
+
+```json
+{
+  "syncId": "sync-...",
+  "estado": "pendiente"
+}
+```
+
+Consulta de estado:
+
+```http
+GET /erp/sincronizaciones/:syncId
+```
+
+Respuesta:
+
+```json
+{
+  "id": "sync-...",
+  "clienteId": "cliente-demo",
+  "estado": "pendiente | ejecutando | completado | error",
+  "iniciadoPor": "usuario-id",
+  "iniciadoEn": "2026-09-05T00:00:00.000Z",
+  "finalizadoEn": null,
+  "conteos": {
+    "zonas": 0,
+    "campos": 0,
+    "lotes": 0,
+    "actividades": 0,
+    "especies": 0,
+    "campanias": 0,
+    "cultivos": 0,
+    "insumos": 0,
+    "servicios": 0,
+    "unidadesMedida": 0
+  },
+  "errores": []
+}
+```
+
+Comportamiento esperado:
+
+- `POST /erp/sincronizaciones` devuelve rapido y no deja la pantalla bloqueada.
+- La web consulta el estado por polling o mecanismo equivalente.
+- Si el usuario navega a otra pantalla y vuelve, recupera el estado desde backend.
+- Si refresca el navegador, recupera el ultimo job activo o el historial reciente.
+- El bloqueo de doble corrida debe hacerse en base de datos por `clienteId`.
+- Debe guardar detalle por empresa y padron para diagnosticar errores parciales.
+- Debe permitir reintentos controlados sin duplicar datos.
+
 Estos endpoints devuelven solamente estado publico de configuracion. Nunca devuelven API keys, tokens ni passwords.
 
 El cliente ERP intenta resolver credenciales en este orden:
