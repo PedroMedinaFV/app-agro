@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import { ErpSnapshot, InsumoPlanificacion, PlanificacionSnapshot } from '@agro/tipos';
+import { useEffect, useMemo, useState } from 'react';
+import { ErpInsumo, ErpSnapshot, InsumoPlanificacion, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { obtenerInsumosErpImportados } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -14,6 +15,7 @@ function normalizarCodigo(valor: string) {
 }
 
 interface InsumosPlanificacionScreenProps {
+  sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   snapshot: ErpSnapshot;
   puedeConfigurarPlanificacion: boolean;
@@ -24,6 +26,7 @@ interface InsumosPlanificacionScreenProps {
 }
 
 export function InsumosPlanificacionScreen({
+  sesion,
   planificacion,
   snapshot,
   puedeConfigurarPlanificacion,
@@ -34,6 +37,8 @@ export function InsumosPlanificacionScreen({
 }: InsumosPlanificacionScreenProps) {
   const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoPlanificacion | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const [insumosErp, setInsumosErp] = useState<ErpInsumo[]>([]);
+  const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
   const insumosOrdenados = useMemo(() => (
     [...(planificacion.insumosPlanificacion || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   ), [planificacion.insumosPlanificacion]);
@@ -48,6 +53,22 @@ export function InsumosPlanificacionScreen({
       .filter((unidad) => unidad.activo)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.unidadesMedida]);
+
+  useEffect(() => {
+    async function cargarInsumosErp() {
+      try {
+        const respuesta = await obtenerInsumosErpImportados(sesion.token);
+
+        setInsumosErp(respuesta.insumos);
+        setEstadoCargaErp('Insumos ERP cargados desde Supabase.');
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los insumos ERP.';
+        setEstadoCargaErp(mensaje);
+      }
+    }
+
+    cargarInsumosErp();
+  }, [sesion.token]);
 
   function crearBorradorInsumo(): InsumoPlanificacion {
     const ahora = new Date().toISOString();
@@ -125,14 +146,22 @@ export function InsumosPlanificacionScreen({
   const existeCodigoDuplicado = Boolean(insumoEnEdicion && insumosOrdenados.some((insumo) => (
     insumo.id !== insumoEnEdicion.id && insumo.codigoInterno === codigoActual
   )));
+  const filtroPropiosErp = new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter(Boolean));
 
   return (
     <section className="planning-stack">
+      <section className="metrics">
+        <article><span>ERP sincronizados</span><strong>{insumosErp.length}</strong></article>
+        <article><span>Propios Agro App</span><strong>{insumosOrdenados.length}</strong></article>
+        <article><span>Provisorios</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'provisorio').length}</strong></article>
+        <article><span>Vinculados</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+      </section>
+
       <section className="planning-hero">
         <div>
           <p className="eyebrow">Padrones maestros</p>
           <h2>Insumos</h2>
-          <p className="hint">Catalogo operativo para seleccionar insumos en protocolos. Puede incluir insumos ERP vinculados o provisorios creados en Agro App.</p>
+          <p className="hint">Catalogo operativo para seleccionar insumos en protocolos. {estadoCargaErp}</p>
         </div>
         <div className="status-pill">{insumosOrdenados.length}</div>
       </section>
@@ -159,11 +188,11 @@ export function InsumosPlanificacionScreen({
             <span>Precio</span>
             <span>Acciones</span>
           </div>
-          {!insumosOrdenados.length && (
+          {!insumosOrdenados.length && !insumosErp.length && (
             <div className="empty-state">Todavia no hay insumos registrados.</div>
           )}
           {insumosOrdenados.map((insumo) => (
-            <div className="master-list-row" key={insumo.id}>
+            <div className="field-row" key={insumo.id}>
               <div>
                 <strong>{insumo.nombre}</strong>
                 <span>{insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : insumo.estadoVinculacion}</span>
@@ -177,6 +206,23 @@ export function InsumosPlanificacionScreen({
               </button>
             </div>
           ))}
+          {insumosErp.map((insumo) => {
+            const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
+
+            return (
+              <div className="field-row" key={insumo.erpId}>
+                <div>
+                  <strong>{insumo.nombre}</strong>
+                  <span>{filtroPropiosErp.has(insumo.erpId) ? 'Vinculado' : 'Disponible'} ERP</span>
+                </div>
+                <span>{insumo.codigo}</span>
+                <span>{insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-'}</span>
+                <span>{unidad?.codigo || insumo.idUnidadMedida || '-'}</span>
+                <span>{insumo.precioUnitario !== undefined ? formatearUsd(insumo.precioUnitario) : 'Sin precio'}</span>
+                <button className="small" type="button" disabled>Vincular</button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

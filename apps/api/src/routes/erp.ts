@@ -226,6 +226,88 @@ router.get('/actividades-importadas', async (req, res, next) => {
   }
 });
 
+router.get('/insumos-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const insumos = await prisma.erpInsumo.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      insumos: insumos.map((insumo) => ({
+        empresaErpId: insumo.empresaErpId,
+        erpId: insumo.erpId,
+        idInsumo: insumo.idInsumo,
+        idUnidadMedida: insumo.idUnidadMedida ?? undefined,
+        idTipoInsumo: insumo.idTipoInsumo ?? undefined,
+        idCategoriaInsumo: insumo.idCategoriaInsumo ?? undefined,
+        codigo: insumo.codigo,
+        nombre: insumo.nombre,
+        activo: insumo.activo,
+        controlaStock: insumo.controlaStock,
+        esInsumoGenerico: insumo.esInsumoGenerico,
+        controlaPorLote: insumo.controlaPorLote,
+        precioUnitario: insumo.precioUnitario ?? undefined,
+        precioUnitarioVenta: insumo.precioUnitarioVenta ?? undefined,
+        unidadesBulto: insumo.unidadesBulto ?? undefined,
+        idMonedaPrecioUnitario: insumo.idMonedaPrecioUnitario ?? undefined,
+        idMonedaPrecioVenta: insumo.idMonedaPrecioVenta ?? undefined,
+        idCuentaContable: insumo.idCuentaContable ?? undefined,
+        idInsumoBanda: insumo.idInsumoBanda ?? undefined,
+        idInsumoEstandar: insumo.idInsumoEstandar ?? undefined,
+        actualizadoEn: insumo.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/servicios-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const servicios = await prisma.erpServicio.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ descripcion: 'asc' }],
+    });
+
+    res.json({
+      servicios: servicios.map((servicio) => ({
+        empresaErpId: servicio.empresaErpId,
+        erpId: servicio.erpId,
+        idServicio: servicio.idServicio,
+        idTipoServicio: servicio.idTipoServicio ?? undefined,
+        codigo: servicio.codigo,
+        descripcion: servicio.descripcion,
+        descripcionAbreviada: servicio.descripcionAbreviada ?? undefined,
+        idUnidadMedida: servicio.idUnidadMedida ?? undefined,
+        idMoneda: servicio.idMoneda ?? undefined,
+        precioUnitario: servicio.precioUnitario ?? undefined,
+        idMonedaPersonal: servicio.idMonedaPersonal ?? undefined,
+        importePersonal: servicio.importePersonal ?? undefined,
+        activo: servicio.activo,
+        imputaDosis: servicio.imputaDosis,
+        actualizadoEn: servicio.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/lotes-importados', async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;

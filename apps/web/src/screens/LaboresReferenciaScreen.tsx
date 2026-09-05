@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import { ErpSnapshot, LaborReferencia, PlanificacionSnapshot } from '@agro/tipos';
+import { useEffect, useMemo, useState } from 'react';
+import { ErpServicio, ErpSnapshot, LaborReferencia, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { obtenerServiciosErpImportados } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -14,6 +15,7 @@ function normalizarCodigo(valor: string) {
 }
 
 interface LaboresReferenciaScreenProps {
+  sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   snapshot: ErpSnapshot;
   puedeConfigurarPlanificacion: boolean;
@@ -24,6 +26,7 @@ interface LaboresReferenciaScreenProps {
 }
 
 export function LaboresReferenciaScreen({
+  sesion,
   planificacion,
   snapshot,
   puedeConfigurarPlanificacion,
@@ -34,6 +37,8 @@ export function LaboresReferenciaScreen({
 }: LaboresReferenciaScreenProps) {
   const [laborEnEdicion, setLaborEnEdicion] = useState<LaborReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const [serviciosErp, setServiciosErp] = useState<ErpServicio[]>([]);
+  const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
   const laboresOrdenadas = useMemo(() => (
     [...planificacion.laboresReferencia].sort((a, b) => a.nombre.localeCompare(b.nombre))
   ), [planificacion.laboresReferencia]);
@@ -42,6 +47,22 @@ export function LaboresReferenciaScreen({
       .filter((unidad) => unidad.activo)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.unidadesMedida]);
+
+  useEffect(() => {
+    async function cargarServiciosErp() {
+      try {
+        const respuesta = await obtenerServiciosErpImportados(sesion.token);
+
+        setServiciosErp(respuesta.servicios);
+        setEstadoCargaErp('Servicios ERP cargados desde Supabase.');
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los servicios ERP.';
+        setEstadoCargaErp(mensaje);
+      }
+    }
+
+    cargarServiciosErp();
+  }, [sesion.token]);
 
   function crearBorradorLabor(): LaborReferencia {
     const ahora = new Date().toISOString();
@@ -118,14 +139,22 @@ export function LaboresReferenciaScreen({
   const existeCodigoDuplicado = Boolean(laborEnEdicion && laboresOrdenadas.some((labor) => (
     labor.id !== laborEnEdicion.id && labor.codigo === codigoActual
   )));
+  const serviciosVinculados = new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter(Boolean));
 
   return (
     <section className="planning-stack">
+      <section className="metrics">
+        <article><span>ERP sincronizadas</span><strong>{serviciosErp.length}</strong></article>
+        <article><span>Propias Agro App</span><strong>{laboresOrdenadas.length}</strong></article>
+        <article><span>Provisorias</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'provisorio').length}</strong></article>
+        <article><span>Vinculadas</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+      </section>
+
       <section className="planning-hero">
         <div>
           <p className="eyebrow">Padrones maestros</p>
           <h2>Labores</h2>
-          <p className="hint">Catalogo propio para seleccionar trabajos en protocolos. Puede crearse una labor provisoria y vincularse luego con `Padrones/Servicios` del ERP.</p>
+          <p className="hint">Catalogo propio para seleccionar trabajos en protocolos. {estadoCargaErp}</p>
         </div>
         <div className="status-pill">{laboresOrdenadas.length}</div>
       </section>
@@ -144,7 +173,7 @@ export function LaboresReferenciaScreen({
         </div>
 
         <div className="reference-list">
-          <div className="master-list-row reference-list-head">
+          <div className="field-row reference-list-head">
             <span>Labor</span>
             <span>Codigo</span>
             <span>Unidad</span>
@@ -152,11 +181,11 @@ export function LaboresReferenciaScreen({
             <span>Estado</span>
             <span>Acciones</span>
           </div>
-          {!laboresOrdenadas.length && (
+          {!laboresOrdenadas.length && !serviciosErp.length && (
             <div className="empty-state">Todavia no hay labores registradas.</div>
           )}
           {laboresOrdenadas.map((labor) => (
-            <div className="master-list-row" key={labor.id}>
+            <div className="field-row " key={labor.id}>
               <strong>{labor.nombre}</strong>
               <span>{labor.codigo}</span>
               <span>{labor.unidadSugerida}</span>
@@ -167,6 +196,23 @@ export function LaboresReferenciaScreen({
               </button>
             </div>
           ))}
+          {serviciosErp.map((servicio) => {
+            const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
+
+            return (
+              <div className="field-row" key={servicio.erpId}>
+                <div>
+                  <strong>{servicio.descripcion}</strong>
+                  <span>{serviciosVinculados.has(servicio.erpId) ? 'Vinculada' : 'Disponible'} ERP</span>
+                </div>
+                <span>{servicio.codigo}</span>
+                <span>{unidad?.codigo || servicio.idUnidadMedida || '-'}</span>
+                <span>{servicio.precioUnitario !== undefined ? formatearUsd(servicio.precioUnitario) : 'Sin costo'}</span>
+                <span>{servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis'}</span>
+                <button className="small" type="button" disabled>Vincular</button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

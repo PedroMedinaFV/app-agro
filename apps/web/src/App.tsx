@@ -256,6 +256,7 @@ export function App() {
 
       {vista === 'padrones-labores' && (
         <LaboresReferenciaScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
@@ -268,6 +269,7 @@ export function App() {
 
       {vista === 'padrones-insumos' && (
         <InsumosPlanificacionScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}

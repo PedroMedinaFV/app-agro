@@ -4,8 +4,10 @@ import {
   ErpEmpresa,
   ErpEspecie,
   ErpCampo,
+  ErpInsumo,
   ErpZona,
   ErpLote,
+  ErpServicio,
   ErpSnapshot,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
@@ -147,6 +149,22 @@ export type ActividadesErpImportadasResponse = {
 
 export async function obtenerActividadesErpImportadas(token?: string): Promise<ActividadesErpImportadasResponse> {
   return request<ActividadesErpImportadasResponse>('/erp/actividades-importadas', {}, token);
+}
+
+export type InsumosErpImportadosResponse = {
+  insumos: ErpInsumo[];
+};
+
+export async function obtenerInsumosErpImportados(token?: string): Promise<InsumosErpImportadosResponse> {
+  return request<InsumosErpImportadosResponse>('/erp/insumos-importados', {}, token);
+}
+
+export type ServiciosErpImportadosResponse = {
+  servicios: ErpServicio[];
+};
+
+export async function obtenerServiciosErpImportados(token?: string): Promise<ServiciosErpImportadosResponse> {
+  return request<ServiciosErpImportadosResponse>('/erp/servicios-importados', {}, token);
 }
 
 export type EmpresasErpAdminResponse = {

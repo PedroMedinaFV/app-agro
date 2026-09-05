@@ -189,11 +189,15 @@ Incluye:
 - [x] pantalla web inicial de actividades con ERP sincronizado y actividades propias;
 - [x] pantalla web inicial de campos con ERP sincronizado y campos propios;
 - [x] pantalla web inicial de lotes con ERP sincronizado y lotes propios;
+- [x] pantalla web de insumos con ERP sincronizado y propios Agro App;
+- [x] pantalla web de labores con ERP sincronizado y propias Agro App;
 - [x] alta provisoria de zonas globales del cliente;
 - [x] alta provisoria de especies globales del cliente;
 - [x] alta provisoria de actividades globales asociadas a especie;
 - [x] alta provisoria de campos;
 - [x] alta provisoria de lotes asociados a campos propios;
+- [x] alta provisoria de insumos;
+- [x] alta provisoria de labores;
 - [x] seleccion de zona desde zonas ERP sincronizadas o zonas propias de Agro App;
 - estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
 - sugerencias iniciales de vinculacion por codigo/nombre/empresa;
@@ -203,6 +207,8 @@ Incluye:
 - [x] auditoria de altas y ediciones de actividades;
 - [x] auditoria de altas y ediciones de campos;
 - [x] auditoria de altas y ediciones de lotes;
+- [x] auditoria de altas y ediciones de insumos;
+- [x] auditoria de altas y ediciones de labores;
 - [ ] auditoria de vinculaciones;
 - mobile lectura de padrones asignados.
 
@@ -214,6 +220,8 @@ Criterio de aceptacion:
 - [x] se puede crear y editar una actividad provisoria;
 - [x] se puede crear y editar un campo provisorio;
 - [x] se puede crear y editar un lote provisorio;
+- [x] se puede crear y editar un insumo provisorio;
+- [x] se puede crear y editar una labor provisoria;
 - se puede usar en planificacion/protocolos;
 - una sincronizacion posterior puede generar sugerencia de vinculacion;
 - la vinculacion nunca es automatica en MVP.
