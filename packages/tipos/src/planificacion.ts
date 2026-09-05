@@ -416,6 +416,30 @@ export type GuardarInsumoPlanificacionResponse = {
   mensaje: string;
 };
 
+export type GuardarEspeciePlanificacionRequest = {
+  especie: EspeciePlanificacion;
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarEspeciePlanificacionResponse = {
+  especie: EspeciePlanificacion;
+  auditado: boolean;
+  mensaje: string;
+};
+
+export type GuardarActividadPlanificacionRequest = {
+  actividad: ActividadPlanificacion;
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarActividadPlanificacionResponse = {
+  actividad: ActividadPlanificacion;
+  auditado: boolean;
+  mensaje: string;
+};
+
 export type GuardarCampoPlanificacionRequest = {
   campo: CampoPlanificacion;
   motivo?: string;

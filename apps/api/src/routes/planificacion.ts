@@ -8,6 +8,8 @@ import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistid
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
 import { obtenerConceptosGastosComercialesPersistidos, obtenerConceptosGastosComercialesSemilla } from '../services/gastosComerciales/conceptosGastosComerciales';
 import { obtenerLaboresReferenciaPersistidas } from '../services/labores/laboresReferenciaPrisma';
+import { obtenerEspeciesPlanificacionPersistidas } from '../services/especies/especiesPlanificacionPrisma';
+import { obtenerActividadesPlanificacionPersistidas } from '../services/actividades/actividadesPlanificacionPrisma';
 
 const router = Router();
 type RequestConUsuario = Request & {
@@ -25,6 +27,8 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const gastosPersistidos = await obtenerGastosComercialesPersistidos(clienteId);
     const conceptosPersistidos = await obtenerConceptosGastosComercialesPersistidos(clienteId);
     const laboresPersistidas = await obtenerLaboresReferenciaPersistidas(clienteId);
+    const especiesPersistidas = await obtenerEspeciesPlanificacionPersistidas(clienteId);
+    const actividadesPersistidas = await obtenerActividadesPlanificacionPersistidas(clienteId);
 
     res.json({
       ...demo,
@@ -34,6 +38,8 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),
       gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
       laboresReferencia: laboresPersistidas.length ? laboresPersistidas : demo.laboresReferencia,
+      especiesPlanificacion: especiesPersistidas.length ? especiesPersistidas : demo.especiesPlanificacion,
+      actividadesPlanificacion: actividadesPersistidas.length ? actividadesPersistidas : demo.actividadesPlanificacion,
       sincronizadoEn: new Date().toISOString(),
     });
   } catch (error) {

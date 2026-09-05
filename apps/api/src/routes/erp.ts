@@ -161,6 +161,71 @@ router.get('/zonas-importadas', async (req, res, next) => {
   }
 });
 
+router.get('/especies-importadas', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const especies = await prisma.erpEspecie.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      especies: especies.map((especie) => ({
+        empresaErpId: especie.empresaErpId,
+        erpId: especie.erpId,
+        idEspecie: especie.idEspecie,
+        codigo: especie.codigo,
+        nombre: especie.nombre,
+        activo: especie.activo,
+        codigoCot: especie.codigoCot ?? undefined,
+        codigoAfip: especie.codigoAfip ?? undefined,
+        actualizadoEn: especie.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/actividades-importadas', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const actividades = await prisma.erpActividad.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ descripcion: 'asc' }],
+    });
+
+    res.json({
+      actividades: actividades.map((actividad) => ({
+        empresaErpId: actividad.empresaErpId,
+        erpId: actividad.erpId,
+        idActividad: actividad.idActividad,
+        codigo: actividad.codigo,
+        descripcion: actividad.descripcion,
+        activo: actividad.activo,
+        habilitadoExportacionCrea: actividad.habilitadoExportacionCrea,
+        idEspecie: actividad.idEspecie ?? undefined,
+        idTipoActividad: actividad.idTipoActividad ?? undefined,
+        actualizadoEn: actividad.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/lotes-importados', async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;

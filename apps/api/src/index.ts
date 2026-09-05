@@ -25,6 +25,8 @@ import conceptosGastosComercialesRuta from './routes/conceptosGastosComerciales'
 import destinosVentaRuta from './routes/destinosVenta';
 import laboresReferenciaRuta from './routes/laboresReferencia';
 import insumosPlanificacionRuta from './routes/insumosPlanificacion';
+import especiesPlanificacionRuta from './routes/especiesPlanificacion';
+import actividadesPlanificacionRuta from './routes/actividadesPlanificacion';
 import zonasPlanificacionRuta from './routes/zonasPlanificacion';
 import camposPlanificacionRuta from './routes/camposPlanificacion';
 import lotesPlanificacionRuta from './routes/lotesPlanificacion';
@@ -60,6 +62,8 @@ app.use('/conceptos-gastos-comerciales', autenticacionBasica, conceptosGastosCom
 app.use('/destinos-venta', autenticacionBasica, destinosVentaRuta);
 app.use('/labores-referencia', autenticacionBasica, laboresReferenciaRuta);
 app.use('/insumos-planificacion', autenticacionBasica, insumosPlanificacionRuta);
+app.use('/especies-planificacion', autenticacionBasica, especiesPlanificacionRuta);
+app.use('/actividades-planificacion', autenticacionBasica, actividadesPlanificacionRuta);
 app.use('/zonas-planificacion', autenticacionBasica, zonasPlanificacionRuta);
 app.use('/campos-planificacion', autenticacionBasica, camposPlanificacionRuta);
 app.use('/lotes-planificacion', autenticacionBasica, lotesPlanificacionRuta);

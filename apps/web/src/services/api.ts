@@ -1,6 +1,8 @@
 import {
   EmpresaErpCliente,
+  ErpActividad,
   ErpEmpresa,
+  ErpEspecie,
   ErpCampo,
   ErpZona,
   ErpLote,
@@ -20,6 +22,10 @@ import {
   GuardarZonaPlanificacionResponse,
   GuardarDestinoVentaReferenciaRequest,
   GuardarDestinoVentaReferenciaResponse,
+  GuardarActividadPlanificacionRequest,
+  GuardarActividadPlanificacionResponse,
+  GuardarEspeciePlanificacionRequest,
+  GuardarEspeciePlanificacionResponse,
   GuardarGastosComercialesReferenciaRequest,
   GuardarGastosComercialesReferenciaResponse,
   GuardarInsumoPlanificacionRequest,
@@ -33,6 +39,8 @@ import {
   GuardarProtocoloRequest,
   GuardarProtocoloResponse,
   LaborReferencia,
+  ActividadPlanificacion,
+  EspeciePlanificacion,
   InsumoPlanificacion,
   LotePlanificacion,
   LoginDemoRequest,
@@ -123,6 +131,22 @@ export type ZonasErpImportadasResponse = {
 
 export async function obtenerZonasErpImportadas(token?: string): Promise<ZonasErpImportadasResponse> {
   return request<ZonasErpImportadasResponse>('/erp/zonas-importadas', {}, token);
+}
+
+export type EspeciesErpImportadasResponse = {
+  especies: ErpEspecie[];
+};
+
+export async function obtenerEspeciesErpImportadas(token?: string): Promise<EspeciesErpImportadasResponse> {
+  return request<EspeciesErpImportadasResponse>('/erp/especies-importadas', {}, token);
+}
+
+export type ActividadesErpImportadasResponse = {
+  actividades: ErpActividad[];
+};
+
+export async function obtenerActividadesErpImportadas(token?: string): Promise<ActividadesErpImportadasResponse> {
+  return request<ActividadesErpImportadasResponse>('/erp/actividades-importadas', {}, token);
 }
 
 export type EmpresasErpAdminResponse = {
@@ -248,6 +272,44 @@ export async function guardarInsumoPlanificacion(
   token?: string,
 ): Promise<GuardarInsumoPlanificacionResponse> {
   return request<GuardarInsumoPlanificacionResponse>(`/insumos-planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type EspeciesPlanificacionResponse = {
+  especies: EspeciePlanificacion[];
+};
+
+export async function obtenerEspeciesPlanificacion(token?: string): Promise<EspeciesPlanificacionResponse> {
+  return request<EspeciesPlanificacionResponse>('/especies-planificacion', {}, token);
+}
+
+export async function guardarEspeciePlanificacion(
+  id: string,
+  datos: GuardarEspeciePlanificacionRequest,
+  token?: string,
+): Promise<GuardarEspeciePlanificacionResponse> {
+  return request<GuardarEspeciePlanificacionResponse>(`/especies-planificacion/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export type ActividadesPlanificacionResponse = {
+  actividades: ActividadPlanificacion[];
+};
+
+export async function obtenerActividadesPlanificacion(token?: string): Promise<ActividadesPlanificacionResponse> {
+  return request<ActividadesPlanificacionResponse>('/actividades-planificacion', {}, token);
+}
+
+export async function guardarActividadPlanificacion(
+  id: string,
+  datos: GuardarActividadPlanificacionRequest,
+  token?: string,
+): Promise<GuardarActividadPlanificacionResponse> {
+  return request<GuardarActividadPlanificacionResponse>(`/actividades-planificacion/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
