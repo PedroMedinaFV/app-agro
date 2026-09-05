@@ -591,9 +591,13 @@ La pantalla permite:
 - Ver el valor `idEmpresa` que se enviara como `x-company`.
 - Marcar que empresas pertenecen a AGRO.
 - Guardar la seleccion en backend cuando PostgreSQL este disponible.
+- Ejecutar manualmente la sincronizacion de padrones desde ALBOR.
+- Ver el ultimo resultado de sincronizacion con conteos principales.
 - Mantener una seleccion local en modo demo si la base no esta levantada.
 
 La persistencia definitiva se realiza en `ClienteEmpresaErp`.
+
+La sincronizacion manual usa `POST /erp/sincronizar`, requiere permiso `erp:sincronizar` y no permite dos corridas simultaneas para el mismo cliente.
 
 Estos endpoints devuelven solamente estado publico de configuracion. Nunca devuelven API keys, tokens ni passwords.
 

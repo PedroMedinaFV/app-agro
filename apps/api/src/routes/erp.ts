@@ -11,6 +11,7 @@ import { prisma } from '../prisma';
 
 const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
+const clientesSincronizando = new Set<string>();
 
 function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] | null): ErpSnapshot {
   if (!camposErpIds) {
@@ -214,10 +215,22 @@ router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res,
       return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
     }
 
-    res.json({
-      ok: true,
-      resultado: await sincronizarSnapshotErp(clienteId),
-    });
+    if (clientesSincronizando.has(clienteId)) {
+      return res.status(409).json({ error: 'Ya hay una sincronizacion en curso para este cliente.' });
+    }
+
+    clientesSincronizando.add(clienteId);
+
+    try {
+      const resultado = await sincronizarSnapshotErp(clienteId);
+
+      return res.json({
+        ok: true,
+        resultado,
+      });
+    } finally {
+      clientesSincronizando.delete(clienteId);
+    }
   } catch (error) {
     next(error);
   }

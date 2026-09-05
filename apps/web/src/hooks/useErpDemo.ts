@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ErpEmpresa, ErpSnapshot, SesionUsuario } from '@agro/tipos';
-import { guardarEmpresasErpAdmin, obtenerEmpresasErpAdmin, obtenerSnapshotErp } from '../services/api';
+import { guardarEmpresasErpAdmin, obtenerEmpresasErpAdmin, obtenerSnapshotErp, sincronizarPadronesErp, SincronizacionErpResultado } from '../services/api';
 import { snapshotFallback } from '../data/demoData';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -11,6 +11,8 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
   const [empresasDisponibles, setEmpresasDisponibles] = useState<ErpEmpresa[]>(snapshotFallback.empresas);
   const [empresasSeleccionadas, setEmpresasSeleccionadas] = useState<string[]>(['empresa:1']);
   const [guardandoEmpresas, setGuardandoEmpresas] = useState(false);
+  const [sincronizandoPadrones, setSincronizandoPadrones] = useState(false);
+  const [ultimoResultadoSync, setUltimoResultadoSync] = useState<SincronizacionErpResultado['resultado'] | null>(null);
   const [estadoEmpresas, setEstadoEmpresas] = useState('Seleccion local para modo demo.');
 
   useEffect(() => {
@@ -96,6 +98,36 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
     }
   }
 
+  async function sincronizarPadrones() {
+    if (!sesion) {
+      return;
+    }
+
+    setSincronizandoPadrones(true);
+    setEstadoEmpresas('Sincronizando padrones desde ALBOR.');
+
+    try {
+      const respuesta = await sincronizarPadronesErp(sesion.token);
+      setUltimoResultadoSync(respuesta.resultado);
+      setEstadoEmpresas(`Padrones sincronizados: ${respuesta.resultado.sincronizadoEn}`);
+      notificar?.({
+        tipo: 'success',
+        titulo: 'Padrones sincronizados',
+        mensaje: `${respuesta.resultado.campos} campos, ${respuesta.resultado.lotes} lotes y ${respuesta.resultado.cultivos} cultivos actualizados.`,
+      });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudieron sincronizar padrones.';
+      setEstadoEmpresas(`No se pudo sincronizar: ${mensaje}`);
+      notificar?.({
+        tipo: 'error',
+        titulo: 'No se sincronizo',
+        mensaje,
+      });
+    } finally {
+      setSincronizandoPadrones(false);
+    }
+  }
+
   return {
     snapshot,
     erpEstado,
@@ -103,8 +135,11 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
     empresasSeleccionadas,
     empresasSeleccionadasSet: new Set(empresasSeleccionadas),
     guardandoEmpresas,
+    sincronizandoPadrones,
+    ultimoResultadoSync,
     estadoEmpresas,
     alternarEmpresa,
     guardarSeleccionEmpresas,
+    sincronizarPadrones,
   };
 }

@@ -71,6 +71,33 @@ export async function obtenerSnapshotErp(token?: string): Promise<ErpSnapshot> {
   return request<ErpSnapshot>('/erp/snapshot', {}, token);
 }
 
+export type SincronizacionErpResultado = {
+  ok: boolean;
+  resultado: {
+    zonas: number;
+    campos: number;
+    lotes: number;
+    actividades: number;
+    especies: number;
+    empresas: number;
+    campanias: number;
+    cultivos: number;
+    insumos: number;
+    servicios: number;
+    unidadesMedida: number;
+    omitidos: {
+      lotesSinCampo: number;
+    };
+    sincronizadoEn: string;
+  };
+};
+
+export async function sincronizarPadronesErp(token?: string): Promise<SincronizacionErpResultado> {
+  return request<SincronizacionErpResultado>('/erp/sincronizar', {
+    method: 'POST',
+  }, token);
+}
+
 export type CamposErpImportadosResponse = {
   campos: ErpCampo[];
 };

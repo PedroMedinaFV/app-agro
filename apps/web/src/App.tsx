@@ -279,10 +279,13 @@ export function App() {
         <EmpresasErpScreen
           puedeConfigurarErp={puedeConfigurarErp}
           guardandoEmpresas={erp.guardandoEmpresas}
+          sincronizandoPadrones={erp.sincronizandoPadrones}
+          ultimoResultadoSync={erp.ultimoResultadoSync}
           empresasDisponibles={erp.empresasDisponibles}
           empresasSeleccionadas={erp.empresasSeleccionadas}
           empresasSeleccionadasSet={erp.empresasSeleccionadasSet}
           guardarSeleccionEmpresas={erp.guardarSeleccionEmpresas}
+          sincronizarPadrones={erp.sincronizarPadrones}
           alternarEmpresa={erp.alternarEmpresa}
         />
       )}

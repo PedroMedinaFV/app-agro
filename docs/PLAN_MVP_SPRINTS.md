@@ -147,7 +147,7 @@ Incluye:
 - [x] importar zonas, campos, lotes, campanias, actividades, especies, cultivos, insumos, servicios/labores y unidades de medida;
 - [x] registrar conteos e incidencias de sincronizacion;
 - [x] evitar que referencias huerfanas rompan toda la corrida;
-- [ ] pantalla web de estado de sincronizacion;
+- [x] accion web admin para sincronizar padrones y ver conteos principales;
 - [ ] mobile solo lectura de campos/lotes/cultivos asignados.
 
 Criterio de aceptacion:
@@ -155,7 +155,8 @@ Criterio de aceptacion:
 - [x] `erp:sync` importa padrones reales de empresas AGRO;
 - [x] cada registro conserva `empresaErpId`;
 - [x] no se duplican registros en corridas sucesivas;
-- [ ] la web permite ver ultimo sync, conteos y errores;
+- [x] la web permite disparar sincronizacion manual y ver conteos principales;
+- [ ] la web muestra historial de corridas y errores por empresa/padron;
 - [ ] usuario comun solo ve campos asignados.
 
 Validacion realizada:
