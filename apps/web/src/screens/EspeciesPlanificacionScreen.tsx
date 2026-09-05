@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpEspecie, EspeciePlanificacion, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { guardarEspeciePlanificacion, obtenerEspeciesErpImportadas, obtenerEspeciesPlanificacion } from '../services/api';
 
@@ -9,6 +10,17 @@ type EspeciesPlanificacionScreenProps = {
   sesion: SesionUsuario;
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
+};
+
+type EspecieTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  origen: string;
+  estado: string;
+  actualizado: string;
+  accion: 'editar' | 'vincular';
+  especiePropia?: EspeciePlanificacion;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -74,6 +86,27 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
   const existeCodigoDuplicado = Boolean(especieEnEdicion && codigoActual && especiesPropias.some((especie) => (
     especie.id !== especieEnEdicion.id && especie.codigoInterno === codigoActual
   )));
+  const filasEspecie: EspecieTabla[] = [
+    ...especiesPropiasFiltradas.map((especie) => ({
+      id: especie.id,
+      nombre: especie.nombre,
+      detalle: especie.codigoInterno || 'Sin codigo interno',
+      origen: 'Agro App',
+      estado: especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : especie.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP',
+      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.updatedAt || especie.createdAt)),
+      accion: 'editar' as const,
+      especiePropia: especie,
+    })),
+    ...especiesErpFiltradas.map((especie) => ({
+      id: especie.erpId,
+      nombre: especie.nombre,
+      detalle: `${especie.codigo} - ALBOR #${especie.idEspecie}`,
+      origen: 'ERP',
+      estado: especiesVinculadas.has(especie.erpId) ? 'Vinculada' : 'Disponible',
+      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.actualizadoEn)),
+      accion: 'vincular' as const,
+    })),
+  ];
 
   function abrirNuevaEspecie() {
     setEspecieEnEdicion(crearEspecieNueva(sesion.usuario.clienteId || 'cliente-demo'));
@@ -149,39 +182,25 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="field-row reference-list-head">
-            <span>Especie</span>
-            <span>Origen</span>
-            <span>Estado</span>
-            <span>Actualizado</span>
-            <span>Accion</span>
-          </div>
-          {especiesPropiasFiltradas.map((especie) => (
-            <div className="mfield-row" key={especie.id}>
-              <div>
-                <strong>{especie.nombre}</strong>
-                <span>{especie.codigoInterno || 'Sin codigo interno'}</span>
-              </div>
-              <span>Agro App</span>
-              <em>{especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : especie.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP'}</em>
-              <span>{new Intl.DateTimeFormat('es-AR').format(new Date(especie.updatedAt || especie.createdAt))}</span>
-              <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => setEspecieEnEdicion(especie)}>Editar</button>
-            </div>
-          ))}
-          {especiesErpFiltradas.map((especie) => (
-            <div className="field-row" key={especie.erpId}>
-              <div>
-                <strong>{especie.nombre}</strong>
-                <span>{especie.codigo} - ALBOR #{especie.idEspecie}</span>
-              </div>
-              <span>ERP</span>
-              <em>{especiesVinculadas.has(especie.erpId) ? 'Vinculada' : 'Disponible'}</em>
-              <span>{new Intl.DateTimeFormat('es-AR').format(new Date(especie.actualizadoEn))}</span>
-              <button className="small" type="button" disabled>Vincular</button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={filasEspecie}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay especies para el filtro seleccionado."
+          columns={[
+            { key: 'especie', label: 'Especie', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.origen },
+            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.8fr)', render: (fila) => fila.actualizado },
+            {
+              key: 'accion',
+              label: 'Accion',
+              width: 'minmax(86px, 0.55fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && setEspecieEnEdicion(fila.especiePropia)}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {especieEnEdicion && (

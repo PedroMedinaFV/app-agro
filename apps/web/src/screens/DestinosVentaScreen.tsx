@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DestinoVentaReferencia, PlanificacionSnapshot } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 function limpiarTextoVisible(valor: string) {
@@ -121,29 +122,23 @@ export function DestinosVentaScreen({
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Destino</span>
-            <span>Descripcion</span>
-            <span>Estado</span>
-            <span>Actualizado</span>
-            <span>Acciones</span>
-          </div>
-          {!destinosOrdenados.length && (
-            <div className="empty-state">Todavia no hay destinos registrados.</div>
-          )}
-          {destinosOrdenados.map((destino) => (
-            <div className="master-list-row" key={destino.id}>
-              <strong>{destino.destinoVenta}</strong>
-              <span>{destino.descripcion || 'Sin descripcion'}</span>
-              <span>{destino.activo ? 'Activo' : 'Inactivo'}</span>
-              <span>{new Intl.DateTimeFormat('es-AR').format(new Date(destino.updatedAt || destino.createdAt))}</span>
-              <button className="small" onClick={() => abrirEditarDestino(destino)} disabled={!puedeConfigurarPlanificacion}>
-                Editar
-              </button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={destinosOrdenados}
+          getRowKey={(destino) => destino.id}
+          emptyMessage="Todavia no hay destinos registrados."
+          columns={[
+            { key: 'destino', label: 'Destino', width: 'minmax(170px, 1.2fr)', render: (destino) => <strong>{destino.destinoVenta}</strong> },
+            { key: 'descripcion', label: 'Descripcion', width: 'minmax(190px, 1.4fr)', render: (destino) => destino.descripcion || 'Sin descripcion' },
+            { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (destino) => <em>{destino.activo ? 'Activo' : 'Inactivo'}</em> },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (destino) => new Intl.DateTimeFormat('es-AR').format(new Date(destino.updatedAt || destino.createdAt)) },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(86px, 0.5fr)',
+              render: (destino) => <button className="small" onClick={() => abrirEditarDestino(destino)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+            },
+          ]}
+        />
       </section>
 
       {destinoEnEdicion && (

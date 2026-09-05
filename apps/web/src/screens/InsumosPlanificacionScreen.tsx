@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErpInsumo, ErpSnapshot, InsumoPlanificacion, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerInsumosErpImportados } from '../services/api';
 
@@ -24,6 +25,18 @@ interface InsumosPlanificacionScreenProps {
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
 }
+
+type InsumoTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  codigo: string;
+  tipo: string;
+  unidad: string;
+  precio: string;
+  accion: 'editar' | 'vincular';
+  insumoPropio?: InsumoPlanificacion;
+};
 
 export function InsumosPlanificacionScreen({
   sesion,
@@ -147,6 +160,33 @@ export function InsumosPlanificacionScreen({
     insumo.id !== insumoEnEdicion.id && insumo.codigoInterno === codigoActual
   )));
   const filtroPropiosErp = new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter(Boolean));
+  const filasInsumo: InsumoTabla[] = [
+    ...insumosOrdenados.map((insumo) => ({
+      id: insumo.id,
+      nombre: insumo.nombre,
+      detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : insumo.estadoVinculacion,
+      codigo: insumo.codigoInterno || '-',
+      tipo: insumo.tipo || '-',
+      unidad: insumo.unidad,
+      precio: insumo.precioUnitarioEstimado !== undefined ? formatearUsd(insumo.precioUnitarioEstimado) : 'Sin precio',
+      accion: 'editar' as const,
+      insumoPropio: insumo,
+    })),
+    ...insumosErp.map((insumo) => {
+      const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
+
+      return {
+        id: insumo.erpId,
+        nombre: insumo.nombre,
+        detalle: `${filtroPropiosErp.has(insumo.erpId) ? 'Vinculado' : 'Disponible'} ERP`,
+        codigo: insumo.codigo,
+        tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
+        unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
+        precio: insumo.precioUnitario !== undefined ? formatearUsd(insumo.precioUnitario) : 'Sin precio',
+        accion: 'vincular' as const,
+      };
+    }),
+  ];
 
   return (
     <section className="planning-stack">
@@ -179,51 +219,27 @@ export function InsumosPlanificacionScreen({
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Insumo</span>
-            <span>Codigo</span>
-            <span>Tipo</span>
-            <span>Unidad</span>
-            <span>Precio</span>
-            <span>Acciones</span>
-          </div>
-          {!insumosOrdenados.length && !insumosErp.length && (
-            <div className="empty-state">Todavia no hay insumos registrados.</div>
-          )}
-          {insumosOrdenados.map((insumo) => (
-            <div className="field-row" key={insumo.id}>
-              <div>
-                <strong>{insumo.nombre}</strong>
-                <span>{insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : insumo.estadoVinculacion}</span>
-              </div>
-              <span>{insumo.codigoInterno || '-'}</span>
-              <span>{insumo.tipo || '-'}</span>
-              <span>{insumo.unidad}</span>
-              <span>{insumo.precioUnitarioEstimado !== undefined ? formatearUsd(insumo.precioUnitarioEstimado) : 'Sin precio'}</span>
-              <button className="small" onClick={() => abrirEditarInsumo(insumo)} disabled={!puedeConfigurarPlanificacion}>
-                Editar
-              </button>
-            </div>
-          ))}
-          {insumosErp.map((insumo) => {
-            const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
-
-            return (
-              <div className="field-row" key={insumo.erpId}>
-                <div>
-                  <strong>{insumo.nombre}</strong>
-                  <span>{filtroPropiosErp.has(insumo.erpId) ? 'Vinculado' : 'Disponible'} ERP</span>
-                </div>
-                <span>{insumo.codigo}</span>
-                <span>{insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-'}</span>
-                <span>{unidad?.codigo || insumo.idUnidadMedida || '-'}</span>
-                <span>{insumo.precioUnitario !== undefined ? formatearUsd(insumo.precioUnitario) : 'Sin precio'}</span>
-                <button className="small" type="button" disabled>Vincular</button>
-              </div>
-            );
-          })}
-        </div>
+        <DataTable
+          rows={filasInsumo}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay insumos registrados."
+          initialPageSize={25}
+          columns={[
+            { key: 'insumo', label: 'Insumo', width: 'minmax(190px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'codigo', label: 'Codigo', width: 'minmax(92px, 0.65fr)', render: (fila) => fila.codigo },
+            { key: 'tipo', label: 'Tipo', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.tipo },
+            { key: 'unidad', label: 'Unidad', width: 'minmax(76px, 0.5fr)', render: (fila) => fila.unidad },
+            { key: 'precio', label: 'Precio', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.precio },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(86px, 0.5fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" onClick={() => fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {insumoEnEdicion && (

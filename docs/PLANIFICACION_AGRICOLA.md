@@ -61,6 +61,10 @@ Las especies y actividades propias siguen el mismo criterio global. Una activida
 
 Los insumos y labores/servicios tambien se administran como padrones operativos propios comparados contra la cache ERP. En web se muestran los registros sincronizados de `Padrones/Insumos` y `Padrones/Servicios` junto con los registros creados en Agro App. La creacion y edicion de registros propios queda auditada; la vinculacion con ERP queda preparada como accion posterior confirmada por usuario autorizado.
 
+Las pantallas de precios y gastos comerciales deben consumir actividades reales desde la base de datos, combinando actividades propias de Agro App y actividades sincronizadas desde ERP. Como precios y gastos guardan `actividadPlanificacionId`, si el usuario selecciona una actividad ERP que todavia no tiene registro operativo en Agro App, la web crea automaticamente una `ActividadPlanificacion` vinculada y luego guarda el precio o gasto. Esa creacion pasa por backend y queda auditada.
+
+La pantalla de gastos comerciales tambien debe usar zonas y campos reales desde la base de datos. El alcance puede guardarse con referencias propias (`zonaPlanificacionId`, `campoPlanificacionId`) o con referencias ERP (`zonaErpId`, `campoErpId`) cuando el usuario selecciona datos sincronizados que todavia no fueron convertidos a padron operativo propio.
+
 Al crear un lote provisorio, el campo se selecciona desde los campos propios de Agro App. Ese campo puede estar vinculado al ERP o seguir provisorio, pero el lote no debe quedar sin campo operativo. El lote guarda superficie total y superficie productiva; la superficie productiva no puede superar la superficie total.
 
 La pantalla web de `Lotes` debe cargar los campos propios desde el backend de padrones (`/campos-planificacion`) y los campos ERP sincronizados desde la cache local al abrirse, no desde el snapshot demo de planificacion. Esto evita que el select muestre datos incompletos cuando ya existen campos reales persistidos o sincronizados.
@@ -277,6 +281,7 @@ Estado UX actual:
 - la pantalla permite crear gastos desde un modal abierto por `Nuevo gasto`, con accion final `Guardar`;
 - la pantalla permite editar gastos desde un boton de accion por fila, con accion final `Editar`;
 - cada gasto se asocia a una actividad de planificacion y puede restringirse por destino, zona y/o campo;
+- el select de destino en gastos comerciales se alimenta de destinos propios y del padron ERP `Padrones/Puertos`;
 - cada gasto contiene items editables con concepto maestro, valor por tonelada, moneda y observaciones opcionales;
 - cada guardado/edicion desde el modal debe mostrar estado de carga, spinner y toast de confirmacion;
 - la persistencia real usa endpoint `/gastos-comerciales-referencia/:id`;
@@ -292,6 +297,8 @@ Un destino de venta es unico por `clienteId` y `destinoVentaNormalizado`. No dep
 Las reglas de sugerencia pueden usar zona, campo, actividad o cultivo para proponer un destino, pero esas dimensiones no definen la identidad del destino.
 
 Esta tabla la configura un usuario autorizado y permite que, al crear una linea de planificacion, el sistema proponga automaticamente el destino de venta mas probable.
+
+El padron ERP `Padrones/Puertos` tambien alimenta los selects de destino para reducir escritura manual. Si el destino no existe en ERP, se puede crear en `DestinoVentaReferencia`.
 
 El objetivo principal es mejorar la experiencia de usuario: evitar que quien planifica tenga que cargar el destino del cereal en cada cultivo/lote de forma repetitiva. Esto reduce fatiga operativa, acelera la carga de la planilla y disminuye errores por seleccion manual.
 
@@ -350,6 +357,8 @@ Campos sugeridos:
 - `activo`
 - `createdAt`
 - `updatedAt`
+
+En la pantalla web, el select de destino de precios se alimenta de destinos propios y del padron ERP `Padrones/Puertos`. En esta etapa se guarda `destinoVenta` como texto normalizado de negocio; si mas adelante necesitamos trazabilidad estricta al puerto ERP, agregaremos `puertoErpId` sin cambiar el supuesto economico ya copiado.
 
 Decision sobre campania y fechas:
 

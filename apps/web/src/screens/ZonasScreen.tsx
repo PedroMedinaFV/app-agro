@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { guardarZonaPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
 
@@ -9,6 +10,17 @@ type ZonasScreenProps = {
   sesion: SesionUsuario;
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
+};
+
+type ZonaTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  origen: string;
+  estado: string;
+  actualizado: string;
+  accion: 'editar' | 'vincular';
+  zonaPropia?: ZonaPlanificacion;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -77,6 +89,27 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   const codigosPropios = new Map(zonasPropias.map((zona) => [normalizarCodigo(zona.codigoInterno || zona.nombre), zona.id]));
   const codigoZonaActual = zonaEnEdicion ? normalizarCodigo(zonaEnEdicion.codigoInterno || zonaEnEdicion.nombre) : '';
   const existeCodigoDuplicado = Boolean(zonaEnEdicion && codigoZonaActual && codigosPropios.has(codigoZonaActual) && codigosPropios.get(codigoZonaActual) !== zonaEnEdicion.id);
+  const filasZona: ZonaTabla[] = [
+    ...zonasPropiasFiltradas.map((zona) => ({
+      id: zona.id,
+      nombre: zona.nombre,
+      detalle: zona.codigoInterno || 'Sin codigo interno',
+      origen: 'Agro App',
+      estado: zona.estadoVinculacion === 'provisorio' ? 'Provisorio' : zona.estadoVinculacion === 'archivado' ? 'Archivado' : 'Vinculado ERP',
+      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(zona.updatedAt || zona.createdAt)),
+      accion: 'editar' as const,
+      zonaPropia: zona,
+    })),
+    ...zonasErpFiltradas.map((zona) => ({
+      id: zona.erpId,
+      nombre: zona.nombre,
+      detalle: `${zona.codigo} - ALBOR #${zona.idZona}`,
+      origen: 'ERP',
+      estado: zonasVinculadas.has(zona.erpId) ? 'Vinculada' : 'Disponible',
+      actualizado: zona.activo ? 'Activa' : 'Inactiva',
+      accion: 'vincular' as const,
+    })),
+  ];
 
   function abrirNuevaZona() {
     setZonaEnEdicion(crearZonaNueva(sesion.usuario.clienteId || 'cliente-demo'));
@@ -170,49 +203,25 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Zona</span>
-            <span>Origen</span>
-            <span>Estado</span>
-            <span>Actualizado</span>
-            <span>Accion</span>
-          </div>
-
-          {!zonasPropiasFiltradas.length && !zonasErpFiltradas.length && (
-            <div className="empty-state">Todavia no hay zonas para el filtro seleccionado.</div>
-          )}
-
-          {zonasPropiasFiltradas.map((zona) => (
-            <div className="master-list-row" key={zona.id}>
-              <div>
-                <strong>{zona.nombre}</strong>
-                <span>{zona.codigoInterno || 'Sin codigo interno'}</span>
-              </div>
-              <span>Agro App</span>
-              <em>{zona.estadoVinculacion === 'provisorio' ? 'Provisorio' : zona.estadoVinculacion === 'archivado' ? 'Archivado' : 'Vinculado ERP'}</em>
-              <span>{new Intl.DateTimeFormat('es-AR').format(new Date(zona.updatedAt || zona.createdAt))}</span>
-              <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => setZonaEnEdicion(zona)}>
-                Editar
-              </button>
-            </div>
-          ))}
-
-          {zonasErpFiltradas.map((zona) => (
-            <div className="master-list-row" key={zona.erpId}>
-              <div>
-                <strong>{zona.nombre}</strong>
-                <span>{zona.codigo} - ALBOR #{zona.idZona}</span>
-              </div>
-              <span>ERP</span>
-              <em>{zonasVinculadas.has(zona.erpId) ? 'Vinculada' : 'Disponible'}</em>
-              <span>{zona.activo ? 'Activa' : 'Inactiva'}</span>
-              <button className="small" type="button" disabled>
-                Vincular
-              </button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={filasZona}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay zonas para el filtro seleccionado."
+          columns={[
+            { key: 'zona', label: 'Zona', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.origen },
+            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.8fr)', render: (fila) => fila.actualizado },
+            {
+              key: 'accion',
+              label: 'Accion',
+              width: 'minmax(86px, 0.55fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && setZonaEnEdicion(fila.zonaPropia)}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {zonaEnEdicion && (

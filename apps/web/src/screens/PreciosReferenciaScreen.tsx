@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
-import { PlanificacionSnapshot, PrecioReferencia } from '@agro/tipos';
+import { useEffect, useMemo, useState } from 'react';
+import { ActividadPlanificacion, ErpActividad, ErpEspecie, ErpPuerto, PlanificacionSnapshot, PrecioReferencia, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { guardarActividadPlanificacion, obtenerActividadesErpImportadas, obtenerActividadesPlanificacion, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -14,6 +16,7 @@ function normalizarTexto(valor: string) {
 }
 
 interface PreciosReferenciaScreenProps {
+  sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   puedeConfigurarPlanificacion: boolean;
   guardandoPrecios: boolean;
@@ -22,7 +25,21 @@ interface PreciosReferenciaScreenProps {
   leerNumero: (valor: string) => number;
 }
 
+type ActividadSeleccionable = {
+  clave: string;
+  nombre: string;
+  empresaErpId?: string;
+  actividadPlanificacionId?: string;
+  actividadErpId?: string;
+  especiePlanificacionId?: string;
+  especieErpId?: string;
+  codigo?: string;
+  origen: 'agro' | 'erp';
+  erp?: ErpActividad;
+};
+
 export function PreciosReferenciaScreen({
+  sesion,
   planificacion,
   puedeConfigurarPlanificacion,
   guardandoPrecios,
@@ -32,6 +49,11 @@ export function PreciosReferenciaScreen({
 }: PreciosReferenciaScreenProps) {
   const [precioEnEdicion, setPrecioEnEdicion] = useState<PrecioReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
+  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadPlanificacion[]>([]);
+  const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
+  const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
+  const [puertosErp, setPuertosErp] = useState<ErpPuerto[]>([]);
   const destinosDisponibles = useMemo(() => {
     const destinos = new Map<string, string>();
 
@@ -43,9 +65,68 @@ export function PreciosReferenciaScreen({
       destinos.set(normalizarTexto(precio.destinoVenta), limpiarTextoVisible(precio.destinoVenta));
     }
 
+    for (const puerto of puertosErp) {
+      if (puerto.activo) {
+        destinos.set(normalizarTexto(puerto.nombre), limpiarTextoVisible(puerto.nombre));
+      }
+    }
+
     return Array.from(destinos.values()).sort((a, b) => a.localeCompare(b));
-  }, [planificacion.destinosReferencia, planificacion.preciosReferencia]);
-  const actividades = planificacion.actividadesPlanificacion || [];
+  }, [planificacion.destinosReferencia, planificacion.preciosReferencia, puertosErp]);
+  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesPlanificacion || [];
+  const actividadesPlanificacionIds = new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean));
+  const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
+  const actividades = useMemo<ActividadSeleccionable[]>(() => {
+    const propias = actividadesPropias.map((actividad) => ({
+      clave: `agro:${actividad.id}`,
+      nombre: actividad.nombre,
+      empresaErpId: actividad.empresaErpId,
+      actividadPlanificacionId: actividad.id,
+      actividadErpId: actividad.actividadErpId,
+      especiePlanificacionId: actividad.especiePlanificacionId,
+      especieErpId: actividad.especieErpId,
+      codigo: actividad.codigoInterno,
+      origen: 'agro' as const,
+    }));
+    const erp = actividadesErp
+      .filter((actividad) => !actividadesPlanificacionIds.has(actividad.erpId))
+      .map((actividad) => {
+        const especie = actividad.idEspecie ? especiesErpPorId.get(actividad.idEspecie) : undefined;
+
+        return {
+          clave: `erp:${actividad.erpId}`,
+          nombre: actividad.descripcion,
+          empresaErpId: actividad.empresaErpId,
+          actividadErpId: actividad.erpId,
+          especieErpId: especie?.erpId,
+          codigo: actividad.codigo,
+          origen: 'erp' as const,
+          erp: actividad,
+        };
+      });
+
+    return [...propias, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [actividadesErp, actividadesPlanificacionIds, actividadesPropias, especiesErpPorId]);
+  const actividadesPorClave = useMemo(() => new Map(actividades.map((actividad) => [actividad.clave, actividad])), [actividades]);
+  const actividadesPropiasPorId = useMemo(() => new Map(actividadesPropias.map((actividad) => [actividad.id, actividad])), [actividadesPropias]);
+
+  useEffect(() => {
+    async function cargarActividadesReales() {
+      const [propias, erp, especies, puertos] = await Promise.all([
+        obtenerActividadesPlanificacion(sesion.token),
+        obtenerActividadesErpImportadas(sesion.token),
+        obtenerEspeciesErpImportadas(sesion.token),
+        obtenerPuertosErpImportados(sesion.token),
+      ]);
+
+      setActividadesPropiasDb(propias.actividades);
+      setActividadesErp(erp.actividades);
+      setEspeciesErp(especies.especies);
+      setPuertosErp(puertos.puertos);
+    }
+
+    cargarActividadesReales().catch(() => undefined);
+  }, [sesion.token]);
 
   function formatearFecha(valor: string) {
     return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(valor));
@@ -54,13 +135,13 @@ export function PreciosReferenciaScreen({
   function crearBorradorPrecio(): PrecioReferencia {
     const ahora = new Date().toISOString();
     const actividad = actividades[0];
-    const destino = actividad ? planificacion.destinosReferencia.find((item) => item.actividadPlanificacionId === actividad.id) : undefined;
+    const destino = actividad?.actividadPlanificacionId ? planificacion.destinosReferencia.find((item) => item.actividadPlanificacionId === actividad.actividadPlanificacionId) : undefined;
 
     return {
       id: `precio-referencia-${Date.now()}`,
       clienteId: planificacion.preciosReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
       empresaErpId: actividad?.empresaErpId,
-      actividadPlanificacionId: actividad?.id || '',
+      actividadPlanificacionId: actividad?.actividadPlanificacionId || '',
       actividadErpId: actividad?.actividadErpId,
       especiePlanificacionId: actividad?.especiePlanificacionId,
       especieErpId: actividad?.especieErpId,
@@ -78,11 +159,13 @@ export function PreciosReferenciaScreen({
 
   function abrirNuevoPrecio() {
     setModoModal('crear');
+    setActividadSeleccionadaClave(actividades[0]?.clave || '');
     setPrecioEnEdicion(crearBorradorPrecio());
   }
 
   function abrirEditarPrecio(precio: PrecioReferencia) {
     setModoModal('editar');
+    setActividadSeleccionadaClave(`agro:${precio.actividadPlanificacionId}`);
     setPrecioEnEdicion({ ...precio });
   }
 
@@ -90,12 +173,73 @@ export function PreciosReferenciaScreen({
     setPrecioEnEdicion((actual) => (actual ? { ...actual, ...cambios, updatedAt: new Date().toISOString() } : actual));
   }
 
+  function seleccionarActividad(clave: string) {
+    const actividad = actividadesPorClave.get(clave);
+
+    setActividadSeleccionadaClave(clave);
+    actualizarBorrador({
+      empresaErpId: actividad?.empresaErpId,
+      actividadPlanificacionId: actividad?.actividadPlanificacionId || '',
+      actividadErpId: actividad?.actividadErpId,
+      especiePlanificacionId: actividad?.especiePlanificacionId,
+      especieErpId: actividad?.especieErpId,
+    });
+  }
+
+  function crearIdActividadDesdeErp(actividadErpId: string) {
+    return `actividad-planificacion-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+  }
+
+  async function asegurarActividadPlanificacion(precio: PrecioReferencia): Promise<PrecioReferencia> {
+    if (precio.actividadPlanificacionId) {
+      return precio;
+    }
+
+    const actividad = actividadesPorClave.get(actividadSeleccionadaClave);
+
+    if (!actividad?.erp) {
+      return precio;
+    }
+
+    const ahora = new Date().toISOString();
+    const actividadPreparada: ActividadPlanificacion = {
+      id: crearIdActividadDesdeErp(actividad.erp.erpId),
+      clienteId: precio.clienteId,
+      empresaErpId: 'global',
+      actividadErpId: actividad.erp.erpId,
+      especieErpId: actividad.especieErpId,
+      nombre: actividad.erp.descripcion,
+      codigoInterno: actividad.erp.codigo,
+      estadoVinculacion: 'vinculado_erp',
+      createdAt: ahora,
+      updatedAt: ahora,
+    };
+    const respuesta = await guardarActividadPlanificacion(actividadPreparada.id, {
+      actividad: actividadPreparada,
+      origen: 'web',
+      motivo: 'Creacion automatica de actividad operativa vinculada desde precio',
+    }, sesion.token);
+
+    setActividadesPropiasDb((actuales) => [respuesta.actividad, ...actuales]);
+    setActividadSeleccionadaClave(`agro:${respuesta.actividad.id}`);
+
+    return {
+      ...precio,
+      empresaErpId: respuesta.actividad.empresaErpId,
+      actividadPlanificacionId: respuesta.actividad.id,
+      actividadErpId: respuesta.actividad.actividadErpId,
+      especiePlanificacionId: respuesta.actividad.especiePlanificacionId,
+      especieErpId: respuesta.actividad.especieErpId,
+    };
+  }
+
   async function aplicarModal() {
     if (!precioEnEdicion) {
       return;
     }
 
-    const guardado = await guardarPrecioReferencia(precioEnEdicion);
+    const precioPreparado = await asegurarActividadPlanificacion(precioEnEdicion);
+    const guardado = await guardarPrecioReferencia(precioPreparado);
 
     if (guardado) {
       setPrecioEnEdicion(null);
@@ -133,37 +277,25 @@ export function PreciosReferenciaScreen({
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="reference-list-row reference-list-head">
-            <span>Actividad</span>
-            <span>Destino</span>
-            <span>Precio</span>
-            <span>Fuente</span>
-            <span>Actualizado</span>
-            <span>Estado</span>
-            <span>Acciones</span>
-          </div>
-          {!planificacion.preciosReferencia.length && (
-            <div className="empty-state">Todavia no hay precios registrados.</div>
-          )}
-          {planificacion.preciosReferencia.map((precio) => {
-            const actividad = actividades.find((item) => item.id === precio.actividadPlanificacionId);
-
-            return (
-              <div className="reference-list-row" key={`tabla-${precio.id}`}>
-                <strong>{actividad?.nombre || precio.actividadErpId || 'Sin actividad'}</strong>
-                <span>{precio.destinoVenta || 'Sin destino'}</span>
-                <span>{precio.moneda === 'USD' ? formatearUsd(precio.valor) : `${precio.moneda} ${precio.valor}`} / {precio.unidad}</span>
-                <span>{precio.fuente}</span>
-                <span>{formatearFecha(precio.updatedAt || precio.createdAt)}</span>
-                <span>{precio.activo ? 'Activo' : 'Inactivo'}</span>
-                <button className="small" onClick={() => abrirEditarPrecio(precio)} disabled={!puedeConfigurarPlanificacion}>
-                  Editar
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <DataTable
+          rows={planificacion.preciosReferencia}
+          getRowKey={(precio) => precio.id}
+          emptyMessage="Todavia no hay precios registrados."
+          columns={[
+            { key: 'actividad', label: 'Actividad', width: 'minmax(140px, 1.1fr)', render: (precio) => <strong>{actividadesPropiasPorId.get(precio.actividadPlanificacionId)?.nombre || precio.actividadErpId || 'Sin actividad'}</strong> },
+            { key: 'destino', label: 'Destino', width: 'minmax(130px, 1fr)', render: (precio) => precio.destinoVenta || 'Sin destino' },
+            { key: 'precio', label: 'Precio', width: 'minmax(100px, 0.75fr)', render: (precio) => `${precio.moneda === 'USD' ? formatearUsd(precio.valor) : `${precio.moneda} ${precio.valor}`} / ${precio.unidad}` },
+            { key: 'fuente', label: 'Fuente', width: 'minmax(90px, 0.6fr)', render: (precio) => precio.fuente },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (precio) => formatearFecha(precio.updatedAt || precio.createdAt) },
+            { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (precio) => <em>{precio.activo ? 'Activo' : 'Inactivo'}</em> },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(86px, 0.5fr)',
+              render: (precio) => <button className="small" onClick={() => abrirEditarPrecio(precio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+            },
+          ]}
+        />
       </section>
 
       {precioEnEdicion && (
@@ -181,21 +313,12 @@ export function PreciosReferenciaScreen({
               <label>
                 Actividad
                 <select
-                  value={precioEnEdicion.actividadPlanificacionId}
-                  onChange={(event) => {
-                    const actividadSeleccionada = actividades.find((item) => item.id === event.target.value);
-                    actualizarBorrador({
-                      actividadPlanificacionId: event.target.value,
-                      empresaErpId: actividadSeleccionada?.empresaErpId,
-                      actividadErpId: actividadSeleccionada?.actividadErpId,
-                      especiePlanificacionId: actividadSeleccionada?.especiePlanificacionId,
-                      especieErpId: actividadSeleccionada?.especieErpId,
-                    });
-                  }}
+                  value={actividadSeleccionadaClave}
+                  onChange={(event) => seleccionarActividad(event.target.value)}
                 >
                   <option value="">Seleccionar actividad</option>
                   {actividades.map((item) => (
-                    <option key={item.id} value={item.id}>{item.nombre}</option>
+                    <option key={item.clave} value={item.clave}>{item.codigo ? `${item.codigo} - ` : ''}{item.nombre} ({item.origen === 'erp' ? 'ERP' : 'Agro App'})</option>
                   ))}
                 </select>
               </label>
@@ -274,7 +397,7 @@ export function PreciosReferenciaScreen({
               <button
                 className="primary"
                 onClick={aplicarModal}
-                disabled={guardandoPrecios || !precioEnEdicion.actividadPlanificacionId || !precioEnEdicion.destinoVenta.trim() || precioEnEdicion.valor < 0}
+                disabled={guardandoPrecios || !actividadSeleccionadaClave || !precioEnEdicion.destinoVenta.trim() || precioEnEdicion.valor < 0}
               >
                 <span className="button-content">
                   {guardandoPrecios && <LoadingSpinner label="Guardando precio" />}

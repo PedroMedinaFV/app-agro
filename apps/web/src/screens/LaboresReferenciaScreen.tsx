@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErpServicio, ErpSnapshot, LaborReferencia, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerServiciosErpImportados } from '../services/api';
 
@@ -24,6 +25,18 @@ interface LaboresReferenciaScreenProps {
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
 }
+
+type LaborTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  codigo: string;
+  unidad: string;
+  costo: string;
+  estado: string;
+  accion: 'editar' | 'vincular';
+  laborPropia?: LaborReferencia;
+};
 
 export function LaboresReferenciaScreen({
   sesion,
@@ -140,6 +153,33 @@ export function LaboresReferenciaScreen({
     labor.id !== laborEnEdicion.id && labor.codigo === codigoActual
   )));
   const serviciosVinculados = new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter(Boolean));
+  const filasLabor: LaborTabla[] = [
+    ...laboresOrdenadas.map((labor) => ({
+      id: labor.id,
+      nombre: labor.nombre,
+      detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
+      codigo: labor.codigo,
+      unidad: labor.unidadSugerida,
+      costo: labor.costoUnitarioSugerido !== undefined ? formatearUsd(labor.costoUnitarioSugerido) : 'Sin costo',
+      estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
+      accion: 'editar' as const,
+      laborPropia: labor,
+    })),
+    ...serviciosErp.map((servicio) => {
+      const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
+
+      return {
+        id: servicio.erpId,
+        nombre: servicio.descripcion,
+        detalle: `${serviciosVinculados.has(servicio.erpId) ? 'Vinculada' : 'Disponible'} ERP`,
+        codigo: servicio.codigo,
+        unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
+        costo: servicio.precioUnitario !== undefined ? formatearUsd(servicio.precioUnitario) : 'Sin costo',
+        estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
+        accion: 'vincular' as const,
+      };
+    }),
+  ];
 
   return (
     <section className="planning-stack">
@@ -172,48 +212,27 @@ export function LaboresReferenciaScreen({
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="field-row reference-list-head">
-            <span>Labor</span>
-            <span>Codigo</span>
-            <span>Unidad</span>
-            <span>Costo</span>
-            <span>Estado</span>
-            <span>Acciones</span>
-          </div>
-          {!laboresOrdenadas.length && !serviciosErp.length && (
-            <div className="empty-state">Todavia no hay labores registradas.</div>
-          )}
-          {laboresOrdenadas.map((labor) => (
-            <div className="field-row " key={labor.id}>
-              <strong>{labor.nombre}</strong>
-              <span>{labor.codigo}</span>
-              <span>{labor.unidadSugerida}</span>
-              <span>{labor.costoUnitarioSugerido !== undefined ? formatearUsd(labor.costoUnitarioSugerido) : 'Sin costo'}</span>
-              <span>{labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen}</span>
-              <button className="small" onClick={() => abrirEditarLabor(labor)} disabled={!puedeConfigurarPlanificacion}>
-                Editar
-              </button>
-            </div>
-          ))}
-          {serviciosErp.map((servicio) => {
-            const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
-
-            return (
-              <div className="field-row" key={servicio.erpId}>
-                <div>
-                  <strong>{servicio.descripcion}</strong>
-                  <span>{serviciosVinculados.has(servicio.erpId) ? 'Vinculada' : 'Disponible'} ERP</span>
-                </div>
-                <span>{servicio.codigo}</span>
-                <span>{unidad?.codigo || servicio.idUnidadMedida || '-'}</span>
-                <span>{servicio.precioUnitario !== undefined ? formatearUsd(servicio.precioUnitario) : 'Sin costo'}</span>
-                <span>{servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis'}</span>
-                <button className="small" type="button" disabled>Vincular</button>
-              </div>
-            );
-          })}
-        </div>
+        <DataTable
+          rows={filasLabor}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay labores registradas."
+          initialPageSize={25}
+          columns={[
+            { key: 'labor', label: 'Labor', width: 'minmax(190px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'codigo', label: 'Codigo', width: 'minmax(92px, 0.65fr)', render: (fila) => fila.codigo },
+            { key: 'unidad', label: 'Unidad', width: 'minmax(76px, 0.5fr)', render: (fila) => fila.unidad },
+            { key: 'costo', label: 'Costo', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.costo },
+            { key: 'estado', label: 'Estado', width: 'minmax(116px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(86px, 0.5fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" onClick={() => fila.laborPropia && abrirEditarLabor(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {laborEnEdicion && (

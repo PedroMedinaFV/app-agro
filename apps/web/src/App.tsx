@@ -215,6 +215,7 @@ export function App() {
 
       {vista === 'precios' && (
         <PreciosReferenciaScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           guardandoPrecios={planificacionDemo.guardandoPrecios}
@@ -226,6 +227,7 @@ export function App() {
 
       {vista === 'gastos' && (
         <GastosComercialesScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           campanias={erp.snapshot.campanias}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ConceptoGastoComercial, PlanificacionSnapshot } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 function limpiarTextoVisible(valor: string) {
@@ -130,31 +131,24 @@ export function ConceptosGastosComercialesScreen({
           </div>
         </div>
 
-        <div className="reference-list">
-          <div className="master-list-row reference-list-head">
-            <span>Nombre</span>
-            <span>Codigo</span>
-            <span>Descripcion</span>
-            <span>Estado</span>
-            <span>Actualizado</span>
-            <span>Acciones</span>
-          </div>
-          {!conceptosOrdenados.length && (
-            <div className="empty-state">Todavia no hay conceptos registrados.</div>
-          )}
-          {conceptosOrdenados.map((concepto) => (
-            <div className="master-list-row" key={concepto.id}>
-              <strong>{concepto.nombre}</strong>
-              <span>{concepto.codigo}</span>
-              <span>{concepto.descripcion || 'Sin descripcion'}</span>
-              <span>{concepto.activo ? 'Activo' : 'Inactivo'}</span>
-              <span>{new Intl.DateTimeFormat('es-AR').format(new Date(concepto.updatedAt || concepto.createdAt))}</span>
-              <button className="small" onClick={() => abrirEditarConcepto(concepto)} disabled={!puedeConfigurarPlanificacion}>
-                Editar
-              </button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={conceptosOrdenados}
+          getRowKey={(concepto) => concepto.id}
+          emptyMessage="Todavia no hay conceptos registrados."
+          columns={[
+            { key: 'nombre', label: 'Nombre', width: 'minmax(160px, 1.1fr)', render: (concepto) => <strong>{concepto.nombre}</strong> },
+            { key: 'codigo', label: 'Codigo', width: 'minmax(90px, 0.6fr)', render: (concepto) => concepto.codigo },
+            { key: 'descripcion', label: 'Descripcion', width: 'minmax(180px, 1.3fr)', render: (concepto) => concepto.descripcion || 'Sin descripcion' },
+            { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (concepto) => <em>{concepto.activo ? 'Activo' : 'Inactivo'}</em> },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (concepto) => new Intl.DateTimeFormat('es-AR').format(new Date(concepto.updatedAt || concepto.createdAt)) },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(86px, 0.5fr)',
+              render: (concepto) => <button className="small" onClick={() => abrirEditarConcepto(concepto)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+            },
+          ]}
+        />
       </section>
 
       {conceptoEnEdicion && (

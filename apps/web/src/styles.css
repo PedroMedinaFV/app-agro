@@ -1266,6 +1266,89 @@ nav a.active .nav-icon,
   text-transform: uppercase;
 }
 
+.data-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.data-table-row {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #edf1ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.data-table-head {
+  color: #64736a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.data-table-row > *,
+.data-table-cell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.data-table-cell {
+  display: block;
+  color: #64736a;
+  font-size: 13px;
+}
+
+.data-table-cell strong {
+  display: block;
+  color: #15241d;
+  font-size: 14px;
+}
+
+.data-table-cell span {
+  color: #64736a;
+  font-size: 13px;
+}
+
+.data-table-cell em {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #234235;
+  background: #eaf1eb;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.data-table-footer,
+.data-table-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.data-table-footer {
+  justify-content: space-between;
+  padding: 10px 2px 0;
+  color: #64736a;
+  font-size: 13px;
+}
+
+.data-table-controls label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.data-table-controls select {
+  min-width: 74px;
+  padding: 7px 9px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1437,6 +1520,7 @@ nav a.active .nav-icon,
   .reference-list-row,
   .master-list-row,
   .field-row,
+  .data-table-row,
   .expense-list-row,
   .expense-item-row,
   .reference-modal-grid,
@@ -1444,6 +1528,15 @@ nav a.active .nav-icon,
   .reference-modal-grid .reference-wide {
     grid-column: auto;
     grid-template-columns: 1fr;
+  }
+
+  .data-table-head {
+    display: none;
+  }
+
+  .data-table-footer {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .modal-backdrop {

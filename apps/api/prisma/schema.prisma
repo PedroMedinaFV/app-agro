@@ -452,6 +452,24 @@ model ErpUnidadMedida {
   @@index([activo])
 }
 
+model ErpPuerto {
+  id             String    @id @default(uuid())
+  empresaErpId   String
+  erpId          String    @unique
+  idPuerto       Int
+  codigo         String
+  nombre         String
+  activo         Boolean
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idPuerto])
+  @@index([codigo])
+  @@index([nombre])
+  @@index([activo])
+}
+
 model ClienteEmpresaErp {
   id           String    @id @default(uuid())
   cliente      Cliente   @relation(fields: [clienteId], references: [id])

@@ -80,6 +80,11 @@ export const snapshotFallback: ErpSnapshot = {
     { empresaErpId: 'empresa:mock', erpId: 'empresa:mock:unidad-medida:17', idUnidadMedida: 17, codigo: 'Bls', descripcion: 'Bolsas', activo: true, actualizadoEn: new Date().toISOString() },
     { empresaErpId: 'empresa:mock', erpId: 'empresa:mock:unidad-medida:28', idUnidadMedida: 28, codigo: 'Unid', descripcion: 'Unidades', activo: true, actualizadoEn: new Date().toISOString() },
   ],
+  puertos: [
+    { empresaErpId: 'global', erpId: 'puerto:58', idPuerto: 58, codigo: 'QUE', nombre: 'Puerto Quequen', activo: true, actualizadoEn: new Date().toISOString() },
+    { empresaErpId: 'global', erpId: 'puerto:59', idPuerto: 59, codigo: 'BBL', nombre: 'Bahia Blanca', activo: true, actualizadoEn: new Date().toISOString() },
+    { empresaErpId: 'global', erpId: 'puerto:60', idPuerto: 60, codigo: 'ROS', nombre: 'Rosario', activo: true, actualizadoEn: new Date().toISOString() },
+  ],
 };
 
 export const planificacionFallback: PlanificacionSnapshot = {

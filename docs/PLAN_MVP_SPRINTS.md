@@ -104,6 +104,12 @@ Cada sprint debe cerrar una pieza usable, integrada y validable:
 6. documentacion;
 7. validacion tecnica.
 
+Premisa visual:
+
+- las pantallas con tablas deben usar un componente compartido de tabla paginada para mantener estructura, estilos, estados vacios y navegacion consistentes;
+- las tablas de padrones deben evitar scroll horizontal en uso normal y adaptarse a mobile con filas apiladas;
+- los padrones con muchos registros ERP, como insumos, labores, campos y lotes, deben paginar por defecto.
+
 ## Sprint 0 - Base operativa e integracion ERP
 
 Estado: cerrado para MVP.
@@ -144,7 +150,7 @@ Objetivo:
 Incluye:
 
 - [x] sincronizar por cada empresa AGRO seleccionada usando `x-company`;
-- [x] importar zonas, campos, lotes, campanias, actividades, especies, cultivos, insumos, servicios/labores y unidades de medida;
+- [x] importar zonas, campos, lotes, campanias, actividades, especies, cultivos, insumos, servicios/labores, unidades de medida y puertos;
 - [x] registrar conteos e incidencias de sincronizacion;
 - [x] evitar que referencias huerfanas rompan toda la corrida;
 - [x] accion web admin para sincronizar padrones y ver conteos principales;
@@ -168,8 +174,8 @@ Validacion realizada:
 
 - `db:clean:dev` limpio datos operativos/cache de desarrollo preservando cliente, usuario, configuracion ERP, empresas ERP y seleccion AGRO;
 - `erp:sync -- --clienteId=cliente-demo` importo datos reales para `empresa:1`, `empresa:3`, `empresa:18` y `empresa:19`;
-- conteos filtrados por empresas AGRO: 6 zonas, 25 campos, 847 lotes, 72 actividades, 46 especies, 16 campanias, 3267 cultivos, 991 insumos, 147 servicios/labores y 18 unidades de medida;
-- `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios` y `Padrones/UnidadesMedida` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
+- conteos filtrados por empresas AGRO: 6 zonas, 25 campos, 847 lotes, 72 actividades, 46 especies, 16 campanias, 3267 cultivos, 991 insumos, 147 servicios/labores, 18 unidades de medida y puertos segun ERP;
+- `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
 - `erp:verify` confirma `ultimoSyncEn` en `IntegracionErp`;
 - las tablas `Erp*` se refrescan como cache por empresa y las ediciones de usuario quedan fuera de esa cache.
 
@@ -239,6 +245,9 @@ Incluye:
 - maestro de destinos de venta;
 - precios de referencia transversales, no atados a campania;
 - gastos comerciales por campania, actividad, destino y alcance geografico;
+- precios y gastos consumen actividades reales desde DB, combinando Agro App y ERP;
+- gastos comerciales consumen zonas y campos reales desde DB para definir alcance;
+- si se usa una actividad ERP en precios/gastos, se crea automaticamente una actividad operativa vinculada y auditada;
 - conceptos comerciales maestros;
 - normalizacion en backend para evitar duplicados;
 - auditoria real de cambios;

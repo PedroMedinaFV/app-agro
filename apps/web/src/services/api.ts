@@ -7,6 +7,7 @@ import {
   ErpInsumo,
   ErpZona,
   ErpLote,
+  ErpPuerto,
   ErpServicio,
   ErpSnapshot,
   CerrarPlanificacionRequest,
@@ -98,6 +99,7 @@ export type SincronizacionErpResultado = {
     insumos: number;
     servicios: number;
     unidadesMedida: number;
+    puertos: number;
     omitidos: {
       lotesSinCampo: number;
     };
@@ -165,6 +167,14 @@ export type ServiciosErpImportadosResponse = {
 
 export async function obtenerServiciosErpImportados(token?: string): Promise<ServiciosErpImportadosResponse> {
   return request<ServiciosErpImportadosResponse>('/erp/servicios-importados', {}, token);
+}
+
+export type PuertosErpImportadosResponse = {
+  puertos: ErpPuerto[];
+};
+
+export async function obtenerPuertosErpImportados(token?: string): Promise<PuertosErpImportadosResponse> {
+  return request<PuertosErpImportadosResponse>('/erp/puertos-importados', {}, token);
 }
 
 export type EmpresasErpAdminResponse = {

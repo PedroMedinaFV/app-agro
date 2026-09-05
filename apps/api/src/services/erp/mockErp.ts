@@ -6,6 +6,7 @@ import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecie
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
+import { mapearRespuestaPadronesPuertos } from './mappers/padronesPuertos';
 import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
@@ -473,6 +474,23 @@ const respuestaPadronesUnidadesMedidaMock = {
   ],
 };
 
+const respuestaPadronesPuertosMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 3,
+    totalPages: 1,
+    totalRecords: 3,
+  },
+  data: [
+    { idPuerto: 58, codigo: 'QUE', nombre: 'Puerto Quequen', activo: true, fechaUltimaActualizacion: null },
+    { idPuerto: 59, codigo: 'BBL', nombre: 'Bahia Blanca', activo: true, fechaUltimaActualizacion: null },
+    { idPuerto: 60, codigo: 'ROS', nombre: 'Rosario', activo: true, fechaUltimaActualizacion: null },
+  ],
+};
+
 // Mock de contrato ERP. Reemplazar esta funcion por llamadas HTTP cuando tengamos credenciales reales.
 export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const campos = mapearRespuestaPadronesCampos(respuestaPadronesCamposMock);
@@ -485,6 +503,7 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const cultivos = mapearRespuestaAgriculturaCultivos(respuestaAgriculturaCultivosMock);
   const insumos = mapearRespuestaPadronesInsumos(respuestaPadronesInsumosMock);
   const unidadesMedida = mapearRespuestaPadronesUnidadesMedida(respuestaPadronesUnidadesMedidaMock);
+  const puertos = mapearRespuestaPadronesPuertos(respuestaPadronesPuertosMock);
 
   return {
     sincronizadoEn: ahora,
@@ -499,5 +518,6 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
     insumos,
     servicios: [],
     unidadesMedida,
+    puertos,
   };
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { guardarCampoPlanificacion, obtenerCamposErpImportados, obtenerCamposPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -21,6 +22,18 @@ type ZonaSeleccionable = {
   origen: 'erp' | 'agro';
   zonaErpId?: string;
   zonaPlanificacionId?: string;
+};
+
+type CampoTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  empresa: string;
+  zona: string;
+  origen: string;
+  estado: string;
+  accion: 'editar' | 'vincular';
+  campoPropio?: CampoPlanificacion;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -149,6 +162,29 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
     return texto.includes(filtroNormalizado) && coincideZona;
   });
+  const filasCampo: CampoTabla[] = [
+    ...camposPropiosFiltrados.map((campo) => ({
+      id: campo.id,
+      nombre: campo.nombre,
+      detalle: campo.codigoInterno || 'Sin codigo interno',
+      empresa: empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId,
+      zona: obtenerNombreZona(campo),
+      origen: 'Agro App',
+      estado: campo.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP',
+      accion: 'editar' as const,
+      campoPropio: campo,
+    })),
+    ...camposErpFiltrados.map((campo) => ({
+      id: campo.erpId,
+      nombre: campo.nombre,
+      detalle: `${campo.codigo} - x-company ${campo.empresaErpId.replace('empresa:', '')}`,
+      empresa: empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId,
+      zona: obtenerNombreZonaErp(campo),
+      origen: 'ERP',
+      estado: camposVinculados.has(campo.erpId) ? 'Vinculado' : 'Disponible',
+      accion: 'vincular' as const,
+    })),
+  ];
 
   function abrirNuevoCampo() {
     const empresaErpId = empresas[0]?.erpId || zonasDisponibles[0]?.empresaErpId || 'empresa:1';
@@ -293,48 +329,27 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
           </div>
         </div>
 
-        <div className="field-list">
-          <div className="field-row reference-list-head">
-            <span>Campo</span>
-            <span>Empresa</span>
-            <span>Zona ERP</span>
-            <span>Origen</span>
-            <span>Estado</span>
-            <span>Accion</span>
-          </div>
-
-          {camposPropiosFiltrados.map((campo) => (
-            <div className="field-row" key={campo.id}>
-              <div>
-                <strong>{campo.nombre}</strong>
-                <span>{campo.codigoInterno || 'Sin codigo interno'}</span>
-              </div>
-              <span>{empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId}</span>
-              <span>{obtenerNombreZona(campo)}</span>
-              <span>Agro App</span>
-              <em>{campo.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP'}</em>
-              <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => setCampoEnEdicion(campo)}>
-                Editar
-              </button>
-            </div>
-          ))}
-
-          {camposErpFiltrados.map((campo) => (
-            <div className="field-row" key={campo.erpId}>
-              <div>
-                <strong>{campo.nombre}</strong>
-                <span>{campo.codigo} - x-company {campo.empresaErpId.replace('empresa:', '')}</span>
-              </div>
-              <span>{empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId}</span>
-              <span>{obtenerNombreZonaErp(campo)}</span>
-              <span>ERP</span>
-              <em>{camposVinculados.has(campo.erpId) ? 'Vinculado' : 'Disponible'}</em>
-              <button className="small" type="button" disabled>
-                Vincular
-              </button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={filasCampo}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay campos para el filtro seleccionado."
+          initialPageSize={25}
+          columns={[
+            { key: 'campo', label: 'Campo', width: 'minmax(190px, 1.35fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'empresa', label: 'Empresa', width: 'minmax(150px, 1fr)', render: (fila) => fila.empresa },
+            { key: 'zona', label: 'Zona', width: 'minmax(110px, 0.75fr)', render: (fila) => fila.zona },
+            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => fila.origen },
+            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.7fr)', render: (fila) => <em>{fila.estado}</em> },
+            {
+              key: 'accion',
+              label: 'Accion',
+              width: 'minmax(86px, 0.5fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && setCampoEnEdicion(fila.campoPropio)}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {campoEnEdicion && (

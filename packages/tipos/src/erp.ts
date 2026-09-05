@@ -186,6 +186,15 @@ export type ErpPadronUnidadMedida = {
   fechaUltimaActualizacion: string | null;
 };
 
+export type ErpPadronPuerto = {
+  idPuerto: number;
+  codigo?: string | null;
+  nombre?: string | null;
+  descripcion?: string | null;
+  activo?: boolean | null;
+  fechaUltimaActualizacion?: string | null;
+};
+
 export type ErpLote = {
   empresaErpId: string;
   erpId: string;
@@ -334,6 +343,16 @@ export type ErpUnidadMedida = {
   actualizadoEn: string;
 };
 
+export type ErpPuerto = {
+  empresaErpId: string;
+  erpId: string;
+  idPuerto: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  actualizadoEn: string;
+};
+
 export type ErpSnapshot = {
   zonas: ErpZona[];
   campos: ErpCampo[];
@@ -346,6 +365,7 @@ export type ErpSnapshot = {
   insumos: ErpInsumo[];
   servicios: ErpServicio[];
   unidadesMedida: ErpUnidadMedida[];
+  puertos: ErpPuerto[];
   sincronizadoEn: string;
 };
 

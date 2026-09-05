@@ -36,6 +36,7 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
     insumos: snapshot.insumos,
     servicios: snapshot.servicios,
     unidadesMedida: snapshot.unidadesMedida,
+    puertos: snapshot.puertos,
   };
 }
 
@@ -301,6 +302,36 @@ router.get('/servicios-importados', async (req, res, next) => {
         activo: servicio.activo,
         imputaDosis: servicio.imputaDosis,
         actualizadoEn: servicio.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/puertos-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const puertos = await prisma.erpPuerto.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      puertos: puertos.map((puerto) => ({
+        empresaErpId: puerto.empresaErpId,
+        erpId: puerto.erpId,
+        idPuerto: puerto.idPuerto,
+        codigo: puerto.codigo,
+        nombre: puerto.nombre,
+        activo: puerto.activo,
+        actualizadoEn: puerto.actualizadoEn.toISOString(),
       })),
     });
   } catch (error) {

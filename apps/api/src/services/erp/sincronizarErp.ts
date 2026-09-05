@@ -159,6 +159,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
     prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
     prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
+    prisma.erpPuerto.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
   ]);
 
   await crearEnBloques('zonas', zonasSincronizadas, (bloque) =>
@@ -366,6 +367,20 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     }),
   );
 
+  await crearEnBloques('puertos', snapshot.puertos, (bloque) =>
+    prisma.erpPuerto.createMany({
+      data: bloque.map((puerto) => ({
+        empresaErpId: puerto.empresaErpId,
+        erpId: puerto.erpId,
+        idPuerto: puerto.idPuerto,
+        codigo: puerto.codigo,
+        nombre: puerto.nombre,
+        activo: puerto.activo,
+        actualizadoEn: new Date(puerto.actualizadoEn),
+      })),
+    }),
+  );
+
   if (clienteId) {
     await prisma.integracionErp.upsert({
       where: { clienteId },
@@ -394,6 +409,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     insumos: snapshot.insumos.length,
     servicios: snapshot.servicios.length,
     unidadesMedida: snapshot.unidadesMedida.length,
+    puertos: snapshot.puertos.length,
     omitidos: {
       lotesSinCampo: lotesOmitidosPorCampo,
     },

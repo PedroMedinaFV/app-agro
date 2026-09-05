@@ -268,6 +268,35 @@ Para unidades de medida, `erpId` se deriva como `unidad-medida:${idUnidadMedida}
 
 Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
+### Padrones/Puertos
+
+El contrato de `Padrones/Puertos` trae el padron de puertos/destinos comerciales del ERP.
+
+Parametros:
+
+- `NoPaginate`
+- header `x-company` cuando el ERP lo requiera para padrones operativos
+
+Campos relevantes esperados:
+
+- `idPuerto`
+- `codigo`
+- `nombre`
+- `descripcion`
+- `activo`
+- `fechaUltimaActualizacion`
+
+Uso en Agro App:
+
+- se expone en `ErpSnapshot.puertos`;
+- se guarda en `ErpPuerto` como cache importada;
+- alimenta los selects de destino en `Precios` y `Gastos comerciales`;
+- convive con `DestinoVentaReferencia`, que permite crear destinos propios cuando no existan en el ERP.
+
+Para puertos, `erpId` se deriva como `puerto:${idPuerto}`.
+
+Decision: se trata como padron global deduplicado. Aunque se consulte durante la sincronizacion por empresa AGRO, se conserva un unico registro por `idPuerto`.
+
 ### Sistema/Empresas
 
 El contrato de `Sistema/Empresas` trae todas las empresas dadas de alta en el ERP.
@@ -298,7 +327,7 @@ Por eso el flujo queda asi:
 3. Para cada empresa seleccionada, Agro App consulta los padrones operativos enviando `x-company: <idEmpresa>`.
 4. Cada registro importado guarda `empresaErpId` para saber desde qué empresa vino.
 
-Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios` y `Padrones/UnidadesMedida` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
+Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
 
 El identificador interno de los datos por empresa incluye la empresa para evitar colisiones:
 
@@ -315,6 +344,7 @@ Los padrones globales usan identificadores sin empresa:
 - `insumo:674`
 - `servicio:147`
 - `unidad-medida:24`
+- `puerto:58`
 
 Si una sincronizacion se repite para la misma empresa y el mismo identificador ERP, se actualiza el registro existente. Si otra empresa devuelve datos para el mismo identificador numerico en campos, lotes o cultivos, se guarda como otro registro porque pertenece a otra empresa ERP. En padrones globales, se deduplica y se conserva un unico registro.
 
@@ -333,6 +363,7 @@ Se agregan tablas separadas:
 - `ErpInsumo`
 - `ErpServicio`
 - `ErpUnidadMedida`
+- `ErpPuerto`
 
 Estas tablas guardan una copia importada del ERP. Estan separadas de `Campo`, `Lote` y modelos operativos porque representan datos maestros externos, no datos propios generados por Agro App.
 
@@ -511,6 +542,7 @@ ERP_PATH_CULTIVOS="Agricultura/Cultivos"
 ERP_PATH_INSUMOS="Padrones/Insumos"
 ERP_PATH_SERVICIOS="Padrones/Servicios"
 ERP_PATH_UNIDADES_MEDIDA="Padrones/UnidadesMedida"
+ERP_PATH_PUERTOS="Padrones/Puertos"
 ERP_PATH_EMPRESAS="Sistema/Empresas"
 ERP_PATH_LOGIN="auth/Login"
 ```

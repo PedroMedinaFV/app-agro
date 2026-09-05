@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpLote, LotePlanificacion, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import {
   guardarCampoPlanificacion,
   guardarLotePlanificacion,
@@ -27,6 +28,18 @@ type CampoSeleccionable = {
   codigo?: string;
   nombre: string;
   origen: 'agro' | 'erp';
+};
+
+type LoteTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  campo: string;
+  superficie: string;
+  origen: string;
+  estado: string;
+  accion: 'editar' | 'vincular';
+  lotePropio?: LotePlanificacion;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -179,6 +192,37 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
     return texto.includes(filtroNormalizado) && coincideCampo;
   });
+  const filasLote: LoteTabla[] = [
+    ...lotesPropiosFiltrados.map((lote) => {
+      const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
+
+      return {
+        id: lote.id,
+        nombre: lote.nombre,
+        detalle: lote.codigoInterno || 'Sin codigo interno',
+        campo: campo?.nombre || 'Campo no disponible',
+        superficie: `${lote.superficieProductiva} / ${lote.superficieTotal} ha`,
+        origen: 'Agro App',
+        estado: lote.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP',
+        accion: 'editar' as const,
+        lotePropio: lote,
+      };
+    }),
+    ...lotesErpFiltrados.map((lote) => {
+      const campo = camposErpPorId.get(lote.campoErpId);
+
+      return {
+        id: lote.erpId,
+        nombre: lote.nombre,
+        detalle: `${lote.codigo} - x-company ${lote.empresaErpId.replace('empresa:', '')}`,
+        campo: campo?.nombre || `Campo ${lote.idCampo}`,
+        superficie: `${lote.hectareasProductivas ?? lote.areaHectareas} / ${lote.areaHectareas} ha`,
+        origen: 'ERP',
+        estado: lotesVinculados.has(lote.erpId) ? 'Vinculado' : 'Disponible',
+        accion: 'vincular' as const,
+      };
+    }),
+  ];
 
   function abrirNuevoLote() {
     const campoSugerido = camposSeleccionables[0];
@@ -380,56 +424,27 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
           </div>
         </div>
 
-        <div className="field-list">
-          <div className="field-row reference-list-head">
-            <span>Lote</span>
-            <span>Campo</span>
-            <span>Superficie</span>
-            <span>Origen</span>
-            <span>Estado</span>
-            <span>Accion</span>
-          </div>
-
-          {lotesPropiosFiltrados.map((lote) => {
-            const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
-
-            return (
-              <div className="field-row" key={lote.id}>
-                <div>
-                  <strong>{lote.nombre}</strong>
-                  <span>{lote.codigoInterno || 'Sin codigo interno'}</span>
-                </div>
-                <span>{campo?.nombre || 'Campo no disponible'}</span>
-                <span>{lote.superficieProductiva} / {lote.superficieTotal} ha</span>
-                <span>Agro App</span>
-                <em>{lote.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP'}</em>
-                <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => editarLote(lote)}>
-                  Editar
-                </button>
-              </div>
-            );
-          })}
-
-          {lotesErpFiltrados.map((lote) => {
-            const campo = camposErpPorId.get(lote.campoErpId);
-
-            return (
-              <div className="field-row" key={lote.erpId}>
-                <div>
-                  <strong>{lote.nombre}</strong>
-                  <span>{lote.codigo} - x-company {lote.empresaErpId.replace('empresa:', '')}</span>
-                </div>
-                <span>{campo?.nombre || `Campo ${lote.idCampo}`}</span>
-                <span>{lote.hectareasProductivas ?? lote.areaHectareas} / {lote.areaHectareas} ha</span>
-                <span>ERP</span>
-                <em>{lotesVinculados.has(lote.erpId) ? 'Vinculado' : 'Disponible'}</em>
-                <button className="small" type="button" disabled>
-                  Vincular
-                </button>
-              </div>
-            );
-          })}
-        </div>
+        <DataTable
+          rows={filasLote}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay lotes para el filtro seleccionado."
+          initialPageSize={25}
+          columns={[
+            { key: 'lote', label: 'Lote', width: 'minmax(190px, 1.35fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'campo', label: 'Campo', width: 'minmax(150px, 1fr)', render: (fila) => fila.campo },
+            { key: 'superficie', label: 'Superficie', width: 'minmax(110px, 0.75fr)', render: (fila) => fila.superficie },
+            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => fila.origen },
+            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.7fr)', render: (fila) => <em>{fila.estado}</em> },
+            {
+              key: 'accion',
+              label: 'Accion',
+              width: 'minmax(86px, 0.5fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {loteEnEdicion && (

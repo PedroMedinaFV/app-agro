@@ -7,6 +7,7 @@ import {
   ErpPadronEspecie,
   ErpPadronInsumo,
   ErpPadronLote,
+  ErpPadronPuerto,
   ErpPadronServicio,
   ErpPadronUnidadMedida,
   ErpPadronZona,
@@ -21,6 +22,7 @@ import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecie
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
+import { mapearRespuestaPadronesPuertos } from './mappers/padronesPuertos';
 import { mapearRespuestaPadronesServicios } from './mappers/padronesServicios';
 import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
@@ -357,6 +359,8 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
     console.log(`[erp-sync] ${empresaErpId} servicios: ${respuestaServicios.data.length}`);
     const respuestaUnidadesMedida = await getErpPaginado<ErpPadronUnidadMedida>(configuracion, configuracion.pathUnidadesMedida, empresaErpId);
     console.log(`[erp-sync] ${empresaErpId} unidadesMedida: ${respuestaUnidadesMedida.data.length}`);
+    const respuestaPuertos = await getErpPaginado<ErpPadronPuerto>(configuracion, configuracion.pathPuertos, empresaErpId);
+    console.log(`[erp-sync] ${empresaErpId} puertos: ${respuestaPuertos.data.length}`);
 
     snapshotsPorEmpresa.push({
       zonas: mapearRespuestaPadronesZonas(respuestaZonas, empresaErpId),
@@ -369,6 +373,7 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
       insumos: mapearRespuestaPadronesInsumos(respuestaInsumos, empresaErpId),
       servicios: mapearRespuestaPadronesServicios(respuestaServicios, empresaErpId),
       unidadesMedida: mapearRespuestaPadronesUnidadesMedida(respuestaUnidadesMedida, empresaErpId),
+      puertos: mapearRespuestaPadronesPuertos(respuestaPuertos, empresaErpId),
     });
   }
 
@@ -386,6 +391,7 @@ export async function obtenerSnapshotErp(clienteId?: string): Promise<ErpSnapsho
     insumos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos)),
     servicios: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios)),
     unidadesMedida: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida)),
+    puertos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.puertos)),
     empresas,
     sincronizadoEn: new Date().toISOString(),
   };

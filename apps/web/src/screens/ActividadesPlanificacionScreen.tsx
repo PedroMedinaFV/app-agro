@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ActividadPlanificacion, ErpActividad, ErpEspecie, EspeciePlanificacion, SesionUsuario } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
   guardarActividadPlanificacion,
@@ -25,6 +26,17 @@ type EspecieSeleccionable = {
   especiePlanificacionId?: string;
   especieErpId?: string;
   idEspecie?: number;
+};
+
+type ActividadTabla = {
+  id: string;
+  nombre: string;
+  detalle: string;
+  especie: string;
+  origen: string;
+  estado: string;
+  accion: 'editar' | 'vincular';
+  actividadPropia?: ActividadPlanificacion;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -129,6 +141,27 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
   const existeCodigoDuplicado = Boolean(actividadEnEdicion && codigoActual && actividadesPropias.some((actividad) => (
     actividad.id !== actividadEnEdicion.id && actividad.codigoInterno === codigoActual
   )));
+  const filasActividad: ActividadTabla[] = [
+    ...actividadesPropiasFiltradas.map((actividad) => ({
+      id: actividad.id,
+      nombre: actividad.nombre,
+      detalle: actividad.codigoInterno || 'Sin codigo interno',
+      especie: obtenerNombreEspecie(actividad),
+      origen: 'Agro App',
+      estado: actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : actividad.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP',
+      accion: 'editar' as const,
+      actividadPropia: actividad,
+    })),
+    ...actividadesErpFiltradas.map((actividad) => ({
+      id: actividad.erpId,
+      nombre: actividad.descripcion,
+      detalle: `${actividad.codigo} - ALBOR #${actividad.idActividad}`,
+      especie: actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie',
+      origen: 'ERP',
+      estado: actividadesVinculadas.has(actividad.erpId) ? 'Vinculada' : 'Disponible',
+      accion: 'vincular' as const,
+    })),
+  ];
 
   function obtenerClaveEspecie(actividad: ActividadPlanificacion) {
     if (actividad.especiePlanificacionId) {
@@ -237,39 +270,25 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
           <p className="form-error">Para crear actividades primero debe existir al menos una especie ERP o una especie propia de Agro App.</p>
         )}
 
-        <div className="reference-list">
-          <div className="field-row reference-list-head">
-            <span>Actividad</span>
-            <span>Especie</span>
-            <span>Origen</span>
-            <span>Estado</span>
-            <span>Accion</span>
-          </div>
-          {actividadesPropiasFiltradas.map((actividad) => (
-            <div className="field-row" key={actividad.id}>
-              <div>
-                <strong>{actividad.nombre}</strong>
-                <span>{actividad.codigoInterno || 'Sin codigo interno'}</span>
-              </div>
-              <span>{obtenerNombreEspecie(actividad)}</span>
-              <span>Agro App</span>
-              <em>{actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : actividad.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP'}</em>
-              <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => setActividadEnEdicion(actividad)}>Editar</button>
-            </div>
-          ))}
-          {actividadesErpFiltradas.map((actividad) => (
-            <div className="field-row" key={actividad.erpId}>
-              <div>
-                <strong>{actividad.descripcion}</strong>
-                <span>{actividad.codigo} - ALBOR #{actividad.idActividad}</span>
-              </div>
-              <span>{actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie'}</span>
-              <span>ERP</span>
-              <em>{actividadesVinculadas.has(actividad.erpId) ? 'Vinculada' : 'Disponible'}</em>
-              <button className="small" type="button" disabled>Vincular</button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          rows={filasActividad}
+          getRowKey={(fila) => fila.id}
+          emptyMessage="Todavia no hay actividades para el filtro seleccionado."
+          columns={[
+            { key: 'actividad', label: 'Actividad', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+            { key: 'especie', label: 'Especie', width: 'minmax(130px, 1fr)', render: (fila) => fila.especie },
+            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.origen },
+            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.75fr)', render: (fila) => <em>{fila.estado}</em> },
+            {
+              key: 'accion',
+              label: 'Accion',
+              width: 'minmax(86px, 0.5fr)',
+              render: (fila) => fila.accion === 'editar'
+                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}>Editar</button>
+                : <button className="small" type="button" disabled>Vincular</button>,
+            },
+          ]}
+        />
       </section>
 
       {actividadEnEdicion && (
