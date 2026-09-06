@@ -190,7 +190,7 @@ Objetivo:
 
 Incluye:
 
-- [ ] pantallas web de padrones propios: zonas, campos, lotes, especies, actividades, insumos y labores;
+- [x] pantallas web de padrones propios: zonas, campos, lotes, especies, actividades, insumos y labores;
 - [x] pantalla web inicial de zonas con ERP sincronizado y zonas propias;
 - [x] pantalla web inicial de especies con ERP sincronizado y especies propias;
 - [x] pantalla web inicial de actividades con ERP sincronizado y actividades propias;
@@ -207,7 +207,7 @@ Incluye:
 - [x] alta provisoria de labores;
 - [x] seleccion de zona desde zonas ERP sincronizadas o zonas propias de Agro App;
 - [x] estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
-- [x] vinculacion manual inicial de lotes provisorios contra lotes ERP disponibles;
+- [x] vinculacion manual inicial de zonas, campos, lotes, especies, actividades, insumos y labores provisorios contra ERP disponible;
 - [ ] sugerencias iniciales de vinculacion por codigo/nombre/empresa;
 - notificaciones internas para revisar coincidencias;
 - [x] auditoria de altas y ediciones de zonas;
@@ -217,13 +217,13 @@ Incluye:
 - [x] auditoria de altas y ediciones de lotes;
 - [x] auditoria de altas y ediciones de insumos;
 - [x] auditoria de altas y ediciones de labores;
-- [x] auditoria de vinculacion manual de lotes;
+- [x] auditoria de vinculacion manual de zonas, campos, lotes, especies, actividades, insumos y labores;
 - [ ] auditoria de vinculaciones sugeridas;
 - mobile lectura de padrones asignados.
 
 Criterio de aceptacion:
 
-- [ ] se puede crear una zona/campo/lote/actividad/insumo/labor provisoria;
+- [x] se puede crear una zona/campo/lote/especie/actividad/insumo/labor provisoria;
 - [x] se puede crear y editar una zona provisoria;
 - [x] se puede crear y editar una especie provisoria;
 - [x] se puede crear y editar una actividad provisoria;
@@ -232,8 +232,8 @@ Criterio de aceptacion:
 - [x] se puede crear y editar un insumo provisorio;
 - [x] se puede crear y editar una labor provisoria;
 - se puede usar en planificacion/protocolos;
-- una sincronizacion posterior puede generar sugerencia de vinculacion;
-- la vinculacion nunca es automatica en MVP.
+- [ ] una sincronizacion posterior puede generar sugerencia de vinculacion;
+- [x] la vinculacion nunca es automatica en MVP.
 
 ## Sprint 3 - Precios, destinos y gastos comerciales
 

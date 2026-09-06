@@ -57,12 +57,12 @@ function prepararLabor(labor: LaborReferencia): LaborReferencia {
     nombre,
     descripcionAbreviada: labor.descripcionAbreviada ? limpiarTextoVisible(labor.descripcionAbreviada) : undefined,
     unidadSugerida: limpiarTextoVisible(labor.unidadSugerida || 'Ha'),
-    estadoVinculacion: labor.estadoVinculacion || 'provisorio',
-    origen: labor.origen || 'provisorio',
+    estadoVinculacion: labor.servicioErpId ? 'vinculado_erp' : labor.estadoVinculacion || 'provisorio',
+    origen: labor.servicioErpId ? 'erp' : labor.origen || 'provisorio',
   };
 }
 
-function validarLabor(labor: LaborReferencia, usuario?: UsuarioAuditoria) {
+async function validarLabor(labor: LaborReferencia, usuario?: UsuarioAuditoria) {
   if (!labor.clienteId) {
     throw crearErrorValidacion('La labor debe tener clienteId.');
   }
@@ -86,6 +86,26 @@ function validarLabor(labor: LaborReferencia, usuario?: UsuarioAuditoria) {
   if (labor.costoUnitarioSugerido !== undefined && labor.costoUnitarioSugerido < 0) {
     throw crearErrorValidacion('El costo sugerido no puede ser negativo.');
   }
+
+  if (labor.servicioErpId) {
+    const servicioErp = await prisma.erpServicio.findUnique({ where: { erpId: labor.servicioErpId } });
+
+    if (!servicioErp) {
+      throw crearErrorValidacion('El servicio ERP seleccionado no existe en la cache importada.');
+    }
+
+    const laborYaVinculada = await prisma.laborReferencia.findFirst({
+      where: {
+        clienteId: labor.clienteId,
+        servicioErpId: labor.servicioErpId,
+        id: { not: labor.id },
+      },
+    });
+
+    if (laborYaVinculada) {
+      throw crearErrorValidacion('Ese servicio ERP ya esta vinculado a otra labor del cliente.');
+    }
+  }
 }
 
 export async function obtenerLaboresReferenciaPersistidas(clienteId: string): Promise<LaborReferencia[]> {
@@ -103,7 +123,7 @@ export async function guardarLaborReferenciaPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarLaborReferenciaResponse> {
   const labor = prepararLabor({ ...request.labor, id });
-  validarLabor(labor, usuario);
+  await validarLabor(labor, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.laborReferencia.findUnique({ where: { id } });

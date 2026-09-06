@@ -4,6 +4,8 @@ import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerInsumosErpImportados } from '../services/api';
 
+type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
+
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
@@ -24,6 +26,7 @@ interface InsumosPlanificacionScreenProps {
   guardarInsumo: (insumo: InsumoPlanificacion) => Promise<boolean>;
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
+  notificar?: Notificar;
 }
 
 type InsumoTabla = {
@@ -34,7 +37,7 @@ type InsumoTabla = {
   tipo: string;
   unidad: string;
   precio: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importado';
   insumoPropio?: InsumoPlanificacion;
 };
 
@@ -47,11 +50,14 @@ export function InsumosPlanificacionScreen({
   guardarInsumo,
   leerNumero,
   formatearUsd,
+  notificar,
 }: InsumosPlanificacionScreenProps) {
   const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoPlanificacion | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [insumosErp, setInsumosErp] = useState<ErpInsumo[]>([]);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
+  const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoPlanificacion | null>(null);
+  const [insumoErpVincularId, setInsumoErpVincularId] = useState('');
   const insumosOrdenados = useMemo(() => (
     [...(planificacion.insumosPlanificacion || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   ), [planificacion.insumosPlanificacion]);
@@ -159,9 +165,15 @@ export function InsumosPlanificacionScreen({
   const existeCodigoDuplicado = Boolean(insumoEnEdicion && insumosOrdenados.some((insumo) => (
     insumo.id !== insumoEnEdicion.id && insumo.codigoInterno === codigoActual
   )));
-  const filtroPropiosErp = new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter(Boolean));
+  const filtroPropiosErp = useMemo(
+    () => new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter((id): id is string => Boolean(id))),
+    [insumosOrdenados],
+  );
+  const insumosErpDisponiblesParaVincular = useMemo(() => insumosErp
+    .filter((insumo) => !filtroPropiosErp.has(insumo.erpId))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [filtroPropiosErp, insumosErp]);
   const filasInsumo: InsumoTabla[] = [
-    ...insumosOrdenados.map((insumo) => ({
+    ...insumosOrdenados.filter((insumo) => !insumo.insumoErpId).map((insumo) => ({
       id: insumo.id,
       nombre: insumo.nombre,
       detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : insumo.estadoVinculacion,
@@ -183,10 +195,58 @@ export function InsumosPlanificacionScreen({
         tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
         unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
         precio: insumo.precioUnitario !== undefined ? formatearUsd(insumo.precioUnitario) : 'Sin precio',
-        accion: 'vincular' as const,
+        accion: 'importado' as const,
       };
     }),
   ];
+
+  function abrirVinculacion(insumo: InsumoPlanificacion) {
+    if (insumo.estadoVinculacion !== 'provisorio' || insumo.insumoErpId) {
+      notificar?.({ tipo: 'info', titulo: 'Insumo no vinculable', mensaje: 'Solo se pueden vincular insumos propios en estado provisorio.' });
+      return;
+    }
+
+    if (!insumosErpDisponiblesParaVincular.length) {
+      notificar?.({ tipo: 'info', titulo: 'No hay insumo ERP disponible', mensaje: 'Todos los insumos ERP ya estan vinculados o no hay insumos importados.' });
+      return;
+    }
+
+    setInsumoPropioParaVincular(insumo);
+    setInsumoErpVincularId(insumosErpDisponiblesParaVincular[0].erpId);
+  }
+
+  async function confirmarVinculacionInsumo() {
+    if (!insumoPropioParaVincular || !insumoErpVincularId) {
+      return;
+    }
+
+    const insumoErp = insumosErp.find((insumo) => insumo.erpId === insumoErpVincularId);
+    const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumoErp?.idUnidadMedida);
+
+    if (!insumoErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro el insumo ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    const guardado = await guardarInsumo({
+      ...insumoPropioParaVincular,
+      empresaErpId: 'global',
+      insumoErpId: insumoErp.erpId,
+      nombre: limpiarTextoVisible(insumoErp.nombre),
+      codigoInterno: normalizarCodigo(insumoErp.codigo || insumoErp.nombre),
+      tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : insumoPropioParaVincular.tipo,
+      unidad: unidad?.codigo || insumoPropioParaVincular.unidad,
+      precioUnitarioEstimado: insumoErp.precioUnitario ?? insumoPropioParaVincular.precioUnitarioEstimado,
+      estadoVinculacion: 'vinculado_erp',
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (guardado) {
+      setInsumoPropioParaVincular(null);
+      setInsumoErpVincularId('');
+      notificar?.({ tipo: 'success', titulo: 'Insumo vinculado', mensaje: 'La vinculacion quedo guardada con auditoria.' });
+    }
+  }
 
   return (
     <section className="planning-stack">
@@ -233,10 +293,17 @@ export function InsumosPlanificacionScreen({
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" onClick={() => fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" onClick={() => fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                    {fila.insumoPropio?.estadoVinculacion === 'provisorio' && !fila.insumoPropio.insumoErpId && (
+                      <button className="small" type="button" onClick={() => fila.insumoPropio && abrirVinculacion(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importado</span>,
             },
           ]}
         />
@@ -352,6 +419,41 @@ export function InsumosPlanificacionScreen({
                   {guardandoInsumos && <LoadingSpinner label="Guardando insumo" />}
                   {guardandoInsumos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {insumoPropioParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-insumo-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-insumo-title">Vincular insumo provisorio</h2>
+                <p className="hint">El insumo propio copiara datos base de ALBOR y dejara de mostrarse como fila independiente.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setInsumoPropioParaVincular(null); setInsumoErpVincularId(''); }}>Cerrar</button>
+            </div>
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Insumo provisorio</span>
+                <strong>{insumoPropioParaVincular.nombre}</strong>
+                <span>{insumoPropioParaVincular.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
+              <label className="reference-wide">
+                Insumo ERP disponible
+                <select value={insumoErpVincularId} onChange={(event) => setInsumoErpVincularId(event.target.value)}>
+                  {insumosErpDisponiblesParaVincular.map((insumo) => (
+                    <option key={insumo.erpId} value={insumo.erpId}>{insumo.codigo} - {insumo.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <span className="hint">El backend valida que el insumo ERP exista y no este vinculado a otro insumo del cliente.</span>
+              <button className="primary" type="button" disabled={guardandoInsumos || !insumoErpVincularId} onClick={confirmarVinculacionInsumo}>
+                <span className="button-content">{guardandoInsumos && <span className="loading-spinner" />}Vincular</span>
               </button>
             </div>
           </section>

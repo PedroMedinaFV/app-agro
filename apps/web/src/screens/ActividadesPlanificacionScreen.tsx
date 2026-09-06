@@ -35,7 +35,7 @@ type ActividadTabla = {
   especie: string;
   origen: string;
   estado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importada';
   actividadPropia?: ActividadPlanificacion;
 };
 
@@ -76,6 +76,8 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
   const [estado, setEstado] = useState('Cargando actividades sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const [actividadPropiaParaVincular, setActividadPropiaParaVincular] = useState<ActividadPlanificacion | null>(null);
+  const [actividadErpVincularId, setActividadErpVincularId] = useState('');
 
   useEffect(() => {
     async function cargarActividades() {
@@ -128,8 +130,15 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
   const especiesPorIdNumerico = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
   const especiesPropiasPorId = useMemo(() => new Map(especiesPropias.map((especie) => [especie.id, especie])), [especiesPropias]);
   const filtroNormalizado = normalizarCodigo(filtro);
-  const actividadesVinculadas = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean)), [actividadesPropias]);
-  const actividadesPropiasFiltradas = actividadesPropias.filter((actividad) => {
+  const actividadesVinculadas = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter((id): id is string => Boolean(id))), [actividadesPropias]);
+  const actividadesErpDisponiblesParaVincular = useMemo(() => {
+    if (!actividadPropiaParaVincular) {
+      return [];
+    }
+
+    return obtenerActividadesErpCompatibles(actividadPropiaParaVincular);
+  }, [actividadPropiaParaVincular, actividadesErp, actividadesVinculadas, especiesPropiasPorId]);
+  const actividadesPropiasFiltradas = actividadesPropias.filter((actividad) => !actividad.actividadErpId).filter((actividad) => {
     const especie = actividad.especiePlanificacionId ? especiesPropiasPorId.get(actividad.especiePlanificacionId)?.nombre : especiesPorErpId.get(actividad.especieErpId || '')?.nombre;
     return normalizarCodigo(`${actividad.codigoInterno || ''} ${actividad.nombre} ${especie || ''}`).includes(filtroNormalizado);
   });
@@ -159,7 +168,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
       especie: actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie',
       origen: 'ERP',
       estado: actividadesVinculadas.has(actividad.erpId) ? 'Vinculada' : 'Disponible',
-      accion: 'vincular' as const,
+      accion: 'importada' as const,
     })),
   ];
 
@@ -240,6 +249,83 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     }
   }
 
+  function obtenerActividadesErpCompatibles(actividadPropia: ActividadPlanificacion) {
+    const especiePropia = actividadPropia.especiePlanificacionId
+      ? especiesPropiasPorId.get(actividadPropia.especiePlanificacionId)
+      : undefined;
+    const especieErpEsperada = actividadPropia.especieErpId || especiePropia?.especieErpId;
+    const idEspecieEsperada = obtenerIdEspecieDesdeErpId(especieErpEsperada);
+
+    return actividadesErp
+      .filter((actividad) => !actividadesVinculadas.has(actividad.erpId))
+      .filter((actividad) => !idEspecieEsperada || actividad.idEspecie === idEspecieEsperada)
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'));
+  }
+
+  function obtenerIdEspecieDesdeErpId(especieErpId?: string) {
+    const match = especieErpId?.match(/especie:(\d+)$/);
+
+    return match ? Number(match[1]) : undefined;
+  }
+
+  function abrirVinculacion(actividad: ActividadPlanificacion) {
+    const candidatos = obtenerActividadesErpCompatibles(actividad);
+
+    if (actividad.estadoVinculacion !== 'provisorio' || actividad.actividadErpId) {
+      notificar?.({ tipo: 'info', titulo: 'Actividad no vinculable', mensaje: 'Solo se pueden vincular actividades propias en estado provisorio.' });
+      return;
+    }
+
+    if (!candidatos.length) {
+      notificar?.({ tipo: 'info', titulo: 'No hay actividad ERP compatible', mensaje: 'No se encontro una actividad ERP disponible para vincular con esta actividad provisoria.' });
+      return;
+    }
+
+    setActividadPropiaParaVincular(actividad);
+    setActividadErpVincularId(candidatos[0].erpId);
+  }
+
+  async function confirmarVinculacionActividad() {
+    if (!actividadPropiaParaVincular || !actividadErpVincularId) {
+      return;
+    }
+
+    const actividadErp = actividadesErp.find((actividad) => actividad.erpId === actividadErpVincularId);
+
+    if (!actividadErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro la actividad ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const respuesta = await guardarActividadPlanificacion(actividadPropiaParaVincular.id, {
+        actividad: {
+          ...actividadPropiaParaVincular,
+          empresaErpId: 'global',
+          actividadErpId: actividadErp.erpId,
+          especieErpId: actividadErp.idEspecie ? `especie:${actividadErp.idEspecie}` : actividadPropiaParaVincular.especieErpId,
+          estadoVinculacion: 'vinculado_erp',
+          updatedAt: new Date().toISOString(),
+        },
+        origen: 'web',
+        motivo: `Vinculacion manual con actividad ERP ${actividadErp.erpId}`,
+      }, sesion.token);
+
+      setActividadesPropias((actuales) => actuales.map((actividad) => (actividad.id === respuesta.actividad.id ? respuesta.actividad : actividad)));
+      setActividadPropiaParaVincular(null);
+      setActividadErpVincularId('');
+      setEstado('Actividad vinculada con auditoria.');
+      notificar?.({ tipo: 'success', titulo: 'Actividad vinculada', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular la actividad.';
+      notificar?.({ tipo: 'error', titulo: 'No se vinculo la actividad', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="planning-stack">
       <section className="metrics">
@@ -282,10 +368,17 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}>Editar</button>
+                    {fila.actividadPropia?.estadoVinculacion === 'provisorio' && !fila.actividadPropia.actividadErpId && (
+                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && abrirVinculacion(fila.actividadPropia)}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importada</span>,
             },
           ]}
         />
@@ -312,6 +405,43 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
               <span className="hint">La actividad queda asociada a una especie y disponible para planificacion, precios, gastos y protocolos.</span>
               <button className="primary" type="button" disabled={guardando || !actividadEnEdicion.nombre.trim() || !obtenerClaveEspecie(actividadEnEdicion) || existeCodigoDuplicado} onClick={guardarActividad}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando actividad" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {actividadPropiaParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-actividad-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-actividad-title">Vincular actividad provisoria</h2>
+                <p className="hint">La actividad propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setActividadPropiaParaVincular(null); setActividadErpVincularId(''); }}>Cerrar</button>
+            </div>
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Actividad provisoria</span>
+                <strong>{actividadPropiaParaVincular.nombre}</strong>
+                <span>{obtenerNombreEspecie(actividadPropiaParaVincular)}</span>
+              </div>
+              <label className="reference-wide">
+                Actividad ERP disponible
+                <select value={actividadErpVincularId} onChange={(event) => setActividadErpVincularId(event.target.value)}>
+                  {actividadesErpDisponiblesParaVincular.map((actividad) => (
+                    <option key={actividad.erpId} value={actividad.erpId}>
+                      {actividad.codigo} - {actividad.descripcion} ({actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie'})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <span className="hint">El backend valida que la actividad ERP exista, respete la especie y no este vinculada a otra actividad del cliente.</span>
+              <button className="primary" type="button" disabled={guardando || !actividadErpVincularId} onClick={confirmarVinculacionActividad}>
+                <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
               </button>
             </div>
           </section>

@@ -19,7 +19,7 @@ type EspecieTabla = {
   origen: string;
   estado: string;
   actualizado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importada';
   especiePropia?: EspeciePlanificacion;
 };
 
@@ -56,6 +56,8 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
   const [estado, setEstado] = useState('Cargando especies sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const [especiePropiaParaVincular, setEspeciePropiaParaVincular] = useState<EspeciePlanificacion | null>(null);
+  const [especieErpVincularId, setEspecieErpVincularId] = useState('');
 
   useEffect(() => {
     async function cargarEspecies() {
@@ -79,8 +81,11 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
   }, [sesion.token, notificar]);
 
   const filtroNormalizado = normalizarCodigo(filtro);
-  const especiesVinculadas = useMemo(() => new Set(especiesPropias.map((especie) => especie.especieErpId).filter(Boolean)), [especiesPropias]);
-  const especiesPropiasFiltradas = especiesPropias.filter((especie) => normalizarCodigo(`${especie.codigoInterno || ''} ${especie.nombre}`).includes(filtroNormalizado));
+  const especiesVinculadas = useMemo(() => new Set(especiesPropias.map((especie) => especie.especieErpId).filter((id): id is string => Boolean(id))), [especiesPropias]);
+  const especiesErpDisponiblesParaVincular = useMemo(() => especiesErp
+    .filter((especie) => !especiesVinculadas.has(especie.erpId))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [especiesErp, especiesVinculadas]);
+  const especiesPropiasFiltradas = especiesPropias.filter((especie) => !especie.especieErpId).filter((especie) => normalizarCodigo(`${especie.codigoInterno || ''} ${especie.nombre}`).includes(filtroNormalizado));
   const especiesErpFiltradas = especiesErp.filter((especie) => normalizarCodigo(`${especie.codigo} ${especie.nombre}`).includes(filtroNormalizado));
   const codigoActual = especieEnEdicion ? normalizarCodigo(especieEnEdicion.codigoInterno || especieEnEdicion.nombre) : '';
   const existeCodigoDuplicado = Boolean(especieEnEdicion && codigoActual && especiesPropias.some((especie) => (
@@ -104,7 +109,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
       origen: 'ERP',
       estado: especiesVinculadas.has(especie.erpId) ? 'Vinculada' : 'Disponible',
       actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.actualizadoEn)),
-      accion: 'vincular' as const,
+      accion: 'importada' as const,
     })),
   ];
 
@@ -156,6 +161,61 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     }
   }
 
+  function abrirVinculacion(especie: EspeciePlanificacion) {
+    if (especie.estadoVinculacion !== 'provisorio' || especie.especieErpId) {
+      notificar?.({ tipo: 'info', titulo: 'Especie no vinculable', mensaje: 'Solo se pueden vincular especies propias en estado provisorio.' });
+      return;
+    }
+
+    if (!especiesErpDisponiblesParaVincular.length) {
+      notificar?.({ tipo: 'info', titulo: 'No hay especie ERP disponible', mensaje: 'Todas las especies ERP ya estan vinculadas o no hay especies importadas.' });
+      return;
+    }
+
+    setEspeciePropiaParaVincular(especie);
+    setEspecieErpVincularId(especiesErpDisponiblesParaVincular[0].erpId);
+  }
+
+  async function confirmarVinculacionEspecie() {
+    if (!especiePropiaParaVincular || !especieErpVincularId) {
+      return;
+    }
+
+    const especieErp = especiesErp.find((especie) => especie.erpId === especieErpVincularId);
+
+    if (!especieErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro la especie ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const respuesta = await guardarEspeciePlanificacion(especiePropiaParaVincular.id, {
+        especie: {
+          ...especiePropiaParaVincular,
+          empresaErpId: 'global',
+          especieErpId: especieErp.erpId,
+          estadoVinculacion: 'vinculado_erp',
+          updatedAt: new Date().toISOString(),
+        },
+        origen: 'web',
+        motivo: `Vinculacion manual con especie ERP ${especieErp.erpId}`,
+      }, sesion.token);
+
+      setEspeciesPropias((actuales) => actuales.map((especie) => (especie.id === respuesta.especie.id ? respuesta.especie : especie)));
+      setEspeciePropiaParaVincular(null);
+      setEspecieErpVincularId('');
+      setEstado('Especie vinculada con auditoria.');
+      notificar?.({ tipo: 'success', titulo: 'Especie vinculada', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular la especie.';
+      notificar?.({ tipo: 'error', titulo: 'No se vinculo la especie', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="planning-stack">
       <section className="metrics">
@@ -194,12 +254,19 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(86px, 0.55fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && setEspecieEnEdicion(fila.especiePropia)}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && setEspecieEnEdicion(fila.especiePropia)}>Editar</button>
+                    {fila.especiePropia?.estadoVinculacion === 'provisorio' && !fila.especiePropia.especieErpId && (
+                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && abrirVinculacion(fila.especiePropia)}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importada</span>,
             },
-          ]}
+          ]} 
         />
       </section>
 
@@ -223,6 +290,41 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
               <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
               <button className="primary" type="button" disabled={guardando || !especieEnEdicion.nombre.trim() || existeCodigoDuplicado} onClick={guardarEspecie}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando especie" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {especiePropiaParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-especie-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-especie-title">Vincular especie provisoria</h2>
+                <p className="hint">La especie propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setEspeciePropiaParaVincular(null); setEspecieErpVincularId(''); }}>Cerrar</button>
+            </div>
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Especie provisoria</span>
+                <strong>{especiePropiaParaVincular.nombre}</strong>
+                <span>{especiePropiaParaVincular.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
+              <label className="reference-wide">
+                Especie ERP disponible
+                <select value={especieErpVincularId} onChange={(event) => setEspecieErpVincularId(event.target.value)}>
+                  {especiesErpDisponiblesParaVincular.map((especie) => (
+                    <option key={especie.erpId} value={especie.erpId}>{especie.codigo} - {especie.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <span className="hint">El backend valida que la especie ERP exista y no este vinculada a otra especie del cliente.</span>
+              <button className="primary" type="button" disabled={guardando || !especieErpVincularId} onClick={confirmarVinculacionEspecie}>
+                <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
               </button>
             </div>
           </section>

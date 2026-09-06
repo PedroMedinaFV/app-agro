@@ -4,6 +4,8 @@ import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerServiciosErpImportados } from '../services/api';
 
+type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
+
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
@@ -24,6 +26,7 @@ interface LaboresReferenciaScreenProps {
   guardarLabor: (labor: LaborReferencia) => Promise<boolean>;
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
+  notificar?: Notificar;
 }
 
 type LaborTabla = {
@@ -34,7 +37,7 @@ type LaborTabla = {
   unidad: string;
   costo: string;
   estado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importada';
   laborPropia?: LaborReferencia;
 };
 
@@ -47,11 +50,14 @@ export function LaboresReferenciaScreen({
   guardarLabor,
   leerNumero,
   formatearUsd,
+  notificar,
 }: LaboresReferenciaScreenProps) {
   const [laborEnEdicion, setLaborEnEdicion] = useState<LaborReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [serviciosErp, setServiciosErp] = useState<ErpServicio[]>([]);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
+  const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<LaborReferencia | null>(null);
+  const [servicioErpVincularId, setServicioErpVincularId] = useState('');
   const laboresOrdenadas = useMemo(() => (
     [...planificacion.laboresReferencia].sort((a, b) => a.nombre.localeCompare(b.nombre))
   ), [planificacion.laboresReferencia]);
@@ -152,9 +158,15 @@ export function LaboresReferenciaScreen({
   const existeCodigoDuplicado = Boolean(laborEnEdicion && laboresOrdenadas.some((labor) => (
     labor.id !== laborEnEdicion.id && labor.codigo === codigoActual
   )));
-  const serviciosVinculados = new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter(Boolean));
+  const serviciosVinculados = useMemo(
+    () => new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter((id): id is string => Boolean(id))),
+    [laboresOrdenadas],
+  );
+  const serviciosErpDisponiblesParaVincular = useMemo(() => serviciosErp
+    .filter((servicio) => !serviciosVinculados.has(servicio.erpId))
+    .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es')), [serviciosErp, serviciosVinculados]);
   const filasLabor: LaborTabla[] = [
-    ...laboresOrdenadas.map((labor) => ({
+    ...laboresOrdenadas.filter((labor) => !labor.servicioErpId).map((labor) => ({
       id: labor.id,
       nombre: labor.nombre,
       detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
@@ -176,10 +188,66 @@ export function LaboresReferenciaScreen({
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
         costo: servicio.precioUnitario !== undefined ? formatearUsd(servicio.precioUnitario) : 'Sin costo',
         estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
-        accion: 'vincular' as const,
+        accion: 'importada' as const,
       };
     }),
   ];
+
+  function abrirVinculacion(labor: LaborReferencia) {
+    if (labor.estadoVinculacion !== 'provisorio' || labor.servicioErpId) {
+      notificar?.({ tipo: 'info', titulo: 'Labor no vinculable', mensaje: 'Solo se pueden vincular labores propias en estado provisorio.' });
+      return;
+    }
+
+    if (!serviciosErpDisponiblesParaVincular.length) {
+      notificar?.({ tipo: 'info', titulo: 'No hay servicio ERP disponible', mensaje: 'Todos los servicios ERP ya estan vinculados o no hay servicios importados.' });
+      return;
+    }
+
+    setLaborPropiaParaVincular(labor);
+    setServicioErpVincularId(serviciosErpDisponiblesParaVincular[0].erpId);
+  }
+
+  async function confirmarVinculacionLabor() {
+    if (!laborPropiaParaVincular || !servicioErpVincularId) {
+      return;
+    }
+
+    const servicioErp = serviciosErp.find((servicio) => servicio.erpId === servicioErpVincularId);
+    const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicioErp?.idUnidadMedida);
+
+    if (!servicioErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro el servicio ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    const guardado = await guardarLabor({
+      ...laborPropiaParaVincular,
+      empresaErpId: 'global',
+      servicioErpId: servicioErp.erpId,
+      idServicio: servicioErp.idServicio,
+      idTipoServicio: servicioErp.idTipoServicio,
+      codigo: normalizarCodigo(servicioErp.codigo || servicioErp.descripcion),
+      nombre: limpiarTextoVisible(servicioErp.descripcion),
+      descripcionAbreviada: servicioErp.descripcionAbreviada,
+      idUnidadMedida: servicioErp.idUnidadMedida,
+      idMoneda: servicioErp.idMoneda,
+      unidadSugerida: unidad?.codigo || laborPropiaParaVincular.unidadSugerida,
+      costoUnitarioSugerido: servicioErp.precioUnitario ?? laborPropiaParaVincular.costoUnitarioSugerido,
+      imputaDosis: servicioErp.imputaDosis,
+      estadoVinculacion: 'vinculado_erp',
+      activo: servicioErp.activo,
+      origen: 'erp',
+      fechaUltimaActualizacionErp: servicioErp.actualizadoEn,
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (guardado) {
+      setLaborPropiaParaVincular(null);
+      setServicioErpVincularId('');
+      notificar?.({ tipo: 'success', titulo: 'Labor vinculada', mensaje: 'La vinculacion quedo guardada con auditoria.' });
+    }
+  }
 
   return (
     <section className="planning-stack">
@@ -226,10 +294,17 @@ export function LaboresReferenciaScreen({
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" onClick={() => fila.laborPropia && abrirEditarLabor(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" onClick={() => fila.laborPropia && abrirEditarLabor(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                    {fila.laborPropia?.estadoVinculacion === 'provisorio' && !fila.laborPropia.servicioErpId && (
+                      <button className="small" type="button" onClick={() => fila.laborPropia && abrirVinculacion(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importada</span>,
             },
           ]}
         />
@@ -344,6 +419,41 @@ export function LaboresReferenciaScreen({
                   {guardandoLabores && <LoadingSpinner label="Guardando labor" />}
                   {guardandoLabores ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {laborPropiaParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-labor-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-labor-title">Vincular labor provisoria</h2>
+                <p className="hint">La labor propia copiara datos base del servicio ALBOR y dejara de mostrarse como fila independiente.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setLaborPropiaParaVincular(null); setServicioErpVincularId(''); }}>Cerrar</button>
+            </div>
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Labor provisoria</span>
+                <strong>{laborPropiaParaVincular.nombre}</strong>
+                <span>{laborPropiaParaVincular.codigo || 'Sin codigo'}</span>
+              </div>
+              <label className="reference-wide">
+                Servicio ERP disponible
+                <select value={servicioErpVincularId} onChange={(event) => setServicioErpVincularId(event.target.value)}>
+                  {serviciosErpDisponiblesParaVincular.map((servicio) => (
+                    <option key={servicio.erpId} value={servicio.erpId}>{servicio.codigo} - {servicio.descripcion}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <span className="hint">El backend valida que el servicio ERP exista y no este vinculado a otra labor del cliente.</span>
+              <button className="primary" type="button" disabled={guardandoLabores || !servicioErpVincularId} onClick={confirmarVinculacionLabor}>
+                <span className="button-content">{guardandoLabores && <span className="loading-spinner" />}Vincular</span>
               </button>
             </div>
           </section>

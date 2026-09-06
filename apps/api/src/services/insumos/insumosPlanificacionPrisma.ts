@@ -52,11 +52,11 @@ function prepararInsumo(insumo: InsumoPlanificacion): InsumoPlanificacion {
     tipo: insumo.tipo ? limpiarTextoVisible(insumo.tipo) : undefined,
     unidad: limpiarTextoVisible(insumo.unidad || 'Unid'),
     moneda: limpiarTextoVisible(insumo.moneda || 'USD').toUpperCase(),
-    estadoVinculacion: insumo.estadoVinculacion || 'provisorio',
+    estadoVinculacion: insumo.insumoErpId ? 'vinculado_erp' : insumo.estadoVinculacion || 'provisorio',
   };
 }
 
-function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAuditoria) {
   if (!insumo.clienteId) {
     throw crearErrorValidacion('El insumo debe tener clienteId.');
   }
@@ -80,6 +80,26 @@ function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAuditoria) 
   if (insumo.precioUnitarioEstimado !== undefined && insumo.precioUnitarioEstimado < 0) {
     throw crearErrorValidacion('El precio estimado no puede ser negativo.');
   }
+
+  if (insumo.insumoErpId) {
+    const insumoErp = await prisma.erpInsumo.findUnique({ where: { erpId: insumo.insumoErpId } });
+
+    if (!insumoErp) {
+      throw crearErrorValidacion('El insumo ERP seleccionado no existe en la cache importada.');
+    }
+
+    const insumoYaVinculado = await prisma.insumoPlanificacion.findFirst({
+      where: {
+        clienteId: insumo.clienteId,
+        insumoErpId: insumo.insumoErpId,
+        id: { not: insumo.id },
+      },
+    });
+
+    if (insumoYaVinculado) {
+      throw crearErrorValidacion('Ese insumo ERP ya esta vinculado a otro insumo del cliente.');
+    }
+  }
 }
 
 export async function obtenerInsumosPlanificacionPersistidos(clienteId: string): Promise<InsumoPlanificacion[]> {
@@ -97,7 +117,7 @@ export async function guardarInsumoPlanificacionPersistido(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarInsumoPlanificacionResponse> {
   const insumo = prepararInsumo({ ...request.insumo, id });
-  validarInsumo(insumo, usuario);
+  await validarInsumo(insumo, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.insumoPlanificacion.findUnique({ where: { id } });

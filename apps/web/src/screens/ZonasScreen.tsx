@@ -19,7 +19,7 @@ type ZonaTabla = {
   origen: string;
   estado: string;
   actualizado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importado';
   zonaPropia?: ZonaPlanificacion;
 };
 
@@ -56,6 +56,8 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   const [estado, setEstado] = useState('Cargando zonas sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const [zonaPropiaParaVincular, setZonaPropiaParaVincular] = useState<ZonaPlanificacion | null>(null);
+  const [zonaErpVincularId, setZonaErpVincularId] = useState('');
 
   useEffect(() => {
     async function cargarZonas() {
@@ -79,8 +81,11 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   }, [sesion.token, notificar]);
 
   const filtroNormalizado = normalizarCodigo(filtro);
-  const zonasVinculadas = useMemo(() => new Set(zonasPropias.map((zona) => zona.zonaErpId).filter(Boolean)), [zonasPropias]);
-  const zonasPropiasFiltradas = zonasPropias.filter((zona) => (
+  const zonasVinculadas = useMemo(() => new Set(zonasPropias.map((zona) => zona.zonaErpId).filter((id): id is string => Boolean(id))), [zonasPropias]);
+  const zonasErpDisponiblesParaVincular = useMemo(() => zonasErp
+    .filter((zona) => !zonasVinculadas.has(zona.erpId))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [zonasErp, zonasVinculadas]);
+  const zonasPropiasFiltradas = zonasPropias.filter((zona) => !zona.zonaErpId).filter((zona) => (
     normalizarCodigo(`${zona.codigoInterno || ''} ${zona.nombre}`).includes(filtroNormalizado)
   ));
   const zonasErpFiltradas = zonasErp.filter((zona) => (
@@ -107,7 +112,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       origen: 'ERP',
       estado: zonasVinculadas.has(zona.erpId) ? 'Vinculada' : 'Disponible',
       actualizado: zona.activo ? 'Activa' : 'Inactiva',
-      accion: 'vincular' as const,
+      accion: 'importado' as const,
     })),
   ];
 
@@ -165,6 +170,61 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     }
   }
 
+  function abrirVinculacion(zona: ZonaPlanificacion) {
+    if (zona.estadoVinculacion !== 'provisorio' || zona.zonaErpId) {
+      notificar?.({ tipo: 'info', titulo: 'Zona no vinculable', mensaje: 'Solo se pueden vincular zonas propias en estado provisorio.' });
+      return;
+    }
+
+    if (!zonasErpDisponiblesParaVincular.length) {
+      notificar?.({ tipo: 'info', titulo: 'No hay zona ERP disponible', mensaje: 'Todas las zonas ERP ya estan vinculadas o no hay zonas importadas.' });
+      return;
+    }
+
+    setZonaPropiaParaVincular(zona);
+    setZonaErpVincularId(zonasErpDisponiblesParaVincular[0].erpId);
+  }
+
+  async function confirmarVinculacionZona() {
+    if (!zonaPropiaParaVincular || !zonaErpVincularId) {
+      return;
+    }
+
+    const zonaErp = zonasErp.find((zona) => zona.erpId === zonaErpVincularId);
+
+    if (!zonaErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro la zona ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const respuesta = await guardarZonaPlanificacion(zonaPropiaParaVincular.id, {
+        zona: {
+          ...zonaPropiaParaVincular,
+          empresaErpId: 'global',
+          zonaErpId: zonaErp.erpId,
+          estadoVinculacion: 'vinculado_erp',
+          updatedAt: new Date().toISOString(),
+        },
+        origen: 'web',
+        motivo: `Vinculacion manual con zona ERP ${zonaErp.erpId}`,
+      }, sesion.token);
+
+      setZonasPropias((actuales) => actuales.map((zona) => (zona.id === respuesta.zona.id ? respuesta.zona : zona)));
+      setZonaPropiaParaVincular(null);
+      setZonaErpVincularId('');
+      setEstado('Zona vinculada con auditoria.');
+      notificar?.({ tipo: 'success', titulo: 'Zona vinculada', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular la zona.';
+      notificar?.({ tipo: 'error', titulo: 'No se vinculo la zona', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="planning-stack">
       <section className="metrics">
@@ -215,10 +275,17 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(86px, 0.55fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && setZonaEnEdicion(fila.zonaPropia)}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && setZonaEnEdicion(fila.zonaPropia)}>Editar</button>
+                    {fila.zonaPropia?.estadoVinculacion === 'provisorio' && !fila.zonaPropia.zonaErpId && (
+                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && abrirVinculacion(fila.zonaPropia)}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importada</span>,
             },
           ]}
         />
@@ -281,6 +348,41 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                   {guardando && <LoadingSpinner label="Guardando zona" />}
                   {guardando ? 'Guardando...' : 'Guardar'}
                 </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {zonaPropiaParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-zona-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-zona-title">Vincular zona provisoria</h2>
+                <p className="hint">La zona propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setZonaPropiaParaVincular(null); setZonaErpVincularId(''); }}>Cerrar</button>
+            </div>
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Zona provisoria</span>
+                <strong>{zonaPropiaParaVincular.nombre}</strong>
+                <span>{zonaPropiaParaVincular.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
+              <label className="reference-wide">
+                Zona ERP disponible
+                <select value={zonaErpVincularId} onChange={(event) => setZonaErpVincularId(event.target.value)}>
+                  {zonasErpDisponiblesParaVincular.map((zona) => (
+                    <option key={zona.erpId} value={zona.erpId}>{zona.codigo} - {zona.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <span className="hint">El backend valida que la zona ERP exista y no este vinculada a otra zona del cliente.</span>
+              <button className="primary" type="button" disabled={guardando || !zonaErpVincularId} onClick={confirmarVinculacionZona}>
+                <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
               </button>
             </div>
           </section>

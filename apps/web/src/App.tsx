@@ -266,6 +266,7 @@ export function App() {
           guardarLabor={planificacionDemo.guardarLaborReferenciaDesdeModal}
           leerNumero={leerNumero}
           formatearUsd={formatearUsd}
+          notificar={toast.notify}
         />
       )}
 
@@ -279,6 +280,7 @@ export function App() {
           guardarInsumo={planificacionDemo.guardarInsumoPlanificacionDesdeModal}
           leerNumero={leerNumero}
           formatearUsd={formatearUsd}
+          notificar={toast.notify}
         />
       )}
 

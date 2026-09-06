@@ -51,7 +51,7 @@ function prepararActividad(actividad: ActividadPlanificacion): ActividadPlanific
   };
 }
 
-function validarActividad(actividad: ActividadPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarActividad(actividad: ActividadPlanificacion, usuario?: UsuarioAuditoria) {
   if (!actividad.clienteId) {
     throw crearErrorValidacion('La actividad debe tener clienteId.');
   }
@@ -67,6 +67,47 @@ function validarActividad(actividad: ActividadPlanificacion, usuario?: UsuarioAu
   if (!actividad.especiePlanificacionId && !actividad.especieErpId) {
     throw crearErrorValidacion('La actividad debe estar asociada a una especie.');
   }
+
+  const especiePlanificacion = actividad.especiePlanificacionId
+    ? await prisma.especiePlanificacion.findUnique({ where: { id: actividad.especiePlanificacionId } })
+    : null;
+
+  if (actividad.especiePlanificacionId && (!especiePlanificacion || especiePlanificacion.clienteId !== actividad.clienteId)) {
+    throw crearErrorValidacion('La especie seleccionada no pertenece al cliente.', 403);
+  }
+
+  if (actividad.actividadErpId) {
+    const actividadErp = await prisma.erpActividad.findUnique({ where: { erpId: actividad.actividadErpId } });
+
+    if (!actividadErp) {
+      throw crearErrorValidacion('La actividad ERP seleccionada no existe en la cache importada.');
+    }
+
+    const especieErpIdEsperada = actividad.especieErpId || especiePlanificacion?.especieErpId;
+    const idEspecieEsperada = especieErpIdEsperada ? obtenerIdEspecieDesdeErpId(especieErpIdEsperada) : undefined;
+
+    if (idEspecieEsperada && actividadErp.idEspecie && idEspecieEsperada !== actividadErp.idEspecie) {
+      throw crearErrorValidacion('La actividad ERP no pertenece a la especie seleccionada.');
+    }
+
+    const actividadYaVinculada = await prisma.actividadPlanificacion.findFirst({
+      where: {
+        clienteId: actividad.clienteId,
+        actividadErpId: actividad.actividadErpId,
+        id: { not: actividad.id },
+      },
+    });
+
+    if (actividadYaVinculada) {
+      throw crearErrorValidacion('Esa actividad ERP ya esta vinculada a otra actividad del cliente.');
+    }
+  }
+}
+
+function obtenerIdEspecieDesdeErpId(especieErpId: string) {
+  const match = especieErpId.match(/especie:(\d+)$/);
+
+  return match ? Number(match[1]) : undefined;
 }
 
 export async function obtenerActividadesPlanificacionPersistidas(clienteId: string): Promise<ActividadPlanificacion[]> {
@@ -84,7 +125,7 @@ export async function guardarActividadPlanificacionPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarActividadPlanificacionResponse> {
   const actividad = prepararActividad({ ...request.actividad, id });
-  validarActividad(actividad, usuario);
+  await validarActividad(actividad, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.actividadPlanificacion.findUnique({ where: { id } });

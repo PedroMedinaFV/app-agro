@@ -49,7 +49,7 @@ function prepararEspecie(especie: EspeciePlanificacion): EspeciePlanificacion {
   };
 }
 
-function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAuditoria) {
+async function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAuditoria) {
   if (!especie.clienteId) {
     throw crearErrorValidacion('La especie debe tener clienteId.');
   }
@@ -60,6 +60,26 @@ function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAuditori
 
   if (!especie.nombre.trim()) {
     throw crearErrorValidacion('La especie debe tener nombre.');
+  }
+
+  if (especie.especieErpId) {
+    const especieErp = await prisma.erpEspecie.findUnique({ where: { erpId: especie.especieErpId } });
+
+    if (!especieErp) {
+      throw crearErrorValidacion('La especie ERP seleccionada no existe en la cache importada.');
+    }
+
+    const especieYaVinculada = await prisma.especiePlanificacion.findFirst({
+      where: {
+        clienteId: especie.clienteId,
+        especieErpId: especie.especieErpId,
+        id: { not: especie.id },
+      },
+    });
+
+    if (especieYaVinculada) {
+      throw crearErrorValidacion('Esa especie ERP ya esta vinculada a otra especie del cliente.');
+    }
   }
 }
 
@@ -78,7 +98,7 @@ export async function guardarEspeciePlanificacionPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarEspeciePlanificacionResponse> {
   const especie = prepararEspecie({ ...request.especie, id });
-  validarEspecie(especie, usuario);
+  await validarEspecie(especie, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.especiePlanificacion.findUnique({ where: { id } });

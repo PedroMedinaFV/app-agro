@@ -49,7 +49,7 @@ function prepararZona(zona: ZonaPlanificacion): ZonaPlanificacion {
   };
 }
 
-function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) {
   if (!zona.clienteId) {
     throw crearErrorValidacion('La zona debe tener clienteId.');
   }
@@ -64,6 +64,26 @@ function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) {
 
   if (!['provisorio', 'vinculado_erp', 'archivado'].includes(zona.estadoVinculacion)) {
     throw crearErrorValidacion('El estado de vinculacion de la zona no es valido.');
+  }
+
+  if (zona.zonaErpId) {
+    const zonaErp = await prisma.erpZona.findUnique({ where: { erpId: zona.zonaErpId } });
+
+    if (!zonaErp) {
+      throw crearErrorValidacion('La zona ERP seleccionada no existe en la cache importada.');
+    }
+
+    const zonaYaVinculada = await prisma.zonaPlanificacion.findFirst({
+      where: {
+        clienteId: zona.clienteId,
+        zonaErpId: zona.zonaErpId,
+        id: { not: zona.id },
+      },
+    });
+
+    if (zonaYaVinculada) {
+      throw crearErrorValidacion('Esa zona ERP ya esta vinculada a otra zona del cliente.');
+    }
   }
 }
 
@@ -82,7 +102,7 @@ export async function guardarZonaPlanificacionPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarZonaPlanificacionResponse> {
   const zona = prepararZona({ ...request.zona, id });
-  validarZona(zona, usuario);
+  await validarZona(zona, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.zonaPlanificacion.findUnique({ where: { id } });
