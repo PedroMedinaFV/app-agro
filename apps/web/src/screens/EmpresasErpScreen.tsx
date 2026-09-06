@@ -1,31 +1,23 @@
 import { ErpEmpresa } from '@agro/tipos';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import type { SincronizacionErpResultado } from '../services/api';
 
 interface EmpresasErpScreenProps {
   puedeConfigurarErp: boolean;
   guardandoEmpresas: boolean;
-  sincronizandoPadrones: boolean;
-  ultimoResultadoSync: SincronizacionErpResultado['resultado'] | null;
   empresasDisponibles: ErpEmpresa[];
   empresasSeleccionadas: string[];
   empresasSeleccionadasSet: Set<string>;
-  // Handlers
   guardarSeleccionEmpresas: () => void;
-  sincronizarPadrones: () => void;
   alternarEmpresa: (erpId: string) => void;
 }
 
 export function EmpresasErpScreen({
   puedeConfigurarErp,
   guardandoEmpresas,
-  sincronizandoPadrones,
-  ultimoResultadoSync,
   empresasDisponibles,
   empresasSeleccionadas,
   empresasSeleccionadasSet,
   guardarSeleccionEmpresas,
-  sincronizarPadrones,
   alternarEmpresa,
 }: EmpresasErpScreenProps) {
   if (!puedeConfigurarErp) {
@@ -37,16 +29,10 @@ export function EmpresasErpScreen({
       <div className="panel-header">
         <div>
           <h2>Empresas asociadas a AGRO</h2>
-          <p className="hint">La seleccion define con que valores de x-company se sincronizan los padrones.</p>
+          <p className="hint">La seleccion define con que valores de x-company trabajara la sincronizacion ERP.</p>
         </div>
         <div className="button-row">
-          <button className="secondary" onClick={sincronizarPadrones} disabled={guardandoEmpresas || sincronizandoPadrones || empresasSeleccionadas.length === 0}>
-            <span className="button-content">
-              {sincronizandoPadrones && <LoadingSpinner label="Sincronizando padrones" />}
-              {sincronizandoPadrones ? 'Sincronizando...' : 'Sincronizar padrones'}
-            </span>
-          </button>
-          <button className="primary" onClick={guardarSeleccionEmpresas} disabled={guardandoEmpresas || sincronizandoPadrones}>
+          <button className="primary" onClick={guardarSeleccionEmpresas} disabled={guardandoEmpresas}>
             <span className="button-content">
               {guardandoEmpresas && <LoadingSpinner label="Guardando empresas" />}
               {guardandoEmpresas ? 'Guardando...' : 'Guardar seleccion'}
@@ -64,30 +50,6 @@ export function EmpresasErpScreen({
           <span>Seleccionadas</span>
           <strong>{empresasSeleccionadas.length}</strong>
         </article>
-        {ultimoResultadoSync && (
-          <>
-            <article>
-              <span>Campos sync</span>
-              <strong>{ultimoResultadoSync.campos}</strong>
-            </article>
-            <article>
-              <span>Lotes sync</span>
-              <strong>{ultimoResultadoSync.lotes}</strong>
-            </article>
-            <article>
-              <span>Cultivos sync</span>
-              <strong>{ultimoResultadoSync.cultivos}</strong>
-            </article>
-            <article>
-              <span>Ultimo sync</span>
-              <strong>{new Date(ultimoResultadoSync.sincronizadoEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
-            </article>
-            <article>
-              <span>Sugerencias</span>
-              <strong>{ultimoResultadoSync.sugerenciasVinculacion?.creadas ?? 0}</strong>
-            </article>
-          </>
-        )}
       </div>
 
       <div className="company-table">

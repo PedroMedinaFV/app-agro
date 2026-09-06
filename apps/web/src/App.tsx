@@ -15,6 +15,7 @@ import { ZonasScreen } from './screens/ZonasScreen';
 import { EspeciesPlanificacionScreen } from './screens/EspeciesPlanificacionScreen';
 import { ActividadesPlanificacionScreen } from './screens/ActividadesPlanificacionScreen';
 import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
+import { SincronizacionErpScreen } from './screens/SincronizacionErpScreen';
 import { CamposScreen } from './screens/CamposScreen';
 import { LotesScreen } from './screens/LotesScreen';
 import { VinculacionesPadronesScreen } from './screens/VinculacionesPadronesScreen';
@@ -27,7 +28,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -74,6 +75,8 @@ export function App() {
   const campaniaActual = erp.snapshot.campanias.find((campania) => campania.esActual);
   const tituloVista = vista === 'empresas-erp'
     ? 'Empresas ERP'
+    : vista === 'sincronizacion-erp'
+      ? 'Sincronizacion ERP'
     : vista === 'notificaciones'
       ? 'Notificaciones'
     : vista === 'campos'
@@ -95,6 +98,8 @@ export function App() {
           : 'Resumen de campo';
   const descripcionVista = vista === 'empresas-erp'
     ? erp.estadoEmpresas
+    : vista === 'sincronizacion-erp'
+      ? 'Importacion selectiva de informacion desde ALBOR'
     : vista === 'notificaciones'
       ? 'Avisos internos generados por el sistema'
     : vista === 'campos'
@@ -355,14 +360,21 @@ export function App() {
         <EmpresasErpScreen
           puedeConfigurarErp={puedeConfigurarErp}
           guardandoEmpresas={erp.guardandoEmpresas}
-          sincronizandoPadrones={erp.sincronizandoPadrones}
-          ultimoResultadoSync={erp.ultimoResultadoSync}
           empresasDisponibles={erp.empresasDisponibles}
           empresasSeleccionadas={erp.empresasSeleccionadas}
           empresasSeleccionadasSet={erp.empresasSeleccionadasSet}
           guardarSeleccionEmpresas={erp.guardarSeleccionEmpresas}
-          sincronizarPadrones={erp.sincronizarPadrones}
           alternarEmpresa={erp.alternarEmpresa}
+        />
+      )}
+
+      {vista === 'sincronizacion-erp' && (
+        <SincronizacionErpScreen
+          puedeConfigurarErp={puedeConfigurarErp}
+          sincronizandoPadrones={erp.sincronizandoPadrones}
+          ultimoResultadoSync={erp.ultimoResultadoSync}
+          empresasSeleccionadas={erp.empresasSeleccionadas}
+          sincronizarPadrones={erp.sincronizarPadrones}
         />
       )}
       </Layout>

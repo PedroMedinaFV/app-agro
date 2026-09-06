@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import type { ErpCampo, ErpEmpresa, ErpZona } from '@agro/tipos';
+import type { ErpCampo, ErpEmpresa, ErpZona, PadronErpSincronizable } from '@agro/tipos';
+import { padronesErpSincronizables } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { obtenerEmpresasSistemaErp, obtenerSnapshotErp } from './clienteErp';
 import { generarSugerenciasVinculacionErp } from '../notificaciones/vinculacionesSugeridas';
@@ -87,6 +88,60 @@ function deduplicarZonasGlobales(zonas: ErpZona[], campos: ErpCampo[]) {
   return Array.from(zonasPorId.values()).sort((a, b) => a.idZona - b.idZona);
 }
 
+function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
+  const seleccionados = new Set(items?.length ? items : padronesErpSincronizables);
+
+  if (seleccionados.has('cultivos')) {
+    seleccionados.add('campanias');
+    seleccionados.add('actividades');
+    seleccionados.add('especies');
+    seleccionados.add('lotes');
+  }
+
+  if (seleccionados.has('lotes')) {
+    seleccionados.add('campos');
+  }
+
+  if (seleccionados.has('campos')) {
+    seleccionados.add('lotes');
+  }
+
+  if (seleccionados.has('campos')) {
+    seleccionados.add('zonas');
+  }
+
+  if (seleccionados.has('insumos') || seleccionados.has('servicios')) {
+    seleccionados.add('unidadesMedida');
+  }
+
+  return seleccionados;
+}
+
+function crearResultadoVacio(sincronizadoEn = new Date().toISOString()) {
+  return {
+    campos: 0,
+    zonas: 0,
+    lotes: 0,
+    actividades: 0,
+    especies: 0,
+    empresas: 0,
+    campanias: 0,
+    cultivos: 0,
+    insumos: 0,
+    servicios: 0,
+    unidadesMedida: 0,
+    puertos: 0,
+    omitidos: {
+      lotesSinCampo: 0,
+    },
+    sugerenciasVinculacion: {
+      detectadas: 0,
+      creadas: 0,
+    },
+    sincronizadoEn,
+  };
+}
+
 export async function listarEmpresasErpImportadas() {
   const rows = await prisma.$queryRaw<ErpEmpresaRow[]>`
     SELECT "erpId", "idEmpresa", "codigo", "nombre", "activo", "cuit", "razonSocial", "email", "actualizadoEn"
@@ -127,8 +182,22 @@ export async function sincronizarEmpresasErp(clienteId?: string) {
   };
 }
 
-export async function sincronizarSnapshotErp(clienteId?: string, usuario?: UsuarioAuditoria) {
-  const snapshot = await obtenerSnapshotErp(clienteId);
+export async function sincronizarSnapshotErp(clienteId?: string, usuario?: UsuarioAuditoria, items?: PadronErpSincronizable[]) {
+  const padrones = expandirPadronesSolicitados(items);
+  const resultadoVacio = crearResultadoVacio();
+
+  if (padrones.has('empresas')) {
+    const resultadoEmpresas = await sincronizarEmpresasErp(clienteId);
+
+    resultadoVacio.empresas = resultadoEmpresas.empresas;
+    resultadoVacio.sincronizadoEn = resultadoEmpresas.sincronizadoEn;
+
+    if (padrones.size === 1) {
+      return resultadoVacio;
+    }
+  }
+
+  const snapshot = await obtenerSnapshotErp(clienteId, Array.from(padrones));
   const zonasSincronizadas = deduplicarZonasGlobales(snapshot.zonas, snapshot.campos);
   const camposImportables = new Set(snapshot.campos.map((campo) => campo.erpId));
   const lotesConCampo = snapshot.lotes.filter((lote) => camposImportables.has(lote.campoErpId));
@@ -143,28 +212,32 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
 
   // Las tablas Erp* funcionan como cache importada: se refrescan por empresa y no guardan ediciones del usuario.
   console.log(`[erp-sync] Refrescando cache ERP para ${empresaErpIds.length} empresas`);
-  await prisma.$transaction([
-    prisma.erpLote.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpZona.deleteMany({
+  const borrados: Prisma.PrismaPromise<unknown>[] = [];
+
+  if (padrones.has('lotes')) borrados.push(prisma.erpLote.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }));
+  if (padrones.has('zonas')) {
+    borrados.push(prisma.erpZona.deleteMany({
       where: {
         OR: [
           { erpId: { in: zonasSincronizadas.map((zona) => zona.erpId) } },
           { empresaErpId: { in: empresaErpIds } },
         ],
       },
-    }),
-    prisma.erpCampo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpActividad.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpEspecie.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpCampania.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpCultivo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }),
-    prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-    prisma.erpPuerto.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }),
-  ]);
+    }));
+  }
+  if (padrones.has('campos')) borrados.push(prisma.erpCampo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }));
+  if (padrones.has('actividades')) borrados.push(prisma.erpActividad.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('especies')) borrados.push(prisma.erpEspecie.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('campanias')) borrados.push(prisma.erpCampania.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('cultivos')) borrados.push(prisma.erpCultivo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }));
+  if (padrones.has('insumos')) borrados.push(prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('servicios')) borrados.push(prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('unidadesMedida')) borrados.push(prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('puertos')) borrados.push(prisma.erpPuerto.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
 
-  await crearEnBloques('zonas', zonasSincronizadas, (bloque) =>
+  await prisma.$transaction(borrados);
+
+  if (padrones.has('zonas')) await crearEnBloques('zonas', zonasSincronizadas, (bloque) =>
     prisma.erpZona.createMany({
       data: bloque.map((zona) => ({
         empresaErpId: zona.empresaErpId,
@@ -177,7 +250,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('campos', snapshot.campos, (bloque) =>
+  if (padrones.has('campos')) await crearEnBloques('campos', snapshot.campos, (bloque) =>
     prisma.erpCampo.createMany({
       data: bloque.map((campo) => ({
         empresaErpId: campo.empresaErpId,
@@ -199,7 +272,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('lotes', lotesConCampo, (bloque) =>
+  if (padrones.has('lotes')) await crearEnBloques('lotes', lotesConCampo, (bloque) =>
     prisma.erpLote.createMany({
       data: bloque.map((lote) => ({
         empresaErpId: lote.empresaErpId,
@@ -222,7 +295,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('actividades', snapshot.actividades, (bloque) =>
+  if (padrones.has('actividades')) await crearEnBloques('actividades', snapshot.actividades, (bloque) =>
     prisma.erpActividad.createMany({
       data: bloque.map((actividad) => ({
         empresaErpId: actividad.empresaErpId,
@@ -239,7 +312,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('especies', snapshot.especies, (bloque) =>
+  if (padrones.has('especies')) await crearEnBloques('especies', snapshot.especies, (bloque) =>
     prisma.erpEspecie.createMany({
       data: bloque.map((especie) => ({
         empresaErpId: especie.empresaErpId,
@@ -255,9 +328,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await guardarEmpresasErp(snapshot.empresas);
-
-  await crearEnBloques('campanias', snapshot.campanias, (bloque) =>
+  if (padrones.has('campanias')) await crearEnBloques('campanias', snapshot.campanias, (bloque) =>
     prisma.erpCampania.createMany({
       data: bloque.map((campania) => ({
         empresaErpId: campania.empresaErpId,
@@ -272,7 +343,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('cultivos', snapshot.cultivos, (bloque) =>
+  if (padrones.has('cultivos')) await crearEnBloques('cultivos', snapshot.cultivos, (bloque) =>
     prisma.erpCultivo.createMany({
       data: bloque.map((cultivo) => ({
         empresaErpId: cultivo.empresaErpId,
@@ -304,7 +375,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('insumos', snapshot.insumos, (bloque) =>
+  if (padrones.has('insumos')) await crearEnBloques('insumos', snapshot.insumos, (bloque) =>
     prisma.erpInsumo.createMany({
       data: bloque.map((insumo) => ({
         empresaErpId: insumo.empresaErpId,
@@ -332,7 +403,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('servicios', snapshot.servicios, (bloque) =>
+  if (padrones.has('servicios')) await crearEnBloques('servicios', snapshot.servicios, (bloque) =>
     prisma.erpServicio.createMany({
       data: bloque.map((servicio) => ({
         empresaErpId: servicio.empresaErpId,
@@ -354,7 +425,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('unidadesMedida', snapshot.unidadesMedida, (bloque) =>
+  if (padrones.has('unidadesMedida')) await crearEnBloques('unidadesMedida', snapshot.unidadesMedida, (bloque) =>
     prisma.erpUnidadMedida.createMany({
       data: bloque.map((unidad) => ({
         empresaErpId: unidad.empresaErpId,
@@ -369,7 +440,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
-  await crearEnBloques('puertos', snapshot.puertos, (bloque) =>
+  if (padrones.has('puertos')) await crearEnBloques('puertos', snapshot.puertos, (bloque) =>
     prisma.erpPuerto.createMany({
       data: bloque.map((puerto) => ({
         empresaErpId: puerto.empresaErpId,
@@ -404,18 +475,18 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
   }
 
   return {
-    campos: snapshot.campos.length,
-    zonas: zonasSincronizadas.length,
-    lotes: lotesConCampo.length,
-    actividades: snapshot.actividades.length,
-    especies: snapshot.especies.length,
-    empresas: snapshot.empresas.length,
-    campanias: snapshot.campanias.length,
-    cultivos: snapshot.cultivos.length,
-    insumos: snapshot.insumos.length,
-    servicios: snapshot.servicios.length,
-    unidadesMedida: snapshot.unidadesMedida.length,
-    puertos: snapshot.puertos.length,
+    campos: padrones.has('campos') ? snapshot.campos.length : 0,
+    zonas: padrones.has('zonas') ? zonasSincronizadas.length : 0,
+    lotes: padrones.has('lotes') ? lotesConCampo.length : 0,
+    actividades: padrones.has('actividades') ? snapshot.actividades.length : 0,
+    especies: padrones.has('especies') ? snapshot.especies.length : 0,
+    empresas: resultadoVacio.empresas,
+    campanias: padrones.has('campanias') ? snapshot.campanias.length : 0,
+    cultivos: padrones.has('cultivos') ? snapshot.cultivos.length : 0,
+    insumos: padrones.has('insumos') ? snapshot.insumos.length : 0,
+    servicios: padrones.has('servicios') ? snapshot.servicios.length : 0,
+    unidadesMedida: padrones.has('unidadesMedida') ? snapshot.unidadesMedida.length : 0,
+    puertos: padrones.has('puertos') ? snapshot.puertos.length : 0,
     omitidos: {
       lotesSinCampo: lotesOmitidosPorCampo,
     },

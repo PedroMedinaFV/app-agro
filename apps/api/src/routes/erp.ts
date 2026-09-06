@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request } from 'express';
-import type { ErpSnapshot } from '@agro/tipos';
+import type { ErpSnapshot, SincronizarErpRequest } from '@agro/tipos';
 import { obtenerSnapshotErp } from '../services/erp/clienteErp';
 import { obtenerConfiguracionErp } from '../services/erp/configuracionErp';
 import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
@@ -400,10 +400,11 @@ router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res,
     clientesSincronizando.add(clienteId);
 
     try {
+      const body = req.body as SincronizarErpRequest;
       const resultado = await sincronizarSnapshotErp(clienteId, {
         id: user.sub,
         clienteId,
-      });
+      }, body.items);
 
       return res.json({
         ok: true,

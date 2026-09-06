@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ErpEmpresa, ErpSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpEmpresa, ErpSnapshot, PadronErpSincronizable, SesionUsuario } from '@agro/tipos';
 import { guardarEmpresasErpAdmin, obtenerEmpresasErpAdmin, obtenerSnapshotErp, sincronizarPadronesErp, SincronizacionErpResultado } from '../services/api';
 import { snapshotFallback } from '../data/demoData';
 
@@ -103,7 +103,7 @@ export function useErpDemo(
     }
   }
 
-  async function sincronizarPadrones() {
+  async function sincronizarPadrones(items?: PadronErpSincronizable[]) {
     if (!sesion) {
       return;
     }
@@ -112,7 +112,7 @@ export function useErpDemo(
     setEstadoEmpresas('Sincronizando padrones desde ALBOR.');
 
     try {
-      const respuesta = await sincronizarPadronesErp(sesion.token);
+      const respuesta = await sincronizarPadronesErp(sesion.token, items);
       setUltimoResultadoSync(respuesta.resultado);
       setEstadoEmpresas(`Padrones sincronizados: ${respuesta.resultado.sincronizadoEn}`);
       await onSincronizacionCompletada?.();

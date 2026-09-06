@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'notificaciones' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -133,14 +133,24 @@ export function Layout({
               </div>
             )}
             {puedeConfigurarErp && (
-              <a 
-                className={vista === 'empresas-erp' ? 'active' : ''} 
-                onClick={() => onVistaChange('empresas-erp')} 
-                title="Empresas ERP"
-              >
-                <span className="nav-icon">ER</span>
-                <span className="nav-label">Empresas ERP</span>
-              </a>
+              <>
+                <a
+                  className={vista === 'sincronizacion-erp' ? 'active' : ''}
+                  onClick={() => onVistaChange('sincronizacion-erp')}
+                  title="Sincronizacion"
+                >
+                  <span className="nav-icon">SY</span>
+                  <span className="nav-label">Sincronizacion</span>
+                </a>
+                <a
+                  className={vista === 'empresas-erp' ? 'active' : ''}
+                  onClick={() => onVistaChange('empresas-erp')}
+                  title="Empresas ERP"
+                >
+                  <span className="nav-icon">ER</span>
+                  <span className="nav-label">Empresas ERP</span>
+                </a>
+              </>
             )}
           </nav>
         </aside>

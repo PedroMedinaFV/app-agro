@@ -73,6 +73,10 @@ Los padrones operativos del ERP requieren `x-company`. Por eso no se consulta un
 
 Los IDs internos importados incluyen la empresa, por ejemplo `empresa:1:campo:241`. Esto evita colisiones cuando distintas empresas devuelven el mismo identificador numerico y permite auditar la procedencia con `empresaErpId`.
 
+La sincronizacion se administra desde una pantalla propia, separada de `Empresas ERP`. La pantalla permite seleccionar todos los padrones o solo algunos. El backend agrega dependencias tecnicas cuando corresponda para mantener relaciones consistentes, por ejemplo lotes requiere campos, campos requiere zonas, cultivos requiere lotes/campos/campanias/actividades/especies, e insumos o servicios requieren unidades de medida.
+
+La pantalla `Empresas ERP` queda enfocada en elegir que empresas pertenecen a AGRO. La pantalla `Sincronizacion ERP` queda enfocada en importar o refrescar informacion desde ALBOR.
+
 ## Seguridad como requisito transversal
 
 La seguridad no se trata como mejora posterior. Toda funcionalidad administrativa debe validar autenticacion, permisos, no exponer secretos y dejar preparada la trazabilidad de cambios sensibles.

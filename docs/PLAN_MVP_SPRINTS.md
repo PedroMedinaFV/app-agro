@@ -155,6 +155,8 @@ Incluye:
 - [x] registrar conteos e incidencias de sincronizacion;
 - [x] evitar que referencias huerfanas rompan toda la corrida;
 - [x] accion web admin para sincronizar padrones y ver conteos principales;
+- [x] pantalla web dedicada de sincronizacion con seleccion de padrones;
+- [x] dependencias automaticas de sincronizacion para mantener cache consistente;
 - [ ] mobile solo lectura de campos/lotes/cultivos asignados.
 
 Criterio de aceptacion:

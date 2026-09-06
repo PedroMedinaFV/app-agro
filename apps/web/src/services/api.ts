@@ -48,6 +48,7 @@ import {
   LotePlanificacion,
   LoginDemoRequest,
   NotificacionUsuarioResumen,
+  PadronErpSincronizable,
   PlanificacionSnapshot,
   ProtocolosSnapshot,
   SesionUsuario,
@@ -146,9 +147,10 @@ export type SincronizacionErpResultado = {
   };
 };
 
-export async function sincronizarPadronesErp(token?: string): Promise<SincronizacionErpResultado> {
+export async function sincronizarPadronesErp(token?: string, items?: PadronErpSincronizable[]): Promise<SincronizacionErpResultado> {
   return request<SincronizacionErpResultado>('/erp/sincronizar', {
     method: 'POST',
+    body: JSON.stringify({ items }),
   }, token);
 }
 

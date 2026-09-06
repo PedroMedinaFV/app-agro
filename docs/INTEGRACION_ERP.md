@@ -329,6 +329,8 @@ Por eso el flujo queda asi:
 
 Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
 
+La sincronizacion puede ejecutarse para todos los padrones o para una seleccion puntual desde la pantalla web `Sincronizacion ERP`. Aunque el usuario seleccione algunos items, el backend puede sumar dependencias necesarias para no dejar relaciones inconsistentes. Por ejemplo, sincronizar lotes tambien refresca campos y zonas; sincronizar cultivos tambien refresca campanias, actividades, especies, lotes y campos.
+
 El identificador interno de los datos por empresa incluye la empresa para evitar colisiones:
 
 - `empresa:1:campo:241`

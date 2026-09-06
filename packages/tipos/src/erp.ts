@@ -369,6 +369,39 @@ export type ErpSnapshot = {
   sincronizadoEn: string;
 };
 
+export type PadronErpSincronizable =
+  | 'empresas'
+  | 'zonas'
+  | 'campos'
+  | 'lotes'
+  | 'actividades'
+  | 'especies'
+  | 'campanias'
+  | 'cultivos'
+  | 'insumos'
+  | 'servicios'
+  | 'unidadesMedida'
+  | 'puertos';
+
+export const padronesErpSincronizables: PadronErpSincronizable[] = [
+  'empresas',
+  'zonas',
+  'campos',
+  'lotes',
+  'actividades',
+  'especies',
+  'campanias',
+  'cultivos',
+  'insumos',
+  'servicios',
+  'unidadesMedida',
+  'puertos',
+];
+
+export type SincronizarErpRequest = {
+  items?: PadronErpSincronizable[];
+};
+
 export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic' | 'login';
 
 export type Cliente = {
