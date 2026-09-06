@@ -288,6 +288,21 @@ Estado UX actual:
 - toda alta o edicion de gastos comerciales debe quedar auditada con usuario, fecha, valores anteriores, valores nuevos, origen y motivo;
 - editar gastos comerciales no debe reescribir automaticamente planificaciones aprobadas o cerradas.
 
+## Pantalla de planificacion
+
+La planificacion web se divide en dos vistas:
+
+- resumen de planificaciones, con nombre, campania, estado, hectareas, ingresos, costos, margen y acciones;
+- editor de planificacion, con cabecera y grilla de carga tipo planilla para campos, lotes, actividades, destino, precio, gastos y protocolo.
+
+Decision UX:
+
+- no se usa modal para editar una planificacion completa porque la grilla tiene demasiada informacion;
+- el editor ocupa una pantalla completa y permite volver al resumen;
+- las planificaciones cerradas no se pueden editar desde la UI;
+- la validacion de duplicados por campania/campo/lote/actividad se muestra antes de guardar;
+- `PlanificacionScreen` queda como orquestador y delega en `PlanificacionesResumenScreen` y `PlanificacionEditorScreen`.
+
 ## Destinos de venta
 
 La planificacion debe contar con un catalogo de destinos de venta.

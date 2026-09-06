@@ -46,6 +46,19 @@ Cada funcionalidad nueva debe dejar una huella en las tres capas del producto:
 
 Si una capa queda diferida, debe quedar documentada como pendiente explicito.
 
+## Screens y componentes web
+
+En web, una `Screen` representa una vista completa de negocio conectada a la navegacion principal o a un flujo de pantalla completa. Una `Screen` puede orquestar datos, permisos y acciones de una funcionalidad concreta.
+
+Un `Component` representa una pieza reutilizable o transversal, por ejemplo layout, tabla, toast, spinner, modal o controles compartidos.
+
+Regla de mantenimiento:
+
+- `App.tsx` debe quedar como composicion de layout, hooks y rutas/vistas principales.
+- Cada funcionalidad nueva debe vivir en una screen propia.
+- Si una screen crece por contener subflujos claros, se divide en sub-screens o componentes especificos.
+- Las tablas deben usar `DataTable` salvo que haya una necesidad puntual de grilla editable.
+
 ## Sincronizacion ERP por empresa
 
 Los padrones operativos del ERP requieren `x-company`. Por eso no se consulta una unica vez de forma global: se consulta por cada empresa ERP asociada al cliente.
