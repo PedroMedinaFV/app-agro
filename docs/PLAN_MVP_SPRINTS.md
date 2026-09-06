@@ -208,8 +208,9 @@ Incluye:
 - [x] seleccion de zona desde zonas ERP sincronizadas o zonas propias de Agro App;
 - [x] estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
 - [x] vinculacion manual inicial de zonas, campos, lotes, especies, actividades, insumos y labores provisorios contra ERP disponible;
-- [ ] sugerencias iniciales de vinculacion por codigo/nombre/empresa;
-- notificaciones internas para revisar coincidencias;
+- [x] pantalla web transversal para revisar, editar y desvincular vinculaciones ERP;
+- [x] sugerencias visuales iniciales de vinculacion por codigo/nombre normalizado;
+- [ ] notificaciones internas persistidas para revisar coincidencias;
 - [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de especies;
 - [x] auditoria de altas y ediciones de actividades;
@@ -218,6 +219,7 @@ Incluye:
 - [x] auditoria de altas y ediciones de insumos;
 - [x] auditoria de altas y ediciones de labores;
 - [x] auditoria de vinculacion manual de zonas, campos, lotes, especies, actividades, insumos y labores;
+- [x] auditoria de edicion y desvinculacion manual de vinculaciones ERP;
 - [ ] auditoria de vinculaciones sugeridas;
 - mobile lectura de padrones asignados.
 
@@ -232,7 +234,8 @@ Criterio de aceptacion:
 - [x] se puede crear y editar un insumo provisorio;
 - [x] se puede crear y editar una labor provisoria;
 - se puede usar en planificacion/protocolos;
-- [ ] una sincronizacion posterior puede generar sugerencia de vinculacion;
+- [x] la web propone candidatos al abrir la vinculacion manual;
+- [ ] una sincronizacion posterior puede generar notificaciones persistidas de vinculacion;
 - [x] la vinculacion nunca es automatica en MVP.
 
 ## Sprint 3 - Precios, destinos y gastos comerciales

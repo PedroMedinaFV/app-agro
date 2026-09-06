@@ -3,6 +3,7 @@ import type { ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { guardarZonaPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -85,6 +86,11 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   const zonasErpDisponiblesParaVincular = useMemo(() => zonasErp
     .filter((zona) => !zonasVinculadas.has(zona.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [zonasErp, zonasVinculadas]);
+  const zonasErpSugeridasParaVincular = useMemo(() => (
+    zonaPropiaParaVincular
+      ? obtenerSugerenciasZona(zonaPropiaParaVincular)
+      : []
+  ), [zonaPropiaParaVincular, zonasErpDisponiblesParaVincular]);
   const zonasPropiasFiltradas = zonasPropias.filter((zona) => !zona.zonaErpId).filter((zona) => (
     normalizarCodigo(`${zona.codigoInterno || ''} ${zona.nombre}`).includes(filtroNormalizado)
   ));
@@ -171,18 +177,29 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   }
 
   function abrirVinculacion(zona: ZonaPlanificacion) {
+    const sugerencias = obtenerSugerenciasZona(zona);
+
     if (zona.estadoVinculacion !== 'provisorio' || zona.zonaErpId) {
       notificar?.({ tipo: 'info', titulo: 'Zona no vinculable', mensaje: 'Solo se pueden vincular zonas propias en estado provisorio.' });
       return;
     }
 
-    if (!zonasErpDisponiblesParaVincular.length) {
+    if (!sugerencias.length) {
       notificar?.({ tipo: 'info', titulo: 'No hay zona ERP disponible', mensaje: 'Todas las zonas ERP ya estan vinculadas o no hay zonas importadas.' });
       return;
     }
 
     setZonaPropiaParaVincular(zona);
-    setZonaErpVincularId(zonasErpDisponiblesParaVincular[0].erpId);
+    setZonaErpVincularId(sugerencias[0].registro.erpId);
+  }
+
+  function obtenerSugerenciasZona(zona: ZonaPlanificacion) {
+    return sugerirVinculacion(
+      { codigo: zona.codigoInterno, nombre: zona.nombre },
+      zonasErpDisponiblesParaVincular,
+      (registro) => registro.codigo,
+      (registro) => registro.nombre,
+    );
   }
 
   async function confirmarVinculacionZona() {
@@ -373,8 +390,8 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
               <label className="reference-wide">
                 Zona ERP disponible
                 <select value={zonaErpVincularId} onChange={(event) => setZonaErpVincularId(event.target.value)}>
-                  {zonasErpDisponiblesParaVincular.map((zona) => (
-                    <option key={zona.erpId} value={zona.erpId}>{zona.codigo} - {zona.nombre}</option>
+                  {zonasErpSugeridasParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>{registro.codigo} - {registro.nombre} ({motivo})</option>
                   ))}
                 </select>
               </label>

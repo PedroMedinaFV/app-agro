@@ -3,6 +3,7 @@ import { ErpInsumo, ErpSnapshot, InsumoPlanificacion, PlanificacionSnapshot, Ses
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerInsumosErpImportados } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -172,6 +173,16 @@ export function InsumosPlanificacionScreen({
   const insumosErpDisponiblesParaVincular = useMemo(() => insumosErp
     .filter((insumo) => !filtroPropiosErp.has(insumo.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [filtroPropiosErp, insumosErp]);
+  const insumosErpSugeridosParaVincular = useMemo(() => (
+    insumoPropioParaVincular
+      ? sugerirVinculacion(
+        { codigo: insumoPropioParaVincular.codigoInterno, nombre: insumoPropioParaVincular.nombre },
+        insumosErpDisponiblesParaVincular,
+        (registro) => registro.codigo,
+        (registro) => registro.nombre,
+      )
+      : []
+  ), [insumoPropioParaVincular, insumosErpDisponiblesParaVincular]);
   const filasInsumo: InsumoTabla[] = [
     ...insumosOrdenados.filter((insumo) => !insumo.insumoErpId).map((insumo) => ({
       id: insumo.id,
@@ -211,8 +222,15 @@ export function InsumosPlanificacionScreen({
       return;
     }
 
+    const sugerencias = sugerirVinculacion(
+      { codigo: insumo.codigoInterno, nombre: insumo.nombre },
+      insumosErpDisponiblesParaVincular,
+      (registro) => registro.codigo,
+      (registro) => registro.nombre,
+    );
+
     setInsumoPropioParaVincular(insumo);
-    setInsumoErpVincularId(insumosErpDisponiblesParaVincular[0].erpId);
+    setInsumoErpVincularId(sugerencias[0].registro.erpId);
   }
 
   async function confirmarVinculacionInsumo() {
@@ -444,8 +462,8 @@ export function InsumosPlanificacionScreen({
               <label className="reference-wide">
                 Insumo ERP disponible
                 <select value={insumoErpVincularId} onChange={(event) => setInsumoErpVincularId(event.target.value)}>
-                  {insumosErpDisponiblesParaVincular.map((insumo) => (
-                    <option key={insumo.erpId} value={insumo.erpId}>{insumo.codigo} - {insumo.nombre}</option>
+                  {insumosErpSugeridosParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>{registro.codigo} - {registro.nombre} ({motivo})</option>
                   ))}
                 </select>
               </label>

@@ -16,6 +16,7 @@ import { ActividadesPlanificacionScreen } from './screens/ActividadesPlanificaci
 import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
 import { CamposScreen } from './screens/CamposScreen';
 import { LotesScreen } from './screens/LotesScreen';
+import { VinculacionesPadronesScreen } from './screens/VinculacionesPadronesScreen';
 import { ToastViewport } from './components/ToastViewport';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
@@ -24,7 +25,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'empresas-erp';
+type Vista = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -57,7 +58,7 @@ export function App() {
       ? 'Campos'
     : vista === 'lotes'
       ? 'Lotes'
-    : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos' || vista === 'padrones-zonas' || vista === 'padrones-especies' || vista === 'padrones-actividades'
+    : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos' || vista === 'padrones-zonas' || vista === 'padrones-especies' || vista === 'padrones-actividades' || vista === 'padrones-vinculaciones'
       ? 'Padrones maestros'
     : vista === 'precios'
       ? 'Precios de cereales'
@@ -76,7 +77,7 @@ export function App() {
       ? 'Padron de campos ERP y campos propios de Agro App'
     : vista === 'lotes'
       ? 'Padron de lotes ERP y lotes propios de Agro App'
-    : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos' || vista === 'padrones-zonas' || vista === 'padrones-especies' || vista === 'padrones-actividades'
+    : vista === 'padrones-conceptos-gastos' || vista === 'padrones-destinos' || vista === 'padrones-labores' || vista === 'padrones-insumos' || vista === 'padrones-zonas' || vista === 'padrones-especies' || vista === 'padrones-actividades' || vista === 'padrones-vinculaciones'
       ? 'Administracion de maestros propios con permisos y auditoria'
     : vista === 'precios'
       ? 'Referencias comerciales para proponer precios en la planificacion'
@@ -302,6 +303,14 @@ export function App() {
 
       {vista === 'padrones-actividades' && (
         <ActividadesPlanificacionScreen
+          sesion={sesion}
+          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          notificar={toast.notify}
+        />
+      )}
+
+      {vista === 'padrones-vinculaciones' && (
+        <VinculacionesPadronesScreen
           sesion={sesion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}

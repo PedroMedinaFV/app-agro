@@ -9,6 +9,7 @@ import {
   obtenerLotesErpImportados,
   obtenerLotesPlanificacion,
 } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -190,6 +191,16 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       .filter((lote) => !campoPropio?.campoErpId || campoPropio.campoErpId === lote.campoErpId)
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [camposPropiosPorId, lotePropioParaVincular, lotesErp, lotesVinculados]);
+  const lotesErpSugeridosParaVincular = useMemo(() => (
+    lotePropioParaVincular
+      ? sugerirVinculacion(
+        { codigo: lotePropioParaVincular.codigoInterno, nombre: lotePropioParaVincular.nombre },
+        lotesErpDisponiblesParaVincular,
+        (registro) => registro.codigo,
+        (registro) => registro.nombre,
+      )
+      : []
+  ), [lotePropioParaVincular, lotesErpDisponiblesParaVincular]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
   const lotesErpFiltrados = lotesErp.filter((lote) => {
@@ -314,10 +325,14 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
   function abrirVinculacion(lote: LotePlanificacion) {
     const campoPropio = camposPropiosPorId.get(lote.campoPlanificacionId);
-    const candidatos = lotesErp
-      .filter((loteErp) => !lotesVinculados.has(loteErp.erpId))
-      .filter((loteErp) => !campoPropio?.campoErpId || campoPropio.campoErpId === loteErp.campoErpId)
-      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const candidatos = sugerirVinculacion(
+      { codigo: lote.codigoInterno, nombre: lote.nombre },
+      lotesErp
+        .filter((loteErp) => !lotesVinculados.has(loteErp.erpId))
+        .filter((loteErp) => !campoPropio?.campoErpId || campoPropio.campoErpId === loteErp.campoErpId),
+      (registro) => registro.codigo,
+      (registro) => registro.nombre,
+    );
 
     if (lote.estadoVinculacion !== 'provisorio' || lote.loteErpId) {
       notificar?.({
@@ -338,7 +353,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     }
 
     setLotePropioParaVincular(lote);
-    setLoteErpVincularId(candidatos[0].erpId);
+    setLoteErpVincularId(candidatos[0].registro.erpId);
   }
 
   async function confirmarVinculacionLote() {
@@ -700,12 +715,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
               <label className="reference-wide">
                 Lote ERP disponible
                 <select value={loteErpVincularId} onChange={(event) => setLoteErpVincularId(event.target.value)}>
-                  {lotesErpDisponiblesParaVincular.map((lote) => {
-                    const campo = camposErpPorId.get(lote.campoErpId);
+                  {lotesErpSugeridosParaVincular.map(({ registro, motivo }) => {
+                    const campo = camposErpPorId.get(registro.campoErpId);
 
                     return (
-                      <option key={lote.erpId} value={lote.erpId}>
-                        {lote.codigo ? `${lote.codigo} - ` : ''}{lote.nombre} ({campo?.nombre || `Campo ${lote.idCampo}`})
+                      <option key={registro.erpId} value={registro.erpId}>
+                        {registro.codigo ? `${registro.codigo} - ` : ''}{registro.nombre} ({campo?.nombre || `Campo ${registro.idCampo}`}; {motivo})
                       </option>
                     );
                   })}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { guardarCampoPlanificacion, obtenerCamposErpImportados, obtenerCamposPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -167,6 +168,16 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       .filter((campo) => !idZonaEsperada || campo.idZona === idZonaEsperada)
       .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [campoPropioParaVincular, camposErp, camposVinculados, zonasPropiasActuales]);
+  const camposErpSugeridosParaVincular = useMemo(() => (
+    campoPropioParaVincular
+      ? sugerirVinculacion(
+        { codigo: campoPropioParaVincular.codigoInterno, nombre: campoPropioParaVincular.nombre },
+        camposErpDisponiblesParaVincular,
+        (registro) => registro.codigo,
+        (registro) => registro.nombre,
+      )
+      : []
+  ), [campoPropioParaVincular, camposErpDisponiblesParaVincular]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const camposErpFiltrados = camposErp.filter((campo) => {
     const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
@@ -305,7 +316,12 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   }
 
   function abrirVinculacion(campo: CampoPlanificacion) {
-    const candidatos = obtenerCamposErpCompatibles(campo);
+    const candidatos = sugerirVinculacion(
+      { codigo: campo.codigoInterno, nombre: campo.nombre },
+      obtenerCamposErpCompatibles(campo),
+      (registro) => registro.codigo,
+      (registro) => registro.nombre,
+    );
 
     if (campo.estadoVinculacion !== 'provisorio' || campo.campoErpId) {
       notificar?.({
@@ -326,7 +342,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     }
 
     setCampoPropioParaVincular(campo);
-    setCampoErpVincularId(candidatos[0].erpId);
+    setCampoErpVincularId(candidatos[0].registro.erpId);
   }
 
   function obtenerCamposErpCompatibles(campoPropio: CampoPlanificacion) {
@@ -574,9 +590,9 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
               <label className="reference-wide">
                 Campo ERP disponible
                 <select value={campoErpVincularId} onChange={(event) => setCampoErpVincularId(event.target.value)}>
-                  {camposErpDisponiblesParaVincular.map((campo) => (
-                    <option key={campo.erpId} value={campo.erpId}>
-                      {campo.codigo ? `${campo.codigo} - ` : ''}{campo.nombre} ({obtenerNombreZonaErp(campo)})
+                  {camposErpSugeridosParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>
+                      {registro.codigo ? `${registro.codigo} - ` : ''}{registro.nombre} ({obtenerNombreZonaErp(registro)}; {motivo})
                     </option>
                   ))}
                 </select>

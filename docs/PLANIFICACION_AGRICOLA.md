@@ -161,6 +161,8 @@ Campos principales:
 
 Cuando un padron provisorio ya existe en ALBOR, la web permite vincularlo manualmente contra un registro ERP disponible. La vinculacion se audita, evita reutilizar la misma referencia ERP para dos registros del cliente y valida relaciones segun el padron: campo-zona, lote-campo, actividad-especie, insumo-insumo ERP o labor-servicio ERP. Despues de vincular, el registro propio deja de mostrarse como fila independiente para que el usuario trabaje sobre la referencia ERP sincronizada.
 
+Para reducir friccion, los modales de vinculacion ordenan primero las coincidencias mas probables por codigo o nombre normalizado e informan el motivo de la sugerencia. La eleccion sigue siendo manual para evitar enlaces incorrectos y conservar trazabilidad.
+
 Regla de unicidad:
 
 - Dentro de una misma campania, campo y lote no puede existir mas de una linea con la misma actividad de planificacion.

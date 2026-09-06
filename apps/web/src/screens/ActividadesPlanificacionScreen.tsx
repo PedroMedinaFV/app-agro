@@ -9,6 +9,7 @@ import {
   obtenerEspeciesErpImportadas,
   obtenerEspeciesPlanificacion,
 } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -138,6 +139,16 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
 
     return obtenerActividadesErpCompatibles(actividadPropiaParaVincular);
   }, [actividadPropiaParaVincular, actividadesErp, actividadesVinculadas, especiesPropiasPorId]);
+  const actividadesErpSugeridasParaVincular = useMemo(() => (
+    actividadPropiaParaVincular
+      ? sugerirVinculacion(
+        { codigo: actividadPropiaParaVincular.codigoInterno, nombre: actividadPropiaParaVincular.nombre },
+        actividadesErpDisponiblesParaVincular,
+        (registro) => registro.codigo,
+        (registro) => registro.descripcion,
+      )
+      : []
+  ), [actividadPropiaParaVincular, actividadesErpDisponiblesParaVincular]);
   const actividadesPropiasFiltradas = actividadesPropias.filter((actividad) => !actividad.actividadErpId).filter((actividad) => {
     const especie = actividad.especiePlanificacionId ? especiesPropiasPorId.get(actividad.especiePlanificacionId)?.nombre : especiesPorErpId.get(actividad.especieErpId || '')?.nombre;
     return normalizarCodigo(`${actividad.codigoInterno || ''} ${actividad.nombre} ${especie || ''}`).includes(filtroNormalizado);
@@ -269,7 +280,12 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
   }
 
   function abrirVinculacion(actividad: ActividadPlanificacion) {
-    const candidatos = obtenerActividadesErpCompatibles(actividad);
+    const candidatos = sugerirVinculacion(
+      { codigo: actividad.codigoInterno, nombre: actividad.nombre },
+      obtenerActividadesErpCompatibles(actividad),
+      (registro) => registro.codigo,
+      (registro) => registro.descripcion,
+    );
 
     if (actividad.estadoVinculacion !== 'provisorio' || actividad.actividadErpId) {
       notificar?.({ tipo: 'info', titulo: 'Actividad no vinculable', mensaje: 'Solo se pueden vincular actividades propias en estado provisorio.' });
@@ -282,7 +298,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     }
 
     setActividadPropiaParaVincular(actividad);
-    setActividadErpVincularId(candidatos[0].erpId);
+    setActividadErpVincularId(candidatos[0].registro.erpId);
   }
 
   async function confirmarVinculacionActividad() {
@@ -430,9 +446,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
               <label className="reference-wide">
                 Actividad ERP disponible
                 <select value={actividadErpVincularId} onChange={(event) => setActividadErpVincularId(event.target.value)}>
-                  {actividadesErpDisponiblesParaVincular.map((actividad) => (
-                    <option key={actividad.erpId} value={actividad.erpId}>
-                      {actividad.codigo} - {actividad.descripcion} ({actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie'})
+                  {actividadesErpSugeridasParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>
+                      {registro.codigo} - {registro.descripcion} ({registro.idEspecie ? especiesPorIdNumerico.get(registro.idEspecie)?.nombre || `Especie ${registro.idEspecie}` : 'Sin especie'}; {motivo})
                     </option>
                   ))}
                 </select>

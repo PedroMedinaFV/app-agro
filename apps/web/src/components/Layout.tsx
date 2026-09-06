@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'empresas-erp';
+type VistaApp = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -52,6 +52,7 @@ export function Layout({
     { vista: 'lotes' as const, label: 'Lotes' },
     { vista: 'padrones-especies' as const, label: 'Especies' },
     { vista: 'padrones-actividades' as const, label: 'Actividades' },
+    { vista: 'padrones-vinculaciones' as const, label: 'Vinculaciones' },
   ];
   const padronActivo = vista.startsWith('padrones-');
 

@@ -156,6 +156,10 @@ La vinculacion manual de lotes se permite desde el padron web solamente sobre lo
 
 La vinculacion manual de padrones provisorios sigue el mismo criterio para zonas, campos, lotes, especies, actividades, insumos y labores: solo nace desde un registro propio de Agro App en estado `provisorio` y se confirma contra un registro ERP disponible. El backend valida que la referencia ERP exista, que no este usada por otro registro del mismo cliente y que respete las relaciones necesarias, por ejemplo campo-zona, lote-campo o actividad-especie. Una vez vinculado, el registro propio deja de mostrarse como fila independiente y queda visible el registro ERP como referencia operativa.
 
+La web ordena los candidatos de vinculacion con una sugerencia simple por codigo y nombre normalizados. Esta sugerencia solo mejora la busqueda del usuario: no vincula automaticamente, no reemplaza la confirmacion manual y no modifica las validaciones de backend.
+
+Las vinculaciones confirmadas no son irreversibles. La web debe ofrecer un listado transversal de vinculaciones para revisar, editar o desvincular relaciones ERP de zonas, campos, lotes, especies, actividades, insumos y labores. Toda correccion debe pasar por backend, respetar las mismas validaciones de integridad y registrar auditoria con motivo.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

@@ -3,6 +3,7 @@ import { ErpServicio, ErpSnapshot, LaborReferencia, PlanificacionSnapshot, Sesio
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerServiciosErpImportados } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -165,6 +166,16 @@ export function LaboresReferenciaScreen({
   const serviciosErpDisponiblesParaVincular = useMemo(() => serviciosErp
     .filter((servicio) => !serviciosVinculados.has(servicio.erpId))
     .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es')), [serviciosErp, serviciosVinculados]);
+  const serviciosErpSugeridosParaVincular = useMemo(() => (
+    laborPropiaParaVincular
+      ? sugerirVinculacion(
+        { codigo: laborPropiaParaVincular.codigo, nombre: laborPropiaParaVincular.nombre },
+        serviciosErpDisponiblesParaVincular,
+        (registro) => registro.codigo,
+        (registro) => registro.descripcion,
+      )
+      : []
+  ), [laborPropiaParaVincular, serviciosErpDisponiblesParaVincular]);
   const filasLabor: LaborTabla[] = [
     ...laboresOrdenadas.filter((labor) => !labor.servicioErpId).map((labor) => ({
       id: labor.id,
@@ -204,8 +215,15 @@ export function LaboresReferenciaScreen({
       return;
     }
 
+    const sugerencias = sugerirVinculacion(
+      { codigo: labor.codigo, nombre: labor.nombre },
+      serviciosErpDisponiblesParaVincular,
+      (registro) => registro.codigo,
+      (registro) => registro.descripcion,
+    );
+
     setLaborPropiaParaVincular(labor);
-    setServicioErpVincularId(serviciosErpDisponiblesParaVincular[0].erpId);
+    setServicioErpVincularId(sugerencias[0].registro.erpId);
   }
 
   async function confirmarVinculacionLabor() {
@@ -444,8 +462,8 @@ export function LaboresReferenciaScreen({
               <label className="reference-wide">
                 Servicio ERP disponible
                 <select value={servicioErpVincularId} onChange={(event) => setServicioErpVincularId(event.target.value)}>
-                  {serviciosErpDisponiblesParaVincular.map((servicio) => (
-                    <option key={servicio.erpId} value={servicio.erpId}>{servicio.codigo} - {servicio.descripcion}</option>
+                  {serviciosErpSugeridosParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>{registro.codigo} - {registro.descripcion} ({motivo})</option>
                   ))}
                 </select>
               </label>

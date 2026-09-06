@@ -3,6 +3,7 @@ import type { ErpEspecie, EspeciePlanificacion, SesionUsuario } from '@agro/tipo
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { guardarEspeciePlanificacion, obtenerEspeciesErpImportadas, obtenerEspeciesPlanificacion } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -85,6 +86,11 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
   const especiesErpDisponiblesParaVincular = useMemo(() => especiesErp
     .filter((especie) => !especiesVinculadas.has(especie.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [especiesErp, especiesVinculadas]);
+  const especiesErpSugeridasParaVincular = useMemo(() => (
+    especiePropiaParaVincular
+      ? obtenerSugerenciasEspecie(especiePropiaParaVincular)
+      : []
+  ), [especiePropiaParaVincular, especiesErpDisponiblesParaVincular]);
   const especiesPropiasFiltradas = especiesPropias.filter((especie) => !especie.especieErpId).filter((especie) => normalizarCodigo(`${especie.codigoInterno || ''} ${especie.nombre}`).includes(filtroNormalizado));
   const especiesErpFiltradas = especiesErp.filter((especie) => normalizarCodigo(`${especie.codigo} ${especie.nombre}`).includes(filtroNormalizado));
   const codigoActual = especieEnEdicion ? normalizarCodigo(especieEnEdicion.codigoInterno || especieEnEdicion.nombre) : '';
@@ -162,18 +168,29 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
   }
 
   function abrirVinculacion(especie: EspeciePlanificacion) {
+    const sugerencias = obtenerSugerenciasEspecie(especie);
+
     if (especie.estadoVinculacion !== 'provisorio' || especie.especieErpId) {
       notificar?.({ tipo: 'info', titulo: 'Especie no vinculable', mensaje: 'Solo se pueden vincular especies propias en estado provisorio.' });
       return;
     }
 
-    if (!especiesErpDisponiblesParaVincular.length) {
+    if (!sugerencias.length) {
       notificar?.({ tipo: 'info', titulo: 'No hay especie ERP disponible', mensaje: 'Todas las especies ERP ya estan vinculadas o no hay especies importadas.' });
       return;
     }
 
     setEspeciePropiaParaVincular(especie);
-    setEspecieErpVincularId(especiesErpDisponiblesParaVincular[0].erpId);
+    setEspecieErpVincularId(sugerencias[0].registro.erpId);
+  }
+
+  function obtenerSugerenciasEspecie(especie: EspeciePlanificacion) {
+    return sugerirVinculacion(
+      { codigo: especie.codigoInterno, nombre: especie.nombre },
+      especiesErpDisponiblesParaVincular,
+      (registro) => registro.codigo,
+      (registro) => registro.nombre,
+    );
   }
 
   async function confirmarVinculacionEspecie() {
@@ -315,8 +332,8 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
               <label className="reference-wide">
                 Especie ERP disponible
                 <select value={especieErpVincularId} onChange={(event) => setEspecieErpVincularId(event.target.value)}>
-                  {especiesErpDisponiblesParaVincular.map((especie) => (
-                    <option key={especie.erpId} value={especie.erpId}>{especie.codigo} - {especie.nombre}</option>
+                  {especiesErpSugeridasParaVincular.map(({ registro, motivo }) => (
+                    <option key={registro.erpId} value={registro.erpId}>{registro.codigo} - {registro.nombre} ({motivo})</option>
                   ))}
                 </select>
               </label>
