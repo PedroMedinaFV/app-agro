@@ -90,6 +90,8 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const [guardando, setGuardando] = useState(false);
   const [loteEnEdicion, setLoteEnEdicion] = useState<LotePlanificacion | null>(null);
   const [modoFormulario, setModoFormulario] = useState<'crear' | 'editar' | 'copiar'>('crear');
+  const [lotePropioParaVincular, setLotePropioParaVincular] = useState<LotePlanificacion | null>(null);
+  const [loteErpVincularId, setLoteErpVincularId] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [filtro, setFiltro] = useState('');
@@ -176,6 +178,18 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     [camposParaFiltrar],
   );
   const lotesVinculados = useMemo(() => new Set(lotesPropios.map((lote) => lote.loteErpId).filter(Boolean)), [lotesPropios]);
+  const lotesErpDisponiblesParaVincular = useMemo(() => {
+    if (!lotePropioParaVincular) {
+      return [];
+    }
+
+    const campoPropio = camposPropiosPorId.get(lotePropioParaVincular.campoPlanificacionId);
+
+    return lotesErp
+      .filter((lote) => !lotesVinculados.has(lote.erpId))
+      .filter((lote) => !campoPropio?.campoErpId || campoPropio.campoErpId === lote.campoErpId)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [camposPropiosPorId, lotePropioParaVincular, lotesErp, lotesVinculados]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
   const lotesErpFiltrados = lotesErp.filter((lote) => {
@@ -185,7 +199,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
     return texto.includes(filtroNormalizado) && coincideCampo;
   });
-  const lotesPropiosFiltrados = lotesPropios.filter((lote) => {
+  const lotesPropiosFiltrados = lotesPropios.filter((lote) => !lote.loteErpId).filter((lote) => {
     const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
     const texto = normalizarCodigo(`${lote.codigoInterno || ''} ${lote.nombre} ${campo?.nombre || ''}`);
     const coincideCampo = !campoFiltrado
@@ -295,6 +309,74 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
         titulo: 'Campo ERP pendiente',
         mensaje: 'Al guardar se validara que el campo del lote exista como campo operativo.',
       });
+    }
+  }
+
+  function abrirVinculacion(lote: LotePlanificacion) {
+    const campoPropio = camposPropiosPorId.get(lote.campoPlanificacionId);
+    const candidatos = lotesErp
+      .filter((loteErp) => !lotesVinculados.has(loteErp.erpId))
+      .filter((loteErp) => !campoPropio?.campoErpId || campoPropio.campoErpId === loteErp.campoErpId)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    if (lote.estadoVinculacion !== 'provisorio' || lote.loteErpId) {
+      notificar?.({
+        tipo: 'info',
+        titulo: 'Lote no vinculable',
+        mensaje: 'Solo se pueden vincular lotes propios en estado provisorio.',
+      });
+      return;
+    }
+
+    if (!candidatos.length) {
+      notificar?.({
+        tipo: 'info',
+        titulo: 'No hay lote ERP compatible',
+        mensaje: 'No se encontro un lote ERP disponible para vincular con este lote provisorio.',
+      });
+      return;
+    }
+
+    setLotePropioParaVincular(lote);
+    setLoteErpVincularId(candidatos[0].erpId);
+  }
+
+  async function confirmarVinculacionLote() {
+    if (!lotePropioParaVincular || !loteErpVincularId) {
+      return;
+    }
+
+    const loteErp = lotesErp.find((lote) => lote.erpId === loteErpVincularId);
+
+    if (!loteErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro el lote ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const respuesta = await guardarLotePlanificacion(lotePropioParaVincular.id, {
+        lote: {
+          ...lotePropioParaVincular,
+          loteErpId: loteErp.erpId,
+          estadoVinculacion: 'vinculado_erp',
+          updatedAt: new Date().toISOString(),
+        },
+        origen: 'web',
+        motivo: `Vinculacion manual con lote ERP ${loteErp.erpId}`,
+      }, sesion.token);
+
+      setLotesPropios((actuales) => actuales.map((lote) => (lote.id === respuesta.lote.id ? respuesta.lote : lote)));
+      setLotePropioParaVincular(null);
+      setLoteErpVincularId('');
+      setEstado('Lote vinculado con auditoria.');
+      notificar?.({ tipo: 'success', titulo: 'Lote vinculado', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular el lote.';
+      notificar?.({ tipo: 'error', titulo: 'No se vinculo el lote', mensaje });
+    } finally {
+      setGuardando(false);
     }
   }
 
@@ -497,12 +579,14 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                   <div className="button-row table-actions">
                     <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)}>Editar</button>
                     <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)}>Copiar</button>
+                    {fila.lotePropio?.estadoVinculacion === 'provisorio' && (
+                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirVinculacion(fila.lotePropio)}>Vincular</button>
+                    )}
                   </div>
                 )
                 : (
                   <div className="button-row table-actions">
                     <button className="small" type="button" disabled={!puedeConfigurarPlanificacion || !fila.loteErp} onClick={() => fila.loteErp && copiarLoteErp(fila.loteErp)}>Copiar</button>
-                    <button className="small" type="button" disabled>Vincular</button>
                   </div>
                 ),
             },
@@ -589,6 +673,52 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Guardar
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {lotePropioParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-lote-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-lote-title">Vincular lote provisorio</h2>
+                <p className="hint">La vinculacion no modifica los datos historicos de planificacion; solo enlaza el lote propio con el identificador ERP.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setLotePropioParaVincular(null); setLoteErpVincularId(''); }}>Cerrar</button>
+            </div>
+
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Lote provisorio</span>
+                <strong>{lotePropioParaVincular.nombre}</strong>
+                <span>{lotePropioParaVincular.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
+              <label className="reference-wide">
+                Lote ERP disponible
+                <select value={loteErpVincularId} onChange={(event) => setLoteErpVincularId(event.target.value)}>
+                  {lotesErpDisponiblesParaVincular.map((lote) => {
+                    const campo = camposErpPorId.get(lote.campoErpId);
+
+                    return (
+                      <option key={lote.erpId} value={lote.erpId}>
+                        {lote.codigo ? `${lote.codigo} - ` : ''}{lote.nombre} ({campo?.nombre || `Campo ${lote.idCampo}`})
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            </div>
+
+            <div className="modal-actions">
+              <span className="hint">El backend valida que el lote ERP exista y que no este vinculado a otro lote del cliente.</span>
+              <button className="primary" type="button" disabled={guardando || !loteErpVincularId} onClick={confirmarVinculacionLote}>
+                <span className="button-content">
+                  {guardando && <span className="loading-spinner" />}
+                  Vincular
                 </span>
               </button>
             </div>

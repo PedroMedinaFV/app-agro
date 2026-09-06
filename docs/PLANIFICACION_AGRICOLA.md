@@ -273,6 +273,8 @@ Estado UX actual:
 - web cuenta con pantalla `Lotes` para ver lotes ERP sincronizados y crear lotes propios asociados a campos propios;
 - la pantalla `Lotes` permite filtrar el listado por campo para revisar rapidamente los lotes de una unidad operativa;
 - la pantalla `Lotes` permite copiar un lote propio para crear un nuevo lote provisorio con el mismo campo y superficies, dejando nombre y codigo editables antes de guardar;
+- la pantalla `Lotes` permite vincular manualmente un lote propio provisorio contra un lote ERP disponible, con validacion backend y auditoria;
+- una vez vinculado, el lote propio no se muestra como fila independiente y queda visible el lote ERP vinculado;
 - web cuenta con pantalla `Gastos` para administrar gastos comerciales de referencia por campania;
 - web cuenta con pantalla `Padrones` para administrar el maestro de conceptos de gastos comerciales;
 - web cuenta con pantalla `Padrones > Destinos` para administrar el catalogo maestro de destinos de venta;

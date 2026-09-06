@@ -86,6 +86,30 @@ async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) 
   if (!campo || campo.clienteId !== lote.clienteId) {
     throw crearErrorValidacion('El campo seleccionado no pertenece al cliente.', 403);
   }
+
+  if (lote.loteErpId) {
+    const loteErp = await prisma.erpLote.findUnique({ where: { erpId: lote.loteErpId } });
+
+    if (!loteErp) {
+      throw crearErrorValidacion('El lote ERP seleccionado no existe en la cache importada.');
+    }
+
+    if (campo.campoErpId && campo.campoErpId !== loteErp.campoErpId) {
+      throw crearErrorValidacion('El lote ERP no pertenece al campo ERP vinculado al lote propio.');
+    }
+
+    const loteYaVinculado = await prisma.lotePlanificacion.findFirst({
+      where: {
+        clienteId: lote.clienteId,
+        loteErpId: lote.loteErpId,
+        id: { not: lote.id },
+      },
+    });
+
+    if (loteYaVinculado) {
+      throw crearErrorValidacion('Ese lote ERP ya esta vinculado a otro lote del cliente.');
+    }
+  }
 }
 
 export async function obtenerLotesPlanificacionPersistidos(clienteId: string): Promise<LotePlanificacion[]> {

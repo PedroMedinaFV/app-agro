@@ -205,8 +205,9 @@ Incluye:
 - [x] alta provisoria de insumos;
 - [x] alta provisoria de labores;
 - [x] seleccion de zona desde zonas ERP sincronizadas o zonas propias de Agro App;
-- estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
-- sugerencias iniciales de vinculacion por codigo/nombre/empresa;
+- [x] estado de vinculacion: `provisorio`, `vinculado_erp`, `archivado`;
+- [x] vinculacion manual inicial de lotes provisorios contra lotes ERP disponibles;
+- [ ] sugerencias iniciales de vinculacion por codigo/nombre/empresa;
 - notificaciones internas para revisar coincidencias;
 - [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de especies;
@@ -215,7 +216,8 @@ Incluye:
 - [x] auditoria de altas y ediciones de lotes;
 - [x] auditoria de altas y ediciones de insumos;
 - [x] auditoria de altas y ediciones de labores;
-- [ ] auditoria de vinculaciones;
+- [x] auditoria de vinculacion manual de lotes;
+- [ ] auditoria de vinculaciones sugeridas;
 - mobile lectura de padrones asignados.
 
 Criterio de aceptacion:

@@ -152,6 +152,8 @@ La regla no aplica a datos operativos importados desde endpoints como `Agricultu
 
 En lotes provisorios, la web permite copiar un lote propio existente para acelerar altas repetitivas. La copia conserva campo y superficies, pero se guarda como un registro nuevo con estado `provisorio` y sin `loteErpId`; la vinculacion ERP sigue siendo una accion posterior, propuesta y auditada.
 
+La vinculacion manual de lotes se permite desde el padron web solamente sobre lotes propios en estado `provisorio`. El usuario selecciona el lote provisorio y confirma contra que lote ERP disponible debe quedar enlazado. El backend valida que el lote ERP exista, que no este usado por otro lote del mismo cliente y que pertenezca al mismo campo ERP cuando el campo propio ya este vinculado. La accion se registra en auditoria. Una vez vinculado, el lote propio deja de mostrarse como fila independiente y queda visible el lote ERP como referencia principal.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.
