@@ -32,8 +32,9 @@ type CampoTabla = {
   zona: string;
   origen: string;
   estado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importado';
   campoPropio?: CampoPlanificacion;
+  campoErp?: ErpCampo;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -76,6 +77,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   const [estado, setEstado] = useState('Cargando campos sincronizados.');
   const [guardando, setGuardando] = useState(false);
   const [campoEnEdicion, setCampoEnEdicion] = useState<CampoPlanificacion | null>(null);
+  const [campoPropioParaVincular, setCampoPropioParaVincular] = useState<CampoPlanificacion | null>(null);
+  const [campoErpVincularId, setCampoErpVincularId] = useState('');
   const [filtro, setFiltro] = useState('');
   const [filtroZonaClave, setFiltroZonaClave] = useState('');
 
@@ -143,7 +146,27 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
     return mapa;
   }, [zonasDisponibles]);
-  const camposVinculados = useMemo(() => new Set(camposPropios.map((campo) => campo.campoErpId).filter(Boolean)), [camposPropios]);
+  const camposVinculados = useMemo(
+    () => new Set(camposPropios.map((campo) => campo.campoErpId).filter((id): id is string => Boolean(id))),
+    [camposPropios],
+  );
+  const camposErpDisponiblesParaVincular = useMemo(() => {
+    if (!campoPropioParaVincular) {
+      return [];
+    }
+
+    const zonaPropia = campoPropioParaVincular.zonaPlanificacionId
+      ? zonasPropiasActuales.find((zona) => zona.id === campoPropioParaVincular.zonaPlanificacionId)
+      : undefined;
+    const zonaErpEsperada = campoPropioParaVincular.zonaErpId || zonaPropia?.zonaErpId;
+    const idZonaEsperada = obtenerIdZonaDesdeErpId(zonaErpEsperada);
+
+    return camposErp
+      .filter((campo) => !camposVinculados.has(campo.erpId))
+      .filter((campo) => campo.empresaErpId === campoPropioParaVincular.empresaErpId)
+      .filter((campo) => !idZonaEsperada || campo.idZona === idZonaEsperada)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [campoPropioParaVincular, camposErp, camposVinculados, zonasPropiasActuales]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const camposErpFiltrados = camposErp.filter((campo) => {
     const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
@@ -152,7 +175,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
     return texto.includes(filtroNormalizado) && coincideZona;
   });
-  const camposPropiosFiltrados = camposPropios.filter((campo) => {
+  const camposPropiosFiltrados = camposPropios.filter((campo) => !campo.campoErpId).filter((campo) => {
     const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
     const texto = normalizarCodigo(`${campo.codigoInterno || ''} ${campo.nombre} ${campo.empresaErpId}`);
     const idZonaCampo = obtenerIdZonaDesdeErpId(campo.zonaErpId);
@@ -182,7 +205,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       zona: obtenerNombreZonaErp(campo),
       origen: 'ERP',
       estado: camposVinculados.has(campo.erpId) ? 'Vinculado' : 'Disponible',
-      accion: 'vincular' as const,
+      accion: 'importado' as const,
+      campoErp: campo,
     })),
   ];
 
@@ -229,7 +253,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
     setCampoEnEdicion((actual) => actual && {
       ...actual,
-      empresaErpId: zona?.empresaErpId || actual.empresaErpId,
+      empresaErpId: zona && zona.empresaErpId !== 'global' ? zona.empresaErpId : actual.empresaErpId,
       zonaPlanificacionId: zona?.zonaPlanificacionId,
       zonaErpId: zona?.zonaErpId,
     });
@@ -275,6 +299,86 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo guardar el campo.';
       notificar?.({ tipo: 'error', titulo: 'No se guardo el campo', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  function abrirVinculacion(campo: CampoPlanificacion) {
+    const candidatos = obtenerCamposErpCompatibles(campo);
+
+    if (campo.estadoVinculacion !== 'provisorio' || campo.campoErpId) {
+      notificar?.({
+        tipo: 'info',
+        titulo: 'Campo no vinculable',
+        mensaje: 'Solo se pueden vincular campos propios en estado provisorio.',
+      });
+      return;
+    }
+
+    if (!candidatos.length) {
+      notificar?.({
+        tipo: 'info',
+        titulo: 'No hay campo ERP compatible',
+        mensaje: 'No se encontro un campo ERP disponible para vincular con este campo provisorio.',
+      });
+      return;
+    }
+
+    setCampoPropioParaVincular(campo);
+    setCampoErpVincularId(candidatos[0].erpId);
+  }
+
+  function obtenerCamposErpCompatibles(campoPropio: CampoPlanificacion) {
+    const zonaPropia = campoPropio.zonaPlanificacionId
+      ? zonasPropiasActuales.find((zona) => zona.id === campoPropio.zonaPlanificacionId)
+      : undefined;
+    const zonaErpEsperada = campoPropio.zonaErpId || zonaPropia?.zonaErpId;
+    const idZonaEsperada = obtenerIdZonaDesdeErpId(zonaErpEsperada);
+
+    return camposErp
+      .filter((campo) => !camposVinculados.has(campo.erpId))
+      .filter((campo) => campo.empresaErpId === campoPropio.empresaErpId)
+      .filter((campo) => !idZonaEsperada || campo.idZona === idZonaEsperada)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  async function confirmarVinculacionCampo() {
+    if (!campoPropioParaVincular || !campoErpVincularId) {
+      return;
+    }
+
+    const campoErp = camposErp.find((campo) => campo.erpId === campoErpVincularId);
+
+    if (!campoErp) {
+      notificar?.({ tipo: 'error', titulo: 'No se encontro el campo ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const respuesta = await guardarCampoPlanificacion(campoPropioParaVincular.id, {
+        campo: {
+          ...campoPropioParaVincular,
+          empresaErpId: campoErp.empresaErpId,
+          campoErpId: campoErp.erpId,
+          zonaErpId: campoErp.idZona ? `zona:${campoErp.idZona}` : campoPropioParaVincular.zonaErpId,
+          estadoVinculacion: 'vinculado_erp',
+          updatedAt: new Date().toISOString(),
+        },
+        origen: 'web',
+        motivo: `Vinculacion manual con campo ERP ${campoErp.erpId}`,
+      }, sesion.token);
+
+      setCamposPropios((actuales) => actuales.map((campo) => (campo.id === respuesta.campo.id ? respuesta.campo : campo)));
+      setCampoPropioParaVincular(null);
+      setCampoErpVincularId('');
+      setEstado('Campo vinculado con auditoria.');
+      notificar?.({ tipo: 'success', titulo: 'Campo vinculado', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular el campo.';
+      notificar?.({ tipo: 'error', titulo: 'No se vinculo el campo', mensaje });
     } finally {
       setGuardando(false);
     }
@@ -343,10 +447,17 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && setCampoEnEdicion(fila.campoPropio)}>Editar</button>
-                : <button className="small" type="button" disabled>Vincular</button>,
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && setCampoEnEdicion(fila.campoPropio)}>Editar</button>
+                    {fila.campoPropio?.estadoVinculacion === 'provisorio' && !fila.campoPropio.campoErpId && (
+                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && abrirVinculacion(fila.campoPropio)}>Vincular</button>
+                    )}
+                  </div>
+                )
+                : <span className="hint">Importado</span>,
             },
           ]}
         />
@@ -436,6 +547,48 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Guardar
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {campoPropioParaVincular && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-campo-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="vincular-campo-title">Vincular campo provisorio</h2>
+                <p className="hint">La vinculacion enlaza el campo propio con el identificador ERP y deja visible el campo sincronizado como referencia operativa.</p>
+              </div>
+              <button className="ghost" type="button" onClick={() => { setCampoPropioParaVincular(null); setCampoErpVincularId(''); }}>Cerrar</button>
+            </div>
+
+            <div className="reference-modal-grid">
+              <div className="reference-total">
+                <span>Campo provisorio</span>
+                <strong>{campoPropioParaVincular.nombre}</strong>
+                <span>{campoPropioParaVincular.codigoInterno || 'Sin codigo interno'}</span>
+              </div>
+              <label className="reference-wide">
+                Campo ERP disponible
+                <select value={campoErpVincularId} onChange={(event) => setCampoErpVincularId(event.target.value)}>
+                  {camposErpDisponiblesParaVincular.map((campo) => (
+                    <option key={campo.erpId} value={campo.erpId}>
+                      {campo.codigo ? `${campo.codigo} - ` : ''}{campo.nombre} ({obtenerNombreZonaErp(campo)})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="modal-actions">
+              <span className="hint">El backend valida que el campo ERP exista, respete la zona vinculada y no este asociado a otro campo del cliente.</span>
+              <button className="primary" type="button" disabled={guardando || !campoErpVincularId} onClick={confirmarVinculacionCampo}>
+                <span className="button-content">
+                  {guardando && <span className="loading-spinner" />}
+                  Vincular
                 </span>
               </button>
             </div>

@@ -159,6 +159,8 @@ Campos principales:
 
 `zonaPlanificacionId`, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` son las referencias operativas principales de Agro App. Pueden apuntar a registros ya vinculados al ERP o a registros provisorios creados para no bloquear la planificacion. Los campos `zonaErpId`, `campoErpId`, `loteErpId`, `actividadErpId`, `especieErpId` e `insumoErpId` quedan como vinculos opcionales al ERP.
 
+Cuando un campo provisorio ya existe en ALBOR, la web permite vincularlo manualmente contra un campo ERP disponible. La vinculacion se audita, valida empresa y zona, evita reutilizar el mismo campo ERP para dos campos del cliente y oculta el registro provisorio como fila independiente para que el usuario trabaje sobre la referencia ERP sincronizada.
+
 Regla de unicidad:
 
 - Dentro de una misma campania, campo y lote no puede existir mas de una linea con la misma actividad de planificacion.

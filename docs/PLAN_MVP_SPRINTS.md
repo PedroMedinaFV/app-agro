@@ -178,6 +178,7 @@ Validacion realizada:
 - `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
 - `erp:verify` confirma `ultimoSyncEn` en `IntegracionErp`;
 - las tablas `Erp*` se refrescan como cache por empresa y las ediciones de usuario quedan fuera de esa cache.
+- [x] los campos provisorios se pueden vincular manualmente contra campos ERP disponibles; la accion queda auditada, valida empresa/zona y evita duplicados por cliente.
 
 ## Sprint 2 - Padrones propios y vinculacion futura
 

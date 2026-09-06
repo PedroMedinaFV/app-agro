@@ -50,7 +50,7 @@ function prepararCampo(campo: CampoPlanificacion): CampoPlanificacion {
   };
 }
 
-function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditoria) {
   if (!campo.clienteId) {
     throw crearErrorValidacion('El campo debe tener clienteId.');
   }
@@ -66,6 +66,55 @@ function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditoria) {
   if (!campo.nombre.trim()) {
     throw crearErrorValidacion('El campo debe tener nombre.');
   }
+
+  const zonaPlanificacion = campo.zonaPlanificacionId
+    ? await prisma.zonaPlanificacion.findUnique({ where: { id: campo.zonaPlanificacionId } })
+    : null;
+
+  if (campo.zonaPlanificacionId && (!zonaPlanificacion || zonaPlanificacion.clienteId !== campo.clienteId)) {
+    throw crearErrorValidacion('La zona seleccionada no pertenece al cliente.', 403);
+  }
+
+  if (campo.zonaPlanificacionId && zonaPlanificacion?.empresaErpId !== 'global' && zonaPlanificacion?.empresaErpId !== campo.empresaErpId) {
+    throw crearErrorValidacion('La zona seleccionada no pertenece a la empresa del campo.');
+  }
+
+  if (campo.campoErpId) {
+    const campoErp = await prisma.erpCampo.findUnique({ where: { erpId: campo.campoErpId } });
+
+    if (!campoErp) {
+      throw crearErrorValidacion('El campo ERP seleccionado no existe en la cache importada.');
+    }
+
+    if (campoErp.empresaErpId !== campo.empresaErpId) {
+      throw crearErrorValidacion('El campo ERP no pertenece a la empresa seleccionada.');
+    }
+
+    const zonaErpIdEsperada = campo.zonaErpId || zonaPlanificacion?.zonaErpId;
+    const idZonaEsperada = zonaErpIdEsperada ? obtenerIdZonaDesdeErpId(zonaErpIdEsperada) : undefined;
+
+    if (idZonaEsperada && campoErp.idZona && idZonaEsperada !== campoErp.idZona) {
+      throw crearErrorValidacion('El campo ERP no pertenece a la zona seleccionada.');
+    }
+
+    const campoYaVinculado = await prisma.campoPlanificacion.findFirst({
+      where: {
+        clienteId: campo.clienteId,
+        campoErpId: campo.campoErpId,
+        id: { not: campo.id },
+      },
+    });
+
+    if (campoYaVinculado) {
+      throw crearErrorValidacion('Ese campo ERP ya esta vinculado a otro campo del cliente.');
+    }
+  }
+}
+
+function obtenerIdZonaDesdeErpId(zonaErpId: string) {
+  const match = zonaErpId.match(/zona:(\d+)$/);
+
+  return match ? Number(match[1]) : undefined;
 }
 
 export async function obtenerCamposPlanificacionPersistidos(clienteId: string): Promise<CampoPlanificacion[]> {
@@ -83,7 +132,7 @@ export async function guardarCampoPlanificacionPersistido(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarCampoPlanificacionResponse> {
   const campo = prepararCampo({ ...request.campo, id });
-  validarCampo(campo, usuario);
+  await validarCampo(campo, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.campoPlanificacion.findUnique({ where: { id } });
