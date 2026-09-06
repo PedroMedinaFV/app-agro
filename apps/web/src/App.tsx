@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
 import { HomeScreen } from './screens/HomeScreen';
+import { NotificacionesScreen } from './screens/NotificacionesScreen';
 import { PlanificacionScreen } from './screens/PlanificacionScreen';
 import { ProtocolosScreen } from './screens/ProtocolosScreen';
 import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
@@ -25,7 +26,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -54,6 +55,8 @@ export function App() {
   const campaniaActual = erp.snapshot.campanias.find((campania) => campania.esActual);
   const tituloVista = vista === 'empresas-erp'
     ? 'Empresas ERP'
+    : vista === 'notificaciones'
+      ? 'Notificaciones'
     : vista === 'campos'
       ? 'Campos'
     : vista === 'lotes'
@@ -73,6 +76,8 @@ export function App() {
           : 'Resumen de campo';
   const descripcionVista = vista === 'empresas-erp'
     ? erp.estadoEmpresas
+    : vista === 'notificaciones'
+      ? 'Avisos internos generados por el sistema'
     : vista === 'campos'
       ? 'Padron de campos ERP y campos propios de Agro App'
     : vista === 'lotes'
@@ -131,6 +136,10 @@ export function App() {
             zonasPorEmpresaYId={zonasPorEmpresaYId}
           />
         )}
+
+      {vista === 'notificaciones' && (
+        <NotificacionesScreen sesion={sesion} notificar={toast.notify} />
+      )}
 
       {vista === 'campos' && (
         <CamposScreen

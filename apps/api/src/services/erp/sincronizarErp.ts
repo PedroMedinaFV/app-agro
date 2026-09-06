@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import type { ErpCampo, ErpEmpresa, ErpZona } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { obtenerEmpresasSistemaErp, obtenerSnapshotErp } from './clienteErp';
+import { generarSugerenciasVinculacionErp } from '../notificaciones/vinculacionesSugeridas';
+import type { UsuarioAuditoria } from '../planificacion/auditoria';
 
 type ErpEmpresaRow = {
   erpId: string;
@@ -125,7 +127,7 @@ export async function sincronizarEmpresasErp(clienteId?: string) {
   };
 }
 
-export async function sincronizarSnapshotErp(clienteId?: string) {
+export async function sincronizarSnapshotErp(clienteId?: string, usuario?: UsuarioAuditoria) {
   const snapshot = await obtenerSnapshotErp(clienteId);
   const zonasSincronizadas = deduplicarZonasGlobales(snapshot.zonas, snapshot.campos);
   const camposImportables = new Set(snapshot.campos.map((campo) => campo.erpId));
@@ -381,6 +383,8 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     }),
   );
 
+  let sugerenciasVinculacion = { detectadas: 0, creadas: 0 };
+
   if (clienteId) {
     await prisma.integracionErp.upsert({
       where: { clienteId },
@@ -395,6 +399,8 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
         ultimoSyncEn: new Date(),
       },
     });
+
+    sugerenciasVinculacion = await generarSugerenciasVinculacionErp(clienteId, usuario);
   }
 
   return {
@@ -413,6 +419,7 @@ export async function sincronizarSnapshotErp(clienteId?: string) {
     omitidos: {
       lotesSinCampo: lotesOmitidosPorCampo,
     },
+    sugerenciasVinculacion,
     sincronizadoEn: snapshot.sincronizadoEn,
   };
 }

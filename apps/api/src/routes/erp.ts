@@ -400,7 +400,10 @@ router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res,
     clientesSincronizando.add(clienteId);
 
     try {
-      const resultado = await sincronizarSnapshotErp(clienteId);
+      const resultado = await sincronizarSnapshotErp(clienteId, {
+        id: user.sub,
+        clienteId,
+      });
 
       return res.json({
         ok: true,

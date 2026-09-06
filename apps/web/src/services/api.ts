@@ -47,6 +47,7 @@ import {
   InsumoPlanificacion,
   LotePlanificacion,
   LoginDemoRequest,
+  NotificacionUsuarioResumen,
   PlanificacionSnapshot,
   ProtocolosSnapshot,
   SesionUsuario,
@@ -136,6 +137,10 @@ export type SincronizacionErpResultado = {
     puertos: number;
     omitidos: {
       lotesSinCampo: number;
+    };
+    sugerenciasVinculacion?: {
+      detectadas: number;
+      creadas: number;
     };
     sincronizadoEn: string;
   };
@@ -443,4 +448,12 @@ export async function guardarProtocolo(id: string, datos: GuardarProtocoloReques
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+}
+
+export type NotificacionesResponse = {
+  notificaciones: NotificacionUsuarioResumen[];
+};
+
+export async function obtenerNotificaciones(token?: string): Promise<NotificacionesResponse> {
+  return request<NotificacionesResponse>('/notificaciones', {}, token);
 }

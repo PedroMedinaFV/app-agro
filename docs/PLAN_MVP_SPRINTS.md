@@ -212,7 +212,7 @@ Incluye:
 - [x] pantalla web transversal para revisar, editar y desvincular vinculaciones ERP;
 - [x] sugerencias visuales iniciales de vinculacion por codigo/nombre normalizado;
 - [x] bloqueo global con spinner para llamadas web al backend;
-- [ ] notificaciones internas persistidas para revisar coincidencias;
+- [x] notificaciones internas persistidas para revisar coincidencias;
 - [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de especies;
 - [x] auditoria de altas y ediciones de actividades;
@@ -237,7 +237,7 @@ Criterio de aceptacion:
 - [x] se puede crear y editar una labor provisoria;
 - se puede usar en planificacion/protocolos;
 - [x] la web propone candidatos al abrir la vinculacion manual;
-- [ ] una sincronizacion posterior puede generar notificaciones persistidas de vinculacion;
+- [x] una sincronizacion posterior puede generar notificaciones persistidas de vinculacion;
 - [x] la vinculacion nunca es automatica en MVP.
 
 ## Sprint 3 - Precios, destinos y gastos comerciales

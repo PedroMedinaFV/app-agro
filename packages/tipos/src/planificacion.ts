@@ -509,3 +509,29 @@ export type CopiarProtocoloRequest = {
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
+
+export type VinculacionErpSugeridaResumen = {
+  id: string;
+  entidadTipo: string;
+  entidadPlanificacionId: string;
+  entidadErpId: string;
+  empresaErpId: string;
+  puntajeCoincidencia: number;
+  criterioCoincidencia: unknown;
+  estado: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NotificacionUsuarioResumen = {
+  id: string;
+  clienteId: string;
+  tipo: string;
+  titulo: string;
+  mensaje: string;
+  prioridad: string;
+  estado: string;
+  vinculacionSugerida?: VinculacionErpSugeridaResumen;
+  createdAt: string;
+  updatedAt: string;
+};
