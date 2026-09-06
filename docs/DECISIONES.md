@@ -168,6 +168,8 @@ La web ordena los candidatos de vinculacion con una sugerencia simple por codigo
 
 Las vinculaciones confirmadas no son irreversibles. La web debe ofrecer un listado transversal de vinculaciones para revisar, editar o desvincular relaciones ERP de zonas, campos, lotes, especies, actividades, insumos y labores. Toda correccion debe pasar por backend, respetar las mismas validaciones de integridad y registrar auditoria con motivo.
 
+La edicion de una vinculacion debe usar el mismo criterio asistido que la vinculacion inicial: candidatos ERP disponibles, filtros de compatibilidad por relacion cuando correspondan y ordenamiento por coincidencia de codigo/nombre. El registro ERP actualmente vinculado sigue disponible para no forzar cambios innecesarios, pero los ERP usados por otros registros del mismo cliente quedan excluidos.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

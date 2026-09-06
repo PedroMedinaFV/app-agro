@@ -41,6 +41,7 @@ import {
   obtenerZonasErpImportadas,
   obtenerZonasPlanificacion,
 } from '../services/api';
+import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 type TipoPadron = 'zonas' | 'campos' | 'lotes' | 'especies' | 'actividades' | 'insumos' | 'labores';
@@ -58,6 +59,12 @@ type VinculacionFila = {
 type VinculacionEnEdicion = {
   fila: VinculacionFila;
   destinoErpId: string;
+};
+
+type OpcionEdicion = {
+  id: string;
+  label: string;
+  motivo: string;
 };
 
 type VinculacionesPadronesScreenProps = {
@@ -241,29 +248,114 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
     return new Set(labores.filter((labor) => labor.id !== idActual).map((labor) => labor.servicioErpId).filter((id): id is string => Boolean(id)));
   }
 
-  function obtenerOpcionesEdicion(fila: VinculacionFila) {
+  function obtenerOpcionesEdicion(fila: VinculacionFila): OpcionEdicion[] {
     const usados = idsVinculados(fila.tipo, fila.id);
 
     if (fila.tipo === 'zonas') {
-      return zonasErp.filter((zona) => !usados.has(zona.erpId)).map((zona) => ({ id: zona.erpId, label: `${zona.codigo} - ${zona.nombre}` }));
+      const zona = zonas.find((item) => item.id === fila.id);
+      const candidatos = zonasErp.filter((item) => !usados.has(item.erpId));
+
+      return zona
+        ? crearOpcionesSugeridas({ codigo: zona.codigoInterno, nombre: zona.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.nombre)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.nombre}`));
     }
     if (fila.tipo === 'campos') {
-      return camposErp.filter((campo) => !usados.has(campo.erpId)).map((campo) => ({ id: campo.erpId, label: `${campo.codigo} - ${campo.nombre}` }));
+      const campo = campos.find((item) => item.id === fila.id);
+      const candidatos = campo ? obtenerCamposErpCompatiblesParaEdicion(campo, usados) : camposErp.filter((item) => !usados.has(item.erpId));
+
+      return campo
+        ? crearOpcionesSugeridas({ codigo: campo.codigoInterno, nombre: campo.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.nombre)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.nombre}`));
     }
     if (fila.tipo === 'lotes') {
-      return lotesErp.filter((lote) => !usados.has(lote.erpId)).map((lote) => ({ id: lote.erpId, label: `${lote.codigo} - ${lote.nombre}` }));
+      const lote = lotes.find((item) => item.id === fila.id);
+      const candidatos = lote ? obtenerLotesErpCompatiblesParaEdicion(lote, usados) : lotesErp.filter((item) => !usados.has(item.erpId));
+
+      return lote
+        ? crearOpcionesSugeridas({ codigo: lote.codigoInterno, nombre: lote.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.nombre)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.nombre}`));
     }
     if (fila.tipo === 'especies') {
-      return especiesErp.filter((especie) => !usados.has(especie.erpId)).map((especie) => ({ id: especie.erpId, label: `${especie.codigo} - ${especie.nombre}` }));
+      const especie = especies.find((item) => item.id === fila.id);
+      const candidatos = especiesErp.filter((item) => !usados.has(item.erpId));
+
+      return especie
+        ? crearOpcionesSugeridas({ codigo: especie.codigoInterno, nombre: especie.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.nombre)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.nombre}`));
     }
     if (fila.tipo === 'actividades') {
-      return actividadesErp.filter((actividad) => !usados.has(actividad.erpId)).map((actividad) => ({ id: actividad.erpId, label: `${actividad.codigo} - ${actividad.descripcion}` }));
+      const actividad = actividades.find((item) => item.id === fila.id);
+      const candidatos = actividad ? obtenerActividadesErpCompatiblesParaEdicion(actividad, usados) : actividadesErp.filter((item) => !usados.has(item.erpId));
+
+      return actividad
+        ? crearOpcionesSugeridas({ codigo: actividad.codigoInterno, nombre: actividad.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.descripcion)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.descripcion}`));
     }
     if (fila.tipo === 'insumos') {
-      return insumosErp.filter((insumo) => !usados.has(insumo.erpId)).map((insumo) => ({ id: insumo.erpId, label: `${insumo.codigo} - ${insumo.nombre}` }));
+      const insumo = insumos.find((item) => item.id === fila.id);
+      const candidatos = insumosErp.filter((item) => !usados.has(item.erpId));
+
+      return insumo
+        ? crearOpcionesSugeridas({ codigo: insumo.codigoInterno, nombre: insumo.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.nombre)
+        : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.nombre}`));
     }
 
-    return serviciosErp.filter((servicio) => !usados.has(servicio.erpId)).map((servicio) => ({ id: servicio.erpId, label: `${servicio.codigo} - ${servicio.descripcion}` }));
+    const labor = labores.find((item) => item.id === fila.id);
+    const candidatos = serviciosErp.filter((item) => !usados.has(item.erpId));
+
+    return labor
+      ? crearOpcionesSugeridas({ codigo: labor.codigo, nombre: labor.nombre }, candidatos, (item) => item.erpId, (item) => item.codigo, (item) => item.descripcion)
+      : candidatos.map((item) => crearOpcion(item.erpId, `${item.codigo} - ${item.descripcion}`));
+  }
+
+  function crearOpcionesSugeridas<T>(
+    origen: { codigo?: string; nombre: string },
+    candidatos: T[],
+    obtenerId: (registro: T) => string,
+    obtenerCodigo: (registro: T) => string | undefined,
+    obtenerNombre: (registro: T) => string,
+  ): OpcionEdicion[] {
+    return sugerirVinculacion(origen, candidatos, obtenerCodigo, obtenerNombre)
+      .map(({ registro, motivo }) => crearOpcion(obtenerId(registro), `${obtenerCodigo(registro) || 'Sin codigo'} - ${obtenerNombre(registro)}`, motivo));
+  }
+
+  function crearOpcion(id: string, label: string, motivo = 'disponible para vincular'): OpcionEdicion {
+    return { id, label, motivo };
+  }
+
+  function obtenerCamposErpCompatiblesParaEdicion(campo: CampoPlanificacion, usados: Set<string>) {
+    const zonaPropia = campo.zonaPlanificacionId ? zonas.find((zona) => zona.id === campo.zonaPlanificacionId) : undefined;
+    const zonaErpEsperada = campo.zonaErpId || zonaPropia?.zonaErpId;
+    const idZonaEsperada = obtenerIdDesdeErpId(zonaErpEsperada, 'zona');
+
+    return camposErp
+      .filter((item) => !usados.has(item.erpId))
+      .filter((item) => item.empresaErpId === campo.empresaErpId)
+      .filter((item) => !idZonaEsperada || item.idZona === idZonaEsperada);
+  }
+
+  function obtenerLotesErpCompatiblesParaEdicion(lote: LotePlanificacion, usados: Set<string>) {
+    const campo = camposPorId.get(lote.campoPlanificacionId);
+
+    return lotesErp
+      .filter((item) => !usados.has(item.erpId))
+      .filter((item) => !campo?.campoErpId || item.campoErpId === campo.campoErpId);
+  }
+
+  function obtenerActividadesErpCompatiblesParaEdicion(actividad: ActividadPlanificacion, usados: Set<string>) {
+    const especie = actividad.especiePlanificacionId ? especiesPorId.get(actividad.especiePlanificacionId) : undefined;
+    const especieErpEsperada = actividad.especieErpId || especie?.especieErpId;
+    const idEspecieEsperada = obtenerIdDesdeErpId(especieErpEsperada, 'especie');
+
+    return actividadesErp
+      .filter((item) => !usados.has(item.erpId))
+      .filter((item) => !idEspecieEsperada || item.idEspecie === idEspecieEsperada);
+  }
+
+  function obtenerIdDesdeErpId(erpId: string | undefined, prefijo: 'zona' | 'especie') {
+    const match = erpId?.match(new RegExp(`${prefijo}:(\\d+)$`));
+
+    return match ? Number(match[1]) : undefined;
   }
 
   function abrirEdicion(fila: VinculacionFila) {
@@ -425,7 +517,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               <label className="reference-wide">
                 Nueva referencia ERP
                 <select value={vinculacionEnEdicion.destinoErpId} onChange={(event) => setVinculacionEnEdicion((actual) => actual && { ...actual, destinoErpId: event.target.value })}>
-                  {opcionesEdicion.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.label}</option>)}
+                  {opcionesEdicion.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.label} ({opcion.motivo})</option>)}
                 </select>
               </label>
             </div>
