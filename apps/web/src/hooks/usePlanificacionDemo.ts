@@ -93,9 +93,10 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const hectareasPlanificadas = lineasPlanificacion.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
   const camposProvisorios = planificacion.camposPlanificacion.filter((campo) => campo.estadoVinculacion === 'provisorio').length;
   const puedeEditarPlanificacionPorPermiso = Boolean(sesion?.permisos.includes('planificacion:editar'));
-  const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && planificacionActiva?.estado !== 'cerrada');
+  const planificacionActivaBloqueada = planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada';
+  const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && !planificacionActivaBloqueada);
   const puedeConfigurarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:configurar'));
-  const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && planificacionActiva?.estado !== 'cerrada');
+  const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && !planificacionActivaBloqueada);
 
   function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoVentaReferencia {
     const ahora = new Date().toISOString();
@@ -918,18 +919,39 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         motivo: 'Cierre de planificacion desde demo web',
       }, sesion.token);
 
-      actualizarPlanificacionActiva(() => respuesta.planificacion);
+      setPlanificacion((actual) => ({
+        ...actual,
+        planificaciones: actual.planificaciones.map((item) => {
+          if (item.id === respuesta.planificacion.id) {
+            return respuesta.planificacion;
+          }
+
+          if (item.campaniaErpId === respuesta.planificacion.campaniaErpId && item.estado !== 'deshabilitada') {
+            return {
+              ...item,
+              estado: 'deshabilitada',
+              escenarioOriginal: false,
+              escenarioBloqueadoPorId: respuesta.planificacion.id,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+
+          return item;
+        }),
+      }));
       setPlanificacionEstado(respuesta.mensaje);
       notificar?.({
         tipo: 'success',
         titulo: 'Planificacion cerrada',
-        mensaje: respuesta.auditado ? 'Quedo bloqueada para edicion y registrada en auditoria.' : respuesta.mensaje,
+        mensaje: respuesta.auditado ? 'Quedo como escenario original y se deshabilitaron escenarios alternativos de la campania.' : respuesta.mensaje,
       });
     } catch (error) {
       const mensaje = error instanceof Error ? `${error.message}. Cierre aplicado localmente para demo.` : 'Planificacion cerrada localmente para demo.';
       actualizarPlanificacionActiva((actual) => ({
         ...actual,
         estado: 'cerrada',
+        escenarioOriginal: true,
+        escenarioBloqueadoPorId: undefined,
         cerradaPor: sesion.usuario.id,
         cerradaAt: new Date().toISOString(),
         motivoCierre: 'Cierre local para validar UX sin base de datos disponible.',

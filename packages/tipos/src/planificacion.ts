@@ -1,4 +1,4 @@
-export type EstadoPlanificacionAgricola = 'borrador' | 'en_revision' | 'aprobada' | 'cerrada';
+export type EstadoPlanificacionAgricola = 'borrador' | 'en_revision' | 'aprobada' | 'cerrada' | 'deshabilitada';
 
 export type EstadoVinculacionPlanificacion = 'provisorio' | 'vinculado_erp' | 'archivado';
 
@@ -306,6 +306,8 @@ export type PlanificacionAgricola = {
   nombre: string;
   descripcion?: string;
   estado: EstadoPlanificacionAgricola;
+  escenarioOriginal: boolean;
+  escenarioBloqueadoPorId?: string;
   cerradaPor?: string;
   cerradaAt?: string;
   motivoCierre?: string;

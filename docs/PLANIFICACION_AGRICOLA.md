@@ -107,6 +107,19 @@ El modelo detallado se define en `docs/MODELO_PLANIFICACION_V1.md`.
 
 Cada fila de la planilla representa una decision productiva sobre un lote para una campania.
 
+Una misma campania puede tener varias planificaciones porque cada una representa un escenario de simulacion. Por ejemplo, un escenario conservador, uno objetivo y uno agresivo. Esto permite comparar rindes, precios, destinos, protocolos y gastos antes de decidir el planteo final.
+
+Regla de escenarios:
+
+- varias planificaciones pueden compartir la misma `campaniaErpId` mientras esten en armado;
+- cada planificacion tiene nombre propio para identificar el escenario;
+- al cerrar una planificacion, esa queda marcada como `escenarioOriginal = true`;
+- el cierre convierte esa planificacion en el escenario elegido/final para la campania;
+- las demas planificaciones de la misma campania quedan con estado `deshabilitada`;
+- una planificacion `deshabilitada` no puede editarse ni cerrarse;
+- el backend debe aplicar esta regla en una transaccion para evitar que existan dos escenarios originales de la misma campania;
+- la UI debe mostrar que escenario quedo como original y bloquear acciones sobre escenarios alternativos.
+
 La experiencia principal de carga debe ser tipo planilla/Excel en web:
 
 - la pantalla principal debe mostrar un listado/resumen de planificaciones, no la grilla pesada directamente;
@@ -156,6 +169,8 @@ Campos principales:
 - `costoProduccionEstimado`
 - `margenBrutoEstimado`
 - `estado`
+- `escenarioOriginal`
+- `escenarioBloqueadoPorId`
 
 `zonaPlanificacionId`, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` son las referencias operativas principales de Agro App. Pueden apuntar a registros ya vinculados al ERP o a registros provisorios creados para no bloquear la planificacion. Los campos `zonaErpId`, `campoErpId`, `loteErpId`, `actividadErpId`, `especieErpId` e `insumoErpId` quedan como vinculos opcionales al ERP.
 
@@ -175,8 +190,11 @@ Estados sugeridos:
 - `en_revision`
 - `aprobada`
 - `cerrada`
+- `deshabilitada`
 
 Una planificacion cerrada queda bloqueada para nuevas modificaciones. El cierre representa el congelamiento definitivo de los supuestos productivos y economicos usados para esa campania.
+
+Una planificacion deshabilitada tambien queda bloqueada. La diferencia es funcional: `cerrada` identifica el escenario original elegido; `deshabilitada` identifica escenarios alternativos que perdieron vigencia al cerrar el escenario original de la misma campania.
 
 Si se necesita trabajar sobre una planificacion cerrada, la regla sugerida es crear una copia nueva o una version posterior. Reabrir una planificacion cerrada queda fuera del MVP y, si se habilita mas adelante, debe requerir permiso especifico, motivo obligatorio y auditoria completa.
 

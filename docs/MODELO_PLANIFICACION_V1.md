@@ -294,7 +294,9 @@ Reglas de seguridad:
 
 ## PlanificacionAgricola
 
-Cabecera de planificacion por campania.
+Cabecera de planificacion por campania y escenario.
+
+Una misma campania puede tener varias planificaciones en paralelo para simular alternativas productivas y economicas. En este contexto, `escenarioOriginal` no significa "primer escenario creado", sino "escenario final elegido al cerrar la planificacion".
 
 Campos sugeridos:
 
@@ -304,6 +306,8 @@ Campos sugeridos:
 - `nombre`
 - `descripcion`
 - `estado`
+- `escenarioOriginal`
+- `escenarioBloqueadoPorId`
 - `createdBy`
 - `updatedBy`
 - `createdAt`
@@ -315,10 +319,21 @@ Estados:
 - `en_revision`
 - `aprobada`
 - `cerrada`
+- `deshabilitada`
+
+Reglas de escenarios:
+
+- Se pueden crear varios escenarios para una misma `campaniaErpId` mientras no exista un escenario original cerrado.
+- Al cerrar una planificacion, esa planificacion queda `cerrada` y `escenarioOriginal = true`.
+- Al cerrar una planificacion, las demas planificaciones del mismo cliente y campania quedan `deshabilitada`, `escenarioOriginal = false` y `escenarioBloqueadoPorId` apuntando al escenario cerrado.
+- Si ya existe un escenario original cerrado para una campania, no se pueden crear ni editar otros escenarios activos de esa misma campania.
+- La deshabilitacion de escenarios alternativos se ejecuta en backend dentro de la misma transaccion de cierre.
+- El cierre y la deshabilitacion de escenarios alternativos deben quedar auditados.
 
 Reglas de cierre:
 
 - Una planificacion `cerrada` queda bloqueada para modificaciones de cabecera, lineas, precios copiados, destinos copiados, protocolos copiados, rindes, hectareas y gastos.
+- Una planificacion `deshabilitada` queda bloqueada por haber perdido vigencia frente al escenario original cerrado de la misma campania.
 - El cierre debe ejecutarse desde backend y validar permiso `planificacion:cerrar`.
 - La UI puede deshabilitar controles, pero el bloqueo real debe estar en backend.
 - Una planificacion cerrada solo puede consultarse, exportarse o usarse como base para crear una copia nueva.

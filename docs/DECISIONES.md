@@ -185,6 +185,12 @@ Las sugerencias se resuelven desde `Notificaciones` con dos acciones:
 
 En ambos casos se actualiza el estado de `VinculacionErpSugerida` y `NotificacionUsuario`, y se registra auditoria con usuario, decision y valores principales. La vinculacion nunca se aplica solo desde frontend; la decision visual dispara una accion de backend que vuelve a validar permisos, cliente y consistencia.
 
+## Escenarios de planificacion
+
+Una campania puede tener varias planificaciones abiertas para simular distintos escenarios. Al cerrar una, esa planificacion queda como escenario final elegido y se marca `escenarioOriginal = true`. Las demas planificaciones del mismo cliente y campania quedan `deshabilitada`, con `escenarioBloqueadoPorId` apuntando al escenario cerrado.
+
+La palabra "original" se usa como bandera de escenario elegido para la campania, no como "primer registro creado". La regla vive en backend y se ejecuta en transaccion junto con auditoria para evitar dos escenarios originales activos de la misma campania.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

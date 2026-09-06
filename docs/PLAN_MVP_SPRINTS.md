@@ -312,6 +312,7 @@ Objetivo:
 Incluye:
 
 - listado de planificaciones con nombre, campania, estado, hectareas y margen;
+- multiples escenarios por campania, con cierre de un escenario original y deshabilitacion automatica de alternativas;
 - pantalla completa de edicion tipo planilla;
 - lineas por campo, lote, actividad y protocolo;
 - selects dependientes campo/lote;
@@ -329,6 +330,7 @@ Criterio de aceptacion:
 - se puede crear una planificacion completa;
 - no permite duplicar misma actividad en el mismo lote/campania;
 - una planificacion cerrada no se puede editar;
+- al cerrar una planificacion, las demas de la misma campania quedan deshabilitadas;
 - el margen queda calculado y visible;
 - todos los cambios relevantes quedan auditados.
 

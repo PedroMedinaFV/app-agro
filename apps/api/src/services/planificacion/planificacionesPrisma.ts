@@ -79,6 +79,8 @@ function mapearPlanificacion(planificacion: PlanificacionPrisma): PlanificacionA
     nombre: planificacion.nombre,
     descripcion: planificacion.descripcion || undefined,
     estado: planificacion.estado as PlanificacionAgricola['estado'],
+    escenarioOriginal: planificacion.escenarioOriginal,
+    escenarioBloqueadoPorId: planificacion.escenarioBloqueadoPorId || undefined,
     cerradaPor: planificacion.cerradaPor || undefined,
     cerradaAt: serializarFecha(planificacion.cerradaAt),
     motivoCierre: planificacion.motivoCierre || undefined,
@@ -141,8 +143,8 @@ function validarPlanificacion(planificacion: PlanificacionAgricola) {
     throw crearErrorValidacion('La planificacion debe tener campaniaErpId.');
   }
 
-  if (planificacion.estado === 'cerrada') {
-    throw crearErrorValidacion('El cierre debe ejecutarse por el endpoint especifico de cierre.');
+  if (planificacion.estado === 'cerrada' || planificacion.estado === 'deshabilitada') {
+    throw crearErrorValidacion('El cierre o deshabilitacion debe ejecutarse por el endpoint especifico de cierre.');
   }
 
   validarLineas(planificacion);
@@ -218,7 +220,7 @@ export async function guardarPlanificacionPersistida(
       include: incluirPlanificacion,
     });
 
-    if (existente?.estado === 'cerrada') {
+    if (existente?.estado === 'cerrada' || existente?.estado === 'deshabilitada') {
       await registrarAuditoria(tx, {
         clienteId: existente.clienteId,
         usuario,
@@ -226,11 +228,25 @@ export async function guardarPlanificacionPersistida(
         entidadId: id,
         accion: 'bloquear_edicion',
         origen: request.origen,
-        motivo: request.motivo || 'Intento de modificar planificacion cerrada.',
+        motivo: request.motivo || `Intento de modificar planificacion ${existente.estado}.`,
         valoresAntes: mapearPlanificacion(existente),
       });
 
-      throw crearErrorValidacion('La planificacion esta cerrada y no puede modificarse.', 409);
+      throw crearErrorValidacion('La planificacion esta cerrada o deshabilitada y no puede modificarse.', 409);
+    }
+
+    const escenarioOriginalCerrado = await tx.planificacionAgricola.findFirst({
+      where: {
+        clienteId: planificacion.clienteId,
+        campaniaErpId: planificacion.campaniaErpId,
+        estado: 'cerrada',
+        escenarioOriginal: true,
+        id: { not: id },
+      },
+    });
+
+    if (escenarioOriginalCerrado) {
+      throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original. No se pueden crear ni editar otros escenarios activos.', 409);
     }
 
     await tx.planificacionAgricola.upsert({
@@ -240,6 +256,8 @@ export async function guardarPlanificacionPersistida(
         nombre: planificacion.nombre,
         descripcion: planificacion.descripcion,
         estado: planificacion.estado,
+        escenarioOriginal: false,
+        escenarioBloqueadoPorId: null,
         updatedBy: usuario?.id,
       },
       create: {
@@ -249,6 +267,8 @@ export async function guardarPlanificacionPersistida(
         nombre: planificacion.nombre,
         descripcion: planificacion.descripcion,
         estado: planificacion.estado,
+        escenarioOriginal: false,
+        escenarioBloqueadoPorId: null,
         createdBy: usuario?.id,
         updatedBy: usuario?.id,
       },
@@ -301,10 +321,37 @@ export async function cerrarPlanificacionPersistida(
       throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
     }
 
+    const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
+      where: {
+        clienteId: existente.clienteId,
+        campaniaErpId: existente.campaniaErpId,
+        id: { not: id },
+        estado: { not: 'deshabilitada' },
+      },
+      include: incluirPlanificacion,
+    });
+
+    await tx.planificacionAgricola.updateMany({
+      where: {
+        clienteId: existente.clienteId,
+        campaniaErpId: existente.campaniaErpId,
+        id: { not: id },
+        estado: { not: 'deshabilitada' },
+      },
+      data: {
+        estado: 'deshabilitada',
+        escenarioOriginal: false,
+        escenarioBloqueadoPorId: id,
+        updatedBy: usuario?.id,
+      },
+    });
+
     const cerrada = await tx.planificacionAgricola.update({
       where: { id },
       data: {
         estado: 'cerrada',
+        escenarioOriginal: true,
+        escenarioBloqueadoPorId: null,
         cerradaPor: usuario?.id,
         cerradaAt: new Date(),
         motivoCierre: request.motivo,
@@ -326,10 +373,29 @@ export async function cerrarPlanificacionPersistida(
       valoresDespues: planificacionMapeada,
     });
 
+    if (escenariosADeshabilitar.length > 0) {
+      await registrarAuditoria(tx, {
+        clienteId: existente.clienteId,
+        usuario,
+        entidad: 'PlanificacionAgricola',
+        entidadId: id,
+        accion: 'deshabilitar_escenarios_alternativos',
+        origen: request.origen,
+        motivo: request.motivo || 'Cierre de escenario original de campania.',
+        valoresAntes: escenariosADeshabilitar.map(mapearPlanificacion),
+        valoresDespues: {
+          escenarioOriginalId: id,
+          escenariosDeshabilitados: escenariosADeshabilitar.map((escenario) => escenario.id),
+        },
+      });
+    }
+
     return {
       planificacion: planificacionMapeada,
       auditado: true,
-      mensaje: 'Planificacion cerrada y bloqueada para edicion.',
+      mensaje: escenariosADeshabilitar.length > 0
+        ? `Planificacion cerrada como escenario original. Se deshabilitaron ${escenariosADeshabilitar.length} escenario(s) alternativo(s).`
+        : 'Planificacion cerrada como escenario original y bloqueada para edicion.',
     };
   });
 }

@@ -806,6 +806,8 @@ model PlanificacionAgricola {
   nombre          String
   descripcion     String?
   estado          String   @default("borrador")
+  escenarioOriginal Boolean @default(false)
+  escenarioBloqueadoPorId String?
   cerradaPor      String?
   cerradaAt       DateTime?
   motivoCierre    String?
@@ -818,6 +820,8 @@ model PlanificacionAgricola {
   @@index([clienteId])
   @@index([campaniaErpId])
   @@index([estado])
+  @@index([escenarioOriginal])
+  @@index([escenarioBloqueadoPorId])
 }
 
 model PlanificacionAgricolaLinea {

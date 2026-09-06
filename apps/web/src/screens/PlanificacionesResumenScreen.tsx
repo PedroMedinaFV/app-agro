@@ -49,7 +49,7 @@ export function PlanificacionesResumenScreen({
           <span>{campaniaActiva?.codigo || 'Sin campania'}</span>
           <strong>{planificacionActiva ? `${lineasPlanificacion.length} lineas` : 'Sin planificacion'}</strong>
         </div>
-        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' ? 'locked' : ''}`}>
+        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
           {planificacionActiva?.estado || 'sin_estado'}
         </div>
       </section>
@@ -116,7 +116,7 @@ export function PlanificacionesResumenScreen({
               render: (item) => (
                 <div>
                   <strong>{item.nombre}</strong>
-                  <span>{item.descripcion || 'Sin descripcion'}</span>
+                  <span>{item.escenarioOriginal ? 'Escenario original' : item.descripcion || 'Sin descripcion'}</span>
                 </div>
               ),
             },
@@ -130,7 +130,7 @@ export function PlanificacionesResumenScreen({
               key: 'estado',
               label: 'Estado',
               width: 'minmax(86px, 0.55fr)',
-              render: (item) => <em className={item.estado === 'cerrada' ? 'locked' : ''}>{item.estado}</em>,
+              render: (item) => <em className={item.estado === 'cerrada' || item.estado === 'deshabilitada' ? 'locked' : ''}>{item.estado}</em>,
             },
             {
               key: 'hectareas',
@@ -161,7 +161,7 @@ export function PlanificacionesResumenScreen({
               label: 'Acciones',
               width: 'minmax(86px, 0.5fr)',
               render: (item) => (
-                <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada'}>
+                <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
                   Editar
                 </button>
               ),

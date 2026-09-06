@@ -519,6 +519,7 @@ export function obtenerPlanificacionDemo(clienteId = 'cliente-demo'): Planificac
         nombre: 'Planificacion agricola demo',
         descripcion: 'Primera planilla para validar ingresos, costos y margen bruto.',
         estado: 'borrador',
+        escenarioOriginal: false,
         createdAt: ahora,
         updatedAt: ahora,
         lineas: [
@@ -565,12 +566,23 @@ export function guardarPlanificacionDemo(id: string, request: GuardarPlanificaci
   const snapshot = obtenerPlanificacionDemo(request.planificacion.clienteId);
   const existente = snapshot.planificaciones.find((planificacion) => planificacion.id === id);
 
-  if (existente?.estado === 'cerrada') {
-    throw crearErrorValidacion('La planificacion esta cerrada y no puede modificarse.');
+  if (existente?.estado === 'cerrada' || existente?.estado === 'deshabilitada') {
+    throw crearErrorValidacion('La planificacion esta cerrada o deshabilitada y no puede modificarse.');
   }
 
-  if (request.planificacion.estado === 'cerrada') {
-    throw crearErrorValidacion('El cierre debe ejecutarse por el flujo especifico de cierre.');
+  if (request.planificacion.estado === 'cerrada' || request.planificacion.estado === 'deshabilitada') {
+    throw crearErrorValidacion('El cierre o deshabilitacion debe ejecutarse por el flujo especifico de cierre.');
+  }
+
+  const escenarioOriginalCerrado = snapshot.planificaciones.find((planificacion) => (
+    planificacion.id !== id
+    && planificacion.campaniaErpId === request.planificacion.campaniaErpId
+    && planificacion.estado === 'cerrada'
+    && planificacion.escenarioOriginal
+  ));
+
+  if (escenarioOriginalCerrado) {
+    throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original.');
   }
 
   validarLineasUnicasPorCampaniaCampoLoteActividad(request);

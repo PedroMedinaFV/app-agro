@@ -330,6 +330,7 @@ export const planificacionFallback: PlanificacionSnapshot = {
       nombre: 'Planificacion agricola demo',
       descripcion: 'Primera planilla para validar ingresos, costos y margen bruto.',
       estado: 'borrador',
+      escenarioOriginal: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       lineas: [
