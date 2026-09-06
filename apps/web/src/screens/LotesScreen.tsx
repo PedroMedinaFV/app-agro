@@ -38,8 +38,9 @@ type LoteTabla = {
   superficie: string;
   origen: string;
   estado: string;
-  accion: 'editar' | 'vincular';
+  accion: 'editar' | 'importado';
   lotePropio?: LotePlanificacion;
+  loteErp?: ErpLote;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -220,7 +221,8 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
         superficie: `${lote.hectareasProductivas ?? lote.areaHectareas} / ${lote.areaHectareas} ha`,
         origen: 'ERP',
         estado: lotesVinculados.has(lote.erpId) ? 'Vinculado' : 'Disponible',
-        accion: 'vincular' as const,
+        accion: 'importado' as const,
+        loteErp: lote,
       };
     }),
   ];
@@ -263,6 +265,37 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       createdAt: ahora,
       updatedAt: ahora,
     });
+  }
+
+  function copiarLoteErp(lote: ErpLote) {
+    const campoErp = camposErpPorId.get(lote.campoErpId);
+    const campoClave = `erp:${lote.campoErpId}`;
+    const ahora = new Date().toISOString();
+
+    setModoFormulario('copiar');
+    setCampoSeleccionadoClave(campoClave);
+    setLoteEnEdicion({
+      id: `lote-planificacion-${Date.now()}`,
+      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      campoPlanificacionId: '',
+      loteErpId: undefined,
+      nombre: lote.nombre,
+      //codigoInterno: lote.codigo ? `${normalizarCodigo(lote.codigo)}-COPIA` : '',
+      codigoInterno: '',
+      superficieTotal: 0,
+      superficieProductiva: 0,
+      estadoVinculacion: 'provisorio',
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
+
+    if (!campoErp) {
+      notificar?.({
+        tipo: 'info',
+        titulo: 'Campo ERP pendiente',
+        mensaje: 'Al guardar se validara que el campo del lote exista como campo operativo.',
+      });
+    }
   }
 
   function seleccionarCampo(clave: string) {
@@ -466,7 +499,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                     <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)}>Copiar</button>
                   </div>
                 )
-                : <button className="small" type="button" disabled>Vincular</button>,
+                : (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion || !fila.loteErp} onClick={() => fila.loteErp && copiarLoteErp(fila.loteErp)}>Copiar</button>
+                    <button className="small" type="button" disabled>Vincular</button>
+                  </div>
+                ),
             },
           ]}
         />
