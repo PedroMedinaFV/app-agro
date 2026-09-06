@@ -88,6 +88,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const [estado, setEstado] = useState('Cargando lotes sincronizados.');
   const [guardando, setGuardando] = useState(false);
   const [loteEnEdicion, setLoteEnEdicion] = useState<LotePlanificacion | null>(null);
+  const [modoFormulario, setModoFormulario] = useState<'crear' | 'editar' | 'copiar'>('crear');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [filtro, setFiltro] = useState('');
@@ -236,13 +237,32 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       return;
     }
 
+    setModoFormulario('crear');
     setCampoSeleccionadoClave(campoSugerido.clave);
     setLoteEnEdicion(crearLoteNuevo(sesion.usuario.clienteId || 'cliente-demo', campoSugerido.campoPlanificacionId || ''));
   }
 
   function editarLote(lote: LotePlanificacion) {
+    setModoFormulario('editar');
     setCampoSeleccionadoClave(`agro:${lote.campoPlanificacionId}`);
     setLoteEnEdicion(lote);
+  }
+
+  function copiarLote(lote: LotePlanificacion) {
+    const ahora = new Date().toISOString();
+
+    setModoFormulario('copiar');
+    setCampoSeleccionadoClave(`agro:${lote.campoPlanificacionId}`);
+    setLoteEnEdicion({
+      ...lote,
+      id: `lote-planificacion-${Date.now()}`,
+      loteErpId: undefined,
+      nombre: lote.nombre,
+      codigoInterno: lote.codigoInterno ? `${lote.codigoInterno}-COPIA` : '',
+      estadoVinculacion: 'provisorio',
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
   }
 
   function seleccionarCampo(clave: string) {
@@ -438,9 +458,14 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.75fr)',
               render: (fila) => fila.accion === 'editar'
-                ? <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)}>Editar</button>
+                ? (
+                  <div className="button-row table-actions">
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)}>Editar</button>
+                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)}>Copiar</button>
+                  </div>
+                )
                 : <button className="small" type="button" disabled>Vincular</button>,
             },
           ]}
@@ -452,7 +477,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
           <section className="modal-panel">
             <div className="modal-header">
               <div>
-                <h2>{lotesPropios.some((lote) => lote.id === loteEnEdicion.id) ? 'Editar lote' : 'Nuevo lote'}</h2>
+                <h2>{modoFormulario === 'editar' ? 'Editar lote' : modoFormulario === 'copiar' ? 'Copiar lote' : 'Nuevo lote'}</h2>
                 <p className="hint">Los lotes propios permiten planificar aunque todavia no existan en ALBOR.</p>
               </div>
               <button className="ghost" type="button" onClick={() => setLoteEnEdicion(null)}>Cerrar</button>
@@ -521,7 +546,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
             </div>
 
             <div className="modal-actions">
-              <span className="hint">La vinculacion con ERP quedara como accion separada, propuesta y auditada.</span>
+              <span className="hint">{modoFormulario === 'copiar' ? 'La copia se guarda como lote provisorio nuevo y queda lista para ajustar nombre o codigo.' : 'La vinculacion con ERP quedara como accion separada, propuesta y auditada.'}</span>
               <button className="primary" type="button" disabled={guardando} onClick={guardarLote}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}

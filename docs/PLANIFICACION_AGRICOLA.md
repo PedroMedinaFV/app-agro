@@ -272,6 +272,7 @@ Estado UX actual:
 - la pantalla `Campos` permite filtrar el listado por zona para navegar padrones grandes sin depender solo de busqueda libre;
 - web cuenta con pantalla `Lotes` para ver lotes ERP sincronizados y crear lotes propios asociados a campos propios;
 - la pantalla `Lotes` permite filtrar el listado por campo para revisar rapidamente los lotes de una unidad operativa;
+- la pantalla `Lotes` permite copiar un lote propio para crear un nuevo lote provisorio con el mismo campo y superficies, dejando nombre y codigo editables antes de guardar;
 - web cuenta con pantalla `Gastos` para administrar gastos comerciales de referencia por campania;
 - web cuenta con pantalla `Padrones` para administrar el maestro de conceptos de gastos comerciales;
 - web cuenta con pantalla `Padrones > Destinos` para administrar el catalogo maestro de destinos de venta;

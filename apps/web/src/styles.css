@@ -187,6 +187,15 @@ input:focus {
   align-items: center;
 }
 
+.table-actions {
+  gap: 8px;
+}
+
+.table-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
 .button-content {
   display: inline-flex;
   align-items: center;
