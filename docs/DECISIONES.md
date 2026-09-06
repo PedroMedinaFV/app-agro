@@ -178,6 +178,13 @@ Luego de una sincronizacion ERP, el backend genera sugerencias persistidas de vi
 
 La web tambien permite regenerar sugerencias manualmente desde la pantalla de notificaciones usando la cache ERP existente. Esto evita tener que volver a sincronizar ALBOR cuando solo se necesita recalcular coincidencias sobre datos ya importados.
 
+Las sugerencias se resuelven desde `Notificaciones` con dos acciones:
+
+- `Aceptar`: el backend aplica la vinculacion sobre el padron propio correspondiente, reutilizando las validaciones de cada entidad para evitar vinculos duplicados o incompatibles.
+- `Descartar`: la sugerencia queda cerrada sin modificar el padron propio.
+
+En ambos casos se actualiza el estado de `VinculacionErpSugerida` y `NotificacionUsuario`, y se registra auditoria con usuario, decision y valores principales. La vinculacion nunca se aplica solo desde frontend; la decision visual dispara una accion de backend que vuelve a validar permisos, cliente y consistencia.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

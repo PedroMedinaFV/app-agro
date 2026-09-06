@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { NotificacionUsuarioResumen, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
-import { generarSugerenciasVinculacion, obtenerNotificaciones } from '../services/api';
+import { generarSugerenciasVinculacion, obtenerNotificaciones, resolverNotificacionVinculacion } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -35,6 +35,7 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
   const [notificaciones, setNotificaciones] = useState<NotificacionUsuarioResumen[]>([]);
   const [estado, setEstado] = useState('Cargando notificaciones.');
   const [generando, setGenerando] = useState(false);
+  const [resolviendoId, setResolviendoId] = useState<string | null>(null);
 
   async function cargarNotificaciones() {
     try {
@@ -69,6 +70,33 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
       notificar?.({ tipo: 'error', titulo: 'No se buscaron sugerencias', mensaje });
     } finally {
       setGenerando(false);
+    }
+  }
+
+  async function resolverSugerencia(notificacion: NotificacionUsuarioResumen, decision: 'aceptar' | 'descartar') {
+    if (!notificacion.vinculacionSugerida) {
+      notificar?.({ tipo: 'info', titulo: 'Notificacion informativa', mensaje: 'Esta notificacion no tiene una sugerencia de vinculacion asociada.' });
+      return;
+    }
+
+    setResolviendoId(notificacion.id);
+
+    try {
+      const respuesta = await resolverNotificacionVinculacion(notificacion.id, {
+        decision,
+        motivo: decision === 'aceptar' ? 'Aceptada por usuario desde notificaciones.' : 'Descartada por usuario desde notificaciones.',
+      }, sesion.token);
+      await cargarNotificaciones();
+      notificar?.({
+        tipo: 'success',
+        titulo: decision === 'aceptar' ? 'Vinculacion aplicada' : 'Sugerencia descartada',
+        mensaje: respuesta.mensaje,
+      });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo resolver la notificacion.';
+      notificar?.({ tipo: 'error', titulo: 'No se resolvio la notificacion', mensaje });
+    } finally {
+      setResolviendoId(null);
     }
   }
 
@@ -111,6 +139,31 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
             { key: 'prioridad', label: 'Prioridad', width: 'minmax(95px, 0.5fr)', render: (notificacion) => notificacion.prioridad },
             { key: 'detalle', label: 'Detalle', width: 'minmax(180px, 0.9fr)', render: obtenerDetalleSugerencia },
             { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.7fr)', render: (notificacion) => formatearFecha(notificacion.createdAt) },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(170px, 0.8fr)',
+              render: (notificacion) => (
+                <div className="button-row table-actions">
+                  <button
+                    className="small"
+                    type="button"
+                    disabled={resolviendoId !== null || !notificacion.vinculacionSugerida}
+                    onClick={() => resolverSugerencia(notificacion, 'aceptar')}
+                  >
+                    {resolviendoId === notificacion.id ? 'Resolviendo...' : 'Aceptar'}
+                  </button>
+                  <button
+                    className="danger"
+                    type="button"
+                    disabled={resolviendoId !== null || !notificacion.vinculacionSugerida}
+                    onClick={() => resolverSugerencia(notificacion, 'descartar')}
+                  >
+                    Descartar
+                  </button>
+                </div>
+              ),
+            },
           ]}
         />
       </section>

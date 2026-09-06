@@ -51,6 +51,8 @@ import {
   PadronErpSincronizable,
   PlanificacionSnapshot,
   ProtocolosSnapshot,
+  ResolverNotificacionVinculacionRequest,
+  ResolverNotificacionVinculacionResponse,
   SesionUsuario,
   ZonaPlanificacion,
 } from '@agro/tipos';
@@ -468,5 +470,16 @@ export type GenerarSugerenciasVinculacionResponse = {
 export async function generarSugerenciasVinculacion(token?: string): Promise<GenerarSugerenciasVinculacionResponse> {
   return request<GenerarSugerenciasVinculacionResponse>('/notificaciones/vinculaciones/generar', {
     method: 'POST',
+  }, token);
+}
+
+export async function resolverNotificacionVinculacion(
+  id: string,
+  datos: ResolverNotificacionVinculacionRequest,
+  token?: string,
+): Promise<ResolverNotificacionVinculacionResponse> {
+  return request<ResolverNotificacionVinculacionResponse>(`/notificaciones/${id}/resolver-vinculacion`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
   }, token);
 }

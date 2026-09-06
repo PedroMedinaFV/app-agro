@@ -226,7 +226,8 @@ Incluye:
 - [x] auditoria de altas y ediciones de labores;
 - [x] auditoria de vinculacion manual de zonas, campos, lotes, especies, actividades, insumos y labores;
 - [x] auditoria de edicion y desvinculacion manual de vinculaciones ERP;
-- [ ] auditoria de vinculaciones sugeridas;
+- [x] auditoria de vinculaciones sugeridas;
+- [x] aceptar o descartar sugerencias desde notificaciones, resolviendo el aviso y auditando la decision;
 - mobile lectura de padrones asignados.
 
 Criterio de aceptacion:
@@ -243,6 +244,7 @@ Criterio de aceptacion:
 - [x] la web propone candidatos al abrir la vinculacion manual;
 - [x] una sincronizacion posterior puede generar notificaciones persistidas de vinculacion;
 - [x] la vinculacion nunca es automatica en MVP.
+- [x] una sugerencia aceptada aplica la vinculacion desde backend con validaciones de seguridad.
 
 ## Sprint 3 - Precios, destinos y gastos comerciales
 

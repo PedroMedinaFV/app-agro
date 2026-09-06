@@ -535,3 +535,17 @@ export type NotificacionUsuarioResumen = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ResolverNotificacionVinculacionRequest = {
+  decision: 'aceptar' | 'descartar';
+  motivo?: string;
+};
+
+export type ResolverNotificacionVinculacionResponse = {
+  notificacionId: string;
+  sugerenciaId: string;
+  estadoNotificacion: 'resuelta';
+  estadoSugerencia: 'aceptada' | 'descartada';
+  auditado: boolean;
+  mensaje: string;
+};
