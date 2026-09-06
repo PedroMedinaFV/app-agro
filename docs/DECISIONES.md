@@ -59,6 +59,14 @@ Regla de mantenimiento:
 - Si una screen crece por contener subflujos claros, se divide en sub-screens o componentes especificos.
 - Las tablas deben usar `DataTable` salvo que haya una necesidad puntual de grilla editable.
 
+## Bloqueo global de acciones backend
+
+Toda llamada de la web al backend debe mostrar un bloqueo global de pantalla con spinner centrado hasta recibir respuesta.
+
+El bloqueo se activa desde el cliente HTTP compartido de la web, no desde cada boton individual. Esto asegura consistencia entre pantallas, evita dobles envios accidentales y mejora la percepcion de estado cuando una accion impacta datos persistidos.
+
+Los spinners locales pueden mantenerse como refuerzo visual puntual, pero la garantia transversal es el overlay bloqueante.
+
 ## Sincronizacion ERP por empresa
 
 Los padrones operativos del ERP requieren `x-company`. Por eso no se consulta una unica vez de forma global: se consulta por cada empresa ERP asociada al cliente.

@@ -109,6 +109,7 @@ Premisa visual:
 - las pantallas con tablas deben usar un componente compartido de tabla paginada para mantener estructura, estilos, estados vacios y navegacion consistentes;
 - las tablas de padrones deben evitar scroll horizontal en uso normal y adaptarse a mobile con filas apiladas;
 - los padrones con muchos registros ERP, como insumos, labores, campos y lotes, deben paginar por defecto.
+- toda accion web que viaje al backend debe bloquear la pantalla con spinner global hasta recibir respuesta, para evitar dobles envios y estados ambiguos.
 
 ## Sprint 0 - Base operativa e integracion ERP
 
@@ -210,6 +211,7 @@ Incluye:
 - [x] vinculacion manual inicial de zonas, campos, lotes, especies, actividades, insumos y labores provisorios contra ERP disponible;
 - [x] pantalla web transversal para revisar, editar y desvincular vinculaciones ERP;
 - [x] sugerencias visuales iniciales de vinculacion por codigo/nombre normalizado;
+- [x] bloqueo global con spinner para llamadas web al backend;
 - [ ] notificaciones internas persistidas para revisar coincidencias;
 - [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de especies;

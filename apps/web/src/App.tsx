@@ -314,6 +314,7 @@ export function App() {
           sesion={sesion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
+          onVinculacionesActualizadas={planificacionDemo.refrescarPlanificacion}
         />
       )}
 

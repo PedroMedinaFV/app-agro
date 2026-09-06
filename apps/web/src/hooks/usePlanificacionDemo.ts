@@ -51,6 +51,19 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const [guardandoInsumos, setGuardandoInsumos] = useState(false);
   const [planificacionSeleccionadaId, setPlanificacionSeleccionadaId] = useState<string>();
 
+  async function refrescarPlanificacion() {
+    if (!sesion) {
+      return;
+    }
+
+    try {
+      setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token));
+      setPlanificacionEstado('Planificacion actualizada desde API.');
+    } catch (error) {
+      setPlanificacionEstado('No se pudo refrescar la planificacion desde API.');
+    }
+  }
+
   useEffect(() => {
     async function cargarPlanificacion() {
       if (!sesion) {
@@ -976,6 +989,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     guardarLaborReferenciaDesdeModal,
     guardarInsumoPlanificacionDesdeModal,
     obtenerProtocolosCompatibles,
+    refrescarPlanificacion,
     guardarBorradorPlanificacion,
     cerrarPlanificacionActiva,
   };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { obtenerPermisosRol, RolUsuario, SesionUsuario } from '@agro/tipos';
 import { loginDemo } from '../services/api';
+import { startBackendActivity } from '../utils/backendActivity';
 
 export function useDemoAuth() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
@@ -13,6 +14,7 @@ export function useDemoAuth() {
   async function entrarModoDemo() {
     setCargando(true);
     setError('');
+    const finishBackendActivity = startBackendActivity('Iniciando sesion...');
 
     try {
       setSesion(await loginDemo({ email, nombre: 'Usuario Demo', rol }));
@@ -26,6 +28,7 @@ export function useDemoAuth() {
         permisos: obtenerPermisosRol(rol),
       });
     } finally {
+      finishBackendActivity();
       setCargando(false);
     }
   }

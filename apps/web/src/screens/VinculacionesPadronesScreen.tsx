@@ -64,13 +64,14 @@ type VinculacionesPadronesScreenProps = {
   sesion: SesionUsuario;
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
+  onVinculacionesActualizadas?: () => Promise<void> | void;
 };
 
 function formatearFecha(fecha?: string) {
   return fecha ? new Intl.DateTimeFormat('es-AR').format(new Date(fecha)) : '-';
 }
 
-export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificacion, notificar }: VinculacionesPadronesScreenProps) {
+export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificacion, notificar, onVinculacionesActualizadas }: VinculacionesPadronesScreenProps) {
   const [zonas, setZonas] = useState<ZonaPlanificacion[]>([]);
   const [campos, setCampos] = useState<CampoPlanificacion[]>([]);
   const [lotes, setLotes] = useState<LotePlanificacion[]>([]);
@@ -309,7 +310,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
         const campo = campos.find((item) => item.id === fila.id);
         const campoErp = erpId ? camposErpPorId.get(erpId) : undefined;
         if (!campo) throw new Error('No se encontro el campo propio.');
-        const respuesta = await guardarCampoPlanificacion(campo.id, { campo: { ...campo, campoErpId: erpId, empresaErpId: campoErp?.empresaErpId || campo.empresaErpId, zonaErpId: campoErp?.idZona ? `zona:${campoErp.idZona}` : campo.zonaErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con campo ERP ${erpId}` : 'Desvinculacion manual de campo ERP' }, sesion.token);
+        const respuesta = await guardarCampoPlanificacion(campo.id, { campo: { ...campo, campoErpId: erpId, empresaErpId: campoErp?.empresaErpId || campo.empresaErpId, zonaErpId: erpId ? campoErp?.idZona ? `zona:${campoErp.idZona}` : campo.zonaErpId : campo.zonaErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con campo ERP ${erpId}` : 'Desvinculacion manual de campo ERP' }, sesion.token);
         setCampos((actuales) => actuales.map((item) => (item.id === respuesta.campo.id ? respuesta.campo : item)));
       } else if (fila.tipo === 'lotes') {
         const lote = lotes.find((item) => item.id === fila.id);
@@ -325,7 +326,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
         const actividad = actividades.find((item) => item.id === fila.id);
         const actividadErp = erpId ? actividadesErpPorId.get(erpId) : undefined;
         if (!actividad) throw new Error('No se encontro la actividad propia.');
-        const respuesta = await guardarActividadPlanificacion(actividad.id, { actividad: { ...actividad, actividadErpId: erpId, especieErpId: actividadErp?.idEspecie ? `especie:${actividadErp.idEspecie}` : actividad.especieErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con actividad ERP ${erpId}` : 'Desvinculacion manual de actividad ERP' }, sesion.token);
+        const respuesta = await guardarActividadPlanificacion(actividad.id, { actividad: { ...actividad, actividadErpId: erpId, especieErpId: erpId ? actividadErp?.idEspecie ? `especie:${actividadErp.idEspecie}` : actividad.especieErpId : actividad.especieErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con actividad ERP ${erpId}` : 'Desvinculacion manual de actividad ERP' }, sesion.token);
         setActividades((actuales) => actuales.map((item) => (item.id === respuesta.actividad.id ? respuesta.actividad : item)));
       } else if (fila.tipo === 'insumos') {
         const insumo = insumos.find((item) => item.id === fila.id);
@@ -335,10 +336,11 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       } else {
         const labor = labores.find((item) => item.id === fila.id);
         if (!labor) throw new Error('No se encontro la labor propia.');
-        const respuesta = await guardarLaborReferencia(labor.id, { labor: { ...labor, servicioErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', origen: erpId ? 'erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con servicio ERP ${erpId}` : 'Desvinculacion manual de servicio ERP' }, sesion.token);
+        const respuesta = await guardarLaborReferencia(labor.id, { labor: { ...labor, servicioErpId: erpId, idServicio: erpId ? labor.idServicio : undefined, idTipoServicio: erpId ? labor.idTipoServicio : undefined, idUnidadMedida: erpId ? labor.idUnidadMedida : undefined, idMoneda: erpId ? labor.idMoneda : undefined, imputaDosis: erpId ? labor.imputaDosis : undefined, fechaUltimaActualizacionErp: erpId ? labor.fechaUltimaActualizacionErp : undefined, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', origen: erpId ? 'erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con servicio ERP ${erpId}` : 'Desvinculacion manual de servicio ERP' }, sesion.token);
         setLabores((actuales) => actuales.map((item) => (item.id === respuesta.labor.id ? respuesta.labor : item)));
       }
 
+      await onVinculacionesActualizadas?.();
       setEstado(erpId ? 'Vinculacion actualizada con auditoria.' : 'Vinculacion eliminada con auditoria.');
       notificar?.({ tipo: 'success', titulo: erpId ? 'Vinculacion actualizada' : 'Vinculacion eliminada', mensaje: 'El cambio quedo registrado en auditoria.' });
     } catch (error) {

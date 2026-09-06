@@ -52,26 +52,60 @@ import {
   SesionUsuario,
   ZonaPlanificacion,
 } from '@agro/tipos';
+import { startBackendActivity } from '../utils/backendActivity';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 async function request<T>(ruta: string, options: RequestInit = {}, token?: string): Promise<T> {
-  const respuesta = await fetch(`${API_BASE_URL}${ruta}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
+  const method = options.method || 'GET';
+  const finishBackendActivity = startBackendActivity(getBackendActivityLabel(ruta, method));
 
-  const contenido = await respuesta.json().catch(() => ({}));
+  try {
+    const respuesta = await fetch(`${API_BASE_URL}${ruta}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+      },
+    });
 
-  if (!respuesta.ok) {
-    throw new Error((contenido as { error?: string; detalle?: string }).detalle || (contenido as { error?: string }).error || 'La solicitud fallo');
+    const contenido = await respuesta.json().catch(() => ({}));
+
+    if (!respuesta.ok) {
+      throw new Error((contenido as { error?: string; detalle?: string }).detalle || (contenido as { error?: string }).error || 'La solicitud fallo');
+    }
+
+    return contenido as T;
+  } finally {
+    finishBackendActivity();
+  }
+}
+
+function getBackendActivityLabel(ruta: string, method: string) {
+  const metodo = method.toUpperCase();
+
+  if (ruta.startsWith('/auth/')) {
+    return 'Iniciando sesion...';
   }
 
-  return contenido as T;
+  if (ruta.includes('/sincronizar')) {
+    return 'Sincronizando padrones...';
+  }
+
+  if (ruta.includes('/cerrar')) {
+    return 'Cerrando planificacion...';
+  }
+
+  if (metodo === 'GET') {
+    return 'Cargando datos...';
+  }
+
+  if (metodo === 'DELETE') {
+    return 'Eliminando registro...';
+  }
+
+  return 'Guardando cambios...';
 }
 
 export async function loginDemo(datos: LoginDemoRequest): Promise<SesionUsuario> {
