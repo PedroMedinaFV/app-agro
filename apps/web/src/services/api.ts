@@ -457,3 +457,14 @@ export type NotificacionesResponse = {
 export async function obtenerNotificaciones(token?: string): Promise<NotificacionesResponse> {
   return request<NotificacionesResponse>('/notificaciones', {}, token);
 }
+
+export type GenerarSugerenciasVinculacionResponse = {
+  detectadas: number;
+  creadas: number;
+};
+
+export async function generarSugerenciasVinculacion(token?: string): Promise<GenerarSugerenciasVinculacionResponse> {
+  return request<GenerarSugerenciasVinculacionResponse>('/notificaciones/vinculaciones/generar', {
+    method: 'POST',
+  }, token);
+}

@@ -82,6 +82,10 @@ export function EmpresasErpScreen({
               <span>Ultimo sync</span>
               <strong>{new Date(ultimoResultadoSync.sincronizadoEn).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
             </article>
+            <article>
+              <span>Sugerencias</span>
+              <strong>{ultimoResultadoSync.sugerenciasVinculacion?.creadas ?? 0}</strong>
+            </article>
           </>
         )}
       </div>

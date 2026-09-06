@@ -213,6 +213,8 @@ Incluye:
 - [x] sugerencias visuales iniciales de vinculacion por codigo/nombre normalizado;
 - [x] bloqueo global con spinner para llamadas web al backend;
 - [x] notificaciones internas persistidas para revisar coincidencias;
+- [x] contador visual de notificaciones pendientes en el menu;
+- [x] accion manual para recalcular sugerencias de vinculacion desde la cache ERP;
 - [x] auditoria de altas y ediciones de zonas;
 - [x] auditoria de altas y ediciones de especies;
 - [x] auditoria de altas y ediciones de actividades;

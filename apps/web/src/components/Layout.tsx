@@ -14,6 +14,7 @@ interface LayoutProps {
   descripcion: string;
   puedeConfigurarErp: boolean;
   puedeConfigurarPlanificacion: boolean;
+  notificacionesPendientes: number;
   children: ReactNode;
 }
 
@@ -28,12 +29,13 @@ export function Layout({
   descripcion,
   puedeConfigurarErp,
   puedeConfigurarPlanificacion,
+  notificacionesPendientes,
   children,
 }: LayoutProps) {
   const [padronesAbierto, setPadronesAbierto] = useState(vista.startsWith('padrones-'));
   const navItems = [
     { vista: 'inicio' as const, label: 'Inicio', icon: 'IN' },
-    { vista: 'notificaciones' as const, label: 'Notificaciones', icon: 'NO' },
+    { vista: 'notificaciones' as const, label: 'Notificaciones', icon: 'NO', badge: notificacionesPendientes },
     { vista: 'planificacion' as const, label: 'Planificacion', icon: 'PL' },
     { vista: 'protocolos' as const, label: 'Protocolos', icon: 'PR' },
     { vista: 'precios' as const, label: 'Precios', icon: 'US' },
@@ -83,17 +85,22 @@ export function Layout({
             <p className="user">{sesion.usuario.rol}</p>
           </div>
           <nav>
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                className={item.vista && vista === item.vista ? 'active' : ''}
-                onClick={() => item.vista && onVistaChange(item.vista)}
-                title={item.label}
-              >
-                <span className="nav-icon">{item.icon}</span>
-                <span className="nav-label">{item.label}</span>
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const badge = item.badge || 0;
+
+              return (
+                <a
+                  key={item.label}
+                  className={item.vista && vista === item.vista ? 'active' : ''}
+                  onClick={() => item.vista && onVistaChange(item.vista)}
+                  title={item.label}
+                >
+                  <span className="nav-icon">{item.icon}</span>
+                  <span className="nav-label">{item.label}</span>
+                  {badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
+                </a>
+              );
+            })}
             {puedeConfigurarPlanificacion && (
               <div className={`nav-group ${padronesAbierto ? 'open' : ''}`}>
                 <button

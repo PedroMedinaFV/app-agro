@@ -172,6 +172,8 @@ La edicion de una vinculacion debe usar el mismo criterio asistido que la vincul
 
 Luego de una sincronizacion ERP, el backend genera sugerencias persistidas de vinculacion para padrones provisorios cuando encuentra coincidencias fuertes o medias. Cada sugerencia crea una notificacion interna pendiente para usuarios con permisos de configuracion. La vinculacion sigue siendo manual: la notificacion informa, pero no modifica registros ni reemplaza la auditoria de confirmacion.
 
+La web tambien permite regenerar sugerencias manualmente desde la pantalla de notificaciones usando la cache ERP existente. Esto evita tener que volver a sincronizar ALBOR cuando solo se necesita recalcular coincidencias sobre datos ya importados.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

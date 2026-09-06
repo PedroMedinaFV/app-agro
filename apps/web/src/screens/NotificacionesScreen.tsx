@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { NotificacionUsuarioResumen, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
-import { obtenerNotificaciones } from '../services/api';
+import { generarSugerenciasVinculacion, obtenerNotificaciones } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
 interface NotificacionesScreenProps {
   sesion: SesionUsuario;
   notificar?: Notificar;
+  onCantidadPendienteChange?: (cantidad: number) => void;
 }
 
 function formatearFecha(fecha: string) {
@@ -30,25 +31,46 @@ function obtenerDetalleSugerencia(notificacion: NotificacionUsuarioResumen) {
   return `${sugerencia.entidadTipo} / ERP ${sugerencia.entidadErpId} / ${Math.round(sugerencia.puntajeCoincidencia)}%`;
 }
 
-export function NotificacionesScreen({ sesion, notificar }: NotificacionesScreenProps) {
+export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteChange }: NotificacionesScreenProps) {
   const [notificaciones, setNotificaciones] = useState<NotificacionUsuarioResumen[]>([]);
   const [estado, setEstado] = useState('Cargando notificaciones.');
+  const [generando, setGenerando] = useState(false);
+
+  async function cargarNotificaciones() {
+    try {
+      const respuesta = await obtenerNotificaciones(sesion.token);
+      setNotificaciones(respuesta.notificaciones);
+      onCantidadPendienteChange?.(respuesta.notificaciones.length);
+      setEstado('Notificaciones pendientes cargadas desde backend.');
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar las notificaciones.';
+      setEstado(mensaje);
+      notificar?.({ tipo: 'error', titulo: 'No se cargaron notificaciones', mensaje });
+    }
+  }
 
   useEffect(() => {
-    async function cargarNotificaciones() {
-      try {
-        const respuesta = await obtenerNotificaciones(sesion.token);
-        setNotificaciones(respuesta.notificaciones);
-        setEstado('Notificaciones pendientes cargadas desde backend.');
-      } catch (error) {
-        const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar las notificaciones.';
-        setEstado(mensaje);
-        notificar?.({ tipo: 'error', titulo: 'No se cargaron notificaciones', mensaje });
-      }
-    }
-
     cargarNotificaciones();
-  }, [sesion.token, notificar]);
+  }, [sesion.token, notificar, onCantidadPendienteChange]);
+
+  async function buscarSugerencias() {
+    setGenerando(true);
+
+    try {
+      const resultado = await generarSugerenciasVinculacion(sesion.token);
+      await cargarNotificaciones();
+      notificar?.({
+        tipo: resultado.creadas ? 'success' : 'info',
+        titulo: resultado.creadas ? 'Sugerencias generadas' : 'Sin nuevas sugerencias',
+        mensaje: `Detectadas: ${resultado.detectadas}. Nuevas: ${resultado.creadas}.`,
+      });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudieron buscar sugerencias.';
+      notificar?.({ tipo: 'error', titulo: 'No se buscaron sugerencias', mensaje });
+    } finally {
+      setGenerando(false);
+    }
+  }
 
   const pendientesVinculacion = useMemo(
     () => notificaciones.filter((notificacion) => notificacion.tipo === 'vinculacion_erp_sugerida'),
@@ -74,6 +96,9 @@ export function NotificacionesScreen({ sesion, notificar }: NotificacionesScreen
             <h2>Notificaciones internas</h2>
             <p className="hint">{estado}</p>
           </div>
+          <button className="secondary" type="button" onClick={buscarSugerencias} disabled={generando}>
+            {generando ? 'Buscando...' : 'Buscar sugerencias'}
+          </button>
         </div>
 
         <DataTable

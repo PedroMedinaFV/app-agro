@@ -5,7 +5,12 @@ import { snapshotFallback } from '../data/demoData';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
-export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boolean, notificar?: Notificar) {
+export function useErpDemo(
+  sesion: SesionUsuario | null,
+  puedeConfigurarErp: boolean,
+  notificar?: Notificar,
+  onSincronizacionCompletada?: () => Promise<void> | void,
+) {
   const [snapshot, setSnapshot] = useState<ErpSnapshot>(snapshotFallback);
   const [erpEstado, setErpEstado] = useState('Datos ERP locales');
   const [empresasDisponibles, setEmpresasDisponibles] = useState<ErpEmpresa[]>(snapshotFallback.empresas);
@@ -110,10 +115,15 @@ export function useErpDemo(sesion: SesionUsuario | null, puedeConfigurarErp: boo
       const respuesta = await sincronizarPadronesErp(sesion.token);
       setUltimoResultadoSync(respuesta.resultado);
       setEstadoEmpresas(`Padrones sincronizados: ${respuesta.resultado.sincronizadoEn}`);
+      await onSincronizacionCompletada?.();
+      const sugerencias = respuesta.resultado.sugerenciasVinculacion;
+      const mensajeSugerencias = sugerencias?.creadas
+        ? ` Se generaron ${sugerencias.creadas} notificaciones de vinculacion.`
+        : ' No se generaron nuevas sugerencias de vinculacion.';
       notificar?.({
         tipo: 'success',
         titulo: 'Padrones sincronizados',
-        mensaje: `${respuesta.resultado.campos} campos, ${respuesta.resultado.lotes} lotes y ${respuesta.resultado.cultivos} cultivos actualizados.`,
+        mensaje: `${respuesta.resultado.campos} campos, ${respuesta.resultado.lotes} lotes y ${respuesta.resultado.cultivos} cultivos actualizados.${mensajeSugerencias}`,
       });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudieron sincronizar padrones.';

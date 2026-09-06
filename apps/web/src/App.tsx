@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
 import { HomeScreen } from './screens/HomeScreen';
@@ -19,6 +19,7 @@ import { CamposScreen } from './screens/CamposScreen';
 import { LotesScreen } from './screens/LotesScreen';
 import { VinculacionesPadronesScreen } from './screens/VinculacionesPadronesScreen';
 import { ToastViewport } from './components/ToastViewport';
+import { obtenerNotificaciones } from './services/api';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
 import { usePlanificacionDemo } from './hooks/usePlanificacionDemo';
@@ -34,8 +35,22 @@ export function App() {
   const toast = useToast();
   const auth = useDemoAuth();
   const sesion = auth.sesion;
+  const [notificacionesPendientes, setNotificacionesPendientes] = useState(0);
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
-  const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify);
+  const refrescarNotificaciones = useCallback(async () => {
+    if (!sesion || !sesion.permisos.includes('planificacion:configurar')) {
+      setNotificacionesPendientes(0);
+      return;
+    }
+
+    try {
+      const respuesta = await obtenerNotificaciones(sesion.token);
+      setNotificacionesPendientes(respuesta.notificaciones.length);
+    } catch {
+      setNotificacionesPendientes(0);
+    }
+  }, [sesion]);
+  const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
   const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify);
   const protocolosDemo = useProtocolosDemo({
     sesion,
@@ -44,6 +59,10 @@ export function App() {
     planificacionActiva: planificacionDemo.planificacionActiva,
     notificar: toast.notify,
   });
+
+  useEffect(() => {
+    refrescarNotificaciones();
+  }, [refrescarNotificaciones]);
 
   const lotes = erp.snapshot.lotes.map((lote) => ({
     ...lote,
@@ -124,6 +143,7 @@ export function App() {
         descripcion={descripcionVista}
         puedeConfigurarErp={puedeConfigurarErp}
         puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+        notificacionesPendientes={notificacionesPendientes}
       >
         {vista === 'inicio' && (
           <HomeScreen
@@ -138,7 +158,11 @@ export function App() {
         )}
 
       {vista === 'notificaciones' && (
-        <NotificacionesScreen sesion={sesion} notificar={toast.notify} />
+        <NotificacionesScreen
+          sesion={sesion}
+          notificar={toast.notify}
+          onCantidadPendienteChange={setNotificacionesPendientes}
+        />
       )}
 
       {vista === 'campos' && (
