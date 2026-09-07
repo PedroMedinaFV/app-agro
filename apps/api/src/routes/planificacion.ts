@@ -7,13 +7,12 @@ import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolo
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
 import { obtenerConceptosGastosComercialesPersistidos, obtenerConceptosGastosComercialesSemilla } from '../services/gastosComerciales/conceptosGastosComerciales';
-import { obtenerLaboresReferenciaPersistidas } from '../services/labores/laboresReferenciaPrisma';
-import { obtenerEspeciesPlanificacionPersistidas } from '../services/especies/especiesPlanificacionPrisma';
-import { obtenerActividadesPlanificacionPersistidas } from '../services/actividades/actividadesPlanificacionPrisma';
+import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
+import { asegurarPadronesPlanificacionDesdeErp, obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
 
 const router = Router();
 type RequestConUsuario = Request & {
-  user?: { sub?: string; email?: string; clienteId?: string };
+  user?: { sub?: string; email?: string; clienteId?: string; rol?: string };
 };
 
 router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
@@ -26,20 +25,31 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
     const gastosPersistidos = await obtenerGastosComercialesPersistidos(clienteId);
     const conceptosPersistidos = await obtenerConceptosGastosComercialesPersistidos(clienteId);
-    const laboresPersistidas = await obtenerLaboresReferenciaPersistidas(clienteId);
-    const especiesPersistidas = await obtenerEspeciesPlanificacionPersistidas(clienteId);
-    const actividadesPersistidas = await obtenerActividadesPlanificacionPersistidas(clienteId);
+    const usuarioAutorizado = request.user?.sub ? {
+      sub: request.user.sub,
+      rol: request.user.rol,
+      clienteId: request.user.clienteId,
+    } : undefined;
+    const camposAsignados = usuarioAutorizado ? await obtenerCamposAsignados(usuarioAutorizado) : null;
+
+    await asegurarPadronesPlanificacionDesdeErp(clienteId, camposAsignados);
+
+    const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados);
 
     res.json({
       ...demo,
+      zonasPlanificacion: padronesPersistidos.zonasPlanificacion.length ? padronesPersistidos.zonasPlanificacion : demo.zonasPlanificacion,
+      camposPlanificacion: padronesPersistidos.camposPlanificacion.length ? padronesPersistidos.camposPlanificacion : demo.camposPlanificacion,
+      lotesPlanificacion: padronesPersistidos.lotesPlanificacion.length ? padronesPersistidos.lotesPlanificacion : demo.lotesPlanificacion,
+      especiesPlanificacion: padronesPersistidos.especiesPlanificacion.length ? padronesPersistidos.especiesPlanificacion : demo.especiesPlanificacion,
+      actividadesPlanificacion: padronesPersistidos.actividadesPlanificacion.length ? padronesPersistidos.actividadesPlanificacion : demo.actividadesPlanificacion,
+      insumosPlanificacion: padronesPersistidos.insumosPlanificacion.length ? padronesPersistidos.insumosPlanificacion : demo.insumosPlanificacion,
       planificaciones: planificacionesPersistidas.length ? planificacionesPersistidas : demo.planificaciones,
       preciosReferencia: preciosPersistidos.length ? preciosPersistidos : demo.preciosReferencia,
       destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
       conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),
       gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
-      laboresReferencia: laboresPersistidas.length ? laboresPersistidas : demo.laboresReferencia,
-      especiesPlanificacion: especiesPersistidas.length ? especiesPersistidas : demo.especiesPlanificacion,
-      actividadesPlanificacion: actividadesPersistidas.length ? actividadesPersistidas : demo.actividadesPlanificacion,
+      laboresReferencia: padronesPersistidos.laboresReferencia.length ? padronesPersistidos.laboresReferencia : demo.laboresReferencia,
       sincronizadoEn: new Date().toISOString(),
     });
   } catch (error) {

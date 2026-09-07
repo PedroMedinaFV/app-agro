@@ -73,7 +73,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
       try {
         setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token));
-        setPlanificacionEstado('Planificacion desde API mock');
+        setPlanificacionEstado('Planificacion cargada desde API.');
       } catch (error) {
         setPlanificacion(planificacionFallback);
         setPlanificacionEstado('API de planificacion no disponible. Usando mock local.');

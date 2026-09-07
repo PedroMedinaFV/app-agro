@@ -71,6 +71,8 @@ La pantalla web de `Lotes` debe cargar los campos propios desde el backend de pa
 
 Si al crear un lote el usuario selecciona un campo ERP que todavia no tiene su registro operativo en `CampoPlanificacion`, la web debe crear primero ese campo propio ya vinculado al ERP y luego guardar el lote asociado. Ambas acciones deben pasar por backend y auditoria. Para el usuario, el flujo debe verse como una sola accion de guardado del lote.
 
+El snapshot de planificacion (`GET /planificacion/snapshot`) no debe usar padrones mock cuando existen datos sincronizados o persistidos. Antes de responder, el backend materializa los padrones ERP activos como entidades operativas de Agro App vinculadas al ERP: zonas, campos, lotes, especies, actividades, insumos y labores. Esto permite que la planilla use siempre `zonaPlanificacionId`, `campoPlanificacionId`, `lotePlanificacionId`, `actividadPlanificacionId` e `insumoPlanificacionId` reales, guardables y validables por Prisma. El mock queda solo como fallback de desarrollo cuando no hay cache ERP ni datos propios disponibles.
+
 Cuando el registro aparezca mas adelante en los padrones del ERP, un usuario autorizado debe poder vincular el registro provisorio con el registro ERP correspondiente.
 
 La vinculacion no debe alterar planificaciones historicas sin accion explicita y siempre debe quedar auditada.
@@ -129,7 +131,9 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - al crear un escenario nuevo, la planilla se inicializa con una linea por cada lote activo disponible en Agro App;
 - la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote;
 - la grilla de edicion se organiza como arbol expandible `zona -> campo -> lotes` para facilitar la navegacion;
+- dentro de cada linea no se muestra selector de campo porque el campo ya esta definido por el grupo del arbol;
 - el protocolo seleccionado define la actividad de la linea; si el usuario cambia protocolo, la actividad se actualiza segun el protocolo;
+- la actividad no se edita como campo independiente en la planilla para evitar inconsistencias entre protocolo y actividad;
 - una linea se puede copiar para soportar doble cultivo sobre el mismo lote, por ejemplo fina/invierno y segunda/verano;
 - un escenario se puede copiar completo para reutilizar una simulacion y ajustar solo supuestos puntuales;
 - si la planificacion no esta cerrada y el usuario tiene permiso, se habilita un boton `Editar`;
@@ -761,6 +765,7 @@ Estado tecnico actual:
 - las operaciones reales generan auditoria transaccional;
 - si todavia no hay datos persistidos, la consulta de protocolos puede devolver snapshot demo para no bloquear validacion web/mobile;
 - existe servicio backend Prisma para guardar planificaciones y lineas;
+- el snapshot de planificacion materializa padrones ERP sincronizados como padrones operativos vinculados, evitando que la planilla dependa de mocks cuando hay datos reales;
 - la planilla valida duplicados por campania, campo, lote y actividad de planificacion;
 - el cierre de planificacion se ejecuta desde backend y bloquea ediciones posteriores;
 - los intentos relevantes de modificar una planificacion cerrada registran auditoria `bloquear_edicion`;

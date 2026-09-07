@@ -27,9 +27,7 @@ export function PlanificacionEditorScreen({
   cambiarCampaniaPlanificacion,
   agregarLineaPlanificacion,
   guardarBorradorPlanificacion,
-  cambiarCampo,
   cambiarLote,
-  cambiarActividad,
   cambiarProtocolo,
   cambiarDestino,
   actualizarLinea,
@@ -94,9 +92,7 @@ export function PlanificacionEditorScreen({
   }
 
   function renderLinea(linea: PlanificacionAgricolaLinea) {
-    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
     const lote = lotesPlanificacionPorId.get(linea.lotePlanificacionId);
-    const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === linea.actividadPlanificacionId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
     const gastoReferencia = linea.gastosComercialesReferenciaId
       ? planificacion.gastosComercialesReferencia.find((item) => item.id === linea.gastosComercialesReferenciaId)
@@ -116,16 +112,6 @@ export function PlanificacionEditorScreen({
     return (
       <div className={`planning-row ${lineaDuplicada ? 'duplicated' : ''}`} key={linea.id}>
         <div className="planning-cell-wide">
-          <span className="cell-label">Campo</span>
-          <select value={linea.campoPlanificacionId} onChange={(event) => cambiarCampo(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
-            {planificacion.camposPlanificacion.map((item) => (
-              <option key={item.id} value={item.id}>{item.nombre}</option>
-            ))}
-          </select>
-          <em>{campo?.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP'}</em>
-        </div>
-
-        <div className="planning-cell-wide">
           <span className="cell-label">Lote</span>
           <select value={linea.lotePlanificacionId} onChange={(event) => cambiarLote(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
             {lotesDelCampo.map((item) => (
@@ -133,17 +119,6 @@ export function PlanificacionEditorScreen({
             ))}
           </select>
           <span>prod. {lote?.superficieProductiva ?? '-'}</span>
-        </div>
-
-        <div className="planning-cell-wide">
-          <span className="cell-label">Actividad</span>
-          <select value={linea.actividadPlanificacionId} onChange={(event) => cambiarActividad(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion || Boolean(linea.protocoloId)}>
-            {(planificacion.actividadesPlanificacion || []).map((item) => (
-              <option key={item.id} value={item.id}>{item.nombre}</option>
-            ))}
-          </select>
-          <span>{linea.protocoloId ? 'Definida por protocolo' : actividad?.codigoInterno || actividad?.actividadErpId || '-'}</span>
-          {lineaDuplicada && <span className="cell-error">Actividad duplicada</span>}
         </div>
 
         <div className="planning-cell-wide">
@@ -191,7 +166,8 @@ export function PlanificacionEditorScreen({
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
-          <span>{protocolo ? `${formatearUsd(protocolo.costoEstimadoPorHa)} / ha - act. ${new Date(protocolo.updatedAt).toLocaleDateString('es-AR')}` : 'Costo 0'}</span>
+          <span>{protocolo ? `${formatearUsd(protocolo.costoEstimadoPorHa)} / ha - act. ${new Date(protocolo.updatedAt).toLocaleDateString('es-AR')}` : 'Selecciona protocolo para definir actividad'}</span>
+          {lineaDuplicada && <span className="cell-error">Actividad duplicada para este lote</span>}
         </div>
 
         <div className="planning-cell-summary">

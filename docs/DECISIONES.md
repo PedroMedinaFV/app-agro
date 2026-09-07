@@ -162,6 +162,8 @@ Esta decision evita frenar la planificacion por demoras administrativas o de car
 
 La regla no aplica a datos operativos importados desde endpoints como `Agricultura/Cultivos`.
 
+El snapshot operativo de planificacion debe priorizar datos reales. Si existen padrones ERP sincronizados, el backend los materializa como registros propios vinculados en las tablas de planificacion antes de responder. Asi la web no trabaja con mocks ni con IDs virtuales: trabaja con `CampoPlanificacion`, `LotePlanificacion`, `ActividadPlanificacion`, `EspeciePlanificacion`, `InsumoPlanificacion`, `LaborReferencia` y `ZonaPlanificacion` persistidos, aptos para relaciones, validaciones y auditoria. El mock queda reservado para desarrollo cuando no hay base/cache disponible.
+
 En lotes provisorios, la web permite copiar un lote propio existente para acelerar altas repetitivas. La copia conserva campo y superficies, pero se guarda como un registro nuevo con estado `provisorio` y sin `loteErpId`; la vinculacion ERP sigue siendo una accion posterior, propuesta y auditada.
 
 La vinculacion manual de lotes se permite desde el padron web solamente sobre lotes propios en estado `provisorio`. El usuario selecciona el lote provisorio y confirma contra que lote ERP disponible debe quedar enlazado. El backend valida que el lote ERP exista, que no este usado por otro lote del mismo cliente y que pertenezca al mismo campo ERP cuando el campo propio ya este vinculado. La accion se registra en auditoria. Una vez vinculado, el lote propio deja de mostrarse como fila independiente y queda visible el lote ERP como referencia principal.
