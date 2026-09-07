@@ -11,20 +11,24 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
     setModoEdicion(true);
   }
 
-  function crearYEditarEscenario(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
-    const planificacionId = props.crearEscenarioPlanificacion(datos);
+  async function crearYEditarEscenario(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
+    const planificacionId = await props.crearEscenarioPlanificacion(datos);
 
     if (planificacionId) {
       setModoEdicion(true);
     }
+
+    return Boolean(planificacionId);
   }
 
-  function copiarYEditarEscenario(planificacionId: string) {
-    const copiaId = props.copiarEscenarioPlanificacion(planificacionId);
+  async function copiarYEditarEscenario(planificacionId: string) {
+    const copiaId = await props.copiarEscenarioPlanificacion(planificacionId);
 
     if (copiaId) {
       setModoEdicion(true);
     }
+
+    return Boolean(copiaId);
   }
 
   if (modoEdicion) {

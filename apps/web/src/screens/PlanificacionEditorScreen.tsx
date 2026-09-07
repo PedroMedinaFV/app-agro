@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { PlanificacionAgricolaLinea } from '@agro/tipos';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionBaseProps } from './planificacionTypes';
@@ -38,6 +39,8 @@ export function PlanificacionEditorScreen({
   leerNumero,
   onVolverResumen,
 }: PlanificacionEditorScreenProps) {
+  const [zonasAbiertas, setZonasAbiertas] = useState<Set<string>>(new Set());
+  const [camposAbiertos, setCamposAbiertos] = useState<Set<string>>(new Set());
   const lineasAgrupadas = useMemo(() => {
     const zonas = new Map<string, { id: string; nombre: string; campos: Map<string, { id: string; nombre: string; lineas: PlanificacionAgricolaLinea[] }> }>();
 
@@ -61,6 +64,113 @@ export function PlanificacionEditorScreen({
         campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       }));
   }, [lineasPlanificacion, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+
+  useEffect(() => {
+    setZonasAbiertas((actuales) => {
+      const siguientes = new Set(actuales);
+
+      for (const zona of lineasAgrupadas) {
+        if (!siguientes.has(zona.id)) {
+          siguientes.add(zona.id);
+        }
+      }
+
+      return siguientes;
+    });
+    setCamposAbiertos((actuales) => {
+      const siguientes = new Set(actuales);
+
+      for (const zona of lineasAgrupadas) {
+        for (const campo of zona.campos) {
+          if (!siguientes.has(campo.id)) {
+            siguientes.add(campo.id);
+          }
+        }
+      }
+
+      return siguientes;
+    });
+  }, [lineasAgrupadas]);
+
+  function alternarZona(zonaId: string, abierta: boolean) {
+    setZonasAbiertas((actuales) => {
+      const siguientes = new Set(actuales);
+
+      if (abierta) {
+        siguientes.add(zonaId);
+      } else {
+        siguientes.delete(zonaId);
+      }
+
+      return siguientes;
+    });
+  }
+
+  function alternarCampo(campoId: string, abierto: boolean) {
+    setCamposAbiertos((actuales) => {
+      const siguientes = new Set(actuales);
+
+      if (abierto) {
+        siguientes.add(campoId);
+      } else {
+        siguientes.delete(campoId);
+      }
+
+      return siguientes;
+    });
+  }
+
+  function expandirTodo() {
+    setZonasAbiertas(new Set(lineasAgrupadas.map((zona) => zona.id)));
+    setCamposAbiertos(new Set(lineasAgrupadas.flatMap((zona) => zona.campos.map((campo) => campo.id))));
+  }
+
+  function contraerTodo() {
+    setZonasAbiertas(new Set());
+    setCamposAbiertos(new Set());
+  }
+
+  function alternarTodoArbol() {
+    const todasLasZonasAbiertas = lineasAgrupadas.length > 0 && lineasAgrupadas.every((zona) => zonasAbiertas.has(zona.id));
+    const todosLosCamposAbiertos = lineasAgrupadas
+      .flatMap((zona) => zona.campos)
+      .every((campo) => camposAbiertos.has(campo.id));
+
+    if (todasLasZonasAbiertas && todosLosCamposAbiertos) {
+      contraerTodo();
+    } else {
+      expandirTodo();
+    }
+  }
+
+  function expandirCamposDeZona(campoIds: string[]) {
+    setCamposAbiertos((actuales) => new Set([...actuales, ...campoIds]));
+  }
+
+  function contraerCamposDeZona(campoIds: string[]) {
+    setCamposAbiertos((actuales) => {
+      const siguientes = new Set(actuales);
+
+      for (const campoId of campoIds) {
+        siguientes.delete(campoId);
+      }
+
+      return siguientes;
+    });
+  }
+
+  function alternarCamposDeZona(event: MouseEvent<HTMLButtonElement>, zonaId: string, campoIds: string[]) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setZonasAbiertas((actuales) => new Set([...actuales, zonaId]));
+
+    if (campoIds.every((campoId) => camposAbiertos.has(campoId))) {
+      contraerCamposDeZona(campoIds);
+    } else {
+      expandirCamposDeZona(campoIds);
+    }
+  }
 
   function obtenerNombreZona(zonaPlanificacionId?: string, zonaErpId?: string) {
     const zonaPropia = planificacion.zonasPlanificacion?.find((zona) => zona.id === zonaPlanificacionId);
@@ -184,12 +294,25 @@ export function PlanificacionEditorScreen({
         </div>
 
         <div className="row-actions planning-cell-actions">
-          <span className="cell-label">Acciones</span>
-          <button className="small" onClick={() => copiarLineaPlanificacion(linea.id)} disabled={!puedeEditarPlanificacion}>
-            Copiar
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => copiarLineaPlanificacion(linea.id)}
+            disabled={!puedeEditarPlanificacion}
+            aria-label="Copiar linea"
+            title="Copiar linea"
+          >
+            <span aria-hidden="true">⧉</span>
           </button>
-          <button className="danger" onClick={() => eliminarLineaPlanificacion(linea.id)} disabled={!puedeEditarPlanificacion || lineasPlanificacion.length === 1}>
-            Quitar
+          <button
+            className="icon-button danger-icon"
+            type="button"
+            onClick={() => eliminarLineaPlanificacion(linea.id)}
+            disabled={!puedeEditarPlanificacion || lineasPlanificacion.length === 1}
+            aria-label="Quitar linea"
+            title="Quitar linea"
+          >
+            <span aria-hidden="true">×</span>
           </button>
         </div>
       </div>
@@ -281,14 +404,43 @@ export function PlanificacionEditorScreen({
           {lineasAgrupadas.length === 0 && (
             <p className="hint">No hay lotes activos para planificar. Primero crea o sincroniza lotes.</p>
           )}
+          {lineasAgrupadas.length > 0 && (
+            <div className="planning-tree-toolbar">
+              <span>Vista por zona y campo</span>
+              <div className="button-row">
+                <button className="small tree-toggle-button" type="button" onClick={alternarTodoArbol}>
+                  {lineasAgrupadas.length > 0
+                    && lineasAgrupadas.every((zona) => zonasAbiertas.has(zona.id))
+                    && lineasAgrupadas.flatMap((zona) => zona.campos).every((campo) => camposAbiertos.has(campo.id))
+                    ? 'Contraer todo'
+                    : 'Expandir todo'}
+                </button>
+              </div>
+            </div>
+          )}
           {lineasAgrupadas.map((zona) => (
-            <details className="planning-tree-zone" key={zona.id} open>
+            <details
+              className="planning-tree-zone"
+              key={zona.id}
+              open={zonasAbiertas.has(zona.id)}
+              onToggle={(event) => alternarZona(zona.id, event.currentTarget.open)}
+            >
               <summary>
                 <strong>{zona.nombre}</strong>
                 <span>{zona.campos.reduce((total, campo) => total + campo.lineas.length, 0)} lotes</span>
+                <div className="planning-tree-summary-actions">
+                  <button className="small tree-toggle-button" type="button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
+                    {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
+                  </button>
+                </div>
               </summary>
               {zona.campos.map((campo) => (
-                <details className="planning-tree-field" key={campo.id} open>
+                <details
+                  className="planning-tree-field"
+                  key={campo.id}
+                  open={camposAbiertos.has(campo.id)}
+                  onToggle={(event) => alternarCampo(campo.id, event.currentTarget.open)}
+                >
                   <summary>
                     <strong>{campo.nombre}</strong>
                     <span>{campo.lineas.length} linea(s)</span>

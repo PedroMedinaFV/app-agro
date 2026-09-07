@@ -244,7 +244,57 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     setPlanificacionSeleccionadaId(planificacionId);
   }
 
-  function crearEscenarioPlanificacion(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
+  async function persistirEscenarioBorrador(
+    planificacionNueva: PlanificacionAgricola,
+    motivo: string,
+    mensajeOk: string,
+  ) {
+    setGuardandoPlanificacion(true);
+
+    try {
+      const respuesta = await guardarPlanificacion(planificacionNueva.id, {
+        planificacion: planificacionNueva,
+        origen: 'web',
+        motivo,
+      }, sesion?.token);
+      const ahora = new Date().toISOString();
+
+      setPlanificacion((actual) => {
+        const existe = actual.planificaciones.some((item) => item.id === respuesta.planificacion.id);
+
+        return {
+          ...actual,
+          planificaciones: existe
+            ? actual.planificaciones.map((item) => (item.id === respuesta.planificacion.id ? respuesta.planificacion : item))
+            : [respuesta.planificacion, ...actual.planificaciones],
+          sincronizadoEn: ahora,
+        };
+      });
+      setPlanificacionSeleccionadaId(respuesta.planificacion.id);
+      setPlanificacionEstado(respuesta.mensaje);
+      notificar?.({
+        tipo: 'success',
+        titulo: mensajeOk,
+        mensaje: respuesta.auditado ? 'El escenario quedo persistido y auditado.' : respuesta.mensaje,
+      });
+
+      return respuesta.planificacion.id;
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo persistir el escenario.';
+      setPlanificacionEstado(mensaje);
+      notificar?.({
+        tipo: 'error',
+        titulo: 'No se guardo el escenario',
+        mensaje,
+      });
+
+      return undefined;
+    } finally {
+      setGuardandoPlanificacion(false);
+    }
+  }
+
+  async function crearEscenarioPlanificacion(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
     if (!sesion || !puedeEditarPlanificacionPorPermiso) {
       notificar?.({ tipo: 'error', titulo: 'Sin permisos', mensaje: 'No tenes permisos para crear escenarios de planificacion.' });
       return undefined;
@@ -291,19 +341,14 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       updatedAt: ahora,
     };
 
-    setPlanificacion((actual) => ({
-      ...actual,
-      planificaciones: [nuevaPlanificacion, ...actual.planificaciones],
-      sincronizadoEn: ahora,
-    }));
-    setPlanificacionSeleccionadaId(id);
-    setPlanificacionEstado('Nuevo escenario creado en borrador con los lotes activos precargados.');
-    notificar?.({ tipo: 'success', titulo: 'Escenario creado', mensaje: 'Se cargaron los lotes activos con superficie productiva por defecto.' });
-
-    return id;
+    return persistirEscenarioBorrador(
+      nuevaPlanificacion,
+      'Creacion de escenario de planificacion desde resumen web',
+      'Escenario creado',
+    );
   }
 
-  function copiarEscenarioPlanificacion(planificacionId: string) {
+  async function copiarEscenarioPlanificacion(planificacionId: string) {
     if (!sesion || !puedeEditarPlanificacionPorPermiso) {
       notificar?.({ tipo: 'error', titulo: 'Sin permisos', mensaje: 'No tenes permisos para copiar escenarios de planificacion.' });
       return undefined;
@@ -355,16 +400,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       })),
     };
 
-    setPlanificacion((actual) => ({
-      ...actual,
-      planificaciones: [copia, ...actual.planificaciones],
-      sincronizadoEn: ahora,
-    }));
-    setPlanificacionSeleccionadaId(id);
-    setPlanificacionEstado('Escenario copiado en borrador. Guardalo para persistirlo con auditoria.');
-    notificar?.({ tipo: 'success', titulo: 'Escenario copiado', mensaje: 'La copia quedo lista para ajustar supuestos puntuales.' });
-
-    return id;
+    return persistirEscenarioBorrador(
+      copia,
+      `Copia de escenario de planificacion ${origen.id}`,
+      'Escenario copiado',
+    );
   }
 
   function actualizarCabeceraPlanificacion(cambios: Partial<Pick<PlanificacionAgricola, 'nombre' | 'descripcion'>>) {
@@ -1105,7 +1145,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       const respuesta = await guardarPlanificacion(planificacionActiva.id, {
         planificacion: planificacionActiva,
         origen: 'web',
-        motivo: 'Guardado de borrador desde planilla web demo',
+        motivo: 'Guardado de borrador desde planilla web',
       }, sesion.token);
 
       actualizarPlanificacionActiva(() => respuesta.planificacion);

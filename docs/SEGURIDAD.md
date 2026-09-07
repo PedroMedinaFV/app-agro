@@ -55,6 +55,13 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - `GET /erp/snapshot` debe responder al usuario comun con un subconjunto ya filtrado desde backend, incluyendo empresas y padrones maestros recortados al alcance operativo cuando aplique.
 - Los cultivos deben filtrarse por lotes permitidos, no solo por empresa, porque son datos operativos ligados al campo/lote.
 
+## Limites de payload
+
+- La API acepta JSON hasta `API_JSON_LIMIT`, con valor sugerido `1mb` para desarrollo/MVP.
+- Este limite permite guardar planificaciones con cientos de lineas sin abrir la API a cargas arbitrariamente grandes.
+- Si una funcionalidad futura necesita adjuntos, fotos o archivos, no deben enviarse dentro del JSON general; deben usar un flujo especifico de almacenamiento y validacion.
+- El error `entity.too.large` debe responder como HTTP 413 con un mensaje controlado.
+
 ## Planificacion agricola
 
 - Los datos economicos de planificacion son sensibles.

@@ -127,15 +127,17 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - la pantalla principal debe mostrar un listado/resumen de planificaciones, no la grilla pesada directamente;
 - cada planificacion muestra nombre, campania, estado, hectareas, resumen economico y margen;
 - desde el resumen se puede crear un `Nuevo escenario` indicando nombre, campania y descripcion;
-- al crear un escenario, se abre la pantalla completa de edicion para cargar la planilla;
+- al crear un escenario, el backend lo persiste inmediatamente como borrador auditado y luego se abre la pantalla completa de edicion para cargar la planilla;
 - al crear un escenario nuevo, la planilla se inicializa con una linea por cada lote activo disponible en Agro App;
 - la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote;
 - la grilla de edicion se organiza como arbol expandible `zona -> campo -> lotes` para facilitar la navegacion;
+- el arbol de planificacion permite expandir o contraer toda la vista, y tambien expandir o contraer todos los campos dentro de una zona con botones compactos de accion contextual;
 - dentro de cada linea no se muestra selector de campo porque el campo ya esta definido por el grupo del arbol;
 - el protocolo seleccionado define la actividad de la linea; si el usuario cambia protocolo, la actividad se actualiza segun el protocolo;
 - la actividad no se edita como campo independiente en la planilla para evitar inconsistencias entre protocolo y actividad;
 - una linea se puede copiar para soportar doble cultivo sobre el mismo lote, por ejemplo fina/invierno y segunda/verano;
-- un escenario se puede copiar completo para reutilizar una simulacion y ajustar solo supuestos puntuales;
+- las acciones por linea se muestran como botones de icono con tooltip para reducir ruido visual en la grilla;
+- un escenario se puede copiar completo para reutilizar una simulacion y ajustar solo supuestos puntuales; la copia tambien se persiste inmediatamente como borrador auditado;
 - si la planificacion no esta cerrada y el usuario tiene permiso, se habilita un boton `Editar`;
 - al editar, se abre una vista de edicion de pantalla completa dentro de la app, no un modal, porque la planilla tiene mucha densidad de datos;
 - la cabecera permite editar nombre, descripcion y campania;
@@ -771,7 +773,8 @@ Estado tecnico actual:
 - los intentos relevantes de modificar una planificacion cerrada registran auditoria `bloquear_edicion`;
 - la web ya permite cerrar una planificacion desde la planilla cuando el usuario tiene permiso `planificacion:cerrar`;
 - si la base de datos no esta disponible, la web puede simular el cierre localmente para validar experiencia de usuario, pero ese cierre no reemplaza la auditoria real;
-- si todavia no hay datos persistidos, la consulta de planificacion puede devolver snapshot demo para no bloquear validacion web/mobile.
+- si todavia no hay datos persistidos, la consulta de planificacion puede devolver snapshot demo para no bloquear validacion web/mobile;
+- crear o copiar escenarios requiere persistencia real en backend; si la base rechaza la operacion, la web no debe simular exito local.
 
 Endpoints de persistencia real para planificacion:
 

@@ -37,7 +37,10 @@ import { requierePermiso } from './middleware/permisos';
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+// La planilla de planificacion puede enviar cientos de lineas en un unico borrador.
+// Mantenemos un limite acotado para no aceptar cargas arbitrariamente grandes.
+app.use(bodyParser.json({ limit: process.env.API_JSON_LIMIT || '1mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: process.env.API_JSON_LIMIT || '1mb' }));
 
 app.use('/home', homeRuta);
 app.use('/auth', authRuta);

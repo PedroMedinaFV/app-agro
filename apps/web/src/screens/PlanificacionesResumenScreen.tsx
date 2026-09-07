@@ -5,8 +5,8 @@ import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionType
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onEditarPlanificacion: (planificacionId: string) => void;
-  onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => void;
-  onCopiarEscenario: (planificacionId: string) => void;
+  onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => Promise<boolean>;
+  onCopiarEscenario: (planificacionId: string) => Promise<boolean>;
 };
 
 export function PlanificacionesResumenScreen({
@@ -63,13 +63,16 @@ export function PlanificacionesResumenScreen({
     setModalEscenarioAbierto(true);
   }
 
-  function confirmarNuevoEscenario() {
-    onNuevoEscenario({
+  async function confirmarNuevoEscenario() {
+    const creado = await onNuevoEscenario({
       nombre: nuevoEscenario.nombre,
       campaniaErpId: nuevoEscenario.campaniaErpId,
       descripcion: nuevoEscenario.descripcion || undefined,
     });
-    setModalEscenarioAbierto(false);
+
+    if (creado) {
+      setModalEscenarioAbierto(false);
+    }
   }
 
   return (
@@ -127,7 +130,7 @@ export function PlanificacionesResumenScreen({
             <p className="hint">Vista principal de nombre, campania, estado y resultado economico.</p>
           </div>
           <div className="button-row">
-            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || snapshot.campanias.length === 0}>
+            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || snapshot.campanias.length === 0}>
               Nuevo escenario
             </button>
             <button className="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
@@ -203,7 +206,7 @@ export function PlanificacionesResumenScreen({
                   <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
                     Editar
                   </button>
-                  <button className="small" onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
+                  <button className="small" onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
                     Copiar
                   </button>
                 </div>
@@ -283,8 +286,11 @@ export function PlanificacionesResumenScreen({
 
             <div className="modal-actions">
               <button className="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cancelar</button>
-              <button className="primary" onClick={confirmarNuevoEscenario} disabled={!nuevoEscenario.nombre.trim() || !nuevoEscenario.campaniaErpId || campaniaTieneOriginal}>
-                Crear escenario
+              <button className="primary" onClick={confirmarNuevoEscenario} disabled={guardandoPlanificacion || !nuevoEscenario.nombre.trim() || !nuevoEscenario.campaniaErpId || campaniaTieneOriginal}>
+                <span className="button-content">
+                  {guardandoPlanificacion && <LoadingSpinner label="Creando escenario" />}
+                  {guardandoPlanificacion ? 'Creando...' : 'Crear escenario'}
+                </span>
               </button>
             </div>
           </section>

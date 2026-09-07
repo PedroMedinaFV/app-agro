@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
 import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarPlanificacionDemo, guardarProtocoloDemo, obtenerPlanificacionDemo, obtenerProtocolosDemo } from '../services/planificacion/mockPlanificacion';
+import { guardarProtocoloDemo, obtenerPlanificacionDemo, obtenerProtocolosDemo } from '../services/planificacion/mockPlanificacion';
 import { cerrarPlanificacionPersistida, guardarPlanificacionPersistida, obtenerPlanificacionesPersistidas } from '../services/planificacion/planificacionesPrisma';
 import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
@@ -67,11 +67,7 @@ router.put('/:id', requierePermiso('planificacion:editar'), async (req, res, nex
       email: request.user?.email,
     }));
   } catch (error) {
-    try {
-      res.json(guardarPlanificacionDemo(req.params.id, req.body as GuardarPlanificacionRequest));
-    } catch (fallbackError) {
-      next(error || fallbackError);
-    }
+    next(error);
   }
 });
 

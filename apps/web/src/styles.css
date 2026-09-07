@@ -194,7 +194,8 @@ input:focus {
 .secondary,
 .ghost,
 .small,
-.danger {
+.danger,
+.icon-button {
   min-height: 40px;
   border-radius: 8px;
   padding: 0 14px;
@@ -216,6 +217,46 @@ input:focus {
 .danger {
   background: #fff0f0;
   color: #8a1f1f;
+}
+
+.tree-toggle-button {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.icon-button {
+  display: inline-flex;
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: #eaf1eb;
+  color: #234235;
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: #dce9df;
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.danger-icon {
+  background: #fff0f0;
+  color: #8a1f1f;
+}
+
+.danger-icon:hover:not(:disabled) {
+  background: #ffe0e0;
 }
 
 .button-row {
@@ -1175,6 +1216,20 @@ nav a.active .nav-icon,
   overflow: visible;
 }
 
+.planning-tree-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4d5f55;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .planning-tree-zone,
 .planning-tree-field {
   min-width: 0;
@@ -1193,6 +1248,14 @@ nav a.active .nav-icon,
   cursor: pointer;
   color: #172033;
   list-style-position: inside;
+}
+
+.planning-tree-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .planning-tree-zone > summary strong,
@@ -1271,7 +1334,7 @@ nav a.active .nav-icon,
 }
 
 .planning-row > .planning-cell-actions {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 .planning-row.duplicated {
@@ -1285,6 +1348,14 @@ nav a.active .nav-icon,
 .planning-row div {
   display: grid;
   gap: 4px;
+}
+
+.planning-row .planning-cell-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: center;
 }
 
 .cell-label {
@@ -1819,6 +1890,19 @@ nav a.active .nav-icon,
 
   .protocol-row {
     grid-template-columns: 1fr;
+  }
+
+  .planning-tree-toolbar,
+  .planning-tree-zone > summary,
+  .planning-tree-field > summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .planning-tree-summary-actions {
+    justify-content: flex-start;
+    margin-left: 0;
+    width: 100%;
   }
 
   .button-row {

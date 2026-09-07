@@ -195,6 +195,8 @@ La palabra "original" se usa como bandera de escenario elegido para la campania,
 
 La carga inicial de un escenario parte de todos los lotes activos disponibles y propone la superficie productiva como superficie planificada. En la grilla, el protocolo funciona como selector principal del planteo productivo: al elegir protocolo se define la actividad de la linea. La copia de linea existe para casos de doble cultivo sobre el mismo lote, y la copia de escenario existe para simular alternativas sin recargar toda la planilla.
 
+Crear o copiar un escenario debe persistir inmediatamente un borrador real en backend. La UI no debe mostrar como creado un escenario que no pudo guardarse en la base, porque eso genera una falsa sensacion de seguridad y rompe la auditoria. El boton `Guardar borrador` queda para modificaciones posteriores dentro del editor.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.
