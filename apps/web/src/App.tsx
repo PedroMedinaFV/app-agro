@@ -213,6 +213,7 @@ export function App() {
           protocolosPorId={planificacionDemo.protocolosPorId}
           seleccionarPlanificacion={planificacionDemo.seleccionarPlanificacion}
           crearEscenarioPlanificacion={planificacionDemo.crearEscenarioPlanificacion}
+          copiarEscenarioPlanificacion={planificacionDemo.copiarEscenarioPlanificacion}
           actualizarCabeceraPlanificacion={planificacionDemo.actualizarCabeceraPlanificacion}
           cambiarCampaniaPlanificacion={planificacionDemo.cambiarCampaniaPlanificacion}
           agregarLineaPlanificacion={planificacionDemo.agregarLineaPlanificacion}
@@ -221,8 +222,10 @@ export function App() {
           cambiarCampo={planificacionDemo.cambiarCampo}
           cambiarLote={planificacionDemo.cambiarLote}
           cambiarActividad={planificacionDemo.cambiarActividad}
+          cambiarProtocolo={planificacionDemo.cambiarProtocolo}
           cambiarDestino={planificacionDemo.cambiarDestino}
           actualizarLinea={planificacionDemo.actualizarLinea}
+          copiarLineaPlanificacion={planificacionDemo.copiarLineaPlanificacion}
           eliminarLineaPlanificacion={planificacionDemo.eliminarLineaPlanificacion}
           obtenerProtocolosCompatibles={planificacionDemo.obtenerProtocolosCompatibles}
           formatearUsd={formatearUsd}

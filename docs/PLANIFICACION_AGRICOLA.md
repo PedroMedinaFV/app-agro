@@ -126,6 +126,12 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - cada planificacion muestra nombre, campania, estado, hectareas, resumen economico y margen;
 - desde el resumen se puede crear un `Nuevo escenario` indicando nombre, campania y descripcion;
 - al crear un escenario, se abre la pantalla completa de edicion para cargar la planilla;
+- al crear un escenario nuevo, la planilla se inicializa con una linea por cada lote activo disponible en Agro App;
+- la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote;
+- la grilla de edicion se organiza como arbol expandible `zona -> campo -> lotes` para facilitar la navegacion;
+- el protocolo seleccionado define la actividad de la linea; si el usuario cambia protocolo, la actividad se actualiza segun el protocolo;
+- una linea se puede copiar para soportar doble cultivo sobre el mismo lote, por ejemplo fina/invierno y segunda/verano;
+- un escenario se puede copiar completo para reutilizar una simulacion y ajustar solo supuestos puntuales;
 - si la planificacion no esta cerrada y el usuario tiene permiso, se habilita un boton `Editar`;
 - al editar, se abre una vista de edicion de pantalla completa dentro de la app, no un modal, porque la planilla tiene mucha densidad de datos;
 - la cabecera permite editar nombre, descripcion y campania;

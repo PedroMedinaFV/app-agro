@@ -324,6 +324,12 @@ Estados:
 Reglas de escenarios:
 
 - Se pueden crear varios escenarios para una misma `campaniaErpId` mientras no exista un escenario original cerrado.
+- Al crear un escenario nuevo, la app puede precargar una linea por cada lote activo disponible para reducir carga manual.
+- La superficie inicial de cada linea se propone desde `LotePlanificacion.superficieProductiva`.
+- La edicion web debe permitir navegar las lineas como arbol `zona -> campo -> lote`.
+- El protocolo seleccionado en una linea define la actividad planificada. Si cambia el protocolo, se actualiza `actividadPlanificacionId` y se recalculan destino, precio, gastos y costos sugeridos.
+- Una linea puede copiarse dentro del mismo escenario para representar doble cultivo sobre el mismo lote, por ejemplo trigo/soja de segunda.
+- Un escenario puede copiarse completo como nuevo borrador para comparar alternativas con pocos cambios de supuestos.
 - Al cerrar una planificacion, esa planificacion queda `cerrada` y `escenarioOriginal = true`.
 - Al cerrar una planificacion, las demas planificaciones del mismo cliente y campania quedan `deshabilitada`, `escenarioOriginal = false` y `escenarioBloqueadoPorId` apuntando al escenario cerrado.
 - Si ya existe un escenario original cerrado para una campania, no se pueden crear ni editar otros escenarios activos de esa misma campania.

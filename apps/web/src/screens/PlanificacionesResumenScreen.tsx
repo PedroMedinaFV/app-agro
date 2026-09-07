@@ -6,6 +6,7 @@ import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionType
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onEditarPlanificacion: (planificacionId: string) => void;
   onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => void;
+  onCopiarEscenario: (planificacionId: string) => void;
 };
 
 export function PlanificacionesResumenScreen({
@@ -28,6 +29,7 @@ export function PlanificacionesResumenScreen({
   formatearUsd,
   onEditarPlanificacion,
   onNuevoEscenario,
+  onCopiarEscenario,
 }: PlanificacionesResumenScreenProps) {
   const campaniaInicial = planificacionActiva?.campaniaErpId || snapshot.campanias.find((campania) => campania.esActual)?.erpId || snapshot.campanias[0]?.erpId || '';
   const [modalEscenarioAbierto, setModalEscenarioAbierto] = useState(false);
@@ -195,11 +197,16 @@ export function PlanificacionesResumenScreen({
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(86px, 0.5fr)',
+              width: 'minmax(150px, 0.8fr)',
               render: (item) => (
-                <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
-                  Editar
-                </button>
+                <div className="button-row table-actions">
+                  <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
+                    Editar
+                  </button>
+                  <button className="small" onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
+                    Copiar
+                  </button>
+                </div>
               ),
             },
           ]}

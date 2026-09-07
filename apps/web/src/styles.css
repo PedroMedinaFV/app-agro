@@ -1170,8 +1170,59 @@ nav a.active .nav-icon,
 
 .planning-table {
   display: grid;
+  gap: 12px;
   margin-top: 18px;
   overflow: visible;
+}
+
+.planning-tree-zone,
+.planning-tree-field {
+  min-width: 0;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+  background: #f8fbf8;
+}
+
+.planning-tree-zone > summary,
+.planning-tree-field > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  cursor: pointer;
+  color: #172033;
+  list-style-position: inside;
+}
+
+.planning-tree-zone > summary strong,
+.planning-tree-field > summary strong,
+.planning-tree-zone > summary span,
+.planning-tree-field > summary span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.planning-tree-zone > summary span,
+.planning-tree-field > summary span {
+  color: #64736a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.planning-tree-field {
+  margin: 0 12px 12px;
+  background: #ffffff;
+}
+
+.planning-tree-field > summary {
+  border-top: 1px solid #edf1ee;
+}
+
+.planning-tree-lines {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
 }
 
 .planning-row {
@@ -1220,7 +1271,7 @@ nav a.active .nav-icon,
 }
 
 .planning-row > .planning-cell-actions {
-  grid-column: span 1;
+  grid-column: span 2;
 }
 
 .planning-row.duplicated {

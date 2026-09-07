@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { PlanificacionAgricolaLinea } from '@agro/tipos';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionBaseProps } from './planificacionTypes';
@@ -29,14 +30,69 @@ export function PlanificacionEditorScreen({
   cambiarCampo,
   cambiarLote,
   cambiarActividad,
+  cambiarProtocolo,
   cambiarDestino,
   actualizarLinea,
+  copiarLineaPlanificacion,
   eliminarLineaPlanificacion,
   obtenerProtocolosCompatibles,
   formatearUsd,
   leerNumero,
   onVolverResumen,
 }: PlanificacionEditorScreenProps) {
+  const lineasAgrupadas = useMemo(() => {
+    const zonas = new Map<string, { id: string; nombre: string; campos: Map<string, { id: string; nombre: string; lineas: PlanificacionAgricolaLinea[] }> }>();
+
+    for (const linea of lineasPlanificacion) {
+      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
+      const zonaNombre = obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId);
+      const zona = zonas.get(zonaId) || { id: zonaId, nombre: zonaNombre, campos: new Map() };
+      const campoId = campo?.id || linea.campoPlanificacionId;
+      const campoGrupo = zona.campos.get(campoId) || { id: campoId, nombre: campo?.nombre || 'Campo no disponible', lineas: [] };
+
+      campoGrupo.lineas.push(linea);
+      zona.campos.set(campoId, campoGrupo);
+      zonas.set(zonaId, zona);
+    }
+
+    return Array.from(zonas.values())
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map((zona) => ({
+        ...zona,
+        campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+      }));
+  }, [lineasPlanificacion, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+
+  function obtenerNombreZona(zonaPlanificacionId?: string, zonaErpId?: string) {
+    const zonaPropia = planificacion.zonasPlanificacion?.find((zona) => zona.id === zonaPlanificacionId);
+
+    if (zonaPropia) {
+      return zonaPropia.nombre;
+    }
+
+    const zonaErp = snapshot.zonas.find((zona) => zona.erpId === zonaErpId || zonaErpId?.endsWith(`:${zona.idZona}`));
+
+    return zonaErp?.nombre || 'Sin zona';
+  }
+
+  function obtenerProtocolosParaLinea(linea: PlanificacionAgricolaLinea) {
+    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+
+    return planificacion.protocolos
+      .filter((protocolo) => {
+        if (!protocolo.activo || protocolo.campaniaErpId !== planificacionActiva?.campaniaErpId) {
+          return false;
+        }
+
+        const coincideCampo = !protocolo.campoPlanificacionId || protocolo.campoPlanificacionId === linea.campoPlanificacionId;
+        const coincideZona = !protocolo.zonaPlanificacionId || protocolo.zonaPlanificacionId === campo?.zonaPlanificacionId;
+
+        return coincideCampo && coincideZona;
+      })
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+  }
+
   function renderLinea(linea: PlanificacionAgricolaLinea) {
     const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
     const lote = lotesPlanificacionPorId.get(linea.lotePlanificacionId);
@@ -53,7 +109,7 @@ export function PlanificacionEditorScreen({
     const destinosDisponibles = planificacion.destinosReferencia
       .filter((item) => item.activo && (!item.actividadPlanificacionId || item.actividadPlanificacionId === linea.actividadPlanificacionId))
       .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta));
-    const protocolosCompatibles = obtenerProtocolosCompatibles(linea);
+    const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
     const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
 
@@ -81,12 +137,12 @@ export function PlanificacionEditorScreen({
 
         <div className="planning-cell-wide">
           <span className="cell-label">Actividad</span>
-          <select value={linea.actividadPlanificacionId} onChange={(event) => cambiarActividad(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
+          <select value={linea.actividadPlanificacionId} onChange={(event) => cambiarActividad(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion || Boolean(linea.protocoloId)}>
             {(planificacion.actividadesPlanificacion || []).map((item) => (
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
-          <span>{actividad?.codigoInterno || actividad?.actividadErpId || '-'}</span>
+          <span>{linea.protocoloId ? 'Definida por protocolo' : actividad?.codigoInterno || actividad?.actividadErpId || '-'}</span>
           {lineaDuplicada && <span className="cell-error">Actividad duplicada</span>}
         </div>
 
@@ -129,7 +185,7 @@ export function PlanificacionEditorScreen({
 
         <div className="planning-cell-wide">
           <span className="cell-label">Protocolo</span>
-          <select value={linea.protocoloId || ''} onChange={(event) => actualizarLinea(linea.id, { protocoloId: event.target.value || undefined })} disabled={!puedeEditarPlanificacion}>
+          <select value={linea.protocoloId || ''} onChange={(event) => cambiarProtocolo(linea.id, event.target.value || undefined)} disabled={!puedeEditarPlanificacion}>
             <option value="">Sin protocolo</option>
             {protocolosCompatibles.map((item) => (
               <option key={item.id} value={item.id}>{item.nombre}</option>
@@ -153,6 +209,9 @@ export function PlanificacionEditorScreen({
 
         <div className="row-actions planning-cell-actions">
           <span className="cell-label">Acciones</span>
+          <button className="small" onClick={() => copiarLineaPlanificacion(linea.id)} disabled={!puedeEditarPlanificacion}>
+            Copiar
+          </button>
           <button className="danger" onClick={() => eliminarLineaPlanificacion(linea.id)} disabled={!puedeEditarPlanificacion || lineasPlanificacion.length === 1}>
             Quitar
           </button>
@@ -167,7 +226,7 @@ export function PlanificacionEditorScreen({
         <div>
           <p className="eyebrow">Edicion de planificacion</p>
           <h2>{planificacionActiva?.nombre || 'Planificacion sin nombre'}</h2>
-          <p className="hint">Grilla de carga por campo, lote, actividad, destino y protocolo.</p>
+          <p className="hint">Carga por zona, campo y lote. Al elegir protocolo se define la actividad de la linea.</p>
         </div>
         <button className="secondary" onClick={onVolverResumen}>
           Volver al resumen
@@ -243,7 +302,28 @@ export function PlanificacionEditorScreen({
         </section>
 
         <div className="planning-table">
-          {lineasPlanificacion.map(renderLinea)}
+          {lineasAgrupadas.length === 0 && (
+            <p className="hint">No hay lotes activos para planificar. Primero crea o sincroniza lotes.</p>
+          )}
+          {lineasAgrupadas.map((zona) => (
+            <details className="planning-tree-zone" key={zona.id} open>
+              <summary>
+                <strong>{zona.nombre}</strong>
+                <span>{zona.campos.reduce((total, campo) => total + campo.lineas.length, 0)} lotes</span>
+              </summary>
+              {zona.campos.map((campo) => (
+                <details className="planning-tree-field" key={campo.id} open>
+                  <summary>
+                    <strong>{campo.nombre}</strong>
+                    <span>{campo.lineas.length} linea(s)</span>
+                  </summary>
+                  <div className="planning-tree-lines">
+                    {campo.lineas.map(renderLinea)}
+                  </div>
+                </details>
+              ))}
+            </details>
+          ))}
         </div>
       </section>
     </section>

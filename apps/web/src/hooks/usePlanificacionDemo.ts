@@ -6,6 +6,7 @@ import {
   GastosComercialesReferencia,
   InsumoPlanificacion,
   LaborReferencia,
+  LotePlanificacion,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
@@ -282,7 +283,10 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       descripcion,
       estado: 'borrador',
       escenarioOriginal: false,
-      lineas: [],
+      lineas: planificacion.lotesPlanificacion
+        .filter((lote) => lote.estadoVinculacion !== 'archivado')
+        .map((lote, indice) => crearLineaDesdeLote(lote, id, indice, datos.campaniaErpId))
+        .filter((linea): linea is PlanificacionAgricolaLinea => Boolean(linea)),
       createdAt: ahora,
       updatedAt: ahora,
     };
@@ -293,8 +297,72 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       sincronizadoEn: ahora,
     }));
     setPlanificacionSeleccionadaId(id);
-    setPlanificacionEstado('Nuevo escenario creado en borrador. Guardalo para persistirlo con auditoria.');
-    notificar?.({ tipo: 'success', titulo: 'Escenario creado', mensaje: 'Ya podes cargar lineas y guardar el borrador.' });
+    setPlanificacionEstado('Nuevo escenario creado en borrador con los lotes activos precargados.');
+    notificar?.({ tipo: 'success', titulo: 'Escenario creado', mensaje: 'Se cargaron los lotes activos con superficie productiva por defecto.' });
+
+    return id;
+  }
+
+  function copiarEscenarioPlanificacion(planificacionId: string) {
+    if (!sesion || !puedeEditarPlanificacionPorPermiso) {
+      notificar?.({ tipo: 'error', titulo: 'Sin permisos', mensaje: 'No tenes permisos para copiar escenarios de planificacion.' });
+      return undefined;
+    }
+
+    const origen = planificacion.planificaciones.find((item) => item.id === planificacionId);
+
+    if (!origen) {
+      return undefined;
+    }
+
+    const existeOriginalCerrado = planificacion.planificaciones.some((item) => (
+      item.id !== origen.id
+      && item.campaniaErpId === origen.campaniaErpId
+      && item.estado === 'cerrada'
+      && item.escenarioOriginal
+    )) || (origen.estado === 'cerrada' && origen.escenarioOriginal);
+
+    if (existeOriginalCerrado) {
+      notificar?.({
+        tipo: 'error',
+        titulo: 'Campania cerrada',
+        mensaje: 'Esa campania ya tiene escenario original cerrado. No se puede copiar para crear otra simulacion.',
+      });
+      return undefined;
+    }
+
+    const ahora = new Date().toISOString();
+    const id = `planificacion-copia-${Date.now()}`;
+    const copia: PlanificacionAgricola = {
+      ...origen,
+      id,
+      nombre: `${origen.nombre} - copia`,
+      estado: 'borrador',
+      escenarioOriginal: false,
+      escenarioBloqueadoPorId: undefined,
+      cerradaPor: undefined,
+      cerradaAt: undefined,
+      motivoCierre: undefined,
+      createdAt: ahora,
+      updatedAt: ahora,
+      lineas: origen.lineas.map((linea, indice) => ({
+        ...linea,
+        id: `linea-planificacion-copia-${Date.now()}-${indice}`,
+        planificacionId: id,
+        estado: 'borrador',
+        createdAt: ahora,
+        updatedAt: ahora,
+      })),
+    };
+
+    setPlanificacion((actual) => ({
+      ...actual,
+      planificaciones: [copia, ...actual.planificaciones],
+      sincronizadoEn: ahora,
+    }));
+    setPlanificacionSeleccionadaId(id);
+    setPlanificacionEstado('Escenario copiado en borrador. Guardalo para persistirlo con auditoria.');
+    notificar?.({ tipo: 'success', titulo: 'Escenario copiado', mensaje: 'La copia quedo lista para ajustar supuestos puntuales.' });
 
     return id;
   }
@@ -331,6 +399,14 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }));
   }
 
+  function obtenerActividadDesdeProtocolo(protocoloId?: string) {
+    const protocolo = protocoloId ? protocolosPorId.get(protocoloId) : undefined;
+
+    return protocolo
+      ? planificacion.actividadesPlanificacion?.find((actividad) => actividad.id === protocolo.actividadPlanificacionId)
+      : undefined;
+  }
+
   function aplicarSugerenciasComerciales(linea: PlanificacionAgricolaLinea, destinoForzado?: string): Partial<PlanificacionAgricolaLinea> {
     const destino = destinoForzado
       ? planificacion.destinosReferencia.find((item) => (
@@ -352,6 +428,57 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       gastosComercialesReferenciaId: gastos?.id,
       gastosComercialesEstimados: calcularGastosComerciales({ ...linea, destinoVenta, precioVentaEstimado: precio?.valor || linea.precioVentaEstimado }, gastos?.id),
     };
+  }
+
+  function crearLineaDesdeLote(lote: LotePlanificacion, planificacionId: string, indice: number, campaniaErpId: string): PlanificacionAgricolaLinea | undefined {
+    const campo = camposPlanificacionPorId.get(lote.campoPlanificacionId);
+    const actividad = planificacion.actividadesPlanificacion?.[0];
+    const ahora = new Date().toISOString();
+
+    if (!campo || !actividad) {
+      return undefined;
+    }
+
+    const base: PlanificacionAgricolaLinea = {
+      id: `linea-planificacion-${planificacionId}-${indice}-${Date.now()}`,
+      planificacionId,
+      empresaErpId: campo.empresaErpId,
+      campoPlanificacionId: campo.id,
+      campoErpId: campo.campoErpId,
+      lotePlanificacionId: lote.id,
+      loteErpId: lote.loteErpId,
+      actividadPlanificacionId: actividad.id,
+      actividadErpId: actividad.actividadErpId,
+      destinoReferenciaId: undefined,
+      destinoVenta: '',
+      destinoVentaManual: false,
+      precioReferenciaId: undefined,
+      precioVentaEstimado: 0,
+      precioVentaManual: false,
+      hectareasPlanificadas: lote.superficieProductiva,
+      rindeEstimado: 0,
+      gastosComercialesReferenciaId: undefined,
+      gastosComercialesEstimados: 0,
+      protocoloId: undefined,
+      ingresoBrutoEstimado: 0,
+      ingresoNetoEstimado: 0,
+      costoProduccionEstimado: 0,
+      margenBrutoEstimado: 0,
+      margenBrutoActualizado: 0,
+      estado: 'borrador',
+      createdAt: ahora,
+      updatedAt: ahora,
+    };
+    const protocolo = obtenerProtocolosCompatibles(base).find((item) => item.campaniaErpId === campaniaErpId) || obtenerProtocolosCompatibles(base)[0];
+    const actividadProtocolo = obtenerActividadDesdeProtocolo(protocolo?.id);
+    const lineaConProtocolo = {
+      ...base,
+      protocoloId: protocolo?.id,
+      actividadPlanificacionId: actividadProtocolo?.id || base.actividadPlanificacionId,
+      actividadErpId: actividadProtocolo?.actividadErpId || base.actividadErpId,
+    };
+
+    return recalcularLinea({ ...lineaConProtocolo, ...aplicarSugerenciasComerciales(lineaConProtocolo) });
   }
 
   function cambiarCampo(lineaId: string, campoPlanificacionId: string) {
@@ -421,6 +548,27 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     actualizarLinea(lineaId, {
       ...base,
       protocoloId: protocolo?.id,
+      ...aplicarSugerenciasComerciales(base),
+    });
+  }
+
+  function cambiarProtocolo(lineaId: string, protocoloId?: string) {
+    const linea = lineasPlanificacion.find((item) => item.id === lineaId);
+
+    if (!linea) {
+      return;
+    }
+
+    const actividad = obtenerActividadDesdeProtocolo(protocoloId);
+    const base = {
+      ...linea,
+      protocoloId,
+      actividadPlanificacionId: actividad?.id || linea.actividadPlanificacionId,
+      actividadErpId: actividad?.actividadErpId || linea.actividadErpId,
+    };
+
+    actualizarLinea(lineaId, {
+      ...base,
       ...aplicarSugerenciasComerciales(base),
     });
   }
@@ -495,6 +643,34 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
 
     actualizarPlanificacionActiva((actual) => ({ ...actual, lineas: actual.lineas.filter((linea) => linea.id !== lineaId) }));
+  }
+
+  function copiarLineaPlanificacion(lineaId: string) {
+    if (!puedeEditarPlanificacion) {
+      return;
+    }
+
+    const linea = lineasPlanificacion.find((item) => item.id === lineaId);
+
+    if (!linea) {
+      return;
+    }
+
+    const ahora = new Date().toISOString();
+    const copia = recalcularLinea({
+      ...linea,
+      id: `linea-planificacion-copia-${Date.now()}`,
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
+
+    actualizarPlanificacionActiva((actual) => {
+      const indice = actual.lineas.findIndex((item) => item.id === lineaId);
+      const lineas = [...actual.lineas];
+      lineas.splice(indice + 1, 0, copia);
+
+      return { ...actual, lineas, updatedAt: ahora };
+    });
   }
 
   async function guardarPrecioReferenciaDesdeModal(precio: PrecioReferencia) {
@@ -1052,14 +1228,17 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     tieneLineasDuplicadas,
     seleccionarPlanificacion,
     crearEscenarioPlanificacion,
+    copiarEscenarioPlanificacion,
     actualizarCabeceraPlanificacion,
     cambiarCampaniaPlanificacion,
     actualizarLinea,
     cambiarCampo,
     cambiarLote,
     cambiarActividad,
+    cambiarProtocolo,
     cambiarDestino,
     agregarLineaPlanificacion,
+    copiarLineaPlanificacion,
     eliminarLineaPlanificacion,
     guardarPrecioReferenciaDesdeModal,
     guardarGastoComercialDesdeModal,

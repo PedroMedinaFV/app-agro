@@ -19,9 +19,17 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
     }
   }
 
+  function copiarYEditarEscenario(planificacionId: string) {
+    const copiaId = props.copiarEscenarioPlanificacion(planificacionId);
+
+    if (copiaId) {
+      setModoEdicion(true);
+    }
+  }
+
   if (modoEdicion) {
     return <PlanificacionEditorScreen {...props} onVolverResumen={() => setModoEdicion(false)} />;
   }
 
-  return <PlanificacionesResumenScreen {...props} onEditarPlanificacion={abrirEditor} onNuevoEscenario={crearYEditarEscenario} />;
+  return <PlanificacionesResumenScreen {...props} onEditarPlanificacion={abrirEditor} onNuevoEscenario={crearYEditarEscenario} onCopiarEscenario={copiarYEditarEscenario} />;
 }

@@ -191,6 +191,8 @@ Una campania puede tener varias planificaciones abiertas para simular distintos 
 
 La palabra "original" se usa como bandera de escenario elegido para la campania, no como "primer registro creado". La regla vive en backend y se ejecuta en transaccion junto con auditoria para evitar dos escenarios originales activos de la misma campania.
 
+La carga inicial de un escenario parte de todos los lotes activos disponibles y propone la superficie productiva como superficie planificada. En la grilla, el protocolo funciona como selector principal del planteo productivo: al elegir protocolo se define la actividad de la linea. La copia de linea existe para casos de doble cultivo sobre el mismo lote, y la copia de escenario existe para simular alternativas sin recargar toda la planilla.
+
 ## Administracion de padrones maestros
 
 Los padrones maestros propios de Agro App deben tener pantallas administrativas en web cuando el usuario tenga permisos suficientes.

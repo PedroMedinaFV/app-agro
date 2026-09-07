@@ -314,6 +314,8 @@ Incluye:
 - listado de planificaciones con nombre, campania, estado, hectareas y margen;
 - multiples escenarios por campania, con cierre de un escenario original y deshabilitacion automatica de alternativas;
 - alta de nuevo escenario desde resumen web, con edicion posterior en pantalla completa;
+- precarga de lotes activos al crear escenario, organizados como arbol zona-campo;
+- copia de linea para doble cultivo y copia de escenario para simulaciones;
 - pantalla completa de edicion tipo planilla;
 - lineas por campo, lote, actividad y protocolo;
 - selects dependientes campo/lote;
