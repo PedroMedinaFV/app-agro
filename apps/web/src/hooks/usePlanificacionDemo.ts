@@ -243,6 +243,62 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     setPlanificacionSeleccionadaId(planificacionId);
   }
 
+  function crearEscenarioPlanificacion(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
+    if (!sesion || !puedeEditarPlanificacionPorPermiso) {
+      notificar?.({ tipo: 'error', titulo: 'Sin permisos', mensaje: 'No tenes permisos para crear escenarios de planificacion.' });
+      return undefined;
+    }
+
+    const nombre = limpiarTextoVisible(datos.nombre);
+    const descripcion = datos.descripcion ? limpiarTextoVisible(datos.descripcion) : undefined;
+
+    if (!nombre) {
+      notificar?.({ tipo: 'error', titulo: 'Falta nombre', mensaje: 'El escenario debe tener un nombre para poder identificarlo.' });
+      return undefined;
+    }
+
+    const existeOriginalCerrado = planificacion.planificaciones.some((item) => (
+      item.campaniaErpId === datos.campaniaErpId
+      && item.estado === 'cerrada'
+      && item.escenarioOriginal
+    ));
+
+    if (existeOriginalCerrado) {
+      notificar?.({
+        tipo: 'error',
+        titulo: 'Campania cerrada',
+        mensaje: 'Esa campania ya tiene un escenario original cerrado. No se pueden crear nuevas simulaciones.',
+      });
+      return undefined;
+    }
+
+    const ahora = new Date().toISOString();
+    const id = `planificacion-${Date.now()}`;
+    const nuevaPlanificacion: PlanificacionAgricola = {
+      id,
+      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      campaniaErpId: datos.campaniaErpId,
+      nombre,
+      descripcion,
+      estado: 'borrador',
+      escenarioOriginal: false,
+      lineas: [],
+      createdAt: ahora,
+      updatedAt: ahora,
+    };
+
+    setPlanificacion((actual) => ({
+      ...actual,
+      planificaciones: [nuevaPlanificacion, ...actual.planificaciones],
+      sincronizadoEn: ahora,
+    }));
+    setPlanificacionSeleccionadaId(id);
+    setPlanificacionEstado('Nuevo escenario creado en borrador. Guardalo para persistirlo con auditoria.');
+    notificar?.({ tipo: 'success', titulo: 'Escenario creado', mensaje: 'Ya podes cargar lineas y guardar el borrador.' });
+
+    return id;
+  }
+
   function actualizarCabeceraPlanificacion(cambios: Partial<Pick<PlanificacionAgricola, 'nombre' | 'descripcion'>>) {
     actualizarPlanificacionActiva((actual) => ({
       ...actual,
@@ -995,6 +1051,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     clavesDuplicadas,
     tieneLineasDuplicadas,
     seleccionarPlanificacion,
+    crearEscenarioPlanificacion,
     actualizarCabeceraPlanificacion,
     cambiarCampaniaPlanificacion,
     actualizarLinea,

@@ -124,6 +124,8 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 
 - la pantalla principal debe mostrar un listado/resumen de planificaciones, no la grilla pesada directamente;
 - cada planificacion muestra nombre, campania, estado, hectareas, resumen economico y margen;
+- desde el resumen se puede crear un `Nuevo escenario` indicando nombre, campania y descripcion;
+- al crear un escenario, se abre la pantalla completa de edicion para cargar la planilla;
 - si la planificacion no esta cerrada y el usuario tiene permiso, se habilita un boton `Editar`;
 - al editar, se abre una vista de edicion de pantalla completa dentro de la app, no un modal, porque la planilla tiene mucha densidad de datos;
 - la cabecera permite editar nombre, descripcion y campania;

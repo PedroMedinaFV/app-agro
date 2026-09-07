@@ -172,7 +172,7 @@ export function PlanificacionEditorScreen({
         <button className="secondary" onClick={onVolverResumen}>
           Volver al resumen
         </button>
-        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' ? 'locked' : ''}`}>
+        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
           {planificacionActiva?.estado || 'sin_estado'}
         </div>
       </section>

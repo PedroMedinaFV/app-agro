@@ -11,9 +11,17 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
     setModoEdicion(true);
   }
 
+  function crearYEditarEscenario(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
+    const planificacionId = props.crearEscenarioPlanificacion(datos);
+
+    if (planificacionId) {
+      setModoEdicion(true);
+    }
+  }
+
   if (modoEdicion) {
     return <PlanificacionEditorScreen {...props} onVolverResumen={() => setModoEdicion(false)} />;
   }
 
-  return <PlanificacionesResumenScreen {...props} onEditarPlanificacion={abrirEditor} />;
+  return <PlanificacionesResumenScreen {...props} onEditarPlanificacion={abrirEditor} onNuevoEscenario={crearYEditarEscenario} />;
 }

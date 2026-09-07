@@ -30,6 +30,7 @@ export type PlanificacionBaseProps = {
   lotesPlanificacionPorId: Map<string, LotePlanificacion>;
   protocolosPorId: Map<string, ProtocoloProductivoResumen>;
   seleccionarPlanificacion: (planificacionId: string) => void;
+  crearEscenarioPlanificacion: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => string | undefined;
   actualizarCabeceraPlanificacion: (updates: Partial<Pick<PlanificacionActiva, 'nombre' | 'descripcion'>>) => void;
   cambiarCampaniaPlanificacion: (campaniaErpId: string) => void;
   agregarLineaPlanificacion: () => void;

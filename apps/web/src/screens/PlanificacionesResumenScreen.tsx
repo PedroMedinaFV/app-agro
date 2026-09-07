@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onEditarPlanificacion: (planificacionId: string) => void;
+  onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => void;
 };
 
 export function PlanificacionesResumenScreen({
@@ -25,8 +27,21 @@ export function PlanificacionesResumenScreen({
   cerrarPlanificacionActiva,
   formatearUsd,
   onEditarPlanificacion,
+  onNuevoEscenario,
 }: PlanificacionesResumenScreenProps) {
+  const campaniaInicial = planificacionActiva?.campaniaErpId || snapshot.campanias.find((campania) => campania.esActual)?.erpId || snapshot.campanias[0]?.erpId || '';
+  const [modalEscenarioAbierto, setModalEscenarioAbierto] = useState(false);
+  const [nuevoEscenario, setNuevoEscenario] = useState({
+    nombre: '',
+    campaniaErpId: campaniaInicial,
+    descripcion: '',
+  });
   const campaniaActiva = snapshot.campanias.find((campania) => campania.erpId === planificacionActiva?.campaniaErpId);
+  const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
+    item.campaniaErpId === nuevoEscenario.campaniaErpId
+    && item.estado === 'cerrada'
+    && item.escenarioOriginal
+  ));
 
   function calcularResumen(item: PlanificacionActiva) {
     return {
@@ -35,6 +50,24 @@ export function PlanificacionesResumenScreen({
       costo: item.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
       margen: item.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
     };
+  }
+
+  function abrirNuevoEscenario() {
+    setNuevoEscenario({
+      nombre: '',
+      campaniaErpId: campaniaInicial,
+      descripcion: '',
+    });
+    setModalEscenarioAbierto(true);
+  }
+
+  function confirmarNuevoEscenario() {
+    onNuevoEscenario({
+      nombre: nuevoEscenario.nombre,
+      campaniaErpId: nuevoEscenario.campaniaErpId,
+      descripcion: nuevoEscenario.descripcion || undefined,
+    });
+    setModalEscenarioAbierto(false);
   }
 
   return (
@@ -92,6 +125,9 @@ export function PlanificacionesResumenScreen({
             <p className="hint">Vista principal de nombre, campania, estado y resultado economico.</p>
           </div>
           <div className="button-row">
+            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || snapshot.campanias.length === 0}>
+              Nuevo escenario
+            </button>
             <button className="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
               Editar
             </button>
@@ -201,6 +237,52 @@ export function PlanificacionesResumenScreen({
           </div>
         </div>
       </section>
+
+      {modalEscenarioAbierto && (
+        <div className="modal-backdrop">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="nuevo-escenario-title">
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Planificacion</p>
+                <h2 id="nuevo-escenario-title">Nuevo escenario</h2>
+              </div>
+              <button className="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cerrar</button>
+            </div>
+
+            <div className="form-grid">
+              <label>
+                Nombre
+                <input value={nuevoEscenario.nombre} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, nombre: event.target.value }))} placeholder="Ej. Escenario objetivo 25/26" />
+              </label>
+              <label>
+                Campania
+                <select value={nuevoEscenario.campaniaErpId} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, campaniaErpId: event.target.value }))}>
+                  {snapshot.campanias.map((campania) => (
+                    <option key={campania.erpId} value={campania.erpId}>
+                      {campania.codigo} {campania.esActual ? '(actual)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-span-2">
+                Descripcion
+                <input value={nuevoEscenario.descripcion} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, descripcion: event.target.value }))} placeholder="Objetivo o supuesto principal del escenario" />
+              </label>
+            </div>
+
+            {campaniaTieneOriginal && (
+              <p className="status-error">Esta campania ya tiene un escenario original cerrado. No se pueden crear nuevas simulaciones.</p>
+            )}
+
+            <div className="modal-actions">
+              <button className="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cancelar</button>
+              <button className="primary" onClick={confirmarNuevoEscenario} disabled={!nuevoEscenario.nombre.trim() || !nuevoEscenario.campaniaErpId || campaniaTieneOriginal}>
+                Crear escenario
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

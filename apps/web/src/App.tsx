@@ -212,6 +212,7 @@ export function App() {
           lotesPlanificacionPorId={planificacionDemo.lotesPlanificacionPorId}
           protocolosPorId={planificacionDemo.protocolosPorId}
           seleccionarPlanificacion={planificacionDemo.seleccionarPlanificacion}
+          crearEscenarioPlanificacion={planificacionDemo.crearEscenarioPlanificacion}
           actualizarCabeceraPlanificacion={planificacionDemo.actualizarCabeceraPlanificacion}
           cambiarCampaniaPlanificacion={planificacionDemo.cambiarCampaniaPlanificacion}
           agregarLineaPlanificacion={planificacionDemo.agregarLineaPlanificacion}
