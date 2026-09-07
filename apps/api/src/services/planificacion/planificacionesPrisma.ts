@@ -103,7 +103,7 @@ function recalcularLinea(linea: PlanificacionAgricolaLinea): PlanificacionAgrico
   };
 }
 
-function validarLineas(planificacion: PlanificacionAgricola) {
+function validarLineas(planificacion: PlanificacionAgricola, opciones: { permitirHectareasCero: boolean }) {
   const claves = new Set<string>();
 
   for (const linea of planificacion.lineas) {
@@ -111,11 +111,24 @@ function validarLineas(planificacion: PlanificacionAgricola) {
       throw crearErrorValidacion('Cada linea debe tener campo, lote y actividad de planificacion.');
     }
 
-    if (linea.hectareasPlanificadas <= 0) {
-      throw crearErrorValidacion('Las hectareas planificadas deben ser mayores a cero.');
+    if (!Number.isFinite(linea.hectareasPlanificadas) || linea.hectareasPlanificadas < 0) {
+      throw crearErrorValidacion('Las hectareas planificadas deben ser mayores o iguales a cero.');
     }
 
-    if (linea.rindeEstimado < 0 || linea.precioVentaEstimado < 0 || linea.gastosComercialesEstimados < 0 || linea.costoProduccionEstimado < 0) {
+    if (!opciones.permitirHectareasCero && linea.hectareasPlanificadas === 0) {
+      throw crearErrorValidacion('Las hectareas planificadas deben ser mayores a cero para cerrar la planificacion.');
+    }
+
+    if (
+      !Number.isFinite(linea.rindeEstimado)
+      || !Number.isFinite(linea.precioVentaEstimado)
+      || !Number.isFinite(linea.gastosComercialesEstimados)
+      || !Number.isFinite(linea.costoProduccionEstimado)
+      || linea.rindeEstimado < 0
+      || linea.precioVentaEstimado < 0
+      || linea.gastosComercialesEstimados < 0
+      || linea.costoProduccionEstimado < 0
+    ) {
       throw crearErrorValidacion('Rinde, precio, gastos y costos no pueden ser negativos.');
     }
 
@@ -147,7 +160,15 @@ function validarPlanificacion(planificacion: PlanificacionAgricola) {
     throw crearErrorValidacion('El cierre o deshabilitacion debe ejecutarse por el endpoint especifico de cierre.');
   }
 
-  validarLineas(planificacion);
+  validarLineas(planificacion, { permitirHectareasCero: planificacion.estado === 'borrador' });
+}
+
+function validarPlanificacionParaCierre(planificacion: PlanificacionAgricola) {
+  if (planificacion.lineas.length === 0) {
+    throw crearErrorValidacion('La planificacion debe tener al menos una linea para poder cerrarse.');
+  }
+
+  validarLineas(planificacion, { permitirHectareasCero: false });
 }
 
 const incluirPlanificacion = {
@@ -320,6 +341,8 @@ export async function cerrarPlanificacionPersistida(
     if (existente.estado === 'cerrada') {
       throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
     }
+
+    validarPlanificacionParaCierre(mapearPlanificacion(existente));
 
     const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
       where: {

@@ -129,7 +129,8 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - desde el resumen se puede crear un `Nuevo escenario` indicando nombre, campania y descripcion;
 - al crear un escenario, el backend lo persiste inmediatamente como borrador auditado y luego se abre la pantalla completa de edicion para cargar la planilla;
 - al crear un escenario nuevo, la planilla se inicializa con una linea por cada lote activo disponible en Agro App;
-- la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote;
+- la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote; si no hay superficie productiva valida, se usa la superficie total y, si tampoco existe, queda en `0` para completar manualmente;
+- una planificacion en `borrador` puede guardar lineas con `0` hectareas para no bloquear la carga inicial, pero no puede guardar valores negativos;
 - la grilla de edicion se organiza como arbol expandible `zona -> campo -> lotes` para facilitar la navegacion;
 - el arbol de planificacion permite expandir o contraer toda la vista, y tambien expandir o contraer todos los campos dentro de una zona con botones compactos de accion contextual;
 - dentro de cada linea no se muestra selector de campo porque el campo ya esta definido por el grupo del arbol;
@@ -152,7 +153,8 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - si el usuario edita manualmente el importe de gastos comerciales, la linea deja de depender de la referencia sugerida para no sobrescribir su decision;
 - al cambiar la campania de la planificacion, se buscan nuevamente gastos comerciales compatibles con esa campania; si no existen, el gasto de la linea queda en cero para carga manual;
 - guardar la planificacion como borrador;
-- bloquear la edicion cuando la planificacion este cerrada.
+- bloquear la edicion cuando la planificacion este cerrada;
+- cerrar una planificacion exige que todas las lineas tengan hectareas mayores a cero.
 
 Mobile debe comenzar como vista de consulta/resumen para no forzar una carga pesada en pantalla chica. La carga mobile puede quedar para casos puntuales o flujos simplificados posteriores.
 

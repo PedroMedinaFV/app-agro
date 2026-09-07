@@ -39,6 +39,18 @@ function normalizarTexto(valor: string) {
     .toUpperCase();
 }
 
+function obtenerSuperficieInicialLote(lote: LotePlanificacion) {
+  if (Number.isFinite(lote.superficieProductiva) && lote.superficieProductiva > 0) {
+    return lote.superficieProductiva;
+  }
+
+  if (Number.isFinite(lote.superficieTotal) && lote.superficieTotal > 0) {
+    return lote.superficieTotal;
+  }
+
+  return 0;
+}
+
 export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionFallback);
   const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion demo local');
@@ -495,7 +507,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       precioReferenciaId: undefined,
       precioVentaEstimado: 0,
       precioVentaManual: false,
-      hectareasPlanificadas: lote.superficieProductiva,
+      hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
       rindeEstimado: 0,
       gastosComercialesReferenciaId: undefined,
       gastosComercialesEstimados: 0,
@@ -537,7 +549,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       campoErpId: campo.campoErpId,
       lotePlanificacionId: lote.id,
       loteErpId: lote.loteErpId,
-      hectareasPlanificadas: lote.superficieProductiva,
+      hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
     };
     const protocolo = obtenerProtocolosCompatibles(base)[0];
 
@@ -564,7 +576,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       campoErpId: campo.campoErpId,
       lotePlanificacionId: lote.id,
       loteErpId: lote.loteErpId,
-      hectareasPlanificadas: lote.superficieProductiva,
+      hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
     };
     const protocolo = obtenerProtocolosCompatibles(base)[0];
 
@@ -657,7 +669,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       precioReferenciaId: precio?.id,
       precioVentaEstimado: precio?.valor || 0,
       precioVentaManual: !precio,
-      hectareasPlanificadas: lote.superficieProductiva,
+      hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
       rindeEstimado: 0,
       gastosComercialesReferenciaId: undefined,
       gastosComercialesEstimados: 0,
