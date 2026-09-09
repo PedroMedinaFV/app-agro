@@ -1,9 +1,9 @@
-import type { GuardarLotePlanificacionRequest, GuardarLotePlanificacionResponse, LotePlanificacion } from '@agro/tipos';
+import type { GuardarLoteAppRequest, GuardarLoteAppResponse, LoteApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type LotePrisma = Prisma.LotePlanificacionGetPayload<Record<string, never>>;
+type LotePrisma = Prisma.LoteAppGetPayload<Record<string, never>>;
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,23 +23,23 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function mapearLote(lote: LotePrisma): LotePlanificacion {
+function mapearLote(lote: LotePrisma): LoteApp {
   return {
     id: lote.id,
     clienteId: lote.clienteId,
-    campoPlanificacionId: lote.campoPlanificacionId,
+    campoAppId: lote.campoAppId,
     loteErpId: lote.loteErpId || undefined,
     nombre: lote.nombre,
     codigoInterno: lote.codigoInterno || undefined,
     superficieTotal: lote.superficieTotal,
     superficieProductiva: lote.superficieProductiva,
-    estadoVinculacion: lote.estadoVinculacion as LotePlanificacion['estadoVinculacion'],
+    estadoVinculacion: lote.estadoVinculacion as LoteApp['estadoVinculacion'],
     createdAt: lote.createdAt.toISOString(),
     updatedAt: lote.updatedAt.toISOString(),
   };
 }
 
-function prepararLote(lote: LotePlanificacion): LotePlanificacion {
+function prepararLote(lote: LoteApp): LoteApp {
   const nombre = limpiarTextoVisible(lote.nombre);
 
   return {
@@ -52,7 +52,7 @@ function prepararLote(lote: LotePlanificacion): LotePlanificacion {
   };
 }
 
-async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) {
+async function validarLote(lote: LoteApp, usuario?: UsuarioAuditoria) {
   if (!lote.clienteId) {
     throw crearErrorValidacion('El lote debe tener clienteId.');
   }
@@ -61,7 +61,7 @@ async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) 
     throw crearErrorValidacion('No se puede modificar un lote de otro cliente.', 403);
   }
 
-  if (!lote.campoPlanificacionId) {
+  if (!lote.campoAppId) {
     throw crearErrorValidacion('El lote debe estar asociado a un campo propio de Agro App.');
   }
 
@@ -81,7 +81,7 @@ async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) 
     throw crearErrorValidacion('La superficie productiva no puede superar la superficie total.');
   }
 
-  const campo = await prisma.campoPlanificacion.findUnique({ where: { id: lote.campoPlanificacionId } });
+  const campo = await prisma.campoApp.findUnique({ where: { id: lote.campoAppId } });
 
   if (!campo || campo.clienteId !== lote.clienteId) {
     throw crearErrorValidacion('El campo seleccionado no pertenece al cliente.', 403);
@@ -98,7 +98,7 @@ async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) 
       throw crearErrorValidacion('El lote ERP no pertenece al campo ERP vinculado al lote propio.');
     }
 
-    const loteYaVinculado = await prisma.lotePlanificacion.findFirst({
+    const loteYaVinculado = await prisma.loteApp.findFirst({
       where: {
         clienteId: lote.clienteId,
         loteErpId: lote.loteErpId,
@@ -112,8 +112,8 @@ async function validarLote(lote: LotePlanificacion, usuario?: UsuarioAuditoria) 
   }
 }
 
-export async function obtenerLotesPlanificacionPersistidos(clienteId: string): Promise<LotePlanificacion[]> {
-  const lotes = await prisma.lotePlanificacion.findMany({
+export async function obtenerLotesAppPersistidos(clienteId: string): Promise<LoteApp[]> {
+  const lotes = await prisma.loteApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -121,21 +121,21 @@ export async function obtenerLotesPlanificacionPersistidos(clienteId: string): P
   return lotes.map(mapearLote);
 }
 
-export async function guardarLotePlanificacionPersistido(
+export async function guardarLoteAppPersistido(
   id: string,
-  request: GuardarLotePlanificacionRequest,
+  request: GuardarLoteAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarLotePlanificacionResponse> {
+): Promise<GuardarLoteAppResponse> {
   const lote = prepararLote({ ...request.lote, id });
   await validarLote(lote, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.lotePlanificacion.findUnique({ where: { id } });
+    const existente = await tx.loteApp.findUnique({ where: { id } });
     const existenteMismoCodigo = lote.codigoInterno
-      ? await tx.lotePlanificacion.findFirst({
+      ? await tx.loteApp.findFirst({
         where: {
           clienteId: lote.clienteId,
-          campoPlanificacionId: lote.campoPlanificacionId,
+          campoAppId: lote.campoAppId,
           codigoInterno: lote.codigoInterno,
           id: { not: id },
         },
@@ -146,10 +146,10 @@ export async function guardarLotePlanificacionPersistido(
       throw crearErrorValidacion('Ya existe un lote con ese codigo para el campo.');
     }
 
-    const guardado = await tx.lotePlanificacion.upsert({
+    const guardado = await tx.loteApp.upsert({
       where: { id },
       update: {
-        campoPlanificacionId: lote.campoPlanificacionId,
+        campoAppId: lote.campoAppId,
         loteErpId: lote.loteErpId ?? null,
         nombre: lote.nombre,
         codigoInterno: lote.codigoInterno ?? null,
@@ -161,7 +161,7 @@ export async function guardarLotePlanificacionPersistido(
       create: {
         id,
         clienteId: lote.clienteId,
-        campoPlanificacionId: lote.campoPlanificacionId,
+        campoAppId: lote.campoAppId,
         loteErpId: lote.loteErpId ?? null,
         nombre: lote.nombre,
         codigoInterno: lote.codigoInterno ?? null,
@@ -177,7 +177,7 @@ export async function guardarLotePlanificacionPersistido(
     await registrarAuditoria(tx, {
       clienteId: lote.clienteId,
       usuario,
-      entidad: 'LotePlanificacion',
+      entidad: 'LoteApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

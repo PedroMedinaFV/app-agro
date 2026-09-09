@@ -12,10 +12,10 @@ import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
 import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
-import { InsumosPlanificacionScreen } from './screens/InsumosPlanificacionScreen';
+import { InsumosAppScreen } from './screens/InsumosAppScreen';
 import { ZonasScreen } from './screens/ZonasScreen';
-import { EspeciesPlanificacionScreen } from './screens/EspeciesPlanificacionScreen';
-import { ActividadesPlanificacionScreen } from './screens/ActividadesPlanificacionScreen';
+import { EspeciesAppScreen } from './screens/EspeciesAppScreen';
+import { ActividadesAppScreen } from './screens/ActividadesAppScreen';
 import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
 import { SincronizacionErpScreen } from './screens/SincronizacionErpScreen';
 import { CamposScreen } from './screens/CamposScreen';
@@ -181,7 +181,7 @@ export function App() {
         <CamposScreen
           sesion={sesion}
           empresas={erp.empresasDisponibles}
-          zonasPropias={planificacionDemo.planificacion.zonasPlanificacion || []}
+          zonasPropias={planificacionDemo.planificacion.zonasApp || []}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
@@ -191,7 +191,7 @@ export function App() {
         <LotesScreen
           sesion={sesion}
           empresas={erp.empresasDisponibles}
-          camposPropios={planificacionDemo.planificacion.camposPlanificacion}
+          camposPropios={planificacionDemo.planificacion.camposApp}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
@@ -215,8 +215,8 @@ export function App() {
           camposProvisorios={planificacionDemo.camposProvisorios}
           tieneLineasDuplicadas={planificacionDemo.tieneLineasDuplicadas}
           clavesDuplicadas={planificacionDemo.clavesDuplicadas}
-          camposPlanificacionPorId={planificacionDemo.camposPlanificacionPorId}
-          lotesPlanificacionPorId={planificacionDemo.lotesPlanificacionPorId}
+          camposAppPorId={planificacionDemo.camposAppPorId}
+          lotesAppPorId={planificacionDemo.lotesAppPorId}
           protocolosPorId={planificacionDemo.protocolosPorId}
           seleccionarPlanificacion={planificacionDemo.seleccionarPlanificacion}
           crearEscenarioPlanificacion={planificacionDemo.crearEscenarioPlanificacion}
@@ -329,13 +329,13 @@ export function App() {
       )}
 
       {vista === 'padrones-insumos' && (
-        <InsumosPlanificacionScreen
+        <InsumosAppScreen
           sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           guardandoInsumos={planificacionDemo.guardandoInsumos}
-          guardarInsumo={planificacionDemo.guardarInsumoPlanificacionDesdeModal}
+          guardarInsumo={planificacionDemo.guardarInsumoAppDesdeModal}
           leerNumero={leerNumero}
           formatearUsd={formatearUsd}
           notificar={toast.notify}
@@ -351,7 +351,7 @@ export function App() {
       )}
 
       {vista === 'padrones-especies' && (
-        <EspeciesPlanificacionScreen
+        <EspeciesAppScreen
           sesion={sesion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
@@ -359,7 +359,7 @@ export function App() {
       )}
 
       {vista === 'padrones-actividades' && (
-        <ActividadesPlanificacionScreen
+        <ActividadesAppScreen
           sesion={sesion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}

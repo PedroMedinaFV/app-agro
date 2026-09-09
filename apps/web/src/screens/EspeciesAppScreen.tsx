@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ErpEspecie, EspeciePlanificacion, SesionUsuario } from '@agro/tipos';
+import type { ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { guardarEspeciePlanificacion, obtenerEspeciesErpImportadas, obtenerEspeciesPlanificacion } from '../services/api';
+import { guardarEspecieApp, obtenerEspeciesErpImportadas, obtenerEspeciesApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
-type EspeciesPlanificacionScreenProps = {
+type EspeciesAppScreenProps = {
   sesion: SesionUsuario;
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
@@ -21,7 +21,7 @@ type EspecieTabla = {
   estado: string;
   actualizado: string;
   accion: 'editar' | 'importada';
-  especiePropia?: EspeciePlanificacion;
+  especiePropia?: EspecieApp;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -35,11 +35,11 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function crearEspecieNueva(clienteId: string): EspeciePlanificacion {
+function crearEspecieNueva(clienteId: string): EspecieApp {
   const ahora = new Date().toISOString();
 
   return {
-    id: `especie-planificacion-${Date.now()}`,
+    id: `especie-app-${Date.now()}`,
     clienteId,
     empresaErpId: 'global',
     nombre: '',
@@ -50,14 +50,14 @@ function crearEspecieNueva(clienteId: string): EspeciePlanificacion {
   };
 }
 
-export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificacion, notificar }: EspeciesPlanificacionScreenProps) {
+export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notificar }: EspeciesAppScreenProps) {
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
-  const [especiesPropias, setEspeciesPropias] = useState<EspeciePlanificacion[]>([]);
-  const [especieEnEdicion, setEspecieEnEdicion] = useState<EspeciePlanificacion | null>(null);
+  const [especiesPropias, setEspeciesPropias] = useState<EspecieApp[]>([]);
+  const [especieEnEdicion, setEspecieEnEdicion] = useState<EspecieApp | null>(null);
   const [estado, setEstado] = useState('Cargando especies sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
-  const [especiePropiaParaVincular, setEspeciePropiaParaVincular] = useState<EspeciePlanificacion | null>(null);
+  const [especiePropiaParaVincular, setEspeciePropiaParaVincular] = useState<EspecieApp | null>(null);
   const [especieErpVincularId, setEspecieErpVincularId] = useState('');
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
       try {
         const [respuestaErp, respuestaPropias] = await Promise.all([
           obtenerEspeciesErpImportadas(sesion.token),
-          obtenerEspeciesPlanificacion(sesion.token),
+          obtenerEspeciesApp(sesion.token),
         ]);
 
         setEspeciesErp(respuestaErp.especies);
@@ -123,7 +123,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     setEspecieEnEdicion(crearEspecieNueva(sesion.usuario.clienteId || 'cliente-demo'));
   }
 
-  function actualizarBorrador(cambios: Partial<EspeciePlanificacion>) {
+  function actualizarBorrador(cambios: Partial<EspecieApp>) {
     setEspecieEnEdicion((actual) => actual && { ...actual, ...cambios, updatedAt: new Date().toISOString() });
   }
 
@@ -133,7 +133,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     }
 
     const nombre = limpiarTextoVisible(especieEnEdicion.nombre);
-    const especiePreparada: EspeciePlanificacion = {
+    const especiePreparada: EspecieApp = {
       ...especieEnEdicion,
       empresaErpId: 'global',
       nombre,
@@ -144,7 +144,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     setGuardando(true);
 
     try {
-      const respuesta = await guardarEspeciePlanificacion(especiePreparada.id, {
+      const respuesta = await guardarEspecieApp(especiePreparada.id, {
         especie: especiePreparada,
         origen: 'web',
         motivo: 'Alta o edicion de especie desde padron maestro web',
@@ -167,7 +167,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     }
   }
 
-  function abrirVinculacion(especie: EspeciePlanificacion) {
+  function abrirVinculacion(especie: EspecieApp) {
     const sugerencias = obtenerSugerenciasEspecie(especie);
 
     if (especie.estadoVinculacion !== 'provisorio' || especie.especieErpId) {
@@ -184,7 +184,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     setEspecieErpVincularId(sugerencias[0].registro.erpId);
   }
 
-  function obtenerSugerenciasEspecie(especie: EspeciePlanificacion) {
+  function obtenerSugerenciasEspecie(especie: EspecieApp) {
     return sugerirVinculacion(
       { codigo: especie.codigoInterno, nombre: especie.nombre },
       especiesErpDisponiblesParaVincular,
@@ -208,7 +208,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
     setGuardando(true);
 
     try {
-      const respuesta = await guardarEspeciePlanificacion(especiePropiaParaVincular.id, {
+      const respuesta = await guardarEspecieApp(especiePropiaParaVincular.id, {
         especie: {
           ...especiePropiaParaVincular,
           empresaErpId: 'global',
@@ -299,7 +299,7 @@ export function EspeciesPlanificacionScreen({ sesion, puedeConfigurarPlanificaci
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={especieEnEdicion.codigoInterno || ''} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
-              <label>Estado<select value={especieEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as EspeciePlanificacion['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
+              <label>Estado<select value={especieEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as EspecieApp['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
               <label className="reference-wide">Nombre<input value={especieEnEdicion.nombre} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la especie" /></label>
             </div>
             {existeCodigoDuplicado && <p className="form-error">Ya existe una especie propia con ese codigo interno.</p>}

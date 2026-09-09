@@ -174,7 +174,11 @@ Esta decision evita frenar la planificacion por demoras administrativas o de car
 
 La regla no aplica a datos operativos importados desde endpoints como `Agricultura/Cultivos`.
 
-El snapshot operativo de planificacion debe priorizar datos reales. Si existen padrones ERP sincronizados, el backend los materializa como registros propios vinculados en las tablas de planificacion antes de responder. Asi la web no trabaja con mocks ni con IDs virtuales: trabaja con `CampoPlanificacion`, `LotePlanificacion`, `ActividadPlanificacion`, `EspeciePlanificacion`, `InsumoPlanificacion`, `LaborReferencia` y `ZonaPlanificacion` persistidos, aptos para relaciones, validaciones y auditoria. El mock queda reservado para desarrollo cuando no hay base/cache disponible.
+Los padrones operativos propios de Agro App se nombran con sufijo `App`: `ZonaApp`, `CampoApp`, `LoteApp`, `EspecieApp`, `ActividadApp` e `InsumoApp`. El sufijo indica que son entidades editables, auditables y transversales a web, mobile, planificacion, protocolos, precios, gastos y cargas operativas. No son exclusivos del modulo de planificacion.
+
+Las tablas `Erp*` se mantienen como cache tecnica del ERP y no deben editarse desde la aplicacion. Toda personalizacion, dato provisorio o enriquecimiento funcional debe vivir en las entidades `*App` y vincularse al ERP mediante los campos `*ErpId`.
+
+El snapshot operativo de planificacion debe priorizar datos reales. Si existen padrones ERP sincronizados, el backend los materializa como registros propios vinculados en las tablas operativas de Agro App antes de responder. Asi la web no trabaja con mocks ni con IDs virtuales: trabaja con `CampoApp`, `LoteApp`, `ActividadApp`, `EspecieApp`, `InsumoApp`, `LaborReferencia` y `ZonaApp` persistidos, aptos para relaciones, validaciones y auditoria. El mock queda reservado para desarrollo cuando no hay base/cache disponible.
 
 En lotes provisorios, la web permite copiar un lote propio existente para acelerar altas repetitivas. La copia conserva campo y superficies, pero se guarda como un registro nuevo con estado `provisorio` y sin `loteErpId`; la vinculacion ERP sigue siendo una accion posterior, propuesta y auditada.
 
@@ -215,12 +219,12 @@ Los padrones maestros propios de Agro App deben tener pantallas administrativas 
 
 Esto incluye, como minimo:
 
-- zonas de planificacion;
-- campos de planificacion;
-- lotes de planificacion;
-- especies de planificacion;
-- actividades de planificacion;
-- insumos de planificacion;
+- zonas App;
+- campos App;
+- lotes App;
+- especies App;
+- actividades App;
+- insumos App;
 - destinos de venta;
 - conceptos de gastos comerciales;
 - labores de referencia;
@@ -287,3 +291,16 @@ Tercer padron implementado:
 - persistencia backend en `/labores-referencia/:id`;
 - auditoria obligatoria por backend;
 - mapper ERP preparado para `Padrones/Servicios`.
+
+## Limpieza de modelo legacy
+
+Se eliminan las tablas iniciales `Campo`, `Lote`, `Pais`, `Cultivo`, `Labor`, `AnalisisSuelo`, `AvanceSiembra`, `AvanceCosecha` y `Monitoreo`.
+
+Motivo:
+
+- el MVP ya usa padrones propios `*App` como fuente operativa editable;
+- la cache del ERP queda en tablas `Erp*`;
+- mantener `Campo`/`Lote` viejos generaba doble fuente de verdad;
+- las futuras funcionalidades operativas, como precipitaciones, recorridas, monitoreos y adjuntos mobile, deben vincularse a `CampoApp` y `LoteApp`.
+
+Las rutas CRUD antiguas asociadas a esas tablas se retiran del backend. Si en el futuro se implementan monitoreos o avances reales, se crearán modelos nuevos alineados al alcance por cliente, usuario, campo/lote asignado, auditoria y seguridad.

@@ -381,7 +381,7 @@ Tambien se agregan tablas de configuracion por cliente:
 
 `POST /erp/sincronizar` requiere PostgreSQL disponible. Cuando `ERP_AUTH_MODE` no es `mock`, consulta el ERP real y refresca la copia local en tablas `Erp*`.
 
-Las tablas `Erp*` se tratan como cache importada del ERP por empresa. En cada sincronizacion se reemplaza el snapshot de las empresas AGRO seleccionadas para mantener la copia consistente y agil contra Supabase. Las ediciones del usuario no se hacen sobre esas tablas: viven en las entidades propias de Agro App, por ejemplo `CampoPlanificacion`, `LotePlanificacion`, `ActividadPlanificacion`, `InsumoPlanificacion`, `LaborReferencia`, precios, gastos y protocolos.
+Las tablas `Erp*` se tratan como cache importada del ERP por empresa. En cada sincronizacion se reemplaza el snapshot de las empresas AGRO seleccionadas para mantener la copia consistente y agil contra Supabase. Las ediciones del usuario no se hacen sobre esas tablas: viven en las entidades propias de Agro App, por ejemplo `CampoApp`, `LoteApp`, `ActividadApp`, `InsumoApp`, `LaborReferencia`, precios, gastos y protocolos.
 
 La respuesta de sincronizacion devuelve cantidades importadas por padron para validar rapido el resultado.
 

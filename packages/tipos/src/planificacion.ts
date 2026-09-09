@@ -10,7 +10,7 @@ export type TipoCultivoActividad = 'primera' | 'segunda';
 
 export type EpocaSiembraActividad = 'invierno' | 'verano';
 
-export type ZonaPlanificacion = {
+export type ZonaApp = {
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -22,24 +22,24 @@ export type ZonaPlanificacion = {
   updatedAt: string;
 };
 
-export type CampoPlanificacion = {
+export type CampoApp = {
   id: string;
   clienteId: string;
   empresaErpId: string;
   campoErpId?: string;
   nombre: string;
   codigoInterno?: string;
-  zonaPlanificacionId?: string;
+  zonaAppId?: string;
   zonaErpId?: string;
   estadoVinculacion: EstadoVinculacionPlanificacion;
   createdAt: string;
   updatedAt: string;
 };
 
-export type LotePlanificacion = {
+export type LoteApp = {
   id: string;
   clienteId: string;
-  campoPlanificacionId: string;
+  campoAppId: string;
   loteErpId?: string;
   nombre: string;
   codigoInterno?: string;
@@ -50,7 +50,7 @@ export type LotePlanificacion = {
   updatedAt: string;
 };
 
-export type EspeciePlanificacion = {
+export type EspecieApp = {
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -62,12 +62,12 @@ export type EspeciePlanificacion = {
   updatedAt: string;
 };
 
-export type ActividadPlanificacion = {
+export type ActividadApp = {
   id: string;
   clienteId: string;
   empresaErpId: string;
   actividadErpId?: string;
-  especiePlanificacionId?: string;
+  especieAppId?: string;
   especieErpId?: string;
   nombre: string;
   codigoInterno?: string;
@@ -79,7 +79,7 @@ export type ActividadPlanificacion = {
   updatedAt: string;
 };
 
-export type InsumoPlanificacion = {
+export type InsumoApp = {
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -100,9 +100,9 @@ export type DestinoVentaReferencia = {
   clienteId: string;
   empresaErpId?: string;
   zonaErpId?: string;
-  campoPlanificacionId?: string;
+  campoAppId?: string;
   campoErpId?: string;
-  actividadPlanificacionId?: string;
+  actividadAppId?: string;
   actividadErpId?: string;
   especieErpId?: string;
   cultivoErpId?: string;
@@ -118,9 +118,9 @@ export type PrecioReferencia = {
   id: string;
   clienteId: string;
   empresaErpId?: string;
-  actividadPlanificacionId: string;
+  actividadAppId: string;
   actividadErpId?: string;
-  especiePlanificacionId?: string;
+  especieAppId?: string;
   especieErpId?: string;
   cultivoErpId?: string;
   destinoVenta: string;
@@ -159,11 +159,11 @@ export type GastosComercialesReferencia = {
   clienteId: string;
   campaniaErpId: string;
   empresaErpId: string;
-  zonaPlanificacionId?: string;
+  zonaAppId?: string;
   zonaErpId?: string;
-  campoPlanificacionId?: string;
+  campoAppId?: string;
   campoErpId?: string;
-  actividadPlanificacionId: string;
+  actividadAppId: string;
   actividadErpId?: string;
   destinoVenta?: string;
   descripcion: string;
@@ -216,12 +216,12 @@ export type ProtocoloProductivoResumen = {
   protocoloOrigenId?: string;
   empresaErpId?: string;
   campaniaErpId: string;
-  actividadPlanificacionId: string;
+  actividadAppId: string;
   actividadErpId?: string;
   tipoFecha: TipoFechaProtocolo;
   fechaSiembra?: string;
-  zonaPlanificacionId?: string;
-  campoPlanificacionId?: string;
+  zonaAppId?: string;
+  campoAppId?: string;
   costoEstimadoPorHa: number;
   activo: boolean;
   createdAt: string;
@@ -246,7 +246,7 @@ export type ProtocoloInsumo = {
   id: string;
   etapaId: string;
   indiceAplicacion: number;
-  insumoPlanificacionId: string;
+  insumoAppId: string;
   insumoErpId?: string;
   nombre: string;
   tipo?: string;
@@ -280,11 +280,11 @@ export type PlanificacionAgricolaLinea = {
   id: string;
   planificacionId: string;
   empresaErpId: string;
-  campoPlanificacionId: string;
+  campoAppId: string;
   campoErpId?: string;
-  lotePlanificacionId: string;
+  loteAppId: string;
   loteErpId?: string;
-  actividadPlanificacionId: string;
+  actividadAppId: string;
   actividadErpId?: string;
   cultivoErpId?: string;
   destinoReferenciaId?: string;
@@ -326,12 +326,12 @@ export type PlanificacionAgricola = {
 };
 
 export type PlanificacionSnapshot = {
-  zonasPlanificacion?: ZonaPlanificacion[];
-  camposPlanificacion: CampoPlanificacion[];
-  lotesPlanificacion: LotePlanificacion[];
-  especiesPlanificacion?: EspeciePlanificacion[];
-  actividadesPlanificacion?: ActividadPlanificacion[];
-  insumosPlanificacion?: InsumoPlanificacion[];
+  zonasApp?: ZonaApp[];
+  camposApp: CampoApp[];
+  lotesApp: LoteApp[];
+  especiesApp?: EspecieApp[];
+  actividadesApp?: ActividadApp[];
+  insumosApp?: InsumoApp[];
   destinosReferencia: DestinoVentaReferencia[];
   preciosReferencia: PrecioReferencia[];
   conceptosGastosComerciales: ConceptoGastoComercial[];
@@ -415,74 +415,74 @@ export type GuardarLaborReferenciaResponse = {
   mensaje: string;
 };
 
-export type GuardarInsumoPlanificacionRequest = {
-  insumo: InsumoPlanificacion;
+export type GuardarInsumoAppRequest = {
+  insumo: InsumoApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarInsumoPlanificacionResponse = {
-  insumo: InsumoPlanificacion;
+export type GuardarInsumoAppResponse = {
+  insumo: InsumoApp;
   auditado: boolean;
   mensaje: string;
 };
 
-export type GuardarEspeciePlanificacionRequest = {
-  especie: EspeciePlanificacion;
+export type GuardarEspecieAppRequest = {
+  especie: EspecieApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarEspeciePlanificacionResponse = {
-  especie: EspeciePlanificacion;
+export type GuardarEspecieAppResponse = {
+  especie: EspecieApp;
   auditado: boolean;
   mensaje: string;
 };
 
-export type GuardarActividadPlanificacionRequest = {
-  actividad: ActividadPlanificacion;
+export type GuardarActividadAppRequest = {
+  actividad: ActividadApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarActividadPlanificacionResponse = {
-  actividad: ActividadPlanificacion;
+export type GuardarActividadAppResponse = {
+  actividad: ActividadApp;
   auditado: boolean;
   mensaje: string;
 };
 
-export type GuardarCampoPlanificacionRequest = {
-  campo: CampoPlanificacion;
+export type GuardarCampoAppRequest = {
+  campo: CampoApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarCampoPlanificacionResponse = {
-  campo: CampoPlanificacion;
+export type GuardarCampoAppResponse = {
+  campo: CampoApp;
   auditado: boolean;
   mensaje: string;
 };
 
-export type GuardarZonaPlanificacionRequest = {
-  zona: ZonaPlanificacion;
+export type GuardarZonaAppRequest = {
+  zona: ZonaApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarZonaPlanificacionResponse = {
-  zona: ZonaPlanificacion;
+export type GuardarZonaAppResponse = {
+  zona: ZonaApp;
   auditado: boolean;
   mensaje: string;
 };
 
-export type GuardarLotePlanificacionRequest = {
-  lote: LotePlanificacion;
+export type GuardarLoteAppRequest = {
+  lote: LoteApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarLotePlanificacionResponse = {
-  lote: LotePlanificacion;
+export type GuardarLoteAppResponse = {
+  lote: LoteApp;
   auditado: boolean;
   mensaje: string;
 };

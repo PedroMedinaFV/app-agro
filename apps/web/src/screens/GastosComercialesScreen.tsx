@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActividadPlanificacion,
+  ActividadApp,
   ErpActividad,
   ErpCampo,
   ErpEspecie,
@@ -14,9 +14,9 @@ import {
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
-  guardarActividadPlanificacion,
+  guardarActividadApp,
   obtenerActividadesErpImportadas,
-  obtenerActividadesPlanificacion,
+  obtenerActividadesApp,
   obtenerCamposErpImportados,
   obtenerEspeciesErpImportadas,
   obtenerPuertosErpImportados,
@@ -38,7 +38,7 @@ type ActividadSeleccionable = {
   clave: string;
   nombre: string;
   empresaErpId?: string;
-  actividadPlanificacionId?: string;
+  actividadAppId?: string;
   actividadErpId?: string;
   especieErpId?: string;
   codigo?: string;
@@ -50,7 +50,7 @@ type ZonaSeleccionable = {
   clave: string;
   nombre: string;
   codigo?: string;
-  zonaPlanificacionId?: string;
+  zonaAppId?: string;
   zonaErpId?: string;
   idZona?: number;
   origen: 'agro' | 'erp';
@@ -61,9 +61,9 @@ type CampoSeleccionable = {
   nombre: string;
   codigo?: string;
   empresaErpId: string;
-  campoPlanificacionId?: string;
+  campoAppId?: string;
   campoErpId?: string;
-  zonaPlanificacionId?: string;
+  zonaAppId?: string;
   zonaErpId?: string;
   idZona?: number;
   origen: 'agro' | 'erp';
@@ -100,15 +100,15 @@ export function GastosComercialesScreen({
   const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
   const [zonaSeleccionadaClave, setZonaSeleccionadaClave] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
-  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadPlanificacion[]>([]);
+  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadApp[]>([]);
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [puertosErp, setPuertosErp] = useState<ErpPuerto[]>([]);
-  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesPlanificacion || [];
-  const zonas = planificacion.zonasPlanificacion || [];
-  const campos = planificacion.camposPlanificacion;
+  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesApp || [];
+  const zonas = planificacion.zonasApp || [];
+  const campos = planificacion.camposApp;
   const conceptosGastos = planificacion.conceptosGastosComerciales.filter((concepto) => concepto.activo);
   const planificacionActiva = planificacion.planificaciones[0];
   const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
@@ -118,7 +118,7 @@ export function GastosComercialesScreen({
       clave: `agro:${actividad.id}`,
       nombre: actividad.nombre,
       empresaErpId: actividad.empresaErpId,
-      actividadPlanificacionId: actividad.id,
+      actividadAppId: actividad.id,
       actividadErpId: actividad.actividadErpId,
       especieErpId: actividad.especieErpId,
       codigo: actividad.codigoInterno,
@@ -146,7 +146,7 @@ export function GastosComercialesScreen({
       clave: `agro:${zona.id}`,
       nombre: zona.nombre,
       codigo: zona.codigoInterno,
-      zonaPlanificacionId: zona.id,
+      zonaAppId: zona.id,
       zonaErpId: zona.zonaErpId,
       origen: 'agro' as const,
     }));
@@ -165,15 +165,15 @@ export function GastosComercialesScreen({
   const camposDisponibles = useMemo<CampoSeleccionable[]>(() => {
     const zonaSeleccionada = zonaSeleccionadaClave ? zonasPorClave.get(zonaSeleccionadaClave) : undefined;
     const propios = campos
-      .filter((campo) => !zonaSeleccionada || campo.zonaPlanificacionId === zonaSeleccionada.zonaPlanificacionId || campo.zonaErpId === zonaSeleccionada.zonaErpId)
+      .filter((campo) => !zonaSeleccionada || campo.zonaAppId === zonaSeleccionada.zonaAppId || campo.zonaErpId === zonaSeleccionada.zonaErpId)
       .map((campo) => ({
         clave: `agro:${campo.id}`,
         nombre: campo.nombre,
         codigo: campo.codigoInterno,
         empresaErpId: campo.empresaErpId,
-        campoPlanificacionId: campo.id,
+        campoAppId: campo.id,
         campoErpId: campo.campoErpId,
-        zonaPlanificacionId: campo.zonaPlanificacionId,
+        zonaAppId: campo.zonaAppId,
         zonaErpId: campo.zonaErpId,
         origen: 'agro' as const,
       }));
@@ -197,7 +197,7 @@ export function GastosComercialesScreen({
   useEffect(() => {
     async function cargarPadronesReales() {
       const [actividadesPropiasRespuesta, actividadesErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
-        obtenerActividadesPlanificacion(sesion.token),
+        obtenerActividadesApp(sesion.token),
         obtenerActividadesErpImportadas(sesion.token),
         obtenerEspeciesErpImportadas(sesion.token),
         obtenerZonasErpImportadas(sesion.token),
@@ -259,8 +259,8 @@ export function GastosComercialesScreen({
       id: `gastos-comerciales-${Date.now()}`,
       clienteId: planificacion.gastosComercialesReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
       campaniaErpId: planificacionActiva?.campaniaErpId || campanias.find((campania) => campania.esActual)?.erpId || campanias[0]?.erpId || '',
-      empresaErpId: actividad?.empresaErpId || planificacion.camposPlanificacion[0]?.empresaErpId || 'global',
-      actividadPlanificacionId: actividad?.actividadPlanificacionId || '',
+      empresaErpId: actividad?.empresaErpId || planificacion.camposApp[0]?.empresaErpId || 'global',
+      actividadAppId: actividad?.actividadAppId || '',
       actividadErpId: actividad?.actividadErpId,
       destinoVenta: '',
       descripcion: '',
@@ -283,9 +283,9 @@ export function GastosComercialesScreen({
   function abrirEditarGasto(gasto: GastosComercialesReferencia) {
     setModoModal('editar');
     setCreandoDestino(false);
-    setActividadSeleccionadaClave(`agro:${gasto.actividadPlanificacionId}`);
-    setZonaSeleccionadaClave(gasto.zonaPlanificacionId ? `agro:${gasto.zonaPlanificacionId}` : gasto.zonaErpId ? `erp:${gasto.zonaErpId}` : '');
-    setCampoSeleccionadoClave(gasto.campoPlanificacionId ? `agro:${gasto.campoPlanificacionId}` : gasto.campoErpId ? `erp:${gasto.campoErpId}` : '');
+    setActividadSeleccionadaClave(`agro:${gasto.actividadAppId}`);
+    setZonaSeleccionadaClave(gasto.zonaAppId ? `agro:${gasto.zonaAppId}` : gasto.zonaErpId ? `erp:${gasto.zonaErpId}` : '');
+    setCampoSeleccionadoClave(gasto.campoAppId ? `agro:${gasto.campoAppId}` : gasto.campoErpId ? `erp:${gasto.campoErpId}` : '');
     setGastoEnEdicion({ ...gasto, items: gasto.items.map((item) => ({ ...item })) });
   }
 
@@ -330,7 +330,7 @@ export function GastosComercialesScreen({
       return;
     }
 
-    const gastoPreparado = await asegurarActividadPlanificacion(gastoEnEdicion);
+    const gastoPreparado = await asegurarActividadApp(gastoEnEdicion);
     const guardado = await guardarGastoComercial(gastoPreparado);
 
     if (guardado) {
@@ -339,11 +339,11 @@ export function GastosComercialesScreen({
   }
 
   function crearIdActividadDesdeErp(actividadErpId: string) {
-    return `actividad-planificacion-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+    return `actividad-app-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
   }
 
-  async function asegurarActividadPlanificacion(gasto: GastosComercialesReferencia): Promise<GastosComercialesReferencia> {
-    if (gasto.actividadPlanificacionId) {
+  async function asegurarActividadApp(gasto: GastosComercialesReferencia): Promise<GastosComercialesReferencia> {
+    if (gasto.actividadAppId) {
       return gasto;
     }
 
@@ -354,7 +354,7 @@ export function GastosComercialesScreen({
     }
 
     const ahora = new Date().toISOString();
-    const actividadPreparada: ActividadPlanificacion = {
+    const actividadPreparada: ActividadApp = {
       id: crearIdActividadDesdeErp(actividad.erp.erpId),
       clienteId: gasto.clienteId,
       empresaErpId: 'global',
@@ -366,7 +366,7 @@ export function GastosComercialesScreen({
       createdAt: ahora,
       updatedAt: ahora,
     };
-    const respuesta = await guardarActividadPlanificacion(actividadPreparada.id, {
+    const respuesta = await guardarActividadApp(actividadPreparada.id, {
       actividad: actividadPreparada,
       origen: 'web',
       motivo: 'Creacion automatica de actividad operativa vinculada desde gastos comerciales',
@@ -378,7 +378,7 @@ export function GastosComercialesScreen({
     return {
       ...gasto,
       empresaErpId: respuesta.actividad.empresaErpId,
-      actividadPlanificacionId: respuesta.actividad.id,
+      actividadAppId: respuesta.actividad.id,
       actividadErpId: respuesta.actividad.actividadErpId,
     };
   }
@@ -388,7 +388,7 @@ export function GastosComercialesScreen({
 
     setActividadSeleccionadaClave(clave);
     actualizarBorrador({
-      actividadPlanificacionId: actividadSeleccionada?.actividadPlanificacionId || '',
+      actividadAppId: actividadSeleccionada?.actividadAppId || '',
       empresaErpId: actividadSeleccionada?.empresaErpId || gastoEnEdicion?.empresaErpId,
       actividadErpId: actividadSeleccionada?.actividadErpId,
     });
@@ -400,17 +400,17 @@ export function GastosComercialesScreen({
     setZonaSeleccionadaClave(clave);
     setCampoSeleccionadoClave('');
     actualizarBorrador({
-      zonaPlanificacionId: zonaSeleccionada?.zonaPlanificacionId,
+      zonaAppId: zonaSeleccionada?.zonaAppId,
       zonaErpId: zonaSeleccionada?.zonaErpId,
-      campoPlanificacionId: undefined,
+      campoAppId: undefined,
       campoErpId: undefined,
     });
   }
 
   function seleccionarCampo(clave: string) {
     const campoSeleccionado = clave ? camposPorClave.get(clave) : undefined;
-    const zonaClave = campoSeleccionado?.zonaPlanificacionId
-      ? `agro:${campoSeleccionado.zonaPlanificacionId}`
+    const zonaClave = campoSeleccionado?.zonaAppId
+      ? `agro:${campoSeleccionado.zonaAppId}`
       : campoSeleccionado?.zonaErpId
         ? `erp:${campoSeleccionado.zonaErpId}`
         : zonaSeleccionadaClave;
@@ -418,17 +418,17 @@ export function GastosComercialesScreen({
     setCampoSeleccionadoClave(clave);
     setZonaSeleccionadaClave(zonaClave);
     actualizarBorrador({
-      zonaPlanificacionId: campoSeleccionado?.zonaPlanificacionId || gastoEnEdicion?.zonaPlanificacionId,
+      zonaAppId: campoSeleccionado?.zonaAppId || gastoEnEdicion?.zonaAppId,
       zonaErpId: campoSeleccionado?.zonaErpId || gastoEnEdicion?.zonaErpId,
-      campoPlanificacionId: campoSeleccionado?.campoPlanificacionId,
+      campoAppId: campoSeleccionado?.campoAppId,
       campoErpId: campoSeleccionado?.campoErpId,
       empresaErpId: campoSeleccionado?.empresaErpId || gastoEnEdicion?.empresaErpId,
     });
   }
 
   function describirAlcance(gasto: GastosComercialesReferencia) {
-    const campo = gasto.campoPlanificacionId ? campos.find((item) => item.id === gasto.campoPlanificacionId) : undefined;
-    const zona = gasto.zonaPlanificacionId ? zonas.find((item) => item.id === gasto.zonaPlanificacionId) : undefined;
+    const campo = gasto.campoAppId ? campos.find((item) => item.id === gasto.campoAppId) : undefined;
+    const zona = gasto.zonaAppId ? zonas.find((item) => item.id === gasto.zonaAppId) : undefined;
 
     if (campo) {
       return campo.nombre;
@@ -505,7 +505,7 @@ export function GastosComercialesScreen({
           columns={[
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(150px, 1.15fr)', render: (gasto) => <strong>{gasto.descripcion}</strong> },
             { key: 'campania', label: 'Campania', width: 'minmax(88px, 0.6fr)', render: (gasto) => describirCampania(gasto.campaniaErpId) },
-            { key: 'actividad', label: 'Actividad', width: 'minmax(130px, 0.95fr)', render: (gasto) => actividadesPropiasPorId.get(gasto.actividadPlanificacionId)?.nombre || gasto.actividadErpId || 'Sin actividad' },
+            { key: 'actividad', label: 'Actividad', width: 'minmax(130px, 0.95fr)', render: (gasto) => actividadesPropiasPorId.get(gasto.actividadAppId)?.nombre || gasto.actividadErpId || 'Sin actividad' },
             { key: 'destino', label: 'Destino', width: 'minmax(100px, 0.75fr)', render: (gasto) => gasto.destinoVenta || 'General' },
             { key: 'alcance', label: 'Alcance', width: 'minmax(120px, 0.85fr)', render: (gasto) => describirAlcance(gasto) },
             {

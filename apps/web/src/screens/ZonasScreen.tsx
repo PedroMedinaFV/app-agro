@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
+import type { ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { guardarZonaPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
+import { guardarZonaApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -21,7 +21,7 @@ type ZonaTabla = {
   estado: string;
   actualizado: string;
   accion: 'editar' | 'importado';
-  zonaPropia?: ZonaPlanificacion;
+  zonaPropia?: ZonaApp;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -35,11 +35,11 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function crearZonaNueva(clienteId: string): ZonaPlanificacion {
+function crearZonaNueva(clienteId: string): ZonaApp {
   const ahora = new Date().toISOString();
 
   return {
-    id: `zona-planificacion-${Date.now()}`,
+    id: `zona-app-${Date.now()}`,
     clienteId,
     empresaErpId: 'global',
     nombre: '',
@@ -52,12 +52,12 @@ function crearZonaNueva(clienteId: string): ZonaPlanificacion {
 
 export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }: ZonasScreenProps) {
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
-  const [zonasPropias, setZonasPropias] = useState<ZonaPlanificacion[]>([]);
-  const [zonaEnEdicion, setZonaEnEdicion] = useState<ZonaPlanificacion | null>(null);
+  const [zonasPropias, setZonasPropias] = useState<ZonaApp[]>([]);
+  const [zonaEnEdicion, setZonaEnEdicion] = useState<ZonaApp | null>(null);
   const [estado, setEstado] = useState('Cargando zonas sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
-  const [zonaPropiaParaVincular, setZonaPropiaParaVincular] = useState<ZonaPlanificacion | null>(null);
+  const [zonaPropiaParaVincular, setZonaPropiaParaVincular] = useState<ZonaApp | null>(null);
   const [zonaErpVincularId, setZonaErpVincularId] = useState('');
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       try {
         const [respuestaErp, respuestaPropias] = await Promise.all([
           obtenerZonasErpImportadas(sesion.token),
-          obtenerZonasPlanificacion(sesion.token),
+          obtenerZonasApp(sesion.token),
         ]);
 
         setZonasErp(respuestaErp.zonas);
@@ -126,7 +126,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     setZonaEnEdicion(crearZonaNueva(sesion.usuario.clienteId || 'cliente-demo'));
   }
 
-  function actualizarBorrador(cambios: Partial<ZonaPlanificacion>) {
+  function actualizarBorrador(cambios: Partial<ZonaApp>) {
     setZonaEnEdicion((actual) => actual && { ...actual, ...cambios, updatedAt: new Date().toISOString() });
   }
 
@@ -142,7 +142,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       return;
     }
 
-    const zonaPreparada: ZonaPlanificacion = {
+    const zonaPreparada: ZonaApp = {
       ...zonaEnEdicion,
       empresaErpId: 'global',
       nombre,
@@ -153,7 +153,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     setGuardando(true);
 
     try {
-      const respuesta = await guardarZonaPlanificacion(zonaPreparada.id, {
+      const respuesta = await guardarZonaApp(zonaPreparada.id, {
         zona: zonaPreparada,
         origen: 'web',
         motivo: 'Alta o edicion de zona desde padron maestro web',
@@ -176,7 +176,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     }
   }
 
-  function abrirVinculacion(zona: ZonaPlanificacion) {
+  function abrirVinculacion(zona: ZonaApp) {
     const sugerencias = obtenerSugerenciasZona(zona);
 
     if (zona.estadoVinculacion !== 'provisorio' || zona.zonaErpId) {
@@ -193,7 +193,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     setZonaErpVincularId(sugerencias[0].registro.erpId);
   }
 
-  function obtenerSugerenciasZona(zona: ZonaPlanificacion) {
+  function obtenerSugerenciasZona(zona: ZonaApp) {
     return sugerirVinculacion(
       { codigo: zona.codigoInterno, nombre: zona.nombre },
       zonasErpDisponiblesParaVincular,
@@ -217,7 +217,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     setGuardando(true);
 
     try {
-      const respuesta = await guardarZonaPlanificacion(zonaPropiaParaVincular.id, {
+      const respuesta = await guardarZonaApp(zonaPropiaParaVincular.id, {
         zona: {
           ...zonaPropiaParaVincular,
           empresaErpId: 'global',
@@ -333,7 +333,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                 Estado
                 <select
                   value={zonaEnEdicion.estadoVinculacion}
-                  onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ZonaPlanificacion['estadoVinculacion'] })}
+                  onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ZonaApp['estadoVinculacion'] })}
                 >
                   <option value="provisorio">Provisorio</option>
                   <option value="archivado">Archivado</option>

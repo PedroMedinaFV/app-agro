@@ -153,12 +153,12 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     }));
   }
 
-  function agregarInsumo(etapaId: string, insumoPlanificacionId?: string) {
-    const insumosDisponibles = planificacion.insumosPlanificacion || [];
-    const insumoPlanificacion = insumosDisponibles.find((insumo) => insumo.id === insumoPlanificacionId)
+  function agregarInsumo(etapaId: string, insumoAppId?: string) {
+    const insumosDisponibles = planificacion.insumosApp || [];
+    const insumoApp = insumosDisponibles.find((insumo) => insumo.id === insumoAppId)
       || insumosDisponibles[0];
 
-    if (!insumoPlanificacion) {
+    if (!insumoApp) {
       notificar?.({
         tipo: 'error',
         titulo: 'No hay insumos disponibles',
@@ -168,7 +168,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     }
 
     const dosisPorHa = 1;
-    const precioUnitarioEstimado = insumoPlanificacion.precioUnitarioEstimado || 0;
+    const precioUnitarioEstimado = insumoApp.precioUnitarioEstimado || 0;
     const indiceAplicacion = 1;
 
     actualizarProtocolos((protocolo) => ({
@@ -181,11 +181,11 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
             id: `insumo-${Date.now()}`,
             etapaId,
             indiceAplicacion,
-            insumoPlanificacionId: insumoPlanificacion.id,
-            insumoErpId: insumoPlanificacion.insumoErpId,
-            nombre: insumoPlanificacion.nombre,
-            tipo: insumoPlanificacion.tipo,
-            unidad: insumoPlanificacion.unidad,
+            insumoAppId: insumoApp.id,
+            insumoErpId: insumoApp.insumoErpId,
+            nombre: insumoApp.nombre,
+            tipo: insumoApp.tipo,
+            unidad: insumoApp.unidad,
             dosisPorHa,
             precioUnitarioEstimado,
             costoPorHa: calcularCostoInsumoProtocolo({ dosisPorHa, precioUnitarioEstimado, indiceAplicacion } as Parameters<typeof calcularCostoInsumoProtocolo>[0]),
@@ -202,14 +202,14 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
 
     const ahora = new Date().toISOString();
     const id = `protocolo-nuevo-${Date.now()}`;
-    const actividadBase = planificacion.actividadesPlanificacion?.[0];
+    const actividadBase = planificacion.actividadesApp?.[0];
     const protocoloNuevo: ProtocoloProductivoDetalle = {
       id,
       clienteId: sesion.usuario.clienteId || 'cliente-demo',
       nombre: 'Nuevo protocolo',
       descripcion: 'Protocolo en borrador',
       campaniaErpId: planificacionActiva?.campaniaErpId || snapshot.campanias[0]?.erpId || 'campania-pendiente',
-      actividadPlanificacionId: actividadBase?.id || 'actividad-pendiente',
+      actividadAppId: actividadBase?.id || 'actividad-pendiente',
       actividadErpId: actividadBase?.actividadErpId,
       tipoFecha: 'relativa_siembra',
       fechaSiembra: '',

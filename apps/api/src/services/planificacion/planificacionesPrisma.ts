@@ -42,11 +42,11 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     id: linea.id,
     planificacionId: linea.planificacionId,
     empresaErpId: linea.empresaErpId,
-    campoPlanificacionId: linea.campoPlanificacionId,
+    campoAppId: linea.campoAppId,
     campoErpId: linea.campoErpId || undefined,
-    lotePlanificacionId: linea.lotePlanificacionId,
+    loteAppId: linea.loteAppId,
     loteErpId: linea.loteErpId || undefined,
-    actividadPlanificacionId: linea.actividadPlanificacionId,
+    actividadAppId: linea.actividadAppId,
     actividadErpId: linea.actividadErpId || undefined,
     cultivoErpId: linea.cultivoErpId || undefined,
     destinoReferenciaId: linea.destinoReferenciaId || undefined,
@@ -107,7 +107,7 @@ function validarLineas(planificacion: PlanificacionAgricola, opciones: { permiti
   const claves = new Set<string>();
 
   for (const linea of planificacion.lineas) {
-    if (!linea.campoPlanificacionId || !linea.lotePlanificacionId || !linea.actividadPlanificacionId) {
+    if (!linea.campoAppId || !linea.loteAppId || !linea.actividadAppId) {
       throw crearErrorValidacion('Cada linea debe tener campo, lote y actividad de planificacion.');
     }
 
@@ -134,9 +134,9 @@ function validarLineas(planificacion: PlanificacionAgricola, opciones: { permiti
 
     const clave = [
       planificacion.campaniaErpId,
-      linea.campoPlanificacionId,
-      linea.lotePlanificacionId,
-      linea.actividadPlanificacionId,
+      linea.campoAppId,
+      linea.loteAppId,
+      linea.actividadAppId,
     ].join('|');
 
     if (claves.has(clave)) {
@@ -200,11 +200,11 @@ async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: Pla
       id: linea.id,
       planificacionId: planificacion.id,
       empresaErpId: linea.empresaErpId,
-      campoPlanificacionId: linea.campoPlanificacionId,
+      campoAppId: linea.campoAppId,
       campoErpId: linea.campoErpId,
-      lotePlanificacionId: linea.lotePlanificacionId,
+      loteAppId: linea.loteAppId,
       loteErpId: linea.loteErpId,
-      actividadPlanificacionId: linea.actividadPlanificacionId,
+      actividadAppId: linea.actividadAppId,
       actividadErpId: linea.actividadErpId,
       cultivoErpId: linea.cultivoErpId,
       destinoReferenciaId: linea.destinoReferenciaId,

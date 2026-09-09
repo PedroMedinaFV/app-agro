@@ -1,9 +1,9 @@
-import type { EspeciePlanificacion, GuardarEspeciePlanificacionRequest, GuardarEspeciePlanificacionResponse } from '@agro/tipos';
+import type { EspecieApp, GuardarEspecieAppRequest, GuardarEspecieAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type EspeciePrisma = Prisma.EspeciePlanificacionGetPayload<Record<string, never>>;
+type EspeciePrisma = Prisma.EspecieAppGetPayload<Record<string, never>>;
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,7 +23,7 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function mapearEspecie(especie: EspeciePrisma): EspeciePlanificacion {
+function mapearEspecie(especie: EspeciePrisma): EspecieApp {
   return {
     id: especie.id,
     clienteId: especie.clienteId,
@@ -31,13 +31,13 @@ function mapearEspecie(especie: EspeciePrisma): EspeciePlanificacion {
     especieErpId: especie.especieErpId || undefined,
     nombre: especie.nombre,
     codigoInterno: especie.codigoInterno || undefined,
-    estadoVinculacion: especie.estadoVinculacion as EspeciePlanificacion['estadoVinculacion'],
+    estadoVinculacion: especie.estadoVinculacion as EspecieApp['estadoVinculacion'],
     createdAt: especie.createdAt.toISOString(),
     updatedAt: especie.updatedAt.toISOString(),
   };
 }
 
-function prepararEspecie(especie: EspeciePlanificacion): EspeciePlanificacion {
+function prepararEspecie(especie: EspecieApp): EspecieApp {
   const nombre = limpiarTextoVisible(especie.nombre);
 
   return {
@@ -49,7 +49,7 @@ function prepararEspecie(especie: EspeciePlanificacion): EspeciePlanificacion {
   };
 }
 
-async function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAuditoria) {
+async function validarEspecie(especie: EspecieApp, usuario?: UsuarioAuditoria) {
   if (!especie.clienteId) {
     throw crearErrorValidacion('La especie debe tener clienteId.');
   }
@@ -69,7 +69,7 @@ async function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAu
       throw crearErrorValidacion('La especie ERP seleccionada no existe en la cache importada.');
     }
 
-    const especieYaVinculada = await prisma.especiePlanificacion.findFirst({
+    const especieYaVinculada = await prisma.especieApp.findFirst({
       where: {
         clienteId: especie.clienteId,
         especieErpId: especie.especieErpId,
@@ -83,8 +83,8 @@ async function validarEspecie(especie: EspeciePlanificacion, usuario?: UsuarioAu
   }
 }
 
-export async function obtenerEspeciesPlanificacionPersistidas(clienteId: string): Promise<EspeciePlanificacion[]> {
-  const especies = await prisma.especiePlanificacion.findMany({
+export async function obtenerEspeciesAppPersistidas(clienteId: string): Promise<EspecieApp[]> {
+  const especies = await prisma.especieApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -92,18 +92,18 @@ export async function obtenerEspeciesPlanificacionPersistidas(clienteId: string)
   return especies.map(mapearEspecie);
 }
 
-export async function guardarEspeciePlanificacionPersistida(
+export async function guardarEspecieAppPersistida(
   id: string,
-  request: GuardarEspeciePlanificacionRequest,
+  request: GuardarEspecieAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarEspeciePlanificacionResponse> {
+): Promise<GuardarEspecieAppResponse> {
   const especie = prepararEspecie({ ...request.especie, id });
   await validarEspecie(especie, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.especiePlanificacion.findUnique({ where: { id } });
+    const existente = await tx.especieApp.findUnique({ where: { id } });
     const existenteMismoCodigo = especie.codigoInterno
-      ? await tx.especiePlanificacion.findFirst({
+      ? await tx.especieApp.findFirst({
         where: {
           clienteId: especie.clienteId,
           codigoInterno: especie.codigoInterno,
@@ -116,7 +116,7 @@ export async function guardarEspeciePlanificacionPersistida(
       throw crearErrorValidacion('Ya existe una especie con ese codigo interno.');
     }
 
-    const guardada = await tx.especiePlanificacion.upsert({
+    const guardada = await tx.especieApp.upsert({
       where: { id },
       update: {
         empresaErpId: especie.empresaErpId,
@@ -143,7 +143,7 @@ export async function guardarEspeciePlanificacionPersistida(
     await registrarAuditoria(tx, {
       clienteId: especie.clienteId,
       usuario,
-      entidad: 'EspeciePlanificacion',
+      entidad: 'EspecieApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

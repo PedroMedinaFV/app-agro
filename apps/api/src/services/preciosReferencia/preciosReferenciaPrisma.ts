@@ -36,9 +36,9 @@ function mapearPrecio(precio: PrecioPrisma): PrecioReferencia {
     id: precio.id,
     clienteId: precio.clienteId,
     empresaErpId: precio.empresaErpId || undefined,
-    actividadPlanificacionId: precio.actividadPlanificacionId,
+    actividadAppId: precio.actividadAppId,
     actividadErpId: precio.actividadErpId || undefined,
-    especiePlanificacionId: precio.especiePlanificacionId || undefined,
+    especieAppId: precio.especieAppId || undefined,
     especieErpId: precio.especieErpId || undefined,
     cultivoErpId: precio.cultivoErpId || undefined,
     destinoVenta: precio.destinoVenta,
@@ -58,8 +58,8 @@ function validarPrecio(precio: PrecioReferencia) {
     throw crearErrorValidacion('El precio debe tener clienteId.');
   }
 
-  if (!precio.actividadPlanificacionId) {
-    throw crearErrorValidacion('El precio debe tener actividadPlanificacionId.');
+  if (!precio.actividadAppId) {
+    throw crearErrorValidacion('El precio debe tener actividadAppId.');
   }
 
   if (!precio.destinoVenta.trim()) {
@@ -96,9 +96,9 @@ function mapearDestino(destino: DestinoPrisma): DestinoVentaReferencia {
     clienteId: destino.clienteId,
     empresaErpId: destino.empresaErpId || undefined,
     zonaErpId: destino.zonaErpId || undefined,
-    campoPlanificacionId: destino.campoPlanificacionId || undefined,
+    campoAppId: destino.campoAppId || undefined,
     campoErpId: destino.campoErpId || undefined,
-    actividadPlanificacionId: destino.actividadPlanificacionId || undefined,
+    actividadAppId: destino.actividadAppId || undefined,
     actividadErpId: destino.actividadErpId || undefined,
     especieErpId: destino.especieErpId || undefined,
     cultivoErpId: destino.cultivoErpId || undefined,
@@ -215,9 +215,9 @@ export async function guardarDestinoReferenciaPersistido(
       update: {
         empresaErpId: destino.empresaErpId,
         zonaErpId: destino.zonaErpId,
-        campoPlanificacionId: destino.campoPlanificacionId,
+        campoAppId: destino.campoAppId,
         campoErpId: destino.campoErpId,
-        actividadPlanificacionId: destino.actividadPlanificacionId,
+        actividadAppId: destino.actividadAppId,
         actividadErpId: destino.actividadErpId,
         especieErpId: destino.especieErpId,
         cultivoErpId: destino.cultivoErpId,
@@ -232,9 +232,9 @@ export async function guardarDestinoReferenciaPersistido(
         clienteId: destino.clienteId,
         empresaErpId: destino.empresaErpId,
         zonaErpId: destino.zonaErpId,
-        campoPlanificacionId: destino.campoPlanificacionId,
+        campoAppId: destino.campoAppId,
         campoErpId: destino.campoErpId,
-        actividadPlanificacionId: destino.actividadPlanificacionId,
+        actividadAppId: destino.actividadAppId,
         actividadErpId: destino.actividadErpId,
         especieErpId: destino.especieErpId,
         cultivoErpId: destino.cultivoErpId,
@@ -284,9 +284,9 @@ export async function guardarPrecioReferenciaPersistido(
       where: { id },
       update: {
         empresaErpId: precio.empresaErpId,
-        actividadPlanificacionId: precio.actividadPlanificacionId,
+        actividadAppId: precio.actividadAppId,
         actividadErpId: precio.actividadErpId,
-        especiePlanificacionId: precio.especiePlanificacionId,
+        especieAppId: precio.especieAppId,
         especieErpId: precio.especieErpId,
         cultivoErpId: precio.cultivoErpId,
         destinoVenta: precio.destinoVenta,
@@ -302,9 +302,9 @@ export async function guardarPrecioReferenciaPersistido(
         id,
         clienteId: precio.clienteId,
         empresaErpId: precio.empresaErpId,
-        actividadPlanificacionId: precio.actividadPlanificacionId,
+        actividadAppId: precio.actividadAppId,
         actividadErpId: precio.actividadErpId,
-        especiePlanificacionId: precio.especiePlanificacionId,
+        especieAppId: precio.especieAppId,
         especieErpId: precio.especieErpId,
         cultivoErpId: precio.cultivoErpId,
         destinoVenta: precio.destinoVenta,

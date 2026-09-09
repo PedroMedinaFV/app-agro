@@ -12,29 +12,29 @@ import {
   ErpSnapshot,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
-  CampoPlanificacion,
+  CampoApp,
   ConceptoGastoComercial,
   CrearPrecipitacionRequest,
   CrearPrecipitacionResponse,
   DestinoVentaReferencia,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
-  GuardarCampoPlanificacionRequest,
-  GuardarCampoPlanificacionResponse,
-  GuardarLotePlanificacionRequest,
-  GuardarLotePlanificacionResponse,
-  GuardarZonaPlanificacionRequest,
-  GuardarZonaPlanificacionResponse,
+  GuardarCampoAppRequest,
+  GuardarCampoAppResponse,
+  GuardarLoteAppRequest,
+  GuardarLoteAppResponse,
+  GuardarZonaAppRequest,
+  GuardarZonaAppResponse,
   GuardarDestinoVentaReferenciaRequest,
   GuardarDestinoVentaReferenciaResponse,
-  GuardarActividadPlanificacionRequest,
-  GuardarActividadPlanificacionResponse,
-  GuardarEspeciePlanificacionRequest,
-  GuardarEspeciePlanificacionResponse,
+  GuardarActividadAppRequest,
+  GuardarActividadAppResponse,
+  GuardarEspecieAppRequest,
+  GuardarEspecieAppResponse,
   GuardarGastosComercialesReferenciaRequest,
   GuardarGastosComercialesReferenciaResponse,
-  GuardarInsumoPlanificacionRequest,
-  GuardarInsumoPlanificacionResponse,
+  GuardarInsumoAppRequest,
+  GuardarInsumoAppResponse,
   GuardarLaborReferenciaRequest,
   GuardarLaborReferenciaResponse,
   GuardarPlanificacionRequest,
@@ -46,10 +46,10 @@ import {
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
   LaborReferencia,
-  ActividadPlanificacion,
-  EspeciePlanificacion,
-  InsumoPlanificacion,
-  LotePlanificacion,
+  ActividadApp,
+  EspecieApp,
+  InsumoApp,
+  LoteApp,
   LoginDemoRequest,
   NotificacionUsuarioResumen,
   PadronErpSincronizable,
@@ -61,7 +61,7 @@ import {
   SesionUsuario,
   SincronizacionesErpHistorialResponse,
   UsuariosAdminResponse,
-  ZonaPlanificacion,
+  ZonaApp,
 } from '@agro/tipos';
 import { startBackendActivity } from '../utils/backendActivity';
 
@@ -347,115 +347,115 @@ export async function guardarLaborReferencia(
   }, token);
 }
 
-export type InsumosPlanificacionResponse = {
-  insumos: InsumoPlanificacion[];
+export type InsumosAppResponse = {
+  insumos: InsumoApp[];
 };
 
-export async function obtenerInsumosPlanificacion(token?: string): Promise<InsumosPlanificacionResponse> {
-  return request<InsumosPlanificacionResponse>('/insumos-planificacion', {}, token);
+export async function obtenerInsumosApp(token?: string): Promise<InsumosAppResponse> {
+  return request<InsumosAppResponse>('/insumos-app', {}, token);
 }
 
-export async function guardarInsumoPlanificacion(
+export async function guardarInsumoApp(
   id: string,
-  datos: GuardarInsumoPlanificacionRequest,
+  datos: GuardarInsumoAppRequest,
   token?: string,
-): Promise<GuardarInsumoPlanificacionResponse> {
-  return request<GuardarInsumoPlanificacionResponse>(`/insumos-planificacion/${id}`, {
+): Promise<GuardarInsumoAppResponse> {
+  return request<GuardarInsumoAppResponse>(`/insumos-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
-export type EspeciesPlanificacionResponse = {
-  especies: EspeciePlanificacion[];
+export type EspeciesAppResponse = {
+  especies: EspecieApp[];
 };
 
-export async function obtenerEspeciesPlanificacion(token?: string): Promise<EspeciesPlanificacionResponse> {
-  return request<EspeciesPlanificacionResponse>('/especies-planificacion', {}, token);
+export async function obtenerEspeciesApp(token?: string): Promise<EspeciesAppResponse> {
+  return request<EspeciesAppResponse>('/especies-app', {}, token);
 }
 
-export async function guardarEspeciePlanificacion(
+export async function guardarEspecieApp(
   id: string,
-  datos: GuardarEspeciePlanificacionRequest,
+  datos: GuardarEspecieAppRequest,
   token?: string,
-): Promise<GuardarEspeciePlanificacionResponse> {
-  return request<GuardarEspeciePlanificacionResponse>(`/especies-planificacion/${id}`, {
+): Promise<GuardarEspecieAppResponse> {
+  return request<GuardarEspecieAppResponse>(`/especies-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
-export type ActividadesPlanificacionResponse = {
-  actividades: ActividadPlanificacion[];
+export type ActividadesAppResponse = {
+  actividades: ActividadApp[];
 };
 
-export async function obtenerActividadesPlanificacion(token?: string): Promise<ActividadesPlanificacionResponse> {
-  return request<ActividadesPlanificacionResponse>('/actividades-planificacion', {}, token);
+export async function obtenerActividadesApp(token?: string): Promise<ActividadesAppResponse> {
+  return request<ActividadesAppResponse>('/actividades-app', {}, token);
 }
 
-export async function guardarActividadPlanificacion(
+export async function guardarActividadApp(
   id: string,
-  datos: GuardarActividadPlanificacionRequest,
+  datos: GuardarActividadAppRequest,
   token?: string,
-): Promise<GuardarActividadPlanificacionResponse> {
-  return request<GuardarActividadPlanificacionResponse>(`/actividades-planificacion/${id}`, {
+): Promise<GuardarActividadAppResponse> {
+  return request<GuardarActividadAppResponse>(`/actividades-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
-export type CamposPlanificacionResponse = {
-  campos: CampoPlanificacion[];
+export type CamposAppResponse = {
+  campos: CampoApp[];
 };
 
-export async function obtenerCamposPlanificacion(token?: string): Promise<CamposPlanificacionResponse> {
-  return request<CamposPlanificacionResponse>('/campos-planificacion', {}, token);
+export async function obtenerCamposApp(token?: string): Promise<CamposAppResponse> {
+  return request<CamposAppResponse>('/campos-app', {}, token);
 }
 
-export type ZonasPlanificacionResponse = {
-  zonas: ZonaPlanificacion[];
+export type ZonasAppResponse = {
+  zonas: ZonaApp[];
 };
 
-export async function obtenerZonasPlanificacion(token?: string): Promise<ZonasPlanificacionResponse> {
-  return request<ZonasPlanificacionResponse>('/zonas-planificacion', {}, token);
+export async function obtenerZonasApp(token?: string): Promise<ZonasAppResponse> {
+  return request<ZonasAppResponse>('/zonas-app', {}, token);
 }
 
-export async function guardarZonaPlanificacion(
+export async function guardarZonaApp(
   id: string,
-  datos: GuardarZonaPlanificacionRequest,
+  datos: GuardarZonaAppRequest,
   token?: string,
-): Promise<GuardarZonaPlanificacionResponse> {
-  return request<GuardarZonaPlanificacionResponse>(`/zonas-planificacion/${id}`, {
+): Promise<GuardarZonaAppResponse> {
+  return request<GuardarZonaAppResponse>(`/zonas-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
-export async function guardarCampoPlanificacion(
+export async function guardarCampoApp(
   id: string,
-  datos: GuardarCampoPlanificacionRequest,
+  datos: GuardarCampoAppRequest,
   token?: string,
-): Promise<GuardarCampoPlanificacionResponse> {
-  return request<GuardarCampoPlanificacionResponse>(`/campos-planificacion/${id}`, {
+): Promise<GuardarCampoAppResponse> {
+  return request<GuardarCampoAppResponse>(`/campos-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
-export type LotesPlanificacionResponse = {
-  lotes: LotePlanificacion[];
+export type LotesAppResponse = {
+  lotes: LoteApp[];
 };
 
-export async function obtenerLotesPlanificacion(token?: string): Promise<LotesPlanificacionResponse> {
-  return request<LotesPlanificacionResponse>('/lotes-planificacion', {}, token);
+export async function obtenerLotesApp(token?: string): Promise<LotesAppResponse> {
+  return request<LotesAppResponse>('/lotes-app', {}, token);
 }
 
-export async function guardarLotePlanificacion(
+export async function guardarLoteApp(
   id: string,
-  datos: GuardarLotePlanificacionRequest,
+  datos: GuardarLoteAppRequest,
   token?: string,
-): Promise<GuardarLotePlanificacionResponse> {
-  return request<GuardarLotePlanificacionResponse>(`/lotes-planificacion/${id}`, {
+): Promise<GuardarLoteAppResponse> {
+  return request<GuardarLoteAppResponse>(`/lotes-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

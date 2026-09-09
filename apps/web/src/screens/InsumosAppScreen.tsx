@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpInsumo, ErpSnapshot, InsumoPlanificacion, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpInsumo, ErpSnapshot, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerInsumosErpImportados } from '../services/api';
@@ -18,13 +18,13 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-interface InsumosPlanificacionScreenProps {
+interface InsumosAppScreenProps {
   sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   snapshot: ErpSnapshot;
   puedeConfigurarPlanificacion: boolean;
   guardandoInsumos: boolean;
-  guardarInsumo: (insumo: InsumoPlanificacion) => Promise<boolean>;
+  guardarInsumo: (insumo: InsumoApp) => Promise<boolean>;
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
   notificar?: Notificar;
@@ -39,10 +39,10 @@ type InsumoTabla = {
   unidad: string;
   precio: string;
   accion: 'editar' | 'importado';
-  insumoPropio?: InsumoPlanificacion;
+  insumoPropio?: InsumoApp;
 };
 
-export function InsumosPlanificacionScreen({
+export function InsumosAppScreen({
   sesion,
   planificacion,
   snapshot,
@@ -52,22 +52,22 @@ export function InsumosPlanificacionScreen({
   leerNumero,
   formatearUsd,
   notificar,
-}: InsumosPlanificacionScreenProps) {
-  const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoPlanificacion | null>(null);
+}: InsumosAppScreenProps) {
+  const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [insumosErp, setInsumosErp] = useState<ErpInsumo[]>([]);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
-  const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoPlanificacion | null>(null);
+  const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoApp | null>(null);
   const [insumoErpVincularId, setInsumoErpVincularId] = useState('');
   const insumosOrdenados = useMemo(() => (
-    [...(planificacion.insumosPlanificacion || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-  ), [planificacion.insumosPlanificacion]);
+    [...(planificacion.insumosApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  ), [planificacion.insumosApp]);
   const empresasDisponibles = useMemo(() => (
     Array.from(new Set([
-      ...planificacion.camposPlanificacion.map((campo) => campo.empresaErpId),
+      ...planificacion.camposApp.map((campo) => campo.empresaErpId),
       ...insumosOrdenados.map((insumo) => insumo.empresaErpId),
     ].filter(Boolean))).sort()
-  ), [insumosOrdenados, planificacion.camposPlanificacion]);
+  ), [insumosOrdenados, planificacion.camposApp]);
   const unidadesDisponibles = useMemo(() => (
     [...snapshot.unidadesMedida]
       .filter((unidad) => unidad.activo)
@@ -90,11 +90,11 @@ export function InsumosPlanificacionScreen({
     cargarInsumosErp();
   }, [sesion.token]);
 
-  function crearBorradorInsumo(): InsumoPlanificacion {
+  function crearBorradorInsumo(): InsumoApp {
     const ahora = new Date().toISOString();
 
     return {
-      id: `insumo-planificacion-${Date.now()}`,
+      id: `insumo-app-${Date.now()}`,
       clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || 'cliente-demo',
       empresaErpId: empresasDisponibles[0] || 'empresa:mock',
       nombre: '',
@@ -114,12 +114,12 @@ export function InsumosPlanificacionScreen({
     setInsumoEnEdicion(crearBorradorInsumo());
   }
 
-  function abrirEditarInsumo(insumo: InsumoPlanificacion) {
+  function abrirEditarInsumo(insumo: InsumoApp) {
     setModoModal('editar');
     setInsumoEnEdicion({ ...insumo });
   }
 
-  function actualizarBorrador(cambios: Partial<InsumoPlanificacion>) {
+  function actualizarBorrador(cambios: Partial<InsumoApp>) {
     setInsumoEnEdicion((actual) => {
       if (!actual) {
         return actual;
@@ -145,7 +145,7 @@ export function InsumosPlanificacionScreen({
     }
 
     const nombre = limpiarTextoVisible(insumoEnEdicion.nombre);
-    const insumoPreparado: InsumoPlanificacion = {
+    const insumoPreparado: InsumoApp = {
       ...insumoEnEdicion,
       nombre,
       codigoInterno: normalizarCodigo(insumoEnEdicion.codigoInterno || nombre),
@@ -211,7 +211,7 @@ export function InsumosPlanificacionScreen({
     }),
   ];
 
-  function abrirVinculacion(insumo: InsumoPlanificacion) {
+  function abrirVinculacion(insumo: InsumoApp) {
     if (insumo.estadoVinculacion !== 'provisorio' || insumo.insumoErpId) {
       notificar?.({ tipo: 'info', titulo: 'Insumo no vinculable', mensaje: 'Solo se pueden vincular insumos propios en estado provisorio.' });
       return;
@@ -411,7 +411,7 @@ export function InsumosPlanificacionScreen({
 
               <label>
                 Estado
-                <select value={insumoEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as InsumoPlanificacion['estadoVinculacion'] })}>
+                <select value={insumoEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as InsumoApp['estadoVinculacion'] })}>
                   <option value="provisorio">Provisorio</option>
                   <option value="vinculado_erp">Vinculado ERP</option>
                   <option value="archivado">Archivado</option>

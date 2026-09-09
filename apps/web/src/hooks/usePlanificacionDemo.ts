@@ -4,9 +4,9 @@ import {
   DestinoVentaReferencia,
   ErpSnapshot,
   GastosComercialesReferencia,
-  InsumoPlanificacion,
+  InsumoApp,
   LaborReferencia,
-  LotePlanificacion,
+  LoteApp,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
@@ -18,7 +18,7 @@ import {
   guardarConceptoGastoComercial,
   guardarDestinoVenta,
   guardarGastoComercialReferencia,
-  guardarInsumoPlanificacion,
+  guardarInsumoApp,
   guardarLaborReferencia,
   guardarPlanificacion,
   guardarPrecioReferencia,
@@ -39,7 +39,7 @@ function normalizarTexto(valor: string) {
     .toUpperCase();
 }
 
-function obtenerSuperficieInicialLote(lote: LotePlanificacion) {
+function obtenerSuperficieInicialLote(lote: LoteApp) {
   if (Number.isFinite(lote.superficieProductiva) && lote.superficieProductiva > 0) {
     return lote.superficieProductiva;
   }
@@ -97,14 +97,14 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
   const planificacionActiva = planificacion.planificaciones.find((item) => item.id === planificacionSeleccionadaId) || planificacion.planificaciones[0];
   const lineasPlanificacion = planificacionActiva?.lineas || [];
-  const camposPlanificacionPorId = new Map(planificacion.camposPlanificacion.map((campo) => [campo.id, campo]));
-  const lotesPlanificacionPorId = new Map(planificacion.lotesPlanificacion.map((lote) => [lote.id, lote]));
+  const camposAppPorId = new Map(planificacion.camposApp.map((campo) => [campo.id, campo]));
+  const lotesAppPorId = new Map(planificacion.lotesApp.map((lote) => [lote.id, lote]));
   const protocolosPorId = new Map(planificacion.protocolos.map((protocolo) => [protocolo.id, protocolo]));
   const margenBrutoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
   const ingresoNetoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0);
   const costoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.costoProduccionEstimado, 0);
   const hectareasPlanificadas = lineasPlanificacion.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
-  const camposProvisorios = planificacion.camposPlanificacion.filter((campo) => campo.estadoVinculacion === 'provisorio').length;
+  const camposProvisorios = planificacion.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length;
   const puedeEditarPlanificacionPorPermiso = Boolean(sesion?.permisos.includes('planificacion:editar'));
   const planificacionActivaBloqueada = planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada';
   const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && !planificacionActivaBloqueada);
@@ -143,7 +143,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       destinosReferencia: [crearDestinoReferenciaDesdePrecio(precio), ...snapshotActual.destinosReferencia],
     };
   }
-  const clavesLineas = lineasPlanificacion.map((linea) => `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`);
+  const clavesLineas = lineasPlanificacion.map((linea) => `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`);
   const clavesDuplicadas = new Set(clavesLineas.filter((clave, indice) => clavesLineas.indexOf(clave) !== indice));
   const tieneLineasDuplicadas = clavesDuplicadas.size > 0;
 
@@ -179,48 +179,48 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     return referencia.items.reduce((total, item) => total + item.valorPorTonelada * produccionEstimadaTn, 0);
   }
 
-  function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoPlanificacionId' | 'campoErpId' | 'actividadPlanificacionId'>) {
+  function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId' | 'actividadAppId'>) {
     return planificacion.destinosReferencia
-      .filter((item) => item.activo && (!item.actividadPlanificacionId || item.actividadPlanificacionId === linea.actividadPlanificacionId))
+      .filter((item) => item.activo && (!item.actividadAppId || item.actividadAppId === linea.actividadAppId))
       .sort((a, b) => {
-        const pesoA = (a.campoPlanificacionId === linea.campoPlanificacionId ? 3 : 0) + (a.campoErpId === linea.campoErpId ? 2 : 0);
-        const pesoB = (b.campoPlanificacionId === linea.campoPlanificacionId ? 3 : 0) + (b.campoErpId === linea.campoErpId ? 2 : 0);
+        const pesoA = (a.campoAppId === linea.campoAppId ? 3 : 0) + (a.campoErpId === linea.campoErpId ? 2 : 0);
+        const pesoB = (b.campoAppId === linea.campoAppId ? 3 : 0) + (b.campoErpId === linea.campoErpId ? 2 : 0);
 
         return pesoB - pesoA || a.destinoVenta.localeCompare(b.destinoVenta);
       })[0];
   }
 
-  function buscarPrecioSugerido(actividadPlanificacionId: string, destinoVenta: string) {
-    return planificacion.preciosReferencia.find((item) => item.activo && item.actividadPlanificacionId === actividadPlanificacionId && item.destinoVenta === destinoVenta)
-      || planificacion.preciosReferencia.find((item) => item.activo && item.actividadPlanificacionId === actividadPlanificacionId);
+  function buscarPrecioSugerido(actividadAppId: string, destinoVenta: string) {
+    return planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId && item.destinoVenta === destinoVenta)
+      || planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId);
   }
 
   function buscarGastosSugeridos(
-    linea: Pick<PlanificacionAgricolaLinea, 'campoPlanificacionId' | 'campoErpId' | 'actividadPlanificacionId' | 'destinoVenta'>,
+    linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId' | 'actividadAppId' | 'destinoVenta'>,
     campaniaErpId = planificacionActiva?.campaniaErpId,
   ) {
-    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+    const campo = camposAppPorId.get(linea.campoAppId);
 
     return planificacion.gastosComercialesReferencia
       .filter((item) => (
         item.activo
         && item.campaniaErpId === campaniaErpId
-        && item.actividadPlanificacionId === linea.actividadPlanificacionId
+        && item.actividadAppId === linea.actividadAppId
         && (!item.destinoVenta || item.destinoVenta === linea.destinoVenta)
-        && (!item.zonaPlanificacionId || item.zonaPlanificacionId === campo?.zonaPlanificacionId)
+        && (!item.zonaAppId || item.zonaAppId === campo?.zonaAppId)
         && (!item.zonaErpId || item.zonaErpId === campo?.zonaErpId)
       ))
       .sort((a, b) => {
         const pesoA = (
-          (a.campoPlanificacionId === linea.campoPlanificacionId ? 6 : 0)
+          (a.campoAppId === linea.campoAppId ? 6 : 0)
           + (a.campoErpId === linea.campoErpId ? 4 : 0)
-          + (a.zonaPlanificacionId === campo?.zonaPlanificacionId ? 3 : 0)
+          + (a.zonaAppId === campo?.zonaAppId ? 3 : 0)
           + (a.zonaErpId === campo?.zonaErpId ? 2 : 0)
         );
         const pesoB = (
-          (b.campoPlanificacionId === linea.campoPlanificacionId ? 6 : 0)
+          (b.campoAppId === linea.campoAppId ? 6 : 0)
           + (b.campoErpId === linea.campoErpId ? 4 : 0)
-          + (b.zonaPlanificacionId === campo?.zonaPlanificacionId ? 3 : 0)
+          + (b.zonaAppId === campo?.zonaAppId ? 3 : 0)
           + (b.zonaErpId === campo?.zonaErpId ? 2 : 0)
         );
 
@@ -228,17 +228,17 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       })[0];
   }
 
-  function obtenerProtocolosCompatibles(linea: Pick<PlanificacionAgricolaLinea, 'actividadPlanificacionId' | 'campoPlanificacionId' | 'campoErpId'>) {
-    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+  function obtenerProtocolosCompatibles(linea: Pick<PlanificacionAgricolaLinea, 'actividadAppId' | 'campoAppId' | 'campoErpId'>) {
+    const campo = camposAppPorId.get(linea.campoAppId);
 
     return planificacion.protocolos
       .filter((protocolo) => {
-        if (!protocolo.activo || protocolo.actividadPlanificacionId !== linea.actividadPlanificacionId) {
+        if (!protocolo.activo || protocolo.actividadAppId !== linea.actividadAppId) {
           return false;
         }
 
-        const coincideCampo = !protocolo.campoPlanificacionId || protocolo.campoPlanificacionId === linea.campoPlanificacionId;
-        const coincideZona = !protocolo.zonaPlanificacionId || protocolo.zonaPlanificacionId === campo?.zonaPlanificacionId;
+        const coincideCampo = !protocolo.campoAppId || protocolo.campoAppId === linea.campoAppId;
+        const coincideZona = !protocolo.zonaAppId || protocolo.zonaAppId === campo?.zonaAppId;
 
         return coincideCampo && coincideZona;
       })
@@ -345,7 +345,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       descripcion,
       estado: 'borrador',
       escenarioOriginal: false,
-      lineas: planificacion.lotesPlanificacion
+      lineas: planificacion.lotesApp
         .filter((lote) => lote.estadoVinculacion !== 'archivado')
         .map((lote, indice) => crearLineaDesdeLote(lote, id, indice, datos.campaniaErpId))
         .filter((linea): linea is PlanificacionAgricolaLinea => Boolean(linea)),
@@ -455,7 +455,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const protocolo = protocoloId ? protocolosPorId.get(protocoloId) : undefined;
 
     return protocolo
-      ? planificacion.actividadesPlanificacion?.find((actividad) => actividad.id === protocolo.actividadPlanificacionId)
+      ? planificacion.actividadesApp?.find((actividad) => actividad.id === protocolo.actividadAppId)
       : undefined;
   }
 
@@ -463,11 +463,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const destino = destinoForzado
       ? planificacion.destinosReferencia.find((item) => (
         item.destinoVenta === destinoForzado
-        && (!item.actividadPlanificacionId || item.actividadPlanificacionId === linea.actividadPlanificacionId)
+        && (!item.actividadAppId || item.actividadAppId === linea.actividadAppId)
       ))
       : buscarDestinoSugerido(linea);
     const destinoVenta = destinoForzado || destino?.destinoVenta || '';
-    const precio = buscarPrecioSugerido(linea.actividadPlanificacionId, destinoVenta);
+    const precio = buscarPrecioSugerido(linea.actividadAppId, destinoVenta);
     const gastos = buscarGastosSugeridos({ ...linea, destinoVenta });
 
     return {
@@ -482,9 +482,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     };
   }
 
-  function crearLineaDesdeLote(lote: LotePlanificacion, planificacionId: string, indice: number, campaniaErpId: string): PlanificacionAgricolaLinea | undefined {
-    const campo = camposPlanificacionPorId.get(lote.campoPlanificacionId);
-    const actividad = planificacion.actividadesPlanificacion?.[0];
+  function crearLineaDesdeLote(lote: LoteApp, planificacionId: string, indice: number, campaniaErpId: string): PlanificacionAgricolaLinea | undefined {
+    const campo = camposAppPorId.get(lote.campoAppId);
+    const actividad = planificacion.actividadesApp?.[0];
     const ahora = new Date().toISOString();
 
     if (!campo || !actividad) {
@@ -495,11 +495,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       id: `linea-planificacion-${planificacionId}-${indice}-${Date.now()}`,
       planificacionId,
       empresaErpId: campo.empresaErpId,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
-      lotePlanificacionId: lote.id,
+      loteAppId: lote.id,
       loteErpId: lote.loteErpId,
-      actividadPlanificacionId: actividad.id,
+      actividadAppId: actividad.id,
       actividadErpId: actividad.actividadErpId,
       destinoReferenciaId: undefined,
       destinoVenta: '',
@@ -526,16 +526,16 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const lineaConProtocolo = {
       ...base,
       protocoloId: protocolo?.id,
-      actividadPlanificacionId: actividadProtocolo?.id || base.actividadPlanificacionId,
+      actividadAppId: actividadProtocolo?.id || base.actividadAppId,
       actividadErpId: actividadProtocolo?.actividadErpId || base.actividadErpId,
     };
 
     return recalcularLinea({ ...lineaConProtocolo, ...aplicarSugerenciasComerciales(lineaConProtocolo) });
   }
 
-  function cambiarCampo(lineaId: string, campoPlanificacionId: string) {
-    const campo = camposPlanificacionPorId.get(campoPlanificacionId);
-    const lote = planificacion.lotesPlanificacion.find((item) => item.campoPlanificacionId === campoPlanificacionId);
+  function cambiarCampo(lineaId: string, campoAppId: string) {
+    const campo = camposAppPorId.get(campoAppId);
+    const lote = planificacion.lotesApp.find((item) => item.campoAppId === campoAppId);
     const linea = lineasPlanificacion.find((item) => item.id === lineaId);
 
     if (!campo || !lote || !linea) {
@@ -545,9 +545,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const base = {
       ...linea,
       empresaErpId: campo.empresaErpId,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
-      lotePlanificacionId: lote.id,
+      loteAppId: lote.id,
       loteErpId: lote.loteErpId,
       hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
     };
@@ -560,9 +560,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     });
   }
 
-  function cambiarLote(lineaId: string, lotePlanificacionId: string) {
-    const lote = lotesPlanificacionPorId.get(lotePlanificacionId);
-    const campo = lote ? camposPlanificacionPorId.get(lote.campoPlanificacionId) : undefined;
+  function cambiarLote(lineaId: string, loteAppId: string) {
+    const lote = lotesAppPorId.get(loteAppId);
+    const campo = lote ? camposAppPorId.get(lote.campoAppId) : undefined;
     const linea = lineasPlanificacion.find((item) => item.id === lineaId);
 
     if (!lote || !campo || !linea) {
@@ -572,9 +572,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const base = {
       ...linea,
       empresaErpId: campo.empresaErpId,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
-      lotePlanificacionId: lote.id,
+      loteAppId: lote.id,
       loteErpId: lote.loteErpId,
       hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
     };
@@ -587,14 +587,14 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     });
   }
 
-  function cambiarActividad(lineaId: string, actividadPlanificacionId: string) {
+  function cambiarActividad(lineaId: string, actividadAppId: string) {
     const linea = lineasPlanificacion.find((item) => item.id === lineaId);
     if (!linea) {
       return;
     }
 
-    const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === actividadPlanificacionId);
-    const base = { ...linea, actividadPlanificacionId, actividadErpId: actividad?.actividadErpId };
+    const actividad = planificacion.actividadesApp?.find((item) => item.id === actividadAppId);
+    const base = { ...linea, actividadAppId, actividadErpId: actividad?.actividadErpId };
     const protocolo = obtenerProtocolosCompatibles(base)[0];
 
     actualizarLinea(lineaId, {
@@ -615,7 +615,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const base = {
       ...linea,
       protocoloId,
-      actividadPlanificacionId: actividad?.id || linea.actividadPlanificacionId,
+      actividadAppId: actividad?.id || linea.actividadAppId,
       actividadErpId: actividad?.actividadErpId || linea.actividadErpId,
     };
 
@@ -641,12 +641,12 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
 
     const ultimaLinea = planificacionActiva.lineas[planificacionActiva.lineas.length - 1];
-    const campoPorDefectoId = ultimaLinea?.campoPlanificacionId || planificacion.camposPlanificacion[0]?.id;
-    const lote = planificacion.lotesPlanificacion.find((item) => item.campoPlanificacionId === campoPorDefectoId) || planificacion.lotesPlanificacion[0];
-    const campo = lote ? camposPlanificacionPorId.get(lote.campoPlanificacionId) : undefined;
-    const actividad = planificacion.actividadesPlanificacion?.[0];
-    const destino = actividad ? planificacion.destinosReferencia.find((item) => !item.actividadPlanificacionId || item.actividadPlanificacionId === actividad.id) : undefined;
-    const precio = actividad ? planificacion.preciosReferencia.find((item) => item.actividadPlanificacionId === actividad.id && (!destino || item.destinoVenta === destino.destinoVenta)) : undefined;
+    const campoPorDefectoId = ultimaLinea?.campoAppId || planificacion.camposApp[0]?.id;
+    const lote = planificacion.lotesApp.find((item) => item.campoAppId === campoPorDefectoId) || planificacion.lotesApp[0];
+    const campo = lote ? camposAppPorId.get(lote.campoAppId) : undefined;
+    const actividad = planificacion.actividadesApp?.[0];
+    const destino = actividad ? planificacion.destinosReferencia.find((item) => !item.actividadAppId || item.actividadAppId === actividad.id) : undefined;
+    const precio = actividad ? planificacion.preciosReferencia.find((item) => item.actividadAppId === actividad.id && (!destino || item.destinoVenta === destino.destinoVenta)) : undefined;
     const ahora = new Date().toISOString();
 
     if (!lote || !campo || !actividad) {
@@ -657,11 +657,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       id: `linea-planificacion-${Date.now()}`,
       planificacionId: planificacionActiva.id,
       empresaErpId: campo.empresaErpId,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
-      lotePlanificacionId: lote.id,
+      loteAppId: lote.id,
       loteErpId: lote.loteErpId,
-      actividadPlanificacionId: actividad.id,
+      actividadAppId: actividad.id,
       actividadErpId: actividad.actividadErpId,
       destinoReferenciaId: destino?.id,
       destinoVenta: destino?.destinoVenta || '',
@@ -1062,7 +1062,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
   }
 
-  async function guardarInsumoPlanificacionDesdeModal(insumo: InsumoPlanificacion) {
+  async function guardarInsumoAppDesdeModal(insumo: InsumoApp) {
     if (!puedeConfigurarPlanificacion) {
       return false;
     }
@@ -1074,19 +1074,19 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         throw new Error('No hay sesion activa para auditar insumos.');
       }
 
-      const respuesta = await guardarInsumoPlanificacion(insumo.id, {
+      const respuesta = await guardarInsumoApp(insumo.id, {
         insumo,
         origen: 'web',
         motivo: 'Alta o edicion de insumo desde padron maestro web',
       }, sesion.token);
 
       setPlanificacion((actual) => {
-        const insumosActuales = actual.insumosPlanificacion || [];
+        const insumosActuales = actual.insumosApp || [];
         const existe = insumosActuales.some((item) => item.id === respuesta.insumo.id);
 
         return {
           ...actual,
-          insumosPlanificacion: existe
+          insumosApp: existe
             ? insumosActuales.map((item) => (item.id === respuesta.insumo.id ? respuesta.insumo : item))
             : [respuesta.insumo, ...insumosActuales],
         };
@@ -1101,7 +1101,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return true;
     } catch (error) {
       const nombre = limpiarTextoVisible(insumo.nombre);
-      const insumoDemo: InsumoPlanificacion = {
+      const insumoDemo: InsumoApp = {
         ...insumo,
         nombre,
         codigoInterno: normalizarTexto(insumo.codigoInterno || nombre),
@@ -1113,12 +1113,12 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       };
 
       setPlanificacion((actual) => {
-        const insumosActuales = actual.insumosPlanificacion || [];
+        const insumosActuales = actual.insumosApp || [];
         const existe = insumosActuales.some((item) => item.id === insumoDemo.id);
 
         return {
           ...actual,
-          insumosPlanificacion: existe
+          insumosApp: existe
             ? insumosActuales.map((item) => (item.id === insumoDemo.id ? insumoDemo : item))
             : [insumoDemo, ...insumosActuales],
         };
@@ -1264,8 +1264,8 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     guardandoInsumos,
     planificacionActiva,
     lineasPlanificacion,
-    camposPlanificacionPorId,
-    lotesPlanificacionPorId,
+    camposAppPorId,
+    lotesAppPorId,
     protocolosPorId,
     margenBrutoTotal,
     ingresoNetoTotal,
@@ -1297,7 +1297,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     guardarConceptoGastoComercialDesdeModal,
     guardarDestinoVentaDesdeModal,
     guardarLaborReferenciaDesdeModal,
-    guardarInsumoPlanificacionDesdeModal,
+    guardarInsumoAppDesdeModal,
     obtenerProtocolosCompatibles,
     refrescarPlanificacion,
     guardarBorradorPlanificacion,

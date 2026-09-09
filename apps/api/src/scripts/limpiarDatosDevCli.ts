@@ -27,12 +27,12 @@ async function main() {
     prisma.conceptoGastoComercial.deleteMany(),
 
     prisma.laborReferencia.deleteMany(),
-    prisma.insumoPlanificacion.deleteMany(),
-    prisma.actividadPlanificacion.deleteMany(),
-    prisma.especiePlanificacion.deleteMany(),
-    prisma.lotePlanificacion.deleteMany(),
-    prisma.campoPlanificacion.deleteMany(),
-    prisma.zonaPlanificacion.deleteMany(),
+    prisma.insumoApp.deleteMany(),
+    prisma.actividadApp.deleteMany(),
+    prisma.especieApp.deleteMany(),
+    prisma.loteApp.deleteMany(),
+    prisma.campoApp.deleteMany(),
+    prisma.zonaApp.deleteMany(),
     prisma.usuarioCampoErp.deleteMany(),
 
     prisma.erpCultivo.deleteMany(),
@@ -45,15 +45,6 @@ async function main() {
     prisma.erpInsumo.deleteMany(),
     prisma.erpServicio.deleteMany(),
     prisma.erpUnidadMedida.deleteMany(),
-
-    prisma.monitoreo.deleteMany(),
-    prisma.avanceCosecha.deleteMany(),
-    prisma.avanceSiembra.deleteMany(),
-    prisma.analisisSuelo.deleteMany(),
-    prisma.labor.deleteMany(),
-    prisma.lote.deleteMany(),
-    prisma.campo.deleteMany(),
-    prisma.cultivo.deleteMany(),
   ]);
 
   console.log('[dev-clean] Limpieza finalizada.');

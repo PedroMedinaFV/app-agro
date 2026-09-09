@@ -17,7 +17,7 @@ interface ProtocoloModalProps {
   agregarEtapaProtocolo: () => void;
   actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
   agregarLabor: (etapaId: string, laborReferenciaId?: string) => void;
-  agregarInsumo: (etapaId: string, insumoPlanificacionId?: string) => void;
+  agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
   formatearUsd: (valor: number) => string;
   leerNumero: (valor: string) => number;
 }
@@ -42,12 +42,12 @@ export function ProtocoloModal({
   const laboresDisponibles = [...planificacion.laboresReferencia]
     .filter((labor) => labor.activo)
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  const insumosDisponibles = [...(planificacion.insumosPlanificacion || [])]
+  const insumosDisponibles = [...(planificacion.insumosApp || [])]
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const estadiosCompatibles = [...planificacion.estadiosReferencia]
     .filter((estadio) => estadio.activo && (!estadio.actividadErpId || estadio.actividadErpId === protocolo.actividadErpId))
     .sort((a, b) => a.ordenCronologico - b.ordenCronologico || a.nombre.localeCompare(b.nombre, 'es'));
-  const zonasDisponibles = [...(planificacion.zonasPlanificacion || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const zonasDisponibles = [...(planificacion.zonasApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const titulo = modo === 'crear' ? 'Nuevo protocolo' : modo === 'copiar' ? 'Guardar copia' : 'Editar protocolo';
   const textoAccion = guardandoProtocolo ? 'Guardando...' : modo === 'editar' ? 'Editar' : 'Guardar';
 
@@ -97,14 +97,14 @@ export function ProtocoloModal({
             <label>
               Actividad
               <select
-                value={protocolo.actividadPlanificacionId}
+                value={protocolo.actividadAppId}
                 onChange={(event) => {
-                  const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === event.target.value);
-                  actualizarProtocolos((actual) => ({ ...actual, actividadPlanificacionId: event.target.value, actividadErpId: actividad?.actividadErpId }));
+                  const actividad = planificacion.actividadesApp?.find((item) => item.id === event.target.value);
+                  actualizarProtocolos((actual) => ({ ...actual, actividadAppId: event.target.value, actividadErpId: actividad?.actividadErpId }));
                 }}
                 disabled={!puedeConfigurarPlanificacion}
               >
-                {(planificacion.actividadesPlanificacion || []).map((actividad) => (
+                {(planificacion.actividadesApp || []).map((actividad) => (
                   <option key={actividad.id} value={actividad.id}>{actividad.nombre}</option>
                 ))}
               </select>
@@ -112,8 +112,8 @@ export function ProtocoloModal({
             <label>
               Zona
               <select
-                value={protocolo.zonaPlanificacionId || ''}
-                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, zonaPlanificacionId: event.target.value || undefined, campoPlanificacionId: undefined }))}
+                value={protocolo.zonaAppId || ''}
+                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, zonaAppId: event.target.value || undefined, campoAppId: undefined }))}
                 disabled={!puedeConfigurarPlanificacion}
               >
                 <option value="">Todas las zonas</option>
@@ -125,13 +125,13 @@ export function ProtocoloModal({
             <label>
               Campo
               <select
-                value={protocolo.campoPlanificacionId || ''}
-                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, campoPlanificacionId: event.target.value || undefined }))}
+                value={protocolo.campoAppId || ''}
+                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, campoAppId: event.target.value || undefined }))}
                 disabled={!puedeConfigurarPlanificacion}
               >
                 <option value="">Todos los campos compatibles</option>
-                {planificacion.camposPlanificacion
-                  .filter((campo) => !protocolo.zonaPlanificacionId || campo.zonaPlanificacionId === protocolo.zonaPlanificacionId)
+                {planificacion.camposApp
+                  .filter((campo) => !protocolo.zonaAppId || campo.zonaAppId === protocolo.zonaAppId)
                   .map((campo) => (
                   <option key={campo.id} value={campo.id}>{campo.nombre}</option>
                 ))}
@@ -368,22 +368,22 @@ export function ProtocoloModal({
                     {etapa.insumos.map((insumo) => (
                       <div className="protocol-item" key={insumo.id}>
                         <select
-                          value={insumo.insumoPlanificacionId || ''}
+                          value={insumo.insumoAppId || ''}
                           onChange={(event) => {
-                            const insumoPlanificacion = insumosDisponibles.find((item) => item.id === event.target.value);
-                            if (!insumoPlanificacion) {
+                            const insumoApp = insumosDisponibles.find((item) => item.id === event.target.value);
+                            if (!insumoApp) {
                               return;
                             }
 
-                            const precioUnitarioEstimado = insumoPlanificacion.precioUnitarioEstimado || 0;
+                            const precioUnitarioEstimado = insumoApp.precioUnitarioEstimado || 0;
                             actualizarEtapa(etapa.id, {
                               insumos: etapa.insumos.map((item) => item.id === insumo.id ? {
                                 ...item,
-                                insumoPlanificacionId: insumoPlanificacion.id,
-                                insumoErpId: insumoPlanificacion.insumoErpId,
-                                nombre: insumoPlanificacion.nombre,
-                                tipo: insumoPlanificacion.tipo,
-                                unidad: insumoPlanificacion.unidad,
+                                insumoAppId: insumoApp.id,
+                                insumoErpId: insumoApp.insumoErpId,
+                                nombre: insumoApp.nombre,
+                                tipo: insumoApp.tipo,
+                                unidad: insumoApp.unidad,
                                 precioUnitarioEstimado,
                                 costoPorHa: calcularCostoInsumoProtocolo({ ...item, precioUnitarioEstimado }),
                               } : item),
@@ -467,7 +467,7 @@ export function ProtocoloModal({
 
         <div className="modal-actions">
           <button className="small" onClick={onClose}>Cancelar</button>
-          <button className="primary" onClick={onGuardar} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim() || !protocolo.campaniaErpId || !protocolo.actividadPlanificacionId}>
+          <button className="primary" onClick={onGuardar} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim() || !protocolo.campaniaErpId || !protocolo.actividadAppId}>
             <span className="button-content">
               {guardandoProtocolo && <LoadingSpinner label="Guardando protocolo" />}
               {textoAccion}

@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
-import type { GuardarEspeciePlanificacionRequest } from '@agro/tipos';
+import type { GuardarEspecieAppRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarEspeciePlanificacionPersistida, obtenerEspeciesPlanificacionPersistidas } from '../services/especies/especiesPlanificacionPrisma';
+import { guardarEspecieAppPersistida, obtenerEspeciesAppPersistidas } from '../services/especies/especiesAppPrisma';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', requierePermiso('planificacion:configurar'), async (req, res, ne
       return res.status(401).json({ error: 'Sesion sin cliente asociado.' });
     }
 
-    res.json({ especies: await obtenerEspeciesPlanificacionPersistidas(clienteId) });
+    res.json({ especies: await obtenerEspeciesAppPersistidas(clienteId) });
   } catch (error) {
     next(error);
   }
@@ -28,7 +28,7 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
   try {
     const request = req as RequestConUsuario;
 
-    res.json(await guardarEspeciePlanificacionPersistida(req.params.id, req.body as GuardarEspeciePlanificacionRequest, {
+    res.json(await guardarEspecieAppPersistida(req.params.id, req.body as GuardarEspecieAppRequest, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActividadPlanificacion, ErpActividad, ErpEspecie, ErpPuerto, PlanificacionSnapshot, PrecioReferencia, SesionUsuario } from '@agro/tipos';
+import { ActividadApp, ErpActividad, ErpEspecie, ErpPuerto, PlanificacionSnapshot, PrecioReferencia, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { guardarActividadPlanificacion, obtenerActividadesErpImportadas, obtenerActividadesPlanificacion, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
+import { guardarActividadApp, obtenerActividadesErpImportadas, obtenerActividadesApp, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -29,9 +29,9 @@ type ActividadSeleccionable = {
   clave: string;
   nombre: string;
   empresaErpId?: string;
-  actividadPlanificacionId?: string;
+  actividadAppId?: string;
   actividadErpId?: string;
-  especiePlanificacionId?: string;
+  especieAppId?: string;
   especieErpId?: string;
   codigo?: string;
   origen: 'agro' | 'erp';
@@ -50,7 +50,7 @@ export function PreciosReferenciaScreen({
   const [precioEnEdicion, setPrecioEnEdicion] = useState<PrecioReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
-  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadPlanificacion[]>([]);
+  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadApp[]>([]);
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
   const [puertosErp, setPuertosErp] = useState<ErpPuerto[]>([]);
@@ -73,23 +73,23 @@ export function PreciosReferenciaScreen({
 
     return Array.from(destinos.values()).sort((a, b) => a.localeCompare(b));
   }, [planificacion.destinosReferencia, planificacion.preciosReferencia, puertosErp]);
-  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesPlanificacion || [];
-  const actividadesPlanificacionIds = new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean));
+  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesApp || [];
+  const actividadesAppIds = new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean));
   const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
   const actividades = useMemo<ActividadSeleccionable[]>(() => {
     const propias = actividadesPropias.map((actividad) => ({
       clave: `agro:${actividad.id}`,
       nombre: actividad.nombre,
       empresaErpId: actividad.empresaErpId,
-      actividadPlanificacionId: actividad.id,
+      actividadAppId: actividad.id,
       actividadErpId: actividad.actividadErpId,
-      especiePlanificacionId: actividad.especiePlanificacionId,
+      especieAppId: actividad.especieAppId,
       especieErpId: actividad.especieErpId,
       codigo: actividad.codigoInterno,
       origen: 'agro' as const,
     }));
     const erp = actividadesErp
-      .filter((actividad) => !actividadesPlanificacionIds.has(actividad.erpId))
+      .filter((actividad) => !actividadesAppIds.has(actividad.erpId))
       .map((actividad) => {
         const especie = actividad.idEspecie ? especiesErpPorId.get(actividad.idEspecie) : undefined;
 
@@ -106,14 +106,14 @@ export function PreciosReferenciaScreen({
       });
 
     return [...propias, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [actividadesErp, actividadesPlanificacionIds, actividadesPropias, especiesErpPorId]);
+  }, [actividadesErp, actividadesAppIds, actividadesPropias, especiesErpPorId]);
   const actividadesPorClave = useMemo(() => new Map(actividades.map((actividad) => [actividad.clave, actividad])), [actividades]);
   const actividadesPropiasPorId = useMemo(() => new Map(actividadesPropias.map((actividad) => [actividad.id, actividad])), [actividadesPropias]);
 
   useEffect(() => {
     async function cargarActividadesReales() {
       const [propias, erp, especies, puertos] = await Promise.all([
-        obtenerActividadesPlanificacion(sesion.token),
+        obtenerActividadesApp(sesion.token),
         obtenerActividadesErpImportadas(sesion.token),
         obtenerEspeciesErpImportadas(sesion.token),
         obtenerPuertosErpImportados(sesion.token),
@@ -135,15 +135,15 @@ export function PreciosReferenciaScreen({
   function crearBorradorPrecio(): PrecioReferencia {
     const ahora = new Date().toISOString();
     const actividad = actividades[0];
-    const destino = actividad?.actividadPlanificacionId ? planificacion.destinosReferencia.find((item) => item.actividadPlanificacionId === actividad.actividadPlanificacionId) : undefined;
+    const destino = actividad?.actividadAppId ? planificacion.destinosReferencia.find((item) => item.actividadAppId === actividad.actividadAppId) : undefined;
 
     return {
       id: `precio-referencia-${Date.now()}`,
       clienteId: planificacion.preciosReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
       empresaErpId: actividad?.empresaErpId,
-      actividadPlanificacionId: actividad?.actividadPlanificacionId || '',
+      actividadAppId: actividad?.actividadAppId || '',
       actividadErpId: actividad?.actividadErpId,
-      especiePlanificacionId: actividad?.especiePlanificacionId,
+      especieAppId: actividad?.especieAppId,
       especieErpId: actividad?.especieErpId,
       destinoVenta: destino?.destinoVenta || '',
       valor: 0,
@@ -165,7 +165,7 @@ export function PreciosReferenciaScreen({
 
   function abrirEditarPrecio(precio: PrecioReferencia) {
     setModoModal('editar');
-    setActividadSeleccionadaClave(`agro:${precio.actividadPlanificacionId}`);
+    setActividadSeleccionadaClave(`agro:${precio.actividadAppId}`);
     setPrecioEnEdicion({ ...precio });
   }
 
@@ -179,19 +179,19 @@ export function PreciosReferenciaScreen({
     setActividadSeleccionadaClave(clave);
     actualizarBorrador({
       empresaErpId: actividad?.empresaErpId,
-      actividadPlanificacionId: actividad?.actividadPlanificacionId || '',
+      actividadAppId: actividad?.actividadAppId || '',
       actividadErpId: actividad?.actividadErpId,
-      especiePlanificacionId: actividad?.especiePlanificacionId,
+      especieAppId: actividad?.especieAppId,
       especieErpId: actividad?.especieErpId,
     });
   }
 
   function crearIdActividadDesdeErp(actividadErpId: string) {
-    return `actividad-planificacion-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+    return `actividad-app-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
   }
 
-  async function asegurarActividadPlanificacion(precio: PrecioReferencia): Promise<PrecioReferencia> {
-    if (precio.actividadPlanificacionId) {
+  async function asegurarActividadApp(precio: PrecioReferencia): Promise<PrecioReferencia> {
+    if (precio.actividadAppId) {
       return precio;
     }
 
@@ -202,7 +202,7 @@ export function PreciosReferenciaScreen({
     }
 
     const ahora = new Date().toISOString();
-    const actividadPreparada: ActividadPlanificacion = {
+    const actividadPreparada: ActividadApp = {
       id: crearIdActividadDesdeErp(actividad.erp.erpId),
       clienteId: precio.clienteId,
       empresaErpId: 'global',
@@ -214,7 +214,7 @@ export function PreciosReferenciaScreen({
       createdAt: ahora,
       updatedAt: ahora,
     };
-    const respuesta = await guardarActividadPlanificacion(actividadPreparada.id, {
+    const respuesta = await guardarActividadApp(actividadPreparada.id, {
       actividad: actividadPreparada,
       origen: 'web',
       motivo: 'Creacion automatica de actividad operativa vinculada desde precio',
@@ -226,9 +226,9 @@ export function PreciosReferenciaScreen({
     return {
       ...precio,
       empresaErpId: respuesta.actividad.empresaErpId,
-      actividadPlanificacionId: respuesta.actividad.id,
+      actividadAppId: respuesta.actividad.id,
       actividadErpId: respuesta.actividad.actividadErpId,
-      especiePlanificacionId: respuesta.actividad.especiePlanificacionId,
+      especieAppId: respuesta.actividad.especieAppId,
       especieErpId: respuesta.actividad.especieErpId,
     };
   }
@@ -238,7 +238,7 @@ export function PreciosReferenciaScreen({
       return;
     }
 
-    const precioPreparado = await asegurarActividadPlanificacion({ ...precioEnEdicion, unidad: 'tn' });
+    const precioPreparado = await asegurarActividadApp({ ...precioEnEdicion, unidad: 'tn' });
     const guardado = await guardarPrecioReferencia(precioPreparado);
 
     if (guardado) {
@@ -282,7 +282,7 @@ export function PreciosReferenciaScreen({
           getRowKey={(precio) => precio.id}
           emptyMessage="Todavia no hay precios registrados."
           columns={[
-            { key: 'actividad', label: 'Actividad', width: 'minmax(140px, 1.1fr)', render: (precio) => <strong>{actividadesPropiasPorId.get(precio.actividadPlanificacionId)?.nombre || precio.actividadErpId || 'Sin actividad'}</strong> },
+            { key: 'actividad', label: 'Actividad', width: 'minmax(140px, 1.1fr)', render: (precio) => <strong>{actividadesPropiasPorId.get(precio.actividadAppId)?.nombre || precio.actividadErpId || 'Sin actividad'}</strong> },
             { key: 'destino', label: 'Destino', width: 'minmax(130px, 1fr)', render: (precio) => precio.destinoVenta || 'Sin destino' },
             { key: 'precio', label: 'Precio', width: 'minmax(100px, 0.75fr)', render: (precio) => `${precio.moneda === 'USD' ? formatearUsd(precio.valor) : `${precio.moneda} ${precio.valor}`} / ${precio.unidad}` },
             { key: 'fuente', label: 'Fuente', width: 'minmax(90px, 0.6fr)', render: (precio) => precio.fuente },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
-  ActividadPlanificacion,
-  CampoPlanificacion,
+  ActividadApp,
+  CampoApp,
   ErpActividad,
   ErpCampo,
   ErpEspecie,
@@ -9,37 +9,37 @@ import type {
   ErpLote,
   ErpServicio,
   ErpZona,
-  EspeciePlanificacion,
-  InsumoPlanificacion,
+  EspecieApp,
+  InsumoApp,
   LaborReferencia,
-  LotePlanificacion,
+  LoteApp,
   SesionUsuario,
-  ZonaPlanificacion,
+  ZonaApp,
 } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
-  guardarActividadPlanificacion,
-  guardarCampoPlanificacion,
-  guardarEspeciePlanificacion,
-  guardarInsumoPlanificacion,
+  guardarActividadApp,
+  guardarCampoApp,
+  guardarEspecieApp,
+  guardarInsumoApp,
   guardarLaborReferencia,
-  guardarLotePlanificacion,
-  guardarZonaPlanificacion,
+  guardarLoteApp,
+  guardarZonaApp,
   obtenerActividadesErpImportadas,
-  obtenerActividadesPlanificacion,
+  obtenerActividadesApp,
   obtenerCamposErpImportados,
-  obtenerCamposPlanificacion,
+  obtenerCamposApp,
   obtenerEspeciesErpImportadas,
-  obtenerEspeciesPlanificacion,
+  obtenerEspeciesApp,
   obtenerInsumosErpImportados,
-  obtenerInsumosPlanificacion,
+  obtenerInsumosApp,
   obtenerLaboresReferencia,
   obtenerLotesErpImportados,
-  obtenerLotesPlanificacion,
+  obtenerLotesApp,
   obtenerServiciosErpImportados,
   obtenerZonasErpImportadas,
-  obtenerZonasPlanificacion,
+  obtenerZonasApp,
 } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -79,12 +79,12 @@ function formatearFecha(fecha?: string) {
 }
 
 export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificacion, notificar, onVinculacionesActualizadas }: VinculacionesPadronesScreenProps) {
-  const [zonas, setZonas] = useState<ZonaPlanificacion[]>([]);
-  const [campos, setCampos] = useState<CampoPlanificacion[]>([]);
-  const [lotes, setLotes] = useState<LotePlanificacion[]>([]);
-  const [especies, setEspecies] = useState<EspeciePlanificacion[]>([]);
-  const [actividades, setActividades] = useState<ActividadPlanificacion[]>([]);
-  const [insumos, setInsumos] = useState<InsumoPlanificacion[]>([]);
+  const [zonas, setZonas] = useState<ZonaApp[]>([]);
+  const [campos, setCampos] = useState<CampoApp[]>([]);
+  const [lotes, setLotes] = useState<LoteApp[]>([]);
+  const [especies, setEspecies] = useState<EspecieApp[]>([]);
+  const [actividades, setActividades] = useState<ActividadApp[]>([]);
+  const [insumos, setInsumos] = useState<InsumoApp[]>([]);
   const [labores, setLabores] = useState<LaborReferencia[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
@@ -117,12 +117,12 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
           insumosImportados,
           serviciosImportados,
         ] = await Promise.all([
-          obtenerZonasPlanificacion(sesion.token),
-          obtenerCamposPlanificacion(sesion.token),
-          obtenerLotesPlanificacion(sesion.token),
-          obtenerEspeciesPlanificacion(sesion.token),
-          obtenerActividadesPlanificacion(sesion.token),
-          obtenerInsumosPlanificacion(sesion.token),
+          obtenerZonasApp(sesion.token),
+          obtenerCamposApp(sesion.token),
+          obtenerLotesApp(sesion.token),
+          obtenerEspeciesApp(sesion.token),
+          obtenerActividadesApp(sesion.token),
+          obtenerInsumosApp(sesion.token),
           obtenerLaboresReferencia(sesion.token),
           obtenerZonasErpImportadas(sesion.token),
           obtenerCamposErpImportados(sesion.token),
@@ -183,7 +183,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
     for (const lote of lotes.filter((item) => item.loteErpId)) {
       const loteErp = lotesErpPorId.get(lote.loteErpId || '');
-      const campo = camposPorId.get(lote.campoPlanificacionId);
+      const campo = camposPorId.get(lote.campoAppId);
       resultado.push(crearFila('lotes', lote.id, 'Lotes', lote.nombre, loteErp ? `${loteErp.codigo} - ${loteErp.nombre}` : lote.loteErpId || '-', campo?.nombre || 'Campo no disponible', lote.updatedAt));
     }
 
@@ -194,7 +194,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
     for (const actividad of actividades.filter((item) => item.actividadErpId)) {
       const actividadErp = actividadesErpPorId.get(actividad.actividadErpId || '');
-      const especie = actividad.especiePlanificacionId ? especiesPorId.get(actividad.especiePlanificacionId)?.nombre : actividad.especieErpId;
+      const especie = actividad.especieAppId ? especiesPorId.get(actividad.especieAppId)?.nombre : actividad.especieErpId;
       resultado.push(crearFila('actividades', actividad.id, 'Actividades', actividad.nombre, actividadErp ? `${actividadErp.codigo} - ${actividadErp.descripcion}` : actividad.actividadErpId || '-', especie || 'Sin especie', actividad.updatedAt));
     }
 
@@ -323,8 +323,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
     return { id, label, motivo };
   }
 
-  function obtenerCamposErpCompatiblesParaEdicion(campo: CampoPlanificacion, usados: Set<string>) {
-    const zonaPropia = campo.zonaPlanificacionId ? zonas.find((zona) => zona.id === campo.zonaPlanificacionId) : undefined;
+  function obtenerCamposErpCompatiblesParaEdicion(campo: CampoApp, usados: Set<string>) {
+    const zonaPropia = campo.zonaAppId ? zonas.find((zona) => zona.id === campo.zonaAppId) : undefined;
     const zonaErpEsperada = campo.zonaErpId || zonaPropia?.zonaErpId;
     const idZonaEsperada = obtenerIdDesdeErpId(zonaErpEsperada, 'zona');
 
@@ -334,16 +334,16 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       .filter((item) => !idZonaEsperada || item.idZona === idZonaEsperada);
   }
 
-  function obtenerLotesErpCompatiblesParaEdicion(lote: LotePlanificacion, usados: Set<string>) {
-    const campo = camposPorId.get(lote.campoPlanificacionId);
+  function obtenerLotesErpCompatiblesParaEdicion(lote: LoteApp, usados: Set<string>) {
+    const campo = camposPorId.get(lote.campoAppId);
 
     return lotesErp
       .filter((item) => !usados.has(item.erpId))
       .filter((item) => !campo?.campoErpId || item.campoErpId === campo.campoErpId);
   }
 
-  function obtenerActividadesErpCompatiblesParaEdicion(actividad: ActividadPlanificacion, usados: Set<string>) {
-    const especie = actividad.especiePlanificacionId ? especiesPorId.get(actividad.especiePlanificacionId) : undefined;
+  function obtenerActividadesErpCompatiblesParaEdicion(actividad: ActividadApp, usados: Set<string>) {
+    const especie = actividad.especieAppId ? especiesPorId.get(actividad.especieAppId) : undefined;
     const especieErpEsperada = actividad.especieErpId || especie?.especieErpId;
     const idEspecieEsperada = obtenerIdDesdeErpId(especieErpEsperada, 'especie');
 
@@ -396,34 +396,34 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       if (fila.tipo === 'zonas') {
         const zona = zonas.find((item) => item.id === fila.id);
         if (!zona) throw new Error('No se encontro la zona propia.');
-        const respuesta = await guardarZonaPlanificacion(zona.id, { zona: { ...zona, zonaErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con zona ERP ${erpId}` : 'Desvinculacion manual de zona ERP' }, sesion.token);
+        const respuesta = await guardarZonaApp(zona.id, { zona: { ...zona, zonaErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con zona ERP ${erpId}` : 'Desvinculacion manual de zona ERP' }, sesion.token);
         setZonas((actuales) => actuales.map((item) => (item.id === respuesta.zona.id ? respuesta.zona : item)));
       } else if (fila.tipo === 'campos') {
         const campo = campos.find((item) => item.id === fila.id);
         const campoErp = erpId ? camposErpPorId.get(erpId) : undefined;
         if (!campo) throw new Error('No se encontro el campo propio.');
-        const respuesta = await guardarCampoPlanificacion(campo.id, { campo: { ...campo, campoErpId: erpId, empresaErpId: campoErp?.empresaErpId || campo.empresaErpId, zonaErpId: erpId ? campoErp?.idZona ? `zona:${campoErp.idZona}` : campo.zonaErpId : campo.zonaErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con campo ERP ${erpId}` : 'Desvinculacion manual de campo ERP' }, sesion.token);
+        const respuesta = await guardarCampoApp(campo.id, { campo: { ...campo, campoErpId: erpId, empresaErpId: campoErp?.empresaErpId || campo.empresaErpId, zonaErpId: erpId ? campoErp?.idZona ? `zona:${campoErp.idZona}` : campo.zonaErpId : campo.zonaErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con campo ERP ${erpId}` : 'Desvinculacion manual de campo ERP' }, sesion.token);
         setCampos((actuales) => actuales.map((item) => (item.id === respuesta.campo.id ? respuesta.campo : item)));
       } else if (fila.tipo === 'lotes') {
         const lote = lotes.find((item) => item.id === fila.id);
         if (!lote) throw new Error('No se encontro el lote propio.');
-        const respuesta = await guardarLotePlanificacion(lote.id, { lote: { ...lote, loteErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con lote ERP ${erpId}` : 'Desvinculacion manual de lote ERP' }, sesion.token);
+        const respuesta = await guardarLoteApp(lote.id, { lote: { ...lote, loteErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con lote ERP ${erpId}` : 'Desvinculacion manual de lote ERP' }, sesion.token);
         setLotes((actuales) => actuales.map((item) => (item.id === respuesta.lote.id ? respuesta.lote : item)));
       } else if (fila.tipo === 'especies') {
         const especie = especies.find((item) => item.id === fila.id);
         if (!especie) throw new Error('No se encontro la especie propia.');
-        const respuesta = await guardarEspeciePlanificacion(especie.id, { especie: { ...especie, especieErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con especie ERP ${erpId}` : 'Desvinculacion manual de especie ERP' }, sesion.token);
+        const respuesta = await guardarEspecieApp(especie.id, { especie: { ...especie, especieErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con especie ERP ${erpId}` : 'Desvinculacion manual de especie ERP' }, sesion.token);
         setEspecies((actuales) => actuales.map((item) => (item.id === respuesta.especie.id ? respuesta.especie : item)));
       } else if (fila.tipo === 'actividades') {
         const actividad = actividades.find((item) => item.id === fila.id);
         const actividadErp = erpId ? actividadesErpPorId.get(erpId) : undefined;
         if (!actividad) throw new Error('No se encontro la actividad propia.');
-        const respuesta = await guardarActividadPlanificacion(actividad.id, { actividad: { ...actividad, actividadErpId: erpId, especieErpId: erpId ? actividadErp?.idEspecie ? `especie:${actividadErp.idEspecie}` : actividad.especieErpId : actividad.especieErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con actividad ERP ${erpId}` : 'Desvinculacion manual de actividad ERP' }, sesion.token);
+        const respuesta = await guardarActividadApp(actividad.id, { actividad: { ...actividad, actividadErpId: erpId, especieErpId: erpId ? actividadErp?.idEspecie ? `especie:${actividadErp.idEspecie}` : actividad.especieErpId : actividad.especieErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con actividad ERP ${erpId}` : 'Desvinculacion manual de actividad ERP' }, sesion.token);
         setActividades((actuales) => actuales.map((item) => (item.id === respuesta.actividad.id ? respuesta.actividad : item)));
       } else if (fila.tipo === 'insumos') {
         const insumo = insumos.find((item) => item.id === fila.id);
         if (!insumo) throw new Error('No se encontro el insumo propio.');
-        const respuesta = await guardarInsumoPlanificacion(insumo.id, { insumo: { ...insumo, insumoErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con insumo ERP ${erpId}` : 'Desvinculacion manual de insumo ERP' }, sesion.token);
+        const respuesta = await guardarInsumoApp(insumo.id, { insumo: { ...insumo, insumoErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con insumo ERP ${erpId}` : 'Desvinculacion manual de insumo ERP' }, sesion.token);
         setInsumos((actuales) => actuales.map((item) => (item.id === respuesta.insumo.id ? respuesta.insumo : item)));
       } else {
         const labor = labores.find((item) => item.id === fila.id);

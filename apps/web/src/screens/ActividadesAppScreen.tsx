@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ActividadPlanificacion, ErpActividad, ErpEspecie, EspeciePlanificacion, SesionUsuario } from '@agro/tipos';
+import type { ActividadApp, ErpActividad, ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
-  guardarActividadPlanificacion,
+  guardarActividadApp,
   obtenerActividadesErpImportadas,
-  obtenerActividadesPlanificacion,
+  obtenerActividadesApp,
   obtenerEspeciesErpImportadas,
-  obtenerEspeciesPlanificacion,
+  obtenerEspeciesApp,
 } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
-type ActividadesPlanificacionScreenProps = {
+type ActividadesAppScreenProps = {
   sesion: SesionUsuario;
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
@@ -24,7 +24,7 @@ type EspecieSeleccionable = {
   nombre: string;
   codigo?: string;
   origen: 'agro' | 'erp';
-  especiePlanificacionId?: string;
+  especieAppId?: string;
   especieErpId?: string;
   idEspecie?: number;
 };
@@ -40,7 +40,7 @@ type ActividadTabla = {
   origen: string;
   estado: string;
   accion: 'editar' | 'importada';
-  actividadPropia?: ActividadPlanificacion;
+  actividadPropia?: ActividadApp;
 };
 
 function limpiarTextoVisible(valor: string) {
@@ -58,16 +58,16 @@ function formatearAtributoActividad(valor?: string) {
   return valor ? valor.charAt(0).toUpperCase() + valor.slice(1) : 'Sin definir';
 }
 
-function crearActividadNueva(clienteId: string, especie?: EspecieSeleccionable): ActividadPlanificacion {
+function crearActividadNueva(clienteId: string, especie?: EspecieSeleccionable): ActividadApp {
   const ahora = new Date().toISOString();
 
   return {
-    id: `actividad-planificacion-${Date.now()}`,
+    id: `actividad-app-${Date.now()}`,
     clienteId,
     empresaErpId: 'global',
     nombre: '',
     codigoInterno: '',
-    especiePlanificacionId: especie?.especiePlanificacionId,
+    especieAppId: especie?.especieAppId,
     especieErpId: especie?.especieErpId,
     estadoVinculacion: 'provisorio',
     createdAt: ahora,
@@ -75,16 +75,16 @@ function crearActividadNueva(clienteId: string, especie?: EspecieSeleccionable):
   };
 }
 
-export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanificacion, notificar }: ActividadesPlanificacionScreenProps) {
+export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, notificar }: ActividadesAppScreenProps) {
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
-  const [actividadesPropias, setActividadesPropias] = useState<ActividadPlanificacion[]>([]);
-  const [especiesPropias, setEspeciesPropias] = useState<EspeciePlanificacion[]>([]);
-  const [actividadEnEdicion, setActividadEnEdicion] = useState<ActividadPlanificacion | null>(null);
+  const [actividadesPropias, setActividadesPropias] = useState<ActividadApp[]>([]);
+  const [especiesPropias, setEspeciesPropias] = useState<EspecieApp[]>([]);
+  const [actividadEnEdicion, setActividadEnEdicion] = useState<ActividadApp | null>(null);
   const [estado, setEstado] = useState('Cargando actividades sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
-  const [actividadPropiaParaVincular, setActividadPropiaParaVincular] = useState<ActividadPlanificacion | null>(null);
+  const [actividadPropiaParaVincular, setActividadPropiaParaVincular] = useState<ActividadApp | null>(null);
   const [actividadErpVincularId, setActividadErpVincularId] = useState('');
 
   useEffect(() => {
@@ -93,8 +93,8 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
         const [respuestaActividadesErp, respuestaEspeciesErp, respuestaActividadesPropias, respuestaEspeciesPropias] = await Promise.all([
           obtenerActividadesErpImportadas(sesion.token),
           obtenerEspeciesErpImportadas(sesion.token),
-          obtenerActividadesPlanificacion(sesion.token),
-          obtenerEspeciesPlanificacion(sesion.token),
+          obtenerActividadesApp(sesion.token),
+          obtenerEspeciesApp(sesion.token),
         ]);
 
         setActividadesErp(respuestaActividadesErp.actividades);
@@ -118,7 +118,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
       nombre: especie.nombre,
       codigo: especie.codigoInterno,
       origen: 'agro' as const,
-      especiePlanificacionId: especie.id,
+      especieAppId: especie.id,
       especieErpId: especie.especieErpId,
     }));
     const erp = especiesErp.map((especie) => ({
@@ -157,7 +157,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
       : []
   ), [actividadPropiaParaVincular, actividadesErpDisponiblesParaVincular]);
   const actividadesPropiasFiltradas = actividadesPropias.filter((actividad) => !actividad.actividadErpId).filter((actividad) => {
-    const especie = actividad.especiePlanificacionId ? especiesPropiasPorId.get(actividad.especiePlanificacionId)?.nombre : especiesPorErpId.get(actividad.especieErpId || '')?.nombre;
+    const especie = actividad.especieAppId ? especiesPropiasPorId.get(actividad.especieAppId)?.nombre : especiesPorErpId.get(actividad.especieErpId || '')?.nombre;
     return normalizarCodigo(`${actividad.codigoInterno || ''} ${actividad.nombre} ${especie || ''} ${actividad.tipoGrano || ''} ${actividad.tipoCultivo || ''} ${actividad.epocaSiembra || ''}`).includes(filtroNormalizado);
   });
   const actividadesErpFiltradas = actividadesErp.filter((actividad) => {
@@ -196,9 +196,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     })),
   ];
 
-  function obtenerClaveEspecie(actividad: ActividadPlanificacion) {
-    if (actividad.especiePlanificacionId) {
-      return `agro:${actividad.especiePlanificacionId}`;
+  function obtenerClaveEspecie(actividad: ActividadApp) {
+    if (actividad.especieAppId) {
+      return `agro:${actividad.especieAppId}`;
     }
 
     if (actividad.especieErpId) {
@@ -208,9 +208,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     return '';
   }
 
-  function obtenerNombreEspecie(actividad: ActividadPlanificacion) {
-    if (actividad.especiePlanificacionId) {
-      return especiesPropiasPorId.get(actividad.especiePlanificacionId)?.nombre || actividad.especiePlanificacionId;
+  function obtenerNombreEspecie(actividad: ActividadApp) {
+    if (actividad.especieAppId) {
+      return especiesPropiasPorId.get(actividad.especieAppId)?.nombre || actividad.especieAppId;
     }
 
     return especiesPorErpId.get(actividad.especieErpId || '')?.nombre || actividad.especieErpId || 'Sin especie';
@@ -220,7 +220,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     setActividadEnEdicion(crearActividadNueva(sesion.usuario.clienteId || 'cliente-demo', especiesDisponibles[0]));
   }
 
-  function actualizarBorrador(cambios: Partial<ActividadPlanificacion>) {
+  function actualizarBorrador(cambios: Partial<ActividadApp>) {
     setActividadEnEdicion((actual) => actual && { ...actual, ...cambios, updatedAt: new Date().toISOString() });
   }
 
@@ -228,7 +228,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     const especie = clave ? especiesPorClave.get(clave) : undefined;
 
     actualizarBorrador({
-      especiePlanificacionId: especie?.especiePlanificacionId,
+      especieAppId: especie?.especieAppId,
       especieErpId: especie?.especieErpId,
     });
   }
@@ -239,7 +239,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     }
 
     const nombre = limpiarTextoVisible(actividadEnEdicion.nombre);
-    const actividadPreparada: ActividadPlanificacion = {
+    const actividadPreparada: ActividadApp = {
       ...actividadEnEdicion,
       empresaErpId: 'global',
       nombre,
@@ -250,7 +250,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     setGuardando(true);
 
     try {
-      const respuesta = await guardarActividadPlanificacion(actividadPreparada.id, {
+      const respuesta = await guardarActividadApp(actividadPreparada.id, {
         actividad: actividadPreparada,
         origen: 'web',
         motivo: 'Alta o edicion de actividad desde padron maestro web',
@@ -273,9 +273,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     }
   }
 
-  function obtenerActividadesErpCompatibles(actividadPropia: ActividadPlanificacion) {
-    const especiePropia = actividadPropia.especiePlanificacionId
-      ? especiesPropiasPorId.get(actividadPropia.especiePlanificacionId)
+  function obtenerActividadesErpCompatibles(actividadPropia: ActividadApp) {
+    const especiePropia = actividadPropia.especieAppId
+      ? especiesPropiasPorId.get(actividadPropia.especieAppId)
       : undefined;
     const especieErpEsperada = actividadPropia.especieErpId || especiePropia?.especieErpId;
     const idEspecieEsperada = obtenerIdEspecieDesdeErpId(especieErpEsperada);
@@ -292,7 +292,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     return match ? Number(match[1]) : undefined;
   }
 
-  function abrirVinculacion(actividad: ActividadPlanificacion) {
+  function abrirVinculacion(actividad: ActividadApp) {
     const candidatos = sugerirVinculacion(
       { codigo: actividad.codigoInterno, nombre: actividad.nombre },
       obtenerActividadesErpCompatibles(actividad),
@@ -329,7 +329,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
     setGuardando(true);
 
     try {
-      const respuesta = await guardarActividadPlanificacion(actividadPropiaParaVincular.id, {
+      const respuesta = await guardarActividadApp(actividadPropiaParaVincular.id, {
         actividad: {
           ...actividadPropiaParaVincular,
           empresaErpId: 'global',
@@ -428,12 +428,12 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={actividadEnEdicion.codigoInterno || ''} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
-              <label>Estado<select value={actividadEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ActividadPlanificacion['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
+              <label>Estado<select value={actividadEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ActividadApp['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
               <label className="reference-wide">Nombre<input value={actividadEnEdicion.nombre} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la actividad" /></label>
               <label className="reference-wide">Especie<select value={obtenerClaveEspecie(actividadEnEdicion)} onChange={(event) => seleccionarEspecie(event.target.value)}><option value="">Seleccionar especie</option>{especiesDisponibles.map((especie) => <option key={especie.clave} value={especie.clave}>{especie.codigo ? `${especie.codigo} - ` : ''}{especie.nombre} ({especie.origen === 'erp' ? 'ERP' : 'Agro App'})</option>)}</select></label>
-              <label>Tipo de grano<select value={actividadEnEdicion.tipoGrano || ''} onChange={(event) => actualizarBorrador({ tipoGrano: event.target.value as ActividadPlanificacion['tipoGrano'] || undefined })}><option value="">Sin definir</option><option value="fina">Fina</option><option value="gruesa">Gruesa</option></select></label>
-              <label>Tipo de cultivo<select value={actividadEnEdicion.tipoCultivo || ''} onChange={(event) => actualizarBorrador({ tipoCultivo: event.target.value as ActividadPlanificacion['tipoCultivo'] || undefined })}><option value="">Sin definir</option><option value="primera">Primera</option><option value="segunda">Segunda</option></select></label>
-              <label>Epoca de siembra<select value={actividadEnEdicion.epocaSiembra || ''} onChange={(event) => actualizarBorrador({ epocaSiembra: event.target.value as ActividadPlanificacion['epocaSiembra'] || undefined })}><option value="">Sin definir</option><option value="invierno">Invierno</option><option value="verano">Verano</option></select></label>
+              <label>Tipo de grano<select value={actividadEnEdicion.tipoGrano || ''} onChange={(event) => actualizarBorrador({ tipoGrano: event.target.value as ActividadApp['tipoGrano'] || undefined })}><option value="">Sin definir</option><option value="fina">Fina</option><option value="gruesa">Gruesa</option></select></label>
+              <label>Tipo de cultivo<select value={actividadEnEdicion.tipoCultivo || ''} onChange={(event) => actualizarBorrador({ tipoCultivo: event.target.value as ActividadApp['tipoCultivo'] || undefined })}><option value="">Sin definir</option><option value="primera">Primera</option><option value="segunda">Segunda</option></select></label>
+              <label>Epoca de siembra<select value={actividadEnEdicion.epocaSiembra || ''} onChange={(event) => actualizarBorrador({ epocaSiembra: event.target.value as ActividadApp['epocaSiembra'] || undefined })}><option value="">Sin definir</option><option value="invierno">Invierno</option><option value="verano">Verano</option></select></label>
             </div>
             {existeCodigoDuplicado && <p className="form-error">Ya existe una actividad propia con ese codigo interno.</p>}
             <div className="modal-actions">

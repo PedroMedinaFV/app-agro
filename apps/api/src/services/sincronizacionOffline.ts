@@ -30,7 +30,7 @@ function esPayloadPrecipitacion(payload: unknown): payload is CrearPrecipitacion
   }
 
   return (
-    typeof payload.campoPlanificacionId === 'string' &&
+    typeof payload.campoAppId === 'string' &&
     typeof payload.milimetros === 'number' &&
     typeof payload.fechaEvento === 'string'
   );

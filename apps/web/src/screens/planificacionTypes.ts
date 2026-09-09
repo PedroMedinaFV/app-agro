@@ -1,7 +1,7 @@
 import {
-  CampoPlanificacion,
+  CampoApp,
   ErpSnapshot,
-  LotePlanificacion,
+  LoteApp,
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
   ProtocoloProductivoResumen,
@@ -26,8 +26,8 @@ export type PlanificacionBaseProps = {
   camposProvisorios: number;
   tieneLineasDuplicadas: boolean;
   clavesDuplicadas: Set<string>;
-  camposPlanificacionPorId: Map<string, CampoPlanificacion>;
-  lotesPlanificacionPorId: Map<string, LotePlanificacion>;
+  camposAppPorId: Map<string, CampoApp>;
+  lotesAppPorId: Map<string, LoteApp>;
   protocolosPorId: Map<string, ProtocoloProductivoResumen>;
   seleccionarPlanificacion: (planificacionId: string) => void;
   crearEscenarioPlanificacion: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => Promise<string | undefined>;
@@ -38,9 +38,9 @@ export type PlanificacionBaseProps = {
   copiarLineaPlanificacion: (lineaId: string) => void;
   guardarBorradorPlanificacion: () => void;
   cerrarPlanificacionActiva: () => void;
-  cambiarCampo: (lineaId: string, campoPlanificacionId: string) => void;
-  cambiarLote: (lineaId: string, lotePlanificacionId: string) => void;
-  cambiarActividad: (lineaId: string, actividadPlanificacionId: string) => void;
+  cambiarCampo: (lineaId: string, campoAppId: string) => void;
+  cambiarLote: (lineaId: string, loteAppId: string) => void;
+  cambiarActividad: (lineaId: string, actividadAppId: string) => void;
   cambiarProtocolo: (lineaId: string, protocoloId?: string) => void;
   cambiarDestino: (lineaId: string, destinoVenta: string) => void;
   actualizarLinea: (lineaId: string, updates: Partial<PlanificacionAgricolaLinea>) => void;

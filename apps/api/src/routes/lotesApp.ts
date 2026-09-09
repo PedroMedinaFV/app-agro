@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
-import type { GuardarInsumoPlanificacionRequest } from '@agro/tipos';
+import type { GuardarLoteAppRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarInsumoPlanificacionPersistido, obtenerInsumosPlanificacionPersistidos } from '../services/insumos/insumosPlanificacionPrisma';
+import { guardarLoteAppPersistido, obtenerLotesAppPersistidos } from '../services/lotes/lotesAppPrisma';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', requierePermiso('planificacion:configurar'), async (req, res, ne
       return res.status(401).json({ error: 'Sesion sin cliente asociado.' });
     }
 
-    res.json({ insumos: await obtenerInsumosPlanificacionPersistidos(clienteId) });
+    res.json({ lotes: await obtenerLotesAppPersistidos(clienteId) });
   } catch (error) {
     next(error);
   }
@@ -28,7 +28,7 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
   try {
     const request = req as RequestConUsuario;
 
-    res.json(await guardarInsumoPlanificacionPersistido(req.params.id, req.body as GuardarInsumoPlanificacionRequest, {
+    res.json(await guardarLoteAppPersistido(req.params.id, req.body as GuardarLoteAppRequest, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

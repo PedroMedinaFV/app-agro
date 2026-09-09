@@ -31,8 +31,8 @@ export function PlanificacionEditorScreen({
   margenBrutoTotal,
   tieneLineasDuplicadas,
   clavesDuplicadas,
-  camposPlanificacionPorId,
-  lotesPlanificacionPorId,
+  camposAppPorId,
+  lotesAppPorId,
   protocolosPorId,
   actualizarCabeceraPlanificacion,
   cambiarCampaniaPlanificacion,
@@ -63,25 +63,25 @@ export function PlanificacionEditorScreen({
     const zonas = new Map<string, string>();
 
     for (const linea of lineasPlanificacion) {
-      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
-      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
-      zonas.set(zonaId, obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId));
+      const campo = camposAppPorId.get(linea.campoAppId);
+      const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
+      zonas.set(zonaId, obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId));
     }
 
     return Array.from(zonas.entries())
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [lineasPlanificacion, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+  }, [lineasPlanificacion, camposAppPorId, planificacion.zonasApp, snapshot.zonas]);
   const camposParaFiltro = useMemo(() => {
     const campos = new Map<string, { id: string; nombre: string; zonaId: string }>();
 
     for (const linea of lineasPlanificacion) {
-      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
-      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
+      const campo = camposAppPorId.get(linea.campoAppId);
+      const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
 
       if (!filtroZonaId || filtroZonaId === zonaId) {
-        campos.set(linea.campoPlanificacionId, {
-          id: linea.campoPlanificacionId,
+        campos.set(linea.campoAppId, {
+          id: linea.campoAppId,
           nombre: campo?.nombre || 'Campo no disponible',
           zonaId,
         });
@@ -89,15 +89,15 @@ export function PlanificacionEditorScreen({
     }
 
     return Array.from(campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [lineasPlanificacion, camposPlanificacionPorId, filtroZonaId]);
+  }, [lineasPlanificacion, camposAppPorId, filtroZonaId]);
   const busquedaNormalizada = normalizarTexto(busqueda);
   const lineasFiltradas = useMemo(() => lineasPlanificacion.filter((linea) => {
-    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
-    const lote = lotesPlanificacionPorId.get(linea.lotePlanificacionId);
+    const campo = camposAppPorId.get(linea.campoAppId);
+    const lote = lotesAppPorId.get(linea.loteAppId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
-    const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
-    const zonaNombre = obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId);
-    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
+    const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
+    const zonaNombre = obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId);
+    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
     const lineaCompleta = Boolean(linea.protocoloId && linea.destinoVenta && linea.hectareasPlanificadas > 0 && linea.rindeEstimado > 0 && linea.precioVentaEstimado > 0);
     const textoLinea = normalizarTexto([
@@ -112,7 +112,7 @@ export function PlanificacionEditorScreen({
       return false;
     }
 
-    if (filtroCampoId && filtroCampoId !== linea.campoPlanificacionId) {
+    if (filtroCampoId && filtroCampoId !== linea.campoAppId) {
       return false;
     }
 
@@ -131,8 +131,8 @@ export function PlanificacionEditorScreen({
     return !busquedaNormalizada || textoLinea.includes(busquedaNormalizada);
   }), [
     lineasPlanificacion,
-    camposPlanificacionPorId,
-    lotesPlanificacionPorId,
+    camposAppPorId,
+    lotesAppPorId,
     protocolosPorId,
     planificacionActiva?.campaniaErpId,
     clavesDuplicadas,
@@ -140,18 +140,18 @@ export function PlanificacionEditorScreen({
     filtroCampoId,
     filtroEstadoCarga,
     busquedaNormalizada,
-    planificacion.zonasPlanificacion,
+    planificacion.zonasApp,
     snapshot.zonas,
   ]);
   const lineasAgrupadas = useMemo(() => {
     const zonas = new Map<string, { id: string; nombre: string; campos: Map<string, { id: string; nombre: string; lineas: PlanificacionAgricolaLinea[] }> }>();
 
     for (const linea of lineasFiltradas) {
-      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
-      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
-      const zonaNombre = obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId);
+      const campo = camposAppPorId.get(linea.campoAppId);
+      const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
+      const zonaNombre = obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId);
       const zona = zonas.get(zonaId) || { id: zonaId, nombre: zonaNombre, campos: new Map() };
-      const campoId = campo?.id || linea.campoPlanificacionId;
+      const campoId = campo?.id || linea.campoAppId;
       const campoGrupo = zona.campos.get(campoId) || { id: campoId, nombre: campo?.nombre || 'Campo no disponible', lineas: [] };
 
       campoGrupo.lineas.push(linea);
@@ -165,7 +165,7 @@ export function PlanificacionEditorScreen({
         ...zona,
         campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       }));
-  }, [lineasFiltradas, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+  }, [lineasFiltradas, camposAppPorId, planificacion.zonasApp, snapshot.zonas]);
   const protocolosParaAccionMasiva = useMemo(() => {
     const protocolos = new Map<string, { id: string; nombre: string }>();
 
@@ -176,13 +176,13 @@ export function PlanificacionEditorScreen({
     }
 
     return Array.from(protocolos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [lineasFiltradas, planificacion.protocolos, planificacionActiva?.campaniaErpId, camposPlanificacionPorId]);
+  }, [lineasFiltradas, planificacion.protocolos, planificacionActiva?.campaniaErpId, camposAppPorId]);
   const destinosParaAccionMasiva = useMemo(() => {
     const destinos = new Map<string, string>();
 
     for (const linea of lineasFiltradas) {
       for (const destino of planificacion.destinosReferencia) {
-        if (destino.activo && (!destino.actividadPlanificacionId || destino.actividadPlanificacionId === linea.actividadPlanificacionId)) {
+        if (destino.activo && (!destino.actividadAppId || destino.actividadAppId === linea.actividadAppId)) {
           destinos.set(normalizarTexto(destino.destinoVenta), destino.destinoVenta);
         }
       }
@@ -333,7 +333,7 @@ export function PlanificacionEditorScreen({
       const destinoCompatible = planificacion.destinosReferencia.some((destino) => (
         destino.activo
         && destino.destinoVenta === destinoMasivo
-        && (!destino.actividadPlanificacionId || destino.actividadPlanificacionId === linea.actividadPlanificacionId)
+        && (!destino.actividadAppId || destino.actividadAppId === linea.actividadAppId)
       ));
 
       if (destinoCompatible) {
@@ -369,14 +369,14 @@ export function PlanificacionEditorScreen({
       margen: lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
       pendientes: lineas.filter((linea) => !lineaEstaCompleta(linea)).length,
       duplicadas: lineas.filter((linea) => {
-        const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
+        const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
         return clavesDuplicadas.has(claveLinea);
       }).length,
     };
   }
 
-  function obtenerNombreZona(zonaPlanificacionId?: string, zonaErpId?: string) {
-    const zonaPropia = planificacion.zonasPlanificacion?.find((zona) => zona.id === zonaPlanificacionId);
+  function obtenerNombreZona(zonaAppId?: string, zonaErpId?: string) {
+    const zonaPropia = planificacion.zonasApp?.find((zona) => zona.id === zonaAppId);
 
     if (zonaPropia) {
       return zonaPropia.nombre;
@@ -388,7 +388,7 @@ export function PlanificacionEditorScreen({
   }
 
   function obtenerProtocolosParaLinea(linea: PlanificacionAgricolaLinea) {
-    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+    const campo = camposAppPorId.get(linea.campoAppId);
 
     return planificacion.protocolos
       .filter((protocolo) => {
@@ -396,8 +396,8 @@ export function PlanificacionEditorScreen({
           return false;
         }
 
-        const coincideCampo = !protocolo.campoPlanificacionId || protocolo.campoPlanificacionId === linea.campoPlanificacionId;
-        const coincideZona = !protocolo.zonaPlanificacionId || protocolo.zonaPlanificacionId === campo?.zonaPlanificacionId;
+        const coincideCampo = !protocolo.campoAppId || protocolo.campoAppId === linea.campoAppId;
+        const coincideZona = !protocolo.zonaAppId || protocolo.zonaAppId === campo?.zonaAppId;
 
         return coincideCampo && coincideZona;
       })
@@ -405,7 +405,7 @@ export function PlanificacionEditorScreen({
   }
 
   function renderLinea(linea: PlanificacionAgricolaLinea) {
-    const lote = lotesPlanificacionPorId.get(linea.lotePlanificacionId);
+    const lote = lotesAppPorId.get(linea.loteAppId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
     const gastoReferencia = linea.gastosComercialesReferenciaId
       ? planificacion.gastosComercialesReferencia.find((item) => item.id === linea.gastosComercialesReferenciaId)
@@ -414,19 +414,19 @@ export function PlanificacionEditorScreen({
     const produccionEstimada = linea.hectareasPlanificadas * linea.rindeEstimado;
     const margenPorHa = linea.hectareasPlanificadas > 0 ? linea.margenBrutoEstimado / linea.hectareasPlanificadas : 0;
     const costoProduccionPorHa = protocolo?.costoEstimadoPorHa || 0;
-    const lotesDelCampo = planificacion.lotesPlanificacion.filter((item) => item.campoPlanificacionId === linea.campoPlanificacionId);
+    const lotesDelCampo = planificacion.lotesApp.filter((item) => item.campoAppId === linea.campoAppId);
     const destinosDisponibles = planificacion.destinosReferencia
-      .filter((item) => item.activo && (!item.actividadPlanificacionId || item.actividadPlanificacionId === linea.actividadPlanificacionId))
+      .filter((item) => item.activo && (!item.actividadAppId || item.actividadAppId === linea.actividadAppId))
       .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta));
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
-    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
+    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
 
     return (
       <div className={`planning-row ${lineaDuplicada ? 'duplicated' : ''}`} key={linea.id}>
         <div className="planning-cell-wide">
           <span className="cell-label">Lote</span>
-          <select value={linea.lotePlanificacionId} onChange={(event) => cambiarLote(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
+          <select value={linea.loteAppId} onChange={(event) => cambiarLote(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
             {lotesDelCampo.map((item) => (
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}

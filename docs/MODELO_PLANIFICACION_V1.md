@@ -41,7 +41,7 @@ Regla general:
 - Cuando el ERP devuelva el registro real, un usuario autorizado puede vincularlo.
 - Toda creacion, edicion y vinculacion debe auditarse.
 
-### ZonaPlanificacion
+### ZonaApp
 
 Representa una zona propia de Agro App usada para agrupar campos y sugerir destinos/gastos.
 
@@ -51,7 +51,7 @@ Campos sugeridos:
 - `clienteId`
 - `campaniaErpId`
 - `empresaErpId`
-- `zonaPlanificacionId` opcional
+- `zonaAppId` opcional
 - `zonaErpId` opcional
 - `nombre`
 - `codigoInterno`
@@ -67,7 +67,7 @@ Reglas:
 - Si `zonaErpId` no existe, la zona es provisoria.
 - Puede usarse para campos, destinos sugeridos y gastos comerciales.
 
-### CampoPlanificacion
+### CampoApp
 
 Representa un campo propio de Agro App usado para planificar.
 
@@ -76,7 +76,7 @@ Campos sugeridos:
 - `id`
 - `clienteId`
 - `empresaErpId`
-- `zonaPlanificacionId` opcional
+- `zonaAppId` opcional
 - `campoErpId` opcional
 - `nombre`
 - `codigoInterno`
@@ -101,7 +101,7 @@ Reglas:
 - Cuando el ERP devuelva el campo real, el usuario autorizado puede vincularlo.
 - La vinculacion debe auditarse.
 
-### LotePlanificacion
+### LoteApp
 
 Representa un lote propio de Agro App usado para planificar.
 
@@ -109,7 +109,7 @@ Campos sugeridos:
 
 - `id`
 - `clienteId`
-- `campoPlanificacionId`
+- `campoAppId`
 - `loteErpId` opcional
 - `nombre`
 - `codigoInterno`
@@ -129,7 +129,7 @@ Reglas:
 - Cuando el ERP devuelva el lote real, el usuario autorizado puede vincularlo.
 - La vinculacion debe auditarse.
 
-### EspeciePlanificacion
+### EspecieApp
 
 Representa una especie propia de Agro App usada para agrupar actividades, precios y protocolos.
 
@@ -153,7 +153,7 @@ Reglas:
 - Si `especieErpId` no existe, la especie es provisoria.
 - Puede usarse para planificacion, precios y protocolos.
 
-### ActividadPlanificacion
+### ActividadApp
 
 Representa una actividad propia de Agro App usada para planificar cultivos o actividades productivas.
 
@@ -163,7 +163,7 @@ Campos sugeridos:
 - `clienteId`
 - `empresaErpId`
 - `actividadErpId` opcional
-- `especiePlanificacionId` opcional
+- `especieAppId` opcional
 - `nombre`
 - `codigoInterno`
 - `tipoGrano` opcional: `fina` o `gruesa`
@@ -182,7 +182,7 @@ Reglas:
 - `tipoGrano`, `tipoCultivo` y `epocaSiembra` son atributos propios de Agro App. Sirven para clasificacion, filtros, reportes y reglas de planificacion, sin modificar la cache ERP.
 - Puede usarse en lineas de planificacion, destinos, precios, gastos y protocolos.
 
-### InsumoPlanificacion
+### InsumoApp
 
 Representa un insumo propio de Agro App usado para armar protocolos y costos productivos.
 
@@ -329,9 +329,9 @@ Reglas de escenarios:
 
 - Se pueden crear varios escenarios para una misma `campaniaErpId` mientras no exista un escenario original cerrado.
 - Al crear un escenario nuevo, la app puede precargar una linea por cada lote activo disponible para reducir carga manual.
-- La superficie inicial de cada linea se propone desde `LotePlanificacion.superficieProductiva`.
+- La superficie inicial de cada linea se propone desde `LoteApp.superficieProductiva`.
 - La edicion web debe permitir navegar las lineas como arbol `zona -> campo -> lote`.
-- El protocolo seleccionado en una linea define la actividad planificada. Si cambia el protocolo, se actualiza `actividadPlanificacionId` y se recalculan destino, precio, gastos y costos sugeridos.
+- El protocolo seleccionado en una linea define la actividad planificada. Si cambia el protocolo, se actualiza `actividadAppId` y se recalculan destino, precio, gastos y costos sugeridos.
 - Una linea puede copiarse dentro del mismo escenario para representar doble cultivo sobre el mismo lote, por ejemplo trigo/soja de segunda.
 - Un escenario puede copiarse completo como nuevo borrador para comparar alternativas con pocos cambios de supuestos.
 - Al cerrar una planificacion, esa planificacion queda `cerrada` y `escenarioOriginal = true`.
@@ -359,11 +359,11 @@ Campos sugeridos:
 - `id`
 - `planificacionId`
 - `empresaErpId`
-- `campoPlanificacionId`
+- `campoAppId`
 - `campoErpId` opcional
-- `lotePlanificacionId`
+- `loteAppId`
 - `loteErpId` opcional
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `cultivoErpId` opcional
 - `destinoReferenciaId` opcional
@@ -395,7 +395,7 @@ Reglas:
 - Si usa padrones base provisorios, debe conservar esas referencias aunque luego se vinculen al ERP.
 - Si se aprueba, no debe cambiar automaticamente ante cambios de precio, destino, protocolo o vinculacion ERP.
 - Si la planificacion esta cerrada, no se puede modificar ninguna linea.
-- Para una misma planificacion, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` no puede existir mas de una linea.
+- Para una misma planificacion, `campoAppId`, `loteAppId` y `actividadAppId` no puede existir mas de una linea.
 - Toda modificacion debe auditarse.
 
 ## DestinoVentaReferencia
@@ -436,9 +436,9 @@ Campos sugeridos:
 - `id`
 - `clienteId`
 - `empresaErpId` opcional
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
-- `especiePlanificacionId` opcional
+- `especieAppId` opcional
 - `especieErpId` opcional
 - `cultivoErpId` opcional
 - `destinoVenta`
@@ -476,9 +476,9 @@ Campos sugeridos:
 - `clienteId`
 - `empresaErpId`
 - `zonaErpId` opcional
-- `campoPlanificacionId` opcional
+- `campoAppId` opcional
 - `campoErpId` opcional
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `destinoVenta` opcional
 - `descripcion`
@@ -530,12 +530,12 @@ Campos sugeridos:
 - `protocoloOrigenId` opcional
 - `empresaErpId` opcional
 - `campaniaErpId`
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `tipoFecha`
 - `fechaSiembra` opcional
-- `zonaPlanificacionId` opcional
-- `campoPlanificacionId` opcional
+- `zonaAppId` opcional
+- `campoAppId` opcional
 - `activo`
 - `createdBy`
 - `updatedBy`
@@ -551,8 +551,8 @@ Reglas:
 - `fechaSiembra` es la fecha base para calcular etapas relativas a siembra.
 - Un protocolo puede estar asociado a una zona.
 - Un protocolo puede estar asociado a un campo.
-- Si `campoPlanificacionId` es null, el protocolo aplica a todos los campos compatibles segun zona/actividad.
-- Si `zonaPlanificacionId` tambien es null, el protocolo aplica de forma general para esa actividad dentro de la campania.
+- Si `campoAppId` es null, el protocolo aplica a todos los campos compatibles segun zona/actividad.
+- Si `zonaAppId` tambien es null, el protocolo aplica de forma general para esa actividad dentro de la campania.
 - Al seleccionar una actividad en la planificacion, el select de protocolos debe mostrar solo protocolos compatibles con actividad, zona y/o campo.
 - Los protocolos compatibles deben ordenarse por `updatedAt` descendente; si no existe, usar `createdAt` descendente.
 - El primer protocolo compatible se puede proponer automaticamente, pero el usuario puede elegir otro compatible.
@@ -643,7 +643,7 @@ Campos sugeridos:
 - `id`
 - `etapaId`
 - `indiceAplicacion`
-- `insumoPlanificacionId`
+- `insumoAppId`
 - `insumoErpId`
 - `nombre`
 - `tipo`
@@ -655,9 +655,9 @@ Campos sugeridos:
 
 Reglas:
 
-- `insumoPlanificacionId` es la referencia operativa principal.
+- `insumoAppId` es la referencia operativa principal.
 - `insumoErpId` queda opcional y existe solo si el insumo esta vinculado al ERP.
-- Al seleccionar un insumo, el protocolo copia `insumoPlanificacionId`, `insumoErpId`, `nombre`, `tipo`, `unidad` y `precioUnitarioEstimado`.
+- Al seleccionar un insumo, el protocolo copia `insumoAppId`, `insumoErpId`, `nombre`, `tipo`, `unidad` y `precioUnitarioEstimado`.
 - La copia de dosis y precio unitario queda editable dentro del protocolo para reflejar condiciones puntuales sin modificar el padron maestro.
 - Cambios posteriores en `ErpInsumo` no modifican protocolos ni planificaciones aprobadas sin accion explicita.
 - `indiceAplicacion` debe ser un numero decimal entre `0` y `1`.
@@ -666,10 +666,10 @@ Reglas:
 
 Endpoint MVP de administracion:
 
-- `GET /insumos-planificacion`
-- `PUT /insumos-planificacion/:id`
+- `GET /insumos-app`
+- `PUT /insumos-app/:id`
 
-Toda alta o modificacion de `InsumoPlanificacion` debe auditarse con usuario, origen, motivo, valores previos y valores nuevos.
+Toda alta o modificacion de `InsumoApp` debe auditarse con usuario, origen, motivo, valores previos y valores nuevos.
 
 ## LaborReferencia
 

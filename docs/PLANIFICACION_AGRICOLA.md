@@ -59,21 +59,21 @@ Las zonas propias de Agro App se consideran globales dentro del cliente porque A
 
 Las especies y actividades propias siguen el mismo criterio global. Una actividad siempre debe quedar asociada a una especie, que puede ser una especie propia de Agro App o una especie ERP sincronizada. Esto permite usar la actividad provisoria en planificacion, precios, gastos comerciales y protocolos antes de que exista en ALBOR.
 
-El padron operativo de actividades puede enriquecerse con atributos propios de Agro App que no forman parte obligatoria de la cache cruda del ERP: `tipoGrano` (`fina` o `gruesa`), `tipoCultivo` (`primera` o `segunda`) y `epocaSiembra` (`invierno` o `verano`). Estos datos ayudan a clasificar la actividad para planificacion agricola, filtros, reportes y reglas futuras, pero no modifican el dato importado desde ALBOR. La edicion debe hacerse sobre `ActividadPlanificacion`, pasar por backend, validar valores permitidos y quedar auditada.
+El padron operativo de actividades puede enriquecerse con atributos propios de Agro App que no forman parte obligatoria de la cache cruda del ERP: `tipoGrano` (`fina` o `gruesa`), `tipoCultivo` (`primera` o `segunda`) y `epocaSiembra` (`invierno` o `verano`). Estos datos ayudan a clasificar la actividad para planificacion agricola, filtros, reportes y reglas futuras, pero no modifican el dato importado desde ALBOR. La edicion debe hacerse sobre `ActividadApp`, pasar por backend, validar valores permitidos y quedar auditada.
 
 Los insumos y labores/servicios tambien se administran como padrones operativos propios comparados contra la cache ERP. En web se muestran los registros sincronizados de `Padrones/Insumos` y `Padrones/Servicios` junto con los registros creados en Agro App. La creacion y edicion de registros propios queda auditada; la vinculacion con ERP queda preparada como accion posterior confirmada por usuario autorizado.
 
-Las pantallas de precios y gastos comerciales deben consumir actividades reales desde la base de datos, combinando actividades propias de Agro App y actividades sincronizadas desde ERP. Como precios y gastos guardan `actividadPlanificacionId`, si el usuario selecciona una actividad ERP que todavia no tiene registro operativo en Agro App, la web crea automaticamente una `ActividadPlanificacion` vinculada y luego guarda el precio o gasto. Esa creacion pasa por backend y queda auditada.
+Las pantallas de precios y gastos comerciales deben consumir actividades reales desde la base de datos, combinando actividades propias de Agro App y actividades sincronizadas desde ERP. Como precios y gastos guardan `actividadAppId`, si el usuario selecciona una actividad ERP que todavia no tiene registro operativo en Agro App, la web crea automaticamente una `ActividadApp` vinculada y luego guarda el precio o gasto. Esa creacion pasa por backend y queda auditada.
 
-La pantalla de gastos comerciales tambien debe usar zonas y campos reales desde la base de datos. El alcance puede guardarse con referencias propias (`zonaPlanificacionId`, `campoPlanificacionId`) o con referencias ERP (`zonaErpId`, `campoErpId`) cuando el usuario selecciona datos sincronizados que todavia no fueron convertidos a padron operativo propio.
+La pantalla de gastos comerciales tambien debe usar zonas y campos reales desde la base de datos. El alcance puede guardarse con referencias propias (`zonaAppId`, `campoAppId`) o con referencias ERP (`zonaErpId`, `campoErpId`) cuando el usuario selecciona datos sincronizados que todavia no fueron convertidos a padron operativo propio.
 
 Al crear un lote provisorio, el campo se selecciona desde los campos propios de Agro App. Ese campo puede estar vinculado al ERP o seguir provisorio, pero el lote no debe quedar sin campo operativo. El lote guarda superficie total y superficie productiva; la superficie productiva no puede superar la superficie total.
 
-La pantalla web de `Lotes` debe cargar los campos propios desde el backend de padrones (`/campos-planificacion`) y los campos ERP sincronizados desde la cache local al abrirse, no desde el snapshot demo de planificacion. Esto evita que el select muestre datos incompletos cuando ya existen campos reales persistidos o sincronizados.
+La pantalla web de `Lotes` debe cargar los campos propios desde el backend de padrones (`/campos-app`) y los campos ERP sincronizados desde la cache local al abrirse, no desde el snapshot demo de planificacion. Esto evita que el select muestre datos incompletos cuando ya existen campos reales persistidos o sincronizados.
 
-Si al crear un lote el usuario selecciona un campo ERP que todavia no tiene su registro operativo en `CampoPlanificacion`, la web debe crear primero ese campo propio ya vinculado al ERP y luego guardar el lote asociado. Ambas acciones deben pasar por backend y auditoria. Para el usuario, el flujo debe verse como una sola accion de guardado del lote.
+Si al crear un lote el usuario selecciona un campo ERP que todavia no tiene su registro operativo en `CampoApp`, la web debe crear primero ese campo propio ya vinculado al ERP y luego guardar el lote asociado. Ambas acciones deben pasar por backend y auditoria. Para el usuario, el flujo debe verse como una sola accion de guardado del lote.
 
-El snapshot de planificacion (`GET /planificacion/snapshot`) no debe usar padrones mock cuando existen datos sincronizados o persistidos. Antes de responder, el backend materializa los padrones ERP activos como entidades operativas de Agro App vinculadas al ERP: zonas, campos, lotes, especies, actividades, insumos y labores. Esto permite que la planilla use siempre `zonaPlanificacionId`, `campoPlanificacionId`, `lotePlanificacionId`, `actividadPlanificacionId` e `insumoPlanificacionId` reales, guardables y validables por Prisma. El mock queda solo como fallback de desarrollo cuando no hay cache ERP ni datos propios disponibles.
+El snapshot de planificacion (`GET /planificacion/snapshot`) no debe usar padrones mock cuando existen datos sincronizados o persistidos. Antes de responder, el backend materializa los padrones ERP activos como entidades operativas de Agro App vinculadas al ERP: zonas, campos, lotes, especies, actividades, insumos y labores. Esto permite que la planilla use siempre `zonaAppId`, `campoAppId`, `loteAppId`, `actividadAppId` e `insumoAppId` reales, guardables y validables por Prisma. El mock queda solo como fallback de desarrollo cuando no hay cache ERP ni datos propios disponibles.
 
 Cuando el registro aparezca mas adelante en los padrones del ERP, un usuario autorizado debe poder vincular el registro provisorio con el registro ERP correspondiente.
 
@@ -164,12 +164,12 @@ Campos principales:
 
 - `campaniaErpId`
 - `empresaErpId`
-- `zonaPlanificacionId`
-- `campoPlanificacionId`
+- `zonaAppId`
+- `campoAppId`
 - `campoErpId`
-- `lotePlanificacionId`
+- `loteAppId`
 - `loteErpId`
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `cultivoErpId`
 - `destinoReferenciaId`
@@ -190,7 +190,7 @@ Campos principales:
 - `escenarioOriginal`
 - `escenarioBloqueadoPorId`
 
-`zonaPlanificacionId`, `campoPlanificacionId`, `lotePlanificacionId` y `actividadPlanificacionId` son las referencias operativas principales de Agro App. Pueden apuntar a registros ya vinculados al ERP o a registros provisorios creados para no bloquear la planificacion. Los campos `zonaErpId`, `campoErpId`, `loteErpId`, `actividadErpId`, `especieErpId` e `insumoErpId` quedan como vinculos opcionales al ERP.
+`zonaAppId`, `campoAppId`, `loteAppId` y `actividadAppId` son las referencias operativas principales de Agro App. Pueden apuntar a registros ya vinculados al ERP o a registros provisorios creados para no bloquear la planificacion. Los campos `zonaErpId`, `campoErpId`, `loteErpId`, `actividadErpId`, `especieErpId` e `insumoErpId` quedan como vinculos opcionales al ERP.
 
 Cuando un padron provisorio ya existe en ALBOR, la web permite vincularlo manualmente contra un registro ERP disponible. La vinculacion se audita, evita reutilizar la misma referencia ERP para dos registros del cliente y valida relaciones segun el padron: campo-zona, lote-campo, actividad-especie, insumo-insumo ERP o labor-servicio ERP. Despues de vincular, el registro propio deja de mostrarse como fila independiente para que el usuario trabaje sobre la referencia ERP sincronizada.
 
@@ -246,11 +246,11 @@ Campos sugeridos:
 - `clienteId`
 - `campaniaErpId`
 - `empresaErpId`
-- `zonaPlanificacionId` opcional
+- `zonaAppId` opcional
 - `zonaErpId` opcional
-- `campoPlanificacionId` opcional
+- `campoAppId` opcional
 - `campoErpId` opcional
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `destinoVenta` opcional
 - `descripcion`
@@ -493,12 +493,12 @@ Campos principales del protocolo:
 - `nombre`
 - `descripcion`
 - `campaniaErpId`
-- `actividadPlanificacionId`
+- `actividadAppId`
 - `actividadErpId` opcional
 - `tipoFecha`
 - `fechaSiembra` opcional
-- `zonaPlanificacionId` opcional
-- `campoPlanificacionId` opcional
+- `zonaAppId` opcional
+- `campoAppId` opcional
 - `empresaErpId` opcional
 - `activo`
 
@@ -510,7 +510,7 @@ No se guarda `especieErpId` en el protocolo porque la especie se obtiene desde l
 
 `fechaSiembra` se usa como fecha base cuando el protocolo trabaja con fechas relativas a siembra. Puede quedar vacia mientras el protocolo esta en armado, pero debe completarse antes de aprobar/cerrar una planificacion que use ese protocolo.
 
-Para alcance geografico, el protocolo usa `zonaPlanificacionId` y/o `campoPlanificacionId`. La zona de planificacion es la referencia operativa propia de Agro App y puede estar vinculada o no al ERP. `zonaErpId` queda como dato de vinculacion dentro del padron de zona/campo, no como referencia directa del protocolo.
+Para alcance geografico, el protocolo usa `zonaAppId` y/o `campoAppId`. La zona de planificacion es la referencia operativa propia de Agro App y puede estar vinculada o no al ERP. `zonaErpId` queda como dato de vinculacion dentro del padron de zona/campo, no como referencia directa del protocolo.
 
 Reglas de seleccion en planificacion:
 
@@ -685,7 +685,7 @@ Los insumos representan productos necesarios para ejecutar el protocolo.
 
 Campos sugeridos:
 
-- `insumoPlanificacionId`
+- `insumoAppId`
 - `insumoErpId` opcional
 - `nombre`
 - `tipo`
@@ -711,7 +711,7 @@ La administracion web del padron se realiza desde `Padrones > Insumos`. Un usuar
 
 La unidad del insumo se selecciona desde `Padrones/UnidadesMedida` y se guarda como codigo copiado, por ejemplo `Lts`, `Kgs`, `Bls` o `Unid`.
 
-Cuando un insumo se agrega a un protocolo, se selecciona desde el padron operativo `InsumoPlanificacion`. La linea del protocolo copia `insumoPlanificacionId`, `insumoErpId`, nombre, tipo, unidad y precio/costo estimado. El protocolo no debe depender dinamicamente del precio ERP porque una planificacion aprobada debe conservar sus supuestos economicos.
+Cuando un insumo se agrega a un protocolo, se selecciona desde el padron operativo `InsumoApp`. La linea del protocolo copia `insumoAppId`, `insumoErpId`, nombre, tipo, unidad y precio/costo estimado. El protocolo no debe depender dinamicamente del precio ERP porque una planificacion aprobada debe conservar sus supuestos economicos.
 
 La dosis y el precio unitario copiados quedan editables dentro del protocolo para representar condiciones puntuales sin modificar el padron maestro.
 
@@ -792,12 +792,12 @@ La base de datos queda preparada en Prisma para persistir los datos propios de p
 
 Tablas principales agregadas:
 
-- `ZonaPlanificacion`
-- `CampoPlanificacion`
-- `LotePlanificacion`
-- `EspeciePlanificacion`
-- `ActividadPlanificacion`
-- `InsumoPlanificacion`
+- `ZonaApp`
+- `CampoApp`
+- `LoteApp`
+- `EspecieApp`
+- `ActividadApp`
+- `InsumoApp`
 - `EstadioFenologicoReferencia`
 - `LaborReferencia`
 - `ProtocoloProductivo`

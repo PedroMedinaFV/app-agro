@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoPlanificacion, LotePlanificacion, PrecipitacionCampo, SesionUsuario } from '@agro/tipos';
+import type { CampoApp, LoteApp, PrecipitacionCampo, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import {
   crearPrecipitacion,
@@ -15,8 +15,8 @@ type PrecipitacionesScreenProps = {
 };
 
 type FormularioPrecipitacion = {
-  campoPlanificacionId: string;
-  lotePlanificacionId: string;
+  campoAppId: string;
+  loteAppId: string;
   milimetros: string;
   fechaEvento: string;
   observaciones: string;
@@ -36,10 +36,10 @@ function formatearFecha(valor: string) {
   }).format(new Date(valor));
 }
 
-function crearFormularioInicial(campoPlanificacionId = ''): FormularioPrecipitacion {
+function crearFormularioInicial(campoAppId = ''): FormularioPrecipitacion {
   return {
-    campoPlanificacionId,
-    lotePlanificacionId: '',
+    campoAppId,
+    loteAppId: '',
     milimetros: '',
     fechaEvento: fechaActualInput(),
     observaciones: '',
@@ -48,8 +48,8 @@ function crearFormularioInicial(campoPlanificacionId = ''): FormularioPrecipitac
 
 export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScreenProps) {
   const [precipitaciones, setPrecipitaciones] = useState<PrecipitacionCampo[]>([]);
-  const [campos, setCampos] = useState<CampoPlanificacion[]>([]);
-  const [lotes, setLotes] = useState<LotePlanificacion[]>([]);
+  const [campos, setCampos] = useState<CampoApp[]>([]);
+  const [lotes, setLotes] = useState<LoteApp[]>([]);
   const [estado, setEstado] = useState('Cargando precipitaciones.');
   const [guardando, setGuardando] = useState(false);
   const [formulario, setFormulario] = useState<FormularioPrecipitacion>(crearFormularioInicial());
@@ -62,12 +62,12 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
       ]);
 
       setPrecipitaciones(respuestaPrecipitaciones.precipitaciones);
-      setCampos(respuestaPlanificacion.camposPlanificacion);
-      setLotes(respuestaPlanificacion.lotesPlanificacion);
+      setCampos(respuestaPlanificacion.camposApp);
+      setLotes(respuestaPlanificacion.lotesApp);
       setFormulario((actual) => (
-        actual.campoPlanificacionId
+        actual.campoAppId
           ? actual
-          : crearFormularioInicial(respuestaPlanificacion.camposPlanificacion[0]?.id || '')
+          : crearFormularioInicial(respuestaPlanificacion.camposApp[0]?.id || '')
       ));
       setEstado('Precipitaciones cargadas desde backend.');
     } catch (error) {
@@ -83,7 +83,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
 
   const camposPorId = useMemo(() => new Map(campos.map((campo) => [campo.id, campo])), [campos]);
   const lotesPorId = useMemo(() => new Map(lotes.map((lote) => [lote.id, lote])), [lotes]);
-  const lotesDelCampo = lotes.filter((lote) => lote.campoPlanificacionId === formulario.campoPlanificacionId);
+  const lotesDelCampo = lotes.filter((lote) => lote.campoAppId === formulario.campoAppId);
   const totalPeriodo = precipitaciones.reduce((total, item) => total + item.milimetros, 0);
   const puedeCrear = sesion.permisos.includes('precipitaciones:crear');
 
@@ -91,14 +91,14 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
     setFormulario((actual) => ({
       ...actual,
       ...cambios,
-      lotePlanificacionId: Object.prototype.hasOwnProperty.call(cambios, 'campoPlanificacionId') ? '' : cambios.lotePlanificacionId ?? actual.lotePlanificacionId,
+      loteAppId: Object.prototype.hasOwnProperty.call(cambios, 'campoAppId') ? '' : cambios.loteAppId ?? actual.loteAppId,
     }));
   }
 
   async function guardar() {
     const milimetros = Number(formulario.milimetros);
 
-    if (!formulario.campoPlanificacionId || !Number.isFinite(milimetros) || milimetros <= 0) {
+    if (!formulario.campoAppId || !Number.isFinite(milimetros) || milimetros <= 0) {
       notificar?.({ tipo: 'error', titulo: 'Datos incompletos', mensaje: 'Selecciona campo e informa milimetros mayores a cero.' });
       return;
     }
@@ -106,8 +106,8 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
     setGuardando(true);
     try {
       const respuesta = await crearPrecipitacion({
-        campoPlanificacionId: formulario.campoPlanificacionId,
-        lotePlanificacionId: formulario.lotePlanificacionId || undefined,
+        campoAppId: formulario.campoAppId,
+        loteAppId: formulario.loteAppId || undefined,
         milimetros,
         fechaEvento: new Date(formulario.fechaEvento).toISOString(),
         observaciones: formulario.observaciones || undefined,
@@ -115,7 +115,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
       }, sesion.token);
 
       setPrecipitaciones((actual) => [respuesta.precipitacion, ...actual]);
-      setFormulario(crearFormularioInicial(formulario.campoPlanificacionId));
+      setFormulario(crearFormularioInicial(formulario.campoAppId));
       notificar?.({ tipo: 'success', titulo: 'Precipitacion registrada', mensaje: respuesta.mensaje });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo guardar la precipitacion.';
@@ -148,9 +148,9 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
           <label>
             Campo
             <select
-              value={formulario.campoPlanificacionId}
+              value={formulario.campoAppId}
               disabled={!puedeCrear || guardando}
-              onChange={(event) => actualizarFormulario({ campoPlanificacionId: event.target.value })}
+              onChange={(event) => actualizarFormulario({ campoAppId: event.target.value })}
             >
               <option value="">Seleccionar campo</option>
               {campos.map((campo) => (
@@ -162,9 +162,9 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
           <label>
             Lote
             <select
-              value={formulario.lotePlanificacionId}
-              disabled={!puedeCrear || guardando || !formulario.campoPlanificacionId}
-              onChange={(event) => actualizarFormulario({ lotePlanificacionId: event.target.value })}
+              value={formulario.loteAppId}
+              disabled={!puedeCrear || guardando || !formulario.campoAppId}
+              onChange={(event) => actualizarFormulario({ loteAppId: event.target.value })}
             >
               <option value="">Sin lote especifico</option>
               {lotesDelCampo.map((lote) => (
@@ -237,13 +237,13 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
               key: 'campo',
               label: 'Campo',
               width: 'minmax(170px, 1.2fr)',
-              render: (precipitacion) => <strong>{camposPorId.get(precipitacion.campoPlanificacionId)?.nombre || precipitacion.campoPlanificacionId}</strong>,
+              render: (precipitacion) => <strong>{camposPorId.get(precipitacion.campoAppId)?.nombre || precipitacion.campoAppId}</strong>,
             },
             {
               key: 'lote',
               label: 'Lote',
               width: 'minmax(130px, 0.8fr)',
-              render: (precipitacion) => precipitacion.lotePlanificacionId ? lotesPorId.get(precipitacion.lotePlanificacionId)?.nombre || precipitacion.lotePlanificacionId : 'Campo completo',
+              render: (precipitacion) => precipitacion.loteAppId ? lotesPorId.get(precipitacion.loteAppId)?.nombre || precipitacion.loteAppId : 'Campo completo',
             },
             {
               key: 'mm',

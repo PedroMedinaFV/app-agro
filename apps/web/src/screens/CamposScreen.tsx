@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaPlanificacion } from '@agro/tipos';
+import type { CampoApp, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
-import { guardarCampoPlanificacion, obtenerCamposErpImportados, obtenerCamposPlanificacion, obtenerZonasErpImportadas, obtenerZonasPlanificacion } from '../services/api';
+import { guardarCampoApp, obtenerCamposErpImportados, obtenerCamposApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -9,7 +9,7 @@ type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; m
 type CamposScreenProps = {
   sesion: SesionUsuario;
   empresas: ErpEmpresa[];
-  zonasPropias: ZonaPlanificacion[];
+  zonasPropias: ZonaApp[];
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
 };
@@ -22,7 +22,7 @@ type ZonaSeleccionable = {
   idZona?: number;
   origen: 'erp' | 'agro';
   zonaErpId?: string;
-  zonaPlanificacionId?: string;
+  zonaAppId?: string;
 };
 
 type CampoTabla = {
@@ -34,7 +34,7 @@ type CampoTabla = {
   origen: string;
   estado: string;
   accion: 'editar' | 'importado';
-  campoPropio?: CampoPlanificacion;
+  campoPropio?: CampoApp;
   campoErp?: ErpCampo;
 };
 
@@ -55,11 +55,11 @@ function obtenerIdZonaDesdeErpId(zonaErpId?: string) {
   return match ? Number(match[1]) : undefined;
 }
 
-function crearCampoNuevo(clienteId: string, empresaErpId: string): CampoPlanificacion {
+function crearCampoNuevo(clienteId: string, empresaErpId: string): CampoApp {
   const ahora = new Date().toISOString();
 
   return {
-    id: `campo-planificacion-${Date.now()}`,
+    id: `campo-app-${Date.now()}`,
     clienteId,
     empresaErpId,
     nombre: '',
@@ -73,12 +73,12 @@ function crearCampoNuevo(clienteId: string, empresaErpId: string): CampoPlanific
 export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPlanificacion, notificar }: CamposScreenProps) {
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
-  const [camposPropios, setCamposPropios] = useState<CampoPlanificacion[]>([]);
-  const [zonasPropiasActuales, setZonasPropiasActuales] = useState<ZonaPlanificacion[]>(zonasPropias);
+  const [camposPropios, setCamposPropios] = useState<CampoApp[]>([]);
+  const [zonasPropiasActuales, setZonasPropiasActuales] = useState<ZonaApp[]>(zonasPropias);
   const [estado, setEstado] = useState('Cargando campos sincronizados.');
   const [guardando, setGuardando] = useState(false);
-  const [campoEnEdicion, setCampoEnEdicion] = useState<CampoPlanificacion | null>(null);
-  const [campoPropioParaVincular, setCampoPropioParaVincular] = useState<CampoPlanificacion | null>(null);
+  const [campoEnEdicion, setCampoEnEdicion] = useState<CampoApp | null>(null);
+  const [campoPropioParaVincular, setCampoPropioParaVincular] = useState<CampoApp | null>(null);
   const [campoErpVincularId, setCampoErpVincularId] = useState('');
   const [filtro, setFiltro] = useState('');
   const [filtroZonaClave, setFiltroZonaClave] = useState('');
@@ -89,8 +89,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
         const [respuestaErp, respuestaZonasErp, respuestaPropios, respuestaZonasPropias] = await Promise.all([
           obtenerCamposErpImportados(sesion.token),
           obtenerZonasErpImportadas(sesion.token),
-          obtenerCamposPlanificacion(sesion.token),
-          obtenerZonasPlanificacion(sesion.token),
+          obtenerCamposApp(sesion.token),
+          obtenerZonasApp(sesion.token),
         ]);
 
         setCamposErp(respuestaErp.campos);
@@ -127,7 +127,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       idZona: obtenerIdZonaDesdeErpId(zona.zonaErpId),
       origen: 'agro' as const,
       zonaErpId: zona.zonaErpId,
-      zonaPlanificacionId: zona.id,
+      zonaAppId: zona.id,
     }));
 
     return [...zonasDesdeAgro, ...zonasDesdeErp].sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -136,8 +136,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     const mapa = new Map<string, ZonaSeleccionable>();
 
     for (const zona of zonasDisponibles) {
-      if (zona.zonaPlanificacionId) {
-        mapa.set(`agro:${zona.zonaPlanificacionId}`, zona);
+      if (zona.zonaAppId) {
+        mapa.set(`agro:${zona.zonaAppId}`, zona);
       }
 
       if (zona.zonaErpId) {
@@ -156,8 +156,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       return [];
     }
 
-    const zonaPropia = campoPropioParaVincular.zonaPlanificacionId
-      ? zonasPropiasActuales.find((zona) => zona.id === campoPropioParaVincular.zonaPlanificacionId)
+    const zonaPropia = campoPropioParaVincular.zonaAppId
+      ? zonasPropiasActuales.find((zona) => zona.id === campoPropioParaVincular.zonaAppId)
       : undefined;
     const zonaErpEsperada = campoPropioParaVincular.zonaErpId || zonaPropia?.zonaErpId;
     const idZonaEsperada = obtenerIdZonaDesdeErpId(zonaErpEsperada);
@@ -227,14 +227,14 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
     setCampoEnEdicion({
       ...crearCampoNuevo(sesion.usuario.clienteId || 'cliente-demo', empresaErpId),
-      zonaPlanificacionId: zonaSugerida?.zonaPlanificacionId,
+      zonaAppId: zonaSugerida?.zonaAppId,
       zonaErpId: zonaSugerida?.zonaErpId,
     });
   }
 
-  function obtenerClaveZona(campo: CampoPlanificacion) {
-    if (campo.zonaPlanificacionId) {
-      return `agro:${campo.zonaPlanificacionId}`;
+  function obtenerClaveZona(campo: CampoApp) {
+    if (campo.zonaAppId) {
+      return `agro:${campo.zonaAppId}`;
     }
 
     if (campo.zonaErpId) {
@@ -244,7 +244,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     return '';
   }
 
-  function obtenerNombreZona(campo: CampoPlanificacion) {
+  function obtenerNombreZona(campo: CampoApp) {
     return zonasPorClave.get(obtenerClaveZona(campo))?.nombre || campo.zonaErpId || 'Sin zona';
   }
 
@@ -265,7 +265,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     setCampoEnEdicion((actual) => actual && {
       ...actual,
       empresaErpId: zona && zona.empresaErpId !== 'global' ? zona.empresaErpId : actual.empresaErpId,
-      zonaPlanificacionId: zona?.zonaPlanificacionId,
+      zonaAppId: zona?.zonaAppId,
       zonaErpId: zona?.zonaErpId,
     });
   }
@@ -282,7 +282,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       return;
     }
 
-    const campoPreparado: CampoPlanificacion = {
+    const campoPreparado: CampoApp = {
       ...campoEnEdicion,
       nombre,
       codigoInterno: campoEnEdicion.codigoInterno ? normalizarCodigo(campoEnEdicion.codigoInterno) : normalizarCodigo(nombre),
@@ -292,7 +292,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     setGuardando(true);
 
     try {
-      const respuesta = await guardarCampoPlanificacion(campoPreparado.id, {
+      const respuesta = await guardarCampoApp(campoPreparado.id, {
         campo: campoPreparado,
         origen: 'web',
         motivo: 'Alta o edicion de campo desde padron maestro web',
@@ -315,7 +315,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     }
   }
 
-  function abrirVinculacion(campo: CampoPlanificacion) {
+  function abrirVinculacion(campo: CampoApp) {
     const candidatos = sugerirVinculacion(
       { codigo: campo.codigoInterno, nombre: campo.nombre },
       obtenerCamposErpCompatibles(campo),
@@ -345,9 +345,9 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     setCampoErpVincularId(candidatos[0].registro.erpId);
   }
 
-  function obtenerCamposErpCompatibles(campoPropio: CampoPlanificacion) {
-    const zonaPropia = campoPropio.zonaPlanificacionId
-      ? zonasPropiasActuales.find((zona) => zona.id === campoPropio.zonaPlanificacionId)
+  function obtenerCamposErpCompatibles(campoPropio: CampoApp) {
+    const zonaPropia = campoPropio.zonaAppId
+      ? zonasPropiasActuales.find((zona) => zona.id === campoPropio.zonaAppId)
       : undefined;
     const zonaErpEsperada = campoPropio.zonaErpId || zonaPropia?.zonaErpId;
     const idZonaEsperada = obtenerIdZonaDesdeErpId(zonaErpEsperada);
@@ -374,7 +374,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     setGuardando(true);
 
     try {
-      const respuesta = await guardarCampoPlanificacion(campoPropioParaVincular.id, {
+      const respuesta = await guardarCampoApp(campoPropioParaVincular.id, {
         campo: {
           ...campoPropioParaVincular,
           empresaErpId: campoErp.empresaErpId,
@@ -506,7 +506,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                     return {
                       ...actual,
                       empresaErpId: event.target.value,
-                      zonaPlanificacionId: mismaEmpresa ? actual.zonaPlanificacionId : undefined,
+                      zonaAppId: mismaEmpresa ? actual.zonaAppId : undefined,
                       zonaErpId: mismaEmpresa ? actual.zonaErpId : undefined,
                     };
                   })}
@@ -549,7 +549,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 Estado
                 <select
                   value={campoEnEdicion.estadoVinculacion}
-                  onChange={(event) => setCampoEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as CampoPlanificacion['estadoVinculacion'] })}
+                  onChange={(event) => setCampoEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as CampoApp['estadoVinculacion'] })}
                 >
                   <option value="provisorio">Provisorio</option>
                   <option value="archivado">Archivado</option>

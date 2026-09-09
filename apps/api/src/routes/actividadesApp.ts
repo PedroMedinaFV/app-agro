@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
-import type { GuardarActividadPlanificacionRequest } from '@agro/tipos';
+import type { GuardarActividadAppRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarActividadPlanificacionPersistida, obtenerActividadesPlanificacionPersistidas } from '../services/actividades/actividadesPlanificacionPrisma';
+import { guardarActividadAppPersistida, obtenerActividadesAppPersistidas } from '../services/actividades/actividadesAppPrisma';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', requierePermiso('planificacion:configurar'), async (req, res, ne
       return res.status(401).json({ error: 'Sesion sin cliente asociado.' });
     }
 
-    res.json({ actividades: await obtenerActividadesPlanificacionPersistidas(clienteId) });
+    res.json({ actividades: await obtenerActividadesAppPersistidas(clienteId) });
   } catch (error) {
     next(error);
   }
@@ -28,7 +28,7 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
   try {
     const request = req as RequestConUsuario;
 
-    res.json(await guardarActividadPlanificacionPersistida(req.params.id, req.body as GuardarActividadPlanificacionRequest, {
+    res.json(await guardarActividadAppPersistida(req.params.id, req.body as GuardarActividadAppRequest, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

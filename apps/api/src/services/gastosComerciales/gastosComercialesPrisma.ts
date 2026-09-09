@@ -46,11 +46,11 @@ function mapearGasto(gasto: GastoPrisma): GastosComercialesReferencia {
     clienteId: gasto.clienteId,
     campaniaErpId: gasto.campaniaErpId,
     empresaErpId: gasto.empresaErpId,
-    zonaPlanificacionId: gasto.zonaPlanificacionId || undefined,
+    zonaAppId: gasto.zonaAppId || undefined,
     zonaErpId: gasto.zonaErpId || undefined,
-    campoPlanificacionId: gasto.campoPlanificacionId || undefined,
+    campoAppId: gasto.campoAppId || undefined,
     campoErpId: gasto.campoErpId || undefined,
-    actividadPlanificacionId: gasto.actividadPlanificacionId,
+    actividadAppId: gasto.actividadAppId,
     actividadErpId: gasto.actividadErpId || undefined,
     destinoVenta: gasto.destinoVenta || undefined,
     descripcion: gasto.descripcion,
@@ -92,8 +92,8 @@ function validarGasto(gasto: GastosComercialesReferencia) {
     throw crearErrorValidacion('Los gastos comerciales deben tener campaniaErpId.');
   }
 
-  if (!gasto.actividadPlanificacionId) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener actividadPlanificacionId.');
+  if (!gasto.actividadAppId) {
+    throw crearErrorValidacion('Los gastos comerciales deben tener actividadAppId.');
   }
 
   if (!gasto.descripcion.trim()) {
@@ -147,11 +147,11 @@ export async function guardarGastoComercialPersistido(
       update: {
         empresaErpId: gasto.empresaErpId,
         campaniaErpId: gasto.campaniaErpId,
-        zonaPlanificacionId: gasto.zonaPlanificacionId,
+        zonaAppId: gasto.zonaAppId,
         zonaErpId: gasto.zonaErpId,
-        campoPlanificacionId: gasto.campoPlanificacionId,
+        campoAppId: gasto.campoAppId,
         campoErpId: gasto.campoErpId,
-        actividadPlanificacionId: gasto.actividadPlanificacionId,
+        actividadAppId: gasto.actividadAppId,
         actividadErpId: gasto.actividadErpId,
         destinoVenta: gasto.destinoVenta,
         descripcion: gasto.descripcion,
@@ -164,11 +164,11 @@ export async function guardarGastoComercialPersistido(
         clienteId: gasto.clienteId,
         campaniaErpId: gasto.campaniaErpId,
         empresaErpId: gasto.empresaErpId,
-        zonaPlanificacionId: gasto.zonaPlanificacionId,
+        zonaAppId: gasto.zonaAppId,
         zonaErpId: gasto.zonaErpId,
-        campoPlanificacionId: gasto.campoPlanificacionId,
+        campoAppId: gasto.campoAppId,
         campoErpId: gasto.campoErpId,
-        actividadPlanificacionId: gasto.actividadPlanificacionId,
+        actividadAppId: gasto.actividadAppId,
         actividadErpId: gasto.actividadErpId,
         destinoVenta: gasto.destinoVenta,
         descripcion: gasto.descripcion,

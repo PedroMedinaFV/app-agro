@@ -1,8 +1,8 @@
 import type {
-  ActividadPlanificacion,
+  ActividadApp,
   EpocaSiembraActividad,
-  GuardarActividadPlanificacionRequest,
-  GuardarActividadPlanificacionResponse,
+  GuardarActividadAppRequest,
+  GuardarActividadAppResponse,
   TipoCultivoActividad,
   TipoGranoActividad,
 } from '@agro/tipos';
@@ -10,7 +10,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type ActividadPrisma = Prisma.ActividadPlanificacionGetPayload<Record<string, never>>;
+type ActividadPrisma = Prisma.ActividadAppGetPayload<Record<string, never>>;
 
 const TIPOS_GRANO_VALIDOS = new Set<TipoGranoActividad>(['fina', 'gruesa']);
 const TIPOS_CULTIVO_VALIDOS = new Set<TipoCultivoActividad>(['primera', 'segunda']);
@@ -38,26 +38,26 @@ function normalizarOmitirVacio<T extends string>(valor: T | undefined) {
   return valor && valor.trim() ? valor : undefined;
 }
 
-function mapearActividad(actividad: ActividadPrisma): ActividadPlanificacion {
+function mapearActividad(actividad: ActividadPrisma): ActividadApp {
   return {
     id: actividad.id,
     clienteId: actividad.clienteId,
     empresaErpId: actividad.empresaErpId,
     actividadErpId: actividad.actividadErpId || undefined,
-    especiePlanificacionId: actividad.especiePlanificacionId || undefined,
+    especieAppId: actividad.especieAppId || undefined,
     especieErpId: actividad.especieErpId || undefined,
     nombre: actividad.nombre,
     codigoInterno: actividad.codigoInterno || undefined,
-    tipoGrano: actividad.tipoGrano as ActividadPlanificacion['tipoGrano'] || undefined,
-    tipoCultivo: actividad.tipoCultivo as ActividadPlanificacion['tipoCultivo'] || undefined,
-    epocaSiembra: actividad.epocaSiembra as ActividadPlanificacion['epocaSiembra'] || undefined,
-    estadoVinculacion: actividad.estadoVinculacion as ActividadPlanificacion['estadoVinculacion'],
+    tipoGrano: actividad.tipoGrano as ActividadApp['tipoGrano'] || undefined,
+    tipoCultivo: actividad.tipoCultivo as ActividadApp['tipoCultivo'] || undefined,
+    epocaSiembra: actividad.epocaSiembra as ActividadApp['epocaSiembra'] || undefined,
+    estadoVinculacion: actividad.estadoVinculacion as ActividadApp['estadoVinculacion'],
     createdAt: actividad.createdAt.toISOString(),
     updatedAt: actividad.updatedAt.toISOString(),
   };
 }
 
-function prepararActividad(actividad: ActividadPlanificacion): ActividadPlanificacion {
+function prepararActividad(actividad: ActividadApp): ActividadApp {
   const nombre = limpiarTextoVisible(actividad.nombre);
 
   return {
@@ -72,7 +72,7 @@ function prepararActividad(actividad: ActividadPlanificacion): ActividadPlanific
   };
 }
 
-async function validarActividad(actividad: ActividadPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarActividad(actividad: ActividadApp, usuario?: UsuarioAuditoria) {
   if (!actividad.clienteId) {
     throw crearErrorValidacion('La actividad debe tener clienteId.');
   }
@@ -85,7 +85,7 @@ async function validarActividad(actividad: ActividadPlanificacion, usuario?: Usu
     throw crearErrorValidacion('La actividad debe tener nombre.');
   }
 
-  if (!actividad.especiePlanificacionId && !actividad.especieErpId) {
+  if (!actividad.especieAppId && !actividad.especieErpId) {
     throw crearErrorValidacion('La actividad debe estar asociada a una especie.');
   }
 
@@ -101,11 +101,11 @@ async function validarActividad(actividad: ActividadPlanificacion, usuario?: Usu
     throw crearErrorValidacion('La epoca de siembra de la actividad no es valida.');
   }
 
-  const especiePlanificacion = actividad.especiePlanificacionId
-    ? await prisma.especiePlanificacion.findUnique({ where: { id: actividad.especiePlanificacionId } })
+  const especieApp = actividad.especieAppId
+    ? await prisma.especieApp.findUnique({ where: { id: actividad.especieAppId } })
     : null;
 
-  if (actividad.especiePlanificacionId && (!especiePlanificacion || especiePlanificacion.clienteId !== actividad.clienteId)) {
+  if (actividad.especieAppId && (!especieApp || especieApp.clienteId !== actividad.clienteId)) {
     throw crearErrorValidacion('La especie seleccionada no pertenece al cliente.', 403);
   }
 
@@ -116,14 +116,14 @@ async function validarActividad(actividad: ActividadPlanificacion, usuario?: Usu
       throw crearErrorValidacion('La actividad ERP seleccionada no existe en la cache importada.');
     }
 
-    const especieErpIdEsperada = actividad.especieErpId || especiePlanificacion?.especieErpId;
+    const especieErpIdEsperada = actividad.especieErpId || especieApp?.especieErpId;
     const idEspecieEsperada = especieErpIdEsperada ? obtenerIdEspecieDesdeErpId(especieErpIdEsperada) : undefined;
 
     if (idEspecieEsperada && actividadErp.idEspecie && idEspecieEsperada !== actividadErp.idEspecie) {
       throw crearErrorValidacion('La actividad ERP no pertenece a la especie seleccionada.');
     }
 
-    const actividadYaVinculada = await prisma.actividadPlanificacion.findFirst({
+    const actividadYaVinculada = await prisma.actividadApp.findFirst({
       where: {
         clienteId: actividad.clienteId,
         actividadErpId: actividad.actividadErpId,
@@ -143,8 +143,8 @@ function obtenerIdEspecieDesdeErpId(especieErpId: string) {
   return match ? Number(match[1]) : undefined;
 }
 
-export async function obtenerActividadesPlanificacionPersistidas(clienteId: string): Promise<ActividadPlanificacion[]> {
-  const actividades = await prisma.actividadPlanificacion.findMany({
+export async function obtenerActividadesAppPersistidas(clienteId: string): Promise<ActividadApp[]> {
+  const actividades = await prisma.actividadApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -152,18 +152,18 @@ export async function obtenerActividadesPlanificacionPersistidas(clienteId: stri
   return actividades.map(mapearActividad);
 }
 
-export async function guardarActividadPlanificacionPersistida(
+export async function guardarActividadAppPersistida(
   id: string,
-  request: GuardarActividadPlanificacionRequest,
+  request: GuardarActividadAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarActividadPlanificacionResponse> {
+): Promise<GuardarActividadAppResponse> {
   const actividad = prepararActividad({ ...request.actividad, id });
   await validarActividad(actividad, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.actividadPlanificacion.findUnique({ where: { id } });
+    const existente = await tx.actividadApp.findUnique({ where: { id } });
     const existenteMismoCodigo = actividad.codigoInterno
-      ? await tx.actividadPlanificacion.findFirst({
+      ? await tx.actividadApp.findFirst({
         where: {
           clienteId: actividad.clienteId,
           codigoInterno: actividad.codigoInterno,
@@ -176,12 +176,12 @@ export async function guardarActividadPlanificacionPersistida(
       throw crearErrorValidacion('Ya existe una actividad con ese codigo interno.');
     }
 
-    const guardada = await tx.actividadPlanificacion.upsert({
+    const guardada = await tx.actividadApp.upsert({
       where: { id },
       update: {
         empresaErpId: actividad.empresaErpId,
         actividadErpId: actividad.actividadErpId ?? null,
-        especiePlanificacionId: actividad.especiePlanificacionId ?? null,
+        especieAppId: actividad.especieAppId ?? null,
         especieErpId: actividad.especieErpId ?? null,
         nombre: actividad.nombre,
         codigoInterno: actividad.codigoInterno ?? null,
@@ -196,7 +196,7 @@ export async function guardarActividadPlanificacionPersistida(
         clienteId: actividad.clienteId,
         empresaErpId: actividad.empresaErpId,
         actividadErpId: actividad.actividadErpId ?? null,
-        especiePlanificacionId: actividad.especiePlanificacionId ?? null,
+        especieAppId: actividad.especieAppId ?? null,
         especieErpId: actividad.especieErpId ?? null,
         nombre: actividad.nombre,
         codigoInterno: actividad.codigoInterno ?? null,
@@ -213,7 +213,7 @@ export async function guardarActividadPlanificacionPersistida(
     await registrarAuditoria(tx, {
       clienteId: actividad.clienteId,
       usuario,
-      entidad: 'ActividadPlanificacion',
+      entidad: 'ActividadApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

@@ -20,7 +20,7 @@ interface ProtocolosScreenProps {
   agregarEtapaProtocolo: () => void;
   actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
   agregarLabor: (etapaId: string, laborReferenciaId?: string) => void;
-  agregarInsumo: (etapaId: string, insumoPlanificacionId?: string) => void;
+  agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
   formatearUsd: (valor: number) => string;
   leerNumero: (valor: string) => number;
 }
@@ -115,8 +115,8 @@ export function ProtocolosScreen({
               label: 'Actividad',
               width: 'minmax(130px, 0.9fr)',
               render: (protocolo) => {
-                const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === protocolo.actividadPlanificacionId);
-                return actividad?.nombre || protocolo.actividadErpId || protocolo.actividadPlanificacionId;
+                const actividad = planificacion.actividadesApp?.find((item) => item.id === protocolo.actividadAppId);
+                return actividad?.nombre || protocolo.actividadErpId || protocolo.actividadAppId;
               },
             },
             {
@@ -124,8 +124,8 @@ export function ProtocolosScreen({
               label: 'Alcance',
               width: 'minmax(120px, 0.8fr)',
               render: (protocolo) => {
-                const zona = planificacion.zonasPlanificacion?.find((item) => item.id === protocolo.zonaPlanificacionId);
-                const campo = planificacion.camposPlanificacion.find((item) => item.id === protocolo.campoPlanificacionId);
+                const zona = planificacion.zonasApp?.find((item) => item.id === protocolo.zonaAppId);
+                const campo = planificacion.camposApp.find((item) => item.id === protocolo.campoAppId);
                 return campo?.nombre || zona?.nombre || 'General';
               },
             },

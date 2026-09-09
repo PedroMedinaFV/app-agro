@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoPlanificacion, ErpCampo, ErpEmpresa, ErpLote, LotePlanificacion, SesionUsuario } from '@agro/tipos';
+import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import {
-  guardarCampoPlanificacion,
-  guardarLotePlanificacion,
+  guardarCampoApp,
+  guardarLoteApp,
   obtenerCamposErpImportados,
-  obtenerCamposPlanificacion,
+  obtenerCamposApp,
   obtenerLotesErpImportados,
-  obtenerLotesPlanificacion,
+  obtenerLotesApp,
 } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -16,14 +16,14 @@ type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; m
 type LotesScreenProps = {
   sesion: SesionUsuario;
   empresas: ErpEmpresa[];
-  camposPropios: CampoPlanificacion[];
+  camposPropios: CampoApp[];
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
 };
 
 type CampoSeleccionable = {
   clave: string;
-  campoPlanificacionId?: string;
+  campoAppId?: string;
   campoErpId?: string;
   empresaErpId: string;
   codigo?: string;
@@ -40,7 +40,7 @@ type LoteTabla = {
   origen: string;
   estado: string;
   accion: 'editar' | 'importado';
-  lotePropio?: LotePlanificacion;
+  lotePropio?: LoteApp;
   loteErp?: ErpLote;
 };
 
@@ -61,13 +61,13 @@ function leerNumeroPositivo(valor: string) {
   return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
-function crearLoteNuevo(clienteId: string, campoPlanificacionId: string): LotePlanificacion {
+function crearLoteNuevo(clienteId: string, campoAppId: string): LoteApp {
   const ahora = new Date().toISOString();
 
   return {
-    id: `lote-planificacion-${Date.now()}`,
+    id: `lote-app-${Date.now()}`,
     clienteId,
-    campoPlanificacionId,
+    campoAppId,
     nombre: '',
     codigoInterno: '',
     superficieTotal: 0,
@@ -79,19 +79,19 @@ function crearLoteNuevo(clienteId: string, campoPlanificacionId: string): LotePl
 }
 
 function crearIdCampoDesdeErp(campoErpId: string) {
-  return `campo-planificacion-${campoErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+  return `campo-app-${campoErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
 }
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
   const [lotesErp, setLotesErp] = useState<ErpLote[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
-  const [camposPropiosActuales, setCamposPropiosActuales] = useState<CampoPlanificacion[]>(camposPropios);
-  const [lotesPropios, setLotesPropios] = useState<LotePlanificacion[]>([]);
+  const [camposPropiosActuales, setCamposPropiosActuales] = useState<CampoApp[]>(camposPropios);
+  const [lotesPropios, setLotesPropios] = useState<LoteApp[]>([]);
   const [estado, setEstado] = useState('Cargando lotes sincronizados.');
   const [guardando, setGuardando] = useState(false);
-  const [loteEnEdicion, setLoteEnEdicion] = useState<LotePlanificacion | null>(null);
+  const [loteEnEdicion, setLoteEnEdicion] = useState<LoteApp | null>(null);
   const [modoFormulario, setModoFormulario] = useState<'crear' | 'editar' | 'copiar'>('crear');
-  const [lotePropioParaVincular, setLotePropioParaVincular] = useState<LotePlanificacion | null>(null);
+  const [lotePropioParaVincular, setLotePropioParaVincular] = useState<LoteApp | null>(null);
   const [loteErpVincularId, setLoteErpVincularId] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
@@ -103,8 +103,8 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
         const [respuestaLotesErp, respuestaCamposErp, respuestaCamposPropios, respuestaLotesPropios] = await Promise.all([
           obtenerLotesErpImportados(sesion.token),
           obtenerCamposErpImportados(sesion.token),
-          obtenerCamposPlanificacion(sesion.token),
-          obtenerLotesPlanificacion(sesion.token),
+          obtenerCamposApp(sesion.token),
+          obtenerLotesApp(sesion.token),
         ]);
 
         setLotesErp(respuestaLotesErp.lotes);
@@ -129,7 +129,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const camposSeleccionables = useMemo<CampoSeleccionable[]>(() => {
     const propios = camposPropiosActuales.map((campo) => ({
       clave: `agro:${campo.id}`,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
       empresaErpId: campo.empresaErpId,
       codigo: campo.codigoInterno,
@@ -156,7 +156,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const camposParaFiltrar = useMemo<CampoSeleccionable[]>(() => {
     const propios = camposPropiosActuales.map((campo) => ({
       clave: `agro:${campo.id}`,
-      campoPlanificacionId: campo.id,
+      campoAppId: campo.id,
       campoErpId: campo.campoErpId,
       empresaErpId: campo.empresaErpId,
       codigo: campo.codigoInterno,
@@ -184,7 +184,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       return [];
     }
 
-    const campoPropio = camposPropiosPorId.get(lotePropioParaVincular.campoPlanificacionId);
+    const campoPropio = camposPropiosPorId.get(lotePropioParaVincular.campoAppId);
 
     return lotesErp
       .filter((lote) => !lotesVinculados.has(lote.erpId))
@@ -211,17 +211,17 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     return texto.includes(filtroNormalizado) && coincideCampo;
   });
   const lotesPropiosFiltrados = lotesPropios.filter((lote) => !lote.loteErpId).filter((lote) => {
-    const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
+    const campo = camposPropiosPorId.get(lote.campoAppId);
     const texto = normalizarCodigo(`${lote.codigoInterno || ''} ${lote.nombre} ${campo?.nombre || ''}`);
     const coincideCampo = !campoFiltrado
-      || lote.campoPlanificacionId === campoFiltrado.campoPlanificacionId
+      || lote.campoAppId === campoFiltrado.campoAppId
       || Boolean(campoFiltrado.campoErpId && campo?.campoErpId === campoFiltrado.campoErpId);
 
     return texto.includes(filtroNormalizado) && coincideCampo;
   });
   const filasLote: LoteTabla[] = [
     ...lotesPropiosFiltrados.map((lote) => {
-      const campo = camposPropiosPorId.get(lote.campoPlanificacionId);
+      const campo = camposPropiosPorId.get(lote.campoAppId);
 
       return {
         id: lote.id,
@@ -266,23 +266,23 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
     setModoFormulario('crear');
     setCampoSeleccionadoClave(campoSugerido.clave);
-    setLoteEnEdicion(crearLoteNuevo(sesion.usuario.clienteId || 'cliente-demo', campoSugerido.campoPlanificacionId || ''));
+    setLoteEnEdicion(crearLoteNuevo(sesion.usuario.clienteId || 'cliente-demo', campoSugerido.campoAppId || ''));
   }
 
-  function editarLote(lote: LotePlanificacion) {
+  function editarLote(lote: LoteApp) {
     setModoFormulario('editar');
-    setCampoSeleccionadoClave(`agro:${lote.campoPlanificacionId}`);
+    setCampoSeleccionadoClave(`agro:${lote.campoAppId}`);
     setLoteEnEdicion(lote);
   }
 
-  function copiarLote(lote: LotePlanificacion) {
+  function copiarLote(lote: LoteApp) {
     const ahora = new Date().toISOString();
 
     setModoFormulario('copiar');
-    setCampoSeleccionadoClave(`agro:${lote.campoPlanificacionId}`);
+    setCampoSeleccionadoClave(`agro:${lote.campoAppId}`);
     setLoteEnEdicion({
       ...lote,
-      id: `lote-planificacion-${Date.now()}`,
+      id: `lote-app-${Date.now()}`,
       loteErpId: undefined,
       nombre: lote.nombre,
       codigoInterno: lote.codigoInterno ? `${lote.codigoInterno}-COPIA` : '',
@@ -300,9 +300,9 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     setModoFormulario('copiar');
     setCampoSeleccionadoClave(campoClave);
     setLoteEnEdicion({
-      id: `lote-planificacion-${Date.now()}`,
+      id: `lote-app-${Date.now()}`,
       clienteId: sesion.usuario.clienteId || 'cliente-demo',
-      campoPlanificacionId: '',
+      campoAppId: '',
       loteErpId: undefined,
       nombre: lote.nombre,
       //codigoInterno: lote.codigo ? `${normalizarCodigo(lote.codigo)}-COPIA` : '',
@@ -323,8 +323,8 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     }
   }
 
-  function abrirVinculacion(lote: LotePlanificacion) {
-    const campoPropio = camposPropiosPorId.get(lote.campoPlanificacionId);
+  function abrirVinculacion(lote: LoteApp) {
+    const campoPropio = camposPropiosPorId.get(lote.campoAppId);
     const candidatos = sugerirVinculacion(
       { codigo: lote.codigoInterno, nombre: lote.nombre },
       lotesErp
@@ -371,7 +371,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     setGuardando(true);
 
     try {
-      const respuesta = await guardarLotePlanificacion(lotePropioParaVincular.id, {
+      const respuesta = await guardarLoteApp(lotePropioParaVincular.id, {
         lote: {
           ...lotePropioParaVincular,
           loteErpId: loteErp.erpId,
@@ -401,19 +401,19 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     setCampoSeleccionadoClave(clave);
     setLoteEnEdicion((actual) => actual && {
       ...actual,
-      campoPlanificacionId: campo?.campoPlanificacionId || '',
+      campoAppId: campo?.campoAppId || '',
     });
   }
 
-  async function obtenerCampoPlanificacionParaGuardar() {
+  async function obtenerCampoAppParaGuardar() {
     const campoSeleccionado = camposSeleccionablesPorClave.get(campoSeleccionadoClave);
 
     if (!campoSeleccionado) {
       return undefined;
     }
 
-    if (campoSeleccionado.campoPlanificacionId) {
-      return camposPropiosPorId.get(campoSeleccionado.campoPlanificacionId);
+    if (campoSeleccionado.campoAppId) {
+      return camposPropiosPorId.get(campoSeleccionado.campoAppId);
     }
 
     if (!campoSeleccionado.campoErpId) {
@@ -433,7 +433,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     }
 
     const ahora = new Date().toISOString();
-    const campoPreparado: CampoPlanificacion = {
+    const campoPreparado: CampoApp = {
       id: crearIdCampoDesdeErp(campoErp.erpId),
       clienteId: sesion.usuario.clienteId || 'cliente-demo',
       empresaErpId: campoErp.empresaErpId,
@@ -445,7 +445,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       createdAt: ahora,
       updatedAt: ahora,
     };
-    const respuesta = await guardarCampoPlanificacion(campoPreparado.id, {
+    const respuesta = await guardarCampoApp(campoPreparado.id, {
       campo: campoPreparado,
       origen: 'web',
       motivo: 'Creacion automatica de campo operativo vinculado desde alta de lote',
@@ -483,7 +483,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       return;
     }
 
-    const lotePreparado: LotePlanificacion = {
+    const lotePreparado: LoteApp = {
       ...loteEnEdicion,
       nombre,
       codigoInterno: loteEnEdicion.codigoInterno ? normalizarCodigo(loteEnEdicion.codigoInterno) : normalizarCodigo(nombre),
@@ -493,16 +493,16 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     setGuardando(true);
 
     try {
-      const campoParaGuardar = await obtenerCampoPlanificacionParaGuardar();
+      const campoParaGuardar = await obtenerCampoAppParaGuardar();
 
       if (!campoParaGuardar) {
         throw new Error('Selecciona un campo valido para el lote.');
       }
 
-      const respuesta = await guardarLotePlanificacion(lotePreparado.id, {
+      const respuesta = await guardarLoteApp(lotePreparado.id, {
         lote: {
           ...lotePreparado,
-          campoPlanificacionId: campoParaGuardar.id,
+          campoAppId: campoParaGuardar.id,
         },
         origen: 'web',
         motivo: 'Alta o edicion de lote desde padron maestro web',
@@ -624,7 +624,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
               <label className="reference-wide">
                 Campo
                 <select
-                  value={campoSeleccionadoClave || `agro:${loteEnEdicion.campoPlanificacionId}`}
+                  value={campoSeleccionadoClave || `agro:${loteEnEdicion.campoAppId}`}
                   onChange={(event) => seleccionarCampo(event.target.value)}
                 >
                   {camposSeleccionables.map((campo) => (
@@ -674,7 +674,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 Estado
                 <select
                   value={loteEnEdicion.estadoVinculacion}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as LotePlanificacion['estadoVinculacion'] })}
+                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as LoteApp['estadoVinculacion'] })}
                 >
                   <option value="provisorio">Provisorio</option>
                   <option value="archivado">Archivado</option>

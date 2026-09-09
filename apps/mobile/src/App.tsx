@@ -6,9 +6,9 @@ import { guardarRegistroLocal, leerRegistrosLocales } from './services/almacenam
 
 const planificacionDemo: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
-  camposPlanificacion: [
+  camposApp: [
     {
-      id: 'campo-planificacion-erp-241',
+      id: 'campo-app-erp-241',
       clienteId: 'cliente-demo',
       empresaErpId: 'empresa:mock',
       campoErpId: 'empresa:mock:campo:241',
@@ -19,11 +19,11 @@ const planificacionDemo: PlanificacionSnapshot = {
       updatedAt: new Date().toISOString(),
     },
   ],
-  lotesPlanificacion: [
+  lotesApp: [
     {
-      id: 'lote-planificacion-erp-724',
+      id: 'lote-app-erp-724',
       clienteId: 'cliente-demo',
-      campoPlanificacionId: 'campo-planificacion-erp-241',
+      campoAppId: 'campo-app-erp-241',
       loteErpId: 'empresa:mock:lote:724',
       nombre: 'CABALLO LOCO 1',
       codigoInterno: 'CL1',
@@ -51,7 +51,7 @@ const planificacionDemo: PlanificacionSnapshot = {
       nombre: 'Girasol tecnologia media',
       descripcion: 'Girasol - tecnologia media',
       campaniaErpId: 'empresa:mock:campania:961',
-      actividadPlanificacionId: 'actividad-planificacion-girasol',
+      actividadAppId: 'actividad-app-girasol',
       actividadErpId: 'empresa:mock:actividad:48',
       tipoFecha: 'relativa_siembra',
       fechaSiembra: '2026-10-15',
@@ -76,11 +76,11 @@ const planificacionDemo: PlanificacionSnapshot = {
           id: 'linea-planificacion-1',
           planificacionId: 'planificacion-25-26-demo',
           empresaErpId: 'empresa:mock',
-          campoPlanificacionId: 'campo-planificacion-erp-241',
+          campoAppId: 'campo-app-erp-241',
           campoErpId: 'empresa:mock:campo:241',
-          lotePlanificacionId: 'lote-planificacion-erp-724',
+          loteAppId: 'lote-app-erp-724',
           loteErpId: 'empresa:mock:lote:724',
-          actividadPlanificacionId: 'actividad-planificacion-girasol',
+          actividadAppId: 'actividad-app-girasol',
           actividadErpId: 'empresa:mock:actividad:48',
           destinoVenta: 'Puerto Quequen',
           destinoVentaManual: false,
@@ -107,8 +107,8 @@ export default function App() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [email, setEmail] = useState('demo@agroapp.local');
   const [rol, setRol] = useState<RolUsuario>('usuario');
-  const [campoSeleccionadoId, setCampoSeleccionadoId] = useState(planificacionDemo.camposPlanificacion[0]?.id || '');
-  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesPlanificacion[0]?.id || '');
+  const [campoSeleccionadoId, setCampoSeleccionadoId] = useState(planificacionDemo.camposApp[0]?.id || '');
+  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesApp[0]?.id || '');
   const [milimetros, setMilimetros] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
@@ -136,8 +136,8 @@ export default function App() {
       try {
         const snapshot = await obtenerPlanificacionSnapshot(sesion.token);
         setPlanificacionOperativa(snapshot);
-        setCampoSeleccionadoId(snapshot.camposPlanificacion[0]?.id || '');
-        setLoteSeleccionadoId(snapshot.lotesPlanificacion[0]?.id || '');
+        setCampoSeleccionadoId(snapshot.camposApp[0]?.id || '');
+        setLoteSeleccionadoId(snapshot.lotesApp[0]?.id || '');
         setErrorPlanificacion(null);
       } catch (error) {
         setPlanificacionOperativa(planificacionDemo);
@@ -168,15 +168,15 @@ export default function App() {
     const protocoloActivo = datosOperativos.protocolos[0] || planificacionDemo.protocolos[0];
     const margenBruto = planificacionActiva.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
     const hectareas = planificacionActiva.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
-    const campoSeleccionado = datosOperativos.camposPlanificacion.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposPlanificacion[0];
-    const lotesDelCampo = datosOperativos.lotesPlanificacion.filter((lote) => lote.campoPlanificacionId === campoSeleccionado?.id);
+    const campoSeleccionado = datosOperativos.camposApp.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposApp[0];
+    const lotesDelCampo = datosOperativos.lotesApp.filter((lote) => lote.campoAppId === campoSeleccionado?.id);
     const loteSeleccionado = lotesDelCampo.find((lote) => lote.id === loteSeleccionadoId) || lotesDelCampo[0];
-    const lineaSeleccionada = planificacionActiva.lineas.find((linea) => linea.lotePlanificacionId === loteSeleccionado?.id);
-    const actividadSeleccionada = datosOperativos.actividadesPlanificacion?.find((actividad) => actividad.id === lineaSeleccionada?.actividadPlanificacionId);
+    const lineaSeleccionada = planificacionActiva.lineas.find((linea) => linea.loteAppId === loteSeleccionado?.id);
+    const actividadSeleccionada = datosOperativos.actividadesApp?.find((actividad) => actividad.id === lineaSeleccionada?.actividadAppId);
     const protocoloSeleccionado = datosOperativos.protocolos.find((protocolo) => protocolo.id === lineaSeleccionada?.protocoloId) || protocoloActivo;
 
     function seleccionarSiguienteCampo() {
-      const campos = datosOperativos.camposPlanificacion;
+      const campos = datosOperativos.camposApp;
       if (!campos.length) {
         setCampoSeleccionadoId('');
         setLoteSeleccionadoId('');
@@ -187,7 +187,7 @@ export default function App() {
       const siguiente = campos[(indiceActual + 1) % campos.length];
 
       setCampoSeleccionadoId(siguiente.id);
-      setLoteSeleccionadoId(datosOperativos.lotesPlanificacion.find((lote) => lote.campoPlanificacionId === siguiente.id)?.id || '');
+      setLoteSeleccionadoId(datosOperativos.lotesApp.find((lote) => lote.campoAppId === siguiente.id)?.id || '');
     }
 
     function seleccionarSiguienteLote() {
@@ -209,8 +209,8 @@ export default function App() {
       }
 
       const payload = {
-        campoPlanificacionId: campoSeleccionado.id,
-        lotePlanificacionId: loteSeleccionado?.id,
+        campoAppId: campoSeleccionado.id,
+        loteAppId: loteSeleccionado?.id,
         milimetros: milimetrosNumericos,
         fechaEvento: new Date().toISOString(),
         observaciones: observaciones.trim() || undefined,
@@ -268,11 +268,11 @@ export default function App() {
           ) : (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Mi trabajo</Text>
-              <Text style={styles.note}>Campos asignados: {datosOperativos.camposPlanificacion.length}</Text>
-              <Text style={styles.note}>Lotes disponibles: {datosOperativos.lotesPlanificacion.length}</Text>
+              <Text style={styles.note}>Campos asignados: {datosOperativos.camposApp.length}</Text>
+              <Text style={styles.note}>Lotes disponibles: {datosOperativos.lotesApp.length}</Text>
               <Text style={styles.note}>Campania actual: 19/20</Text>
-              <Text style={styles.note}>Actividades disponibles: {datosOperativos.actividadesPlanificacion?.length || 0}</Text>
-              <Text style={styles.note}>Insumos de referencia: {datosOperativos.insumosPlanificacion?.length || 0}</Text>
+              <Text style={styles.note}>Actividades disponibles: {datosOperativos.actividadesApp?.length || 0}</Text>
+              <Text style={styles.note}>Insumos de referencia: {datosOperativos.insumosApp?.length || 0}</Text>
               <Text style={styles.note}>Accion permitida: cargar registros de campo</Text>
             </View>
           )}

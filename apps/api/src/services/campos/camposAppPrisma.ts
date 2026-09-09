@@ -1,9 +1,9 @@
-import type { CampoPlanificacion, GuardarCampoPlanificacionRequest, GuardarCampoPlanificacionResponse } from '@agro/tipos';
+import type { CampoApp, GuardarCampoAppRequest, GuardarCampoAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type CampoPrisma = Prisma.CampoPlanificacionGetPayload<Record<string, never>>;
+type CampoPrisma = Prisma.CampoAppGetPayload<Record<string, never>>;
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,7 +23,7 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function mapearCampo(campo: CampoPrisma): CampoPlanificacion {
+function mapearCampo(campo: CampoPrisma): CampoApp {
   return {
     id: campo.id,
     clienteId: campo.clienteId,
@@ -31,15 +31,15 @@ function mapearCampo(campo: CampoPrisma): CampoPlanificacion {
     campoErpId: campo.campoErpId || undefined,
     nombre: campo.nombre,
     codigoInterno: campo.codigoInterno || undefined,
-    zonaPlanificacionId: campo.zonaPlanificacionId || undefined,
+    zonaAppId: campo.zonaAppId || undefined,
     zonaErpId: campo.zonaErpId || undefined,
-    estadoVinculacion: campo.estadoVinculacion as CampoPlanificacion['estadoVinculacion'],
+    estadoVinculacion: campo.estadoVinculacion as CampoApp['estadoVinculacion'],
     createdAt: campo.createdAt.toISOString(),
     updatedAt: campo.updatedAt.toISOString(),
   };
 }
 
-function prepararCampo(campo: CampoPlanificacion): CampoPlanificacion {
+function prepararCampo(campo: CampoApp): CampoApp {
   const nombre = limpiarTextoVisible(campo.nombre);
 
   return {
@@ -50,7 +50,7 @@ function prepararCampo(campo: CampoPlanificacion): CampoPlanificacion {
   };
 }
 
-async function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarCampo(campo: CampoApp, usuario?: UsuarioAuditoria) {
   if (!campo.clienteId) {
     throw crearErrorValidacion('El campo debe tener clienteId.');
   }
@@ -67,15 +67,15 @@ async function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditori
     throw crearErrorValidacion('El campo debe tener nombre.');
   }
 
-  const zonaPlanificacion = campo.zonaPlanificacionId
-    ? await prisma.zonaPlanificacion.findUnique({ where: { id: campo.zonaPlanificacionId } })
+  const zonaApp = campo.zonaAppId
+    ? await prisma.zonaApp.findUnique({ where: { id: campo.zonaAppId } })
     : null;
 
-  if (campo.zonaPlanificacionId && (!zonaPlanificacion || zonaPlanificacion.clienteId !== campo.clienteId)) {
+  if (campo.zonaAppId && (!zonaApp || zonaApp.clienteId !== campo.clienteId)) {
     throw crearErrorValidacion('La zona seleccionada no pertenece al cliente.', 403);
   }
 
-  if (campo.zonaPlanificacionId && zonaPlanificacion?.empresaErpId !== 'global' && zonaPlanificacion?.empresaErpId !== campo.empresaErpId) {
+  if (campo.zonaAppId && zonaApp?.empresaErpId !== 'global' && zonaApp?.empresaErpId !== campo.empresaErpId) {
     throw crearErrorValidacion('La zona seleccionada no pertenece a la empresa del campo.');
   }
 
@@ -90,14 +90,14 @@ async function validarCampo(campo: CampoPlanificacion, usuario?: UsuarioAuditori
       throw crearErrorValidacion('El campo ERP no pertenece a la empresa seleccionada.');
     }
 
-    const zonaErpIdEsperada = campo.zonaErpId || zonaPlanificacion?.zonaErpId;
+    const zonaErpIdEsperada = campo.zonaErpId || zonaApp?.zonaErpId;
     const idZonaEsperada = zonaErpIdEsperada ? obtenerIdZonaDesdeErpId(zonaErpIdEsperada) : undefined;
 
     if (idZonaEsperada && campoErp.idZona && idZonaEsperada !== campoErp.idZona) {
       throw crearErrorValidacion('El campo ERP no pertenece a la zona seleccionada.');
     }
 
-    const campoYaVinculado = await prisma.campoPlanificacion.findFirst({
+    const campoYaVinculado = await prisma.campoApp.findFirst({
       where: {
         clienteId: campo.clienteId,
         campoErpId: campo.campoErpId,
@@ -117,8 +117,8 @@ function obtenerIdZonaDesdeErpId(zonaErpId: string) {
   return match ? Number(match[1]) : undefined;
 }
 
-export async function obtenerCamposPlanificacionPersistidos(clienteId: string): Promise<CampoPlanificacion[]> {
-  const campos = await prisma.campoPlanificacion.findMany({
+export async function obtenerCamposAppPersistidos(clienteId: string): Promise<CampoApp[]> {
+  const campos = await prisma.campoApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -126,18 +126,18 @@ export async function obtenerCamposPlanificacionPersistidos(clienteId: string): 
   return campos.map(mapearCampo);
 }
 
-export async function guardarCampoPlanificacionPersistido(
+export async function guardarCampoAppPersistido(
   id: string,
-  request: GuardarCampoPlanificacionRequest,
+  request: GuardarCampoAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarCampoPlanificacionResponse> {
+): Promise<GuardarCampoAppResponse> {
   const campo = prepararCampo({ ...request.campo, id });
   await validarCampo(campo, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.campoPlanificacion.findUnique({ where: { id } });
+    const existente = await tx.campoApp.findUnique({ where: { id } });
     const existenteMismoCodigo = campo.codigoInterno
-      ? await tx.campoPlanificacion.findFirst({
+      ? await tx.campoApp.findFirst({
         where: {
           clienteId: campo.clienteId,
           empresaErpId: campo.empresaErpId,
@@ -151,14 +151,14 @@ export async function guardarCampoPlanificacionPersistido(
       throw crearErrorValidacion('Ya existe un campo con ese codigo para la empresa.');
     }
 
-    const guardado = await tx.campoPlanificacion.upsert({
+    const guardado = await tx.campoApp.upsert({
       where: { id },
       update: {
         empresaErpId: campo.empresaErpId,
         campoErpId: campo.campoErpId ?? null,
         nombre: campo.nombre,
         codigoInterno: campo.codigoInterno ?? null,
-        zonaPlanificacionId: campo.zonaPlanificacionId ?? null,
+        zonaAppId: campo.zonaAppId ?? null,
         zonaErpId: campo.zonaErpId ?? null,
         estadoVinculacion: campo.estadoVinculacion,
         updatedBy: usuario?.id,
@@ -170,7 +170,7 @@ export async function guardarCampoPlanificacionPersistido(
         campoErpId: campo.campoErpId ?? null,
         nombre: campo.nombre,
         codigoInterno: campo.codigoInterno ?? null,
-        zonaPlanificacionId: campo.zonaPlanificacionId ?? null,
+        zonaAppId: campo.zonaAppId ?? null,
         zonaErpId: campo.zonaErpId ?? null,
         estadoVinculacion: campo.estadoVinculacion,
         createdBy: usuario?.id,
@@ -182,7 +182,7 @@ export async function guardarCampoPlanificacionPersistido(
     await registrarAuditoria(tx, {
       clienteId: campo.clienteId,
       usuario,
-      entidad: 'CampoPlanificacion',
+      entidad: 'CampoApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

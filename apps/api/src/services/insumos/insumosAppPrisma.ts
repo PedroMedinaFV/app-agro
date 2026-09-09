@@ -1,9 +1,9 @@
-import type { GuardarInsumoPlanificacionRequest, GuardarInsumoPlanificacionResponse, InsumoPlanificacion } from '@agro/tipos';
+import type { GuardarInsumoAppRequest, GuardarInsumoAppResponse, InsumoApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type InsumoPrisma = Prisma.InsumoPlanificacionGetPayload<Record<string, never>>;
+type InsumoPrisma = Prisma.InsumoAppGetPayload<Record<string, never>>;
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,7 +23,7 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function mapearInsumo(insumo: InsumoPrisma): InsumoPlanificacion {
+function mapearInsumo(insumo: InsumoPrisma): InsumoApp {
   return {
     id: insumo.id,
     clienteId: insumo.clienteId,
@@ -35,13 +35,13 @@ function mapearInsumo(insumo: InsumoPrisma): InsumoPlanificacion {
     unidad: insumo.unidad,
     precioUnitarioEstimado: insumo.precioUnitarioEstimado ?? undefined,
     moneda: insumo.moneda || undefined,
-    estadoVinculacion: insumo.estadoVinculacion as InsumoPlanificacion['estadoVinculacion'],
+    estadoVinculacion: insumo.estadoVinculacion as InsumoApp['estadoVinculacion'],
     createdAt: insumo.createdAt.toISOString(),
     updatedAt: insumo.updatedAt.toISOString(),
   };
 }
 
-function prepararInsumo(insumo: InsumoPlanificacion): InsumoPlanificacion {
+function prepararInsumo(insumo: InsumoApp): InsumoApp {
   const nombre = limpiarTextoVisible(insumo.nombre);
   const codigoInterno = insumo.codigoInterno ? normalizarCodigo(insumo.codigoInterno) : normalizarCodigo(nombre);
 
@@ -56,7 +56,7 @@ function prepararInsumo(insumo: InsumoPlanificacion): InsumoPlanificacion {
   };
 }
 
-async function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarInsumo(insumo: InsumoApp, usuario?: UsuarioAuditoria) {
   if (!insumo.clienteId) {
     throw crearErrorValidacion('El insumo debe tener clienteId.');
   }
@@ -88,7 +88,7 @@ async function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAudit
       throw crearErrorValidacion('El insumo ERP seleccionado no existe en la cache importada.');
     }
 
-    const insumoYaVinculado = await prisma.insumoPlanificacion.findFirst({
+    const insumoYaVinculado = await prisma.insumoApp.findFirst({
       where: {
         clienteId: insumo.clienteId,
         insumoErpId: insumo.insumoErpId,
@@ -102,8 +102,8 @@ async function validarInsumo(insumo: InsumoPlanificacion, usuario?: UsuarioAudit
   }
 }
 
-export async function obtenerInsumosPlanificacionPersistidos(clienteId: string): Promise<InsumoPlanificacion[]> {
-  const insumos = await prisma.insumoPlanificacion.findMany({
+export async function obtenerInsumosAppPersistidos(clienteId: string): Promise<InsumoApp[]> {
+  const insumos = await prisma.insumoApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -111,18 +111,18 @@ export async function obtenerInsumosPlanificacionPersistidos(clienteId: string):
   return insumos.map(mapearInsumo);
 }
 
-export async function guardarInsumoPlanificacionPersistido(
+export async function guardarInsumoAppPersistido(
   id: string,
-  request: GuardarInsumoPlanificacionRequest,
+  request: GuardarInsumoAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarInsumoPlanificacionResponse> {
+): Promise<GuardarInsumoAppResponse> {
   const insumo = prepararInsumo({ ...request.insumo, id });
   await validarInsumo(insumo, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.insumoPlanificacion.findUnique({ where: { id } });
+    const existente = await tx.insumoApp.findUnique({ where: { id } });
     const existenteMismoCodigo = insumo.codigoInterno
-      ? await tx.insumoPlanificacion.findFirst({
+      ? await tx.insumoApp.findFirst({
         where: {
           clienteId: insumo.clienteId,
           codigoInterno: insumo.codigoInterno,
@@ -135,7 +135,7 @@ export async function guardarInsumoPlanificacionPersistido(
       throw crearErrorValidacion('Ya existe un insumo con ese codigo.');
     }
 
-    const guardado = await tx.insumoPlanificacion.upsert({
+    const guardado = await tx.insumoApp.upsert({
       where: { id },
       update: {
         empresaErpId: insumo.empresaErpId,
@@ -170,7 +170,7 @@ export async function guardarInsumoPlanificacionPersistido(
     await registrarAuditoria(tx, {
       clienteId: insumo.clienteId,
       usuario,
-      entidad: 'InsumoPlanificacion',
+      entidad: 'InsumoApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

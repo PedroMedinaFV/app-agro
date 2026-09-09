@@ -1,9 +1,9 @@
-import type { GuardarZonaPlanificacionRequest, GuardarZonaPlanificacionResponse, ZonaPlanificacion } from '@agro/tipos';
+import type { GuardarZonaAppRequest, GuardarZonaAppResponse, ZonaApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type ZonaPrisma = Prisma.ZonaPlanificacionGetPayload<Record<string, never>>;
+type ZonaPrisma = Prisma.ZonaAppGetPayload<Record<string, never>>;
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,7 +23,7 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-function mapearZona(zona: ZonaPrisma): ZonaPlanificacion {
+function mapearZona(zona: ZonaPrisma): ZonaApp {
   return {
     id: zona.id,
     clienteId: zona.clienteId,
@@ -31,13 +31,13 @@ function mapearZona(zona: ZonaPrisma): ZonaPlanificacion {
     zonaErpId: zona.zonaErpId || undefined,
     nombre: zona.nombre,
     codigoInterno: zona.codigoInterno || undefined,
-    estadoVinculacion: zona.estadoVinculacion as ZonaPlanificacion['estadoVinculacion'],
+    estadoVinculacion: zona.estadoVinculacion as ZonaApp['estadoVinculacion'],
     createdAt: zona.createdAt.toISOString(),
     updatedAt: zona.updatedAt.toISOString(),
   };
 }
 
-function prepararZona(zona: ZonaPlanificacion): ZonaPlanificacion {
+function prepararZona(zona: ZonaApp): ZonaApp {
   const nombre = limpiarTextoVisible(zona.nombre);
 
   return {
@@ -49,7 +49,7 @@ function prepararZona(zona: ZonaPlanificacion): ZonaPlanificacion {
   };
 }
 
-async function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) {
+async function validarZona(zona: ZonaApp, usuario?: UsuarioAuditoria) {
   if (!zona.clienteId) {
     throw crearErrorValidacion('La zona debe tener clienteId.');
   }
@@ -73,7 +73,7 @@ async function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) 
       throw crearErrorValidacion('La zona ERP seleccionada no existe en la cache importada.');
     }
 
-    const zonaYaVinculada = await prisma.zonaPlanificacion.findFirst({
+    const zonaYaVinculada = await prisma.zonaApp.findFirst({
       where: {
         clienteId: zona.clienteId,
         zonaErpId: zona.zonaErpId,
@@ -87,8 +87,8 @@ async function validarZona(zona: ZonaPlanificacion, usuario?: UsuarioAuditoria) 
   }
 }
 
-export async function obtenerZonasPlanificacionPersistidas(clienteId: string): Promise<ZonaPlanificacion[]> {
-  const zonas = await prisma.zonaPlanificacion.findMany({
+export async function obtenerZonasAppPersistidas(clienteId: string): Promise<ZonaApp[]> {
+  const zonas = await prisma.zonaApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -96,18 +96,18 @@ export async function obtenerZonasPlanificacionPersistidas(clienteId: string): P
   return zonas.map(mapearZona);
 }
 
-export async function guardarZonaPlanificacionPersistida(
+export async function guardarZonaAppPersistida(
   id: string,
-  request: GuardarZonaPlanificacionRequest,
+  request: GuardarZonaAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarZonaPlanificacionResponse> {
+): Promise<GuardarZonaAppResponse> {
   const zona = prepararZona({ ...request.zona, id });
   await validarZona(zona, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.zonaPlanificacion.findUnique({ where: { id } });
+    const existente = await tx.zonaApp.findUnique({ where: { id } });
     const existenteMismoCodigo = zona.codigoInterno
-      ? await tx.zonaPlanificacion.findFirst({
+      ? await tx.zonaApp.findFirst({
         where: {
           clienteId: zona.clienteId,
           codigoInterno: zona.codigoInterno,
@@ -120,7 +120,7 @@ export async function guardarZonaPlanificacionPersistida(
       throw crearErrorValidacion('Ya existe una zona con ese codigo interno.');
     }
 
-    const guardada = await tx.zonaPlanificacion.upsert({
+    const guardada = await tx.zonaApp.upsert({
       where: { id },
       update: {
         empresaErpId: zona.empresaErpId,
@@ -147,7 +147,7 @@ export async function guardarZonaPlanificacionPersistida(
     await registrarAuditoria(tx, {
       clienteId: zona.clienteId,
       usuario,
-      entidad: 'ZonaPlanificacion',
+      entidad: 'ZonaApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

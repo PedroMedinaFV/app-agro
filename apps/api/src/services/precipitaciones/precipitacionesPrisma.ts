@@ -19,9 +19,9 @@ type PrecipitacionRow = {
   id: string;
   clienteId: string;
   usuarioId: string | null;
-  campoPlanificacionId: string;
+  campoAppId: string;
   campoErpId: string | null;
-  lotePlanificacionId: string | null;
+  loteAppId: string | null;
   loteErpId: string | null;
   registroMovilId: string | null;
   milimetros: number;
@@ -41,7 +41,7 @@ type CampoRow = {
 type LoteRow = {
   id: string;
   clienteId: string;
-  campoPlanificacionId: string;
+  campoAppId: string;
   loteErpId: string | null;
 };
 
@@ -61,9 +61,9 @@ function mapearPrecipitacion(row: PrecipitacionRow): PrecipitacionCampo {
     id: row.id,
     clienteId: row.clienteId,
     usuarioId: row.usuarioId || undefined,
-    campoPlanificacionId: row.campoPlanificacionId,
+    campoAppId: row.campoAppId,
     campoErpId: row.campoErpId || undefined,
-    lotePlanificacionId: row.lotePlanificacionId || undefined,
+    loteAppId: row.loteAppId || undefined,
     loteErpId: row.loteErpId || undefined,
     registroMovilId: row.registroMovilId || undefined,
     milimetros: row.milimetros,
@@ -100,7 +100,7 @@ async function validarRequestPrecipitacion(clienteId: string, request: CrearPrec
     throw crearErrorValidacion('El origen de la precipitacion no es valido.');
   }
 
-  if (!request.campoPlanificacionId) {
+  if (!request.campoAppId) {
     throw crearErrorValidacion('La precipitacion debe tener campo.');
   }
 
@@ -119,8 +119,8 @@ async function validarRequestPrecipitacion(clienteId: string, request: CrearPrec
 
   const campo = await prisma.$queryRaw<CampoRow[]>`
     SELECT "id", "clienteId", "campoErpId"
-    FROM "CampoPlanificacion"
-    WHERE "id" = ${request.campoPlanificacionId}
+    FROM "CampoApp"
+    WHERE "id" = ${request.campoAppId}
     LIMIT 1
   `;
 
@@ -130,16 +130,16 @@ async function validarRequestPrecipitacion(clienteId: string, request: CrearPrec
 
   await validarAlcanceCampo(usuario, campo[0]);
 
-  const lote = request.lotePlanificacionId
+  const lote = request.loteAppId
     ? await prisma.$queryRaw<LoteRow[]>`
-      SELECT "id", "clienteId", "campoPlanificacionId", "loteErpId"
-      FROM "LotePlanificacion"
-      WHERE "id" = ${request.lotePlanificacionId}
+      SELECT "id", "clienteId", "campoAppId", "loteErpId"
+      FROM "LoteApp"
+      WHERE "id" = ${request.loteAppId}
       LIMIT 1
     `
     : [];
 
-  if (request.lotePlanificacionId && (!lote[0] || lote[0].clienteId !== clienteId || lote[0].campoPlanificacionId !== request.campoPlanificacionId)) {
+  if (request.loteAppId && (!lote[0] || lote[0].clienteId !== clienteId || lote[0].campoAppId !== request.campoAppId)) {
     throw crearErrorValidacion('El lote seleccionado no pertenece al campo indicado.', 403);
   }
 
@@ -223,9 +223,9 @@ export async function crearPrecipitacionPersistida(
         "id",
         "clienteId",
         "usuarioId",
-        "campoPlanificacionId",
+        "campoAppId",
         "campoErpId",
-        "lotePlanificacionId",
+        "loteAppId",
         "loteErpId",
         "registroMovilId",
         "milimetros",
@@ -238,9 +238,9 @@ export async function crearPrecipitacionPersistida(
         ${id},
         ${clienteId},
         ${usuarioId},
-        ${request.campoPlanificacionId},
+        ${request.campoAppId},
         ${validacion.campo.campoErpId},
-        ${request.lotePlanificacionId || null},
+        ${request.loteAppId || null},
         ${validacion.lote?.loteErpId || null},
         ${request.registroMovilId || null},
         ${request.milimetros},

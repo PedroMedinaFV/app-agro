@@ -107,8 +107,8 @@ function validarProtocolo(protocolo: ProtocoloProductivoDetalle) {
     throw crearErrorValidacion('El protocolo debe tener campaniaErpId.');
   }
 
-  if (!protocolo.actividadPlanificacionId) {
-    throw crearErrorValidacion('El protocolo debe tener actividadPlanificacionId.');
+  if (!protocolo.actividadAppId) {
+    throw crearErrorValidacion('El protocolo debe tener actividadAppId.');
   }
 
   validarFechasProtocolo(protocolo);
@@ -148,7 +148,7 @@ function mapearInsumo(insumo: ProtocoloPrisma['etapas'][number]['insumos'][numbe
     id: insumo.id,
     etapaId: insumo.etapaId,
     indiceAplicacion: insumo.indiceAplicacion,
-    insumoPlanificacionId: insumo.insumoPlanificacionId,
+    insumoAppId: insumo.insumoAppId,
     insumoErpId: insumo.insumoErpId || undefined,
     nombre: insumo.nombre,
     tipo: insumo.tipo || undefined,
@@ -185,12 +185,12 @@ function mapearProtocolo(protocolo: ProtocoloPrisma): ProtocoloProductivoDetalle
     descripcion: protocolo.descripcion,
     protocoloOrigenId: protocolo.protocoloOrigenId || undefined,
     campaniaErpId: protocolo.campaniaErpId,
-    actividadPlanificacionId: protocolo.actividadPlanificacionId,
+    actividadAppId: protocolo.actividadAppId,
     actividadErpId: protocolo.actividadErpId || undefined,
     tipoFecha: protocolo.tipoFecha as ProtocoloProductivoDetalle['tipoFecha'],
     fechaSiembra: serializarFecha(protocolo.fechaSiembra),
-    zonaPlanificacionId: protocolo.zonaPlanificacionId || undefined,
-    campoPlanificacionId: protocolo.campoPlanificacionId || undefined,
+    zonaAppId: protocolo.zonaAppId || undefined,
+    campoAppId: protocolo.campoAppId || undefined,
     costoEstimadoPorHa: protocolo.costoEstimadoPorHa,
     activo: protocolo.activo,
     createdAt: protocolo.createdAt.toISOString(),
@@ -233,7 +233,7 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
           create: etapa.insumos.map((insumo) => ({
             id: insumo.id,
             indiceAplicacion: insumo.indiceAplicacion,
-            insumoPlanificacionId: insumo.insumoPlanificacionId,
+            insumoAppId: insumo.insumoAppId,
             insumoErpId: insumo.insumoErpId,
             nombre: insumo.nombre,
             tipo: insumo.tipo,
@@ -284,12 +284,12 @@ async function guardarProtocoloConCliente(
       protocoloOrigenId: protocolo.protocoloOrigenId,
       empresaErpId: protocolo.empresaErpId,
       campaniaErpId: protocolo.campaniaErpId,
-      actividadPlanificacionId: protocolo.actividadPlanificacionId,
+      actividadAppId: protocolo.actividadAppId,
       actividadErpId: protocolo.actividadErpId,
       tipoFecha: protocolo.tipoFecha,
       fechaSiembra: parsearFecha(protocolo.fechaSiembra),
-      zonaPlanificacionId: protocolo.zonaPlanificacionId,
-      campoPlanificacionId: protocolo.campoPlanificacionId,
+      zonaAppId: protocolo.zonaAppId,
+      campoAppId: protocolo.campoAppId,
       costoEstimadoPorHa: calcularCostoProtocolo(protocolo),
       activo: protocolo.activo,
     },
@@ -301,12 +301,12 @@ async function guardarProtocoloConCliente(
       protocoloOrigenId: protocolo.protocoloOrigenId,
       empresaErpId: protocolo.empresaErpId,
       campaniaErpId: protocolo.campaniaErpId,
-      actividadPlanificacionId: protocolo.actividadPlanificacionId,
+      actividadAppId: protocolo.actividadAppId,
       actividadErpId: protocolo.actividadErpId,
       tipoFecha: protocolo.tipoFecha,
       fechaSiembra: parsearFecha(protocolo.fechaSiembra),
-      zonaPlanificacionId: protocolo.zonaPlanificacionId,
-      campoPlanificacionId: protocolo.campoPlanificacionId,
+      zonaAppId: protocolo.zonaAppId,
+      campoAppId: protocolo.campoAppId,
       costoEstimadoPorHa: calcularCostoProtocolo(protocolo),
       activo: protocolo.activo,
     },
