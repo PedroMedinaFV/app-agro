@@ -53,7 +53,7 @@ La web usa los permisos de la sesion para mostrar u ocultar secciones. Por ejemp
 
 ## Demo
 
-El login demo permite seleccionar rol `admin` o `usuario` para validar permisos sin depender de usuarios reales.
+El login web real no permite seleccionar rol: el rol y los campos asignados se obtienen del backend segun el usuario preconfigurado por el administrador. Para desarrollo local queda un acceso `demo admin` sin selector visible de rol.
 
 ## Alcance por campos
 

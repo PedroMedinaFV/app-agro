@@ -125,6 +125,13 @@ export async function loginDemo(datos: LoginDemoRequest): Promise<SesionUsuario>
   });
 }
 
+export async function loginMicrosoft(idToken: string): Promise<SesionUsuario> {
+  return request<SesionUsuario>('/auth/microsoft', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
+
 export async function obtenerSnapshotErp(token?: string): Promise<ErpSnapshot> {
   return request<ErpSnapshot>('/erp/snapshot', {}, token);
 }

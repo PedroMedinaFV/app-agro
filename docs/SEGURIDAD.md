@@ -98,6 +98,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - La creacion de usuarios debe realizarse desde una pantalla administrativa protegida por `usuarios:gestionar`.
 - La asignacion de campos debe requerir `usuarios:asignar-campos`.
 - El usuario comun solo debe recibir alcance sobre campos ERP asignados explicitamente.
+- La pantalla de login no debe permitir elegir rol; el rol siempre viene de la configuracion persistida del usuario.
 - El enlace con Microsoft debe hacerse por email preconfigurado por un administrador, conservando `clienteId`, rol y campos asignados.
 - La autoalta libre por Microsoft queda fuera del MVP productivo recomendado porque puede crear usuarios sin alcance ni aprobacion administrativa.
 - Toda alta, cambio de rol y reemplazo de campos asignados debe quedar auditado.

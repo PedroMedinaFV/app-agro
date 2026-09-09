@@ -132,15 +132,10 @@ export function App() {
   if (!sesion) {
     return (
       <LoginPanel
-        email={auth.email}
-        onEmailChange={auth.setEmail}
-        password={auth.password}
-        onPasswordChange={auth.setPassword}
-        rol={auth.rol}
-        onRolChange={auth.setRol}
         error={auth.error}
         cargando={auth.cargando}
-        onLogin={auth.entrarModoDemo}
+        onMicrosoftLogin={auth.entrarConMicrosoft}
+        onDemoLogin={auth.entrarModoDemo}
       />
     );
   }

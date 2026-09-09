@@ -35,7 +35,7 @@ Usar `components` cuando la pieza sea reutilizable o estructural, y no tenga ide
 Ejemplos actuales:
 
 - `Layout`: header, sidebar y contenedor principal.
-- `LoginPanel`: formulario visual de acceso demo.
+- `LoginPanel`: panel visual de acceso Microsoft con fallback demo admin para desarrollo local.
 
 Si un componente empieza a manejar reglas de negocio, esa logica debe ir a un hook.
 

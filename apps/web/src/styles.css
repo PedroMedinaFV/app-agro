@@ -219,6 +219,10 @@ input:focus {
   color: #8a1f1f;
 }
 
+.full-width {
+  width: 100%;
+}
+
 .tree-toggle-button {
   min-height: 30px;
   padding: 0 9px;
