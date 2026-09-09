@@ -662,6 +662,9 @@ model ActividadPlanificacion {
   especieErpId          String?
   nombre                String
   codigoInterno         String?
+  tipoGrano             String?
+  tipoCultivo           String?
+  epocaSiembra          String?
   estadoVinculacion     String   @default("provisorio")
   createdBy             String?
   updatedBy             String?

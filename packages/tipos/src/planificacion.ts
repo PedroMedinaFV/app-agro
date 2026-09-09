@@ -4,6 +4,12 @@ export type EstadoVinculacionPlanificacion = 'provisorio' | 'vinculado_erp' | 'a
 
 export type TipoFechaProtocolo = 'absoluta' | 'relativa_siembra';
 
+export type TipoGranoActividad = 'fina' | 'gruesa';
+
+export type TipoCultivoActividad = 'primera' | 'segunda';
+
+export type EpocaSiembraActividad = 'invierno' | 'verano';
+
 export type ZonaPlanificacion = {
   id: string;
   clienteId: string;
@@ -65,6 +71,9 @@ export type ActividadPlanificacion = {
   especieErpId?: string;
   nombre: string;
   codigoInterno?: string;
+  tipoGrano?: TipoGranoActividad;
+  tipoCultivo?: TipoCultivoActividad;
+  epocaSiembra?: EpocaSiembraActividad;
   estadoVinculacion: EstadoVinculacionPlanificacion;
   createdAt: string;
   updatedAt: string;

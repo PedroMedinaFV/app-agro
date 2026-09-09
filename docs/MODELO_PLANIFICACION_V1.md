@@ -166,6 +166,9 @@ Campos sugeridos:
 - `especiePlanificacionId` opcional
 - `nombre`
 - `codigoInterno`
+- `tipoGrano` opcional: `fina` o `gruesa`
+- `tipoCultivo` opcional: `primera` o `segunda`
+- `epocaSiembra` opcional: `invierno` o `verano`
 - `estadoVinculacion`
 - `createdBy`
 - `updatedBy`
@@ -176,6 +179,7 @@ Reglas:
 
 - Si `actividadErpId` existe, la actividad esta vinculada al ERP.
 - Si `actividadErpId` no existe, la actividad es provisoria.
+- `tipoGrano`, `tipoCultivo` y `epocaSiembra` son atributos propios de Agro App. Sirven para clasificacion, filtros, reportes y reglas de planificacion, sin modificar la cache ERP.
 - Puede usarse en lineas de planificacion, destinos, precios, gastos y protocolos.
 
 ### InsumoPlanificacion

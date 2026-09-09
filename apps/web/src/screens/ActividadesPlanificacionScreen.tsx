@@ -34,6 +34,9 @@ type ActividadTabla = {
   nombre: string;
   detalle: string;
   especie: string;
+  tipoGrano: string;
+  tipoCultivo: string;
+  epocaSiembra: string;
   origen: string;
   estado: string;
   accion: 'editar' | 'importada';
@@ -49,6 +52,10 @@ function normalizarCodigo(valor: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
+}
+
+function formatearAtributoActividad(valor?: string) {
+  return valor ? valor.charAt(0).toUpperCase() + valor.slice(1) : 'Sin definir';
 }
 
 function crearActividadNueva(clienteId: string, especie?: EspecieSeleccionable): ActividadPlanificacion {
@@ -151,7 +158,7 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
   ), [actividadPropiaParaVincular, actividadesErpDisponiblesParaVincular]);
   const actividadesPropiasFiltradas = actividadesPropias.filter((actividad) => !actividad.actividadErpId).filter((actividad) => {
     const especie = actividad.especiePlanificacionId ? especiesPropiasPorId.get(actividad.especiePlanificacionId)?.nombre : especiesPorErpId.get(actividad.especieErpId || '')?.nombre;
-    return normalizarCodigo(`${actividad.codigoInterno || ''} ${actividad.nombre} ${especie || ''}`).includes(filtroNormalizado);
+    return normalizarCodigo(`${actividad.codigoInterno || ''} ${actividad.nombre} ${especie || ''} ${actividad.tipoGrano || ''} ${actividad.tipoCultivo || ''} ${actividad.epocaSiembra || ''}`).includes(filtroNormalizado);
   });
   const actividadesErpFiltradas = actividadesErp.filter((actividad) => {
     const especie = actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre : '';
@@ -167,6 +174,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
       nombre: actividad.nombre,
       detalle: actividad.codigoInterno || 'Sin codigo interno',
       especie: obtenerNombreEspecie(actividad),
+      tipoGrano: formatearAtributoActividad(actividad.tipoGrano),
+      tipoCultivo: formatearAtributoActividad(actividad.tipoCultivo),
+      epocaSiembra: formatearAtributoActividad(actividad.epocaSiembra),
       origen: 'Agro App',
       estado: actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : actividad.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP',
       accion: 'editar' as const,
@@ -177,6 +187,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
       nombre: actividad.descripcion,
       detalle: `${actividad.codigo} - ALBOR #${actividad.idActividad}`,
       especie: actividad.idEspecie ? especiesPorIdNumerico.get(actividad.idEspecie)?.nombre || `Especie ${actividad.idEspecie}` : 'Sin especie',
+      tipoGrano: 'Sin definir',
+      tipoCultivo: 'Sin definir',
+      epocaSiembra: 'Sin definir',
       origen: 'ERP',
       estado: actividadesVinculadas.has(actividad.erpId) ? 'Vinculada' : 'Disponible',
       accion: 'importada' as const,
@@ -379,6 +392,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
           columns={[
             { key: 'actividad', label: 'Actividad', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
             { key: 'especie', label: 'Especie', width: 'minmax(130px, 1fr)', render: (fila) => fila.especie },
+            { key: 'tipoGrano', label: 'Grano', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.tipoGrano },
+            { key: 'tipoCultivo', label: 'Cultivo', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.tipoCultivo },
+            { key: 'epocaSiembra', label: 'Epoca', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.epocaSiembra },
             { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.origen },
             { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.75fr)', render: (fila) => <em>{fila.estado}</em> },
             {
@@ -415,6 +431,9 @@ export function ActividadesPlanificacionScreen({ sesion, puedeConfigurarPlanific
               <label>Estado<select value={actividadEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ActividadPlanificacion['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
               <label className="reference-wide">Nombre<input value={actividadEnEdicion.nombre} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la actividad" /></label>
               <label className="reference-wide">Especie<select value={obtenerClaveEspecie(actividadEnEdicion)} onChange={(event) => seleccionarEspecie(event.target.value)}><option value="">Seleccionar especie</option>{especiesDisponibles.map((especie) => <option key={especie.clave} value={especie.clave}>{especie.codigo ? `${especie.codigo} - ` : ''}{especie.nombre} ({especie.origen === 'erp' ? 'ERP' : 'Agro App'})</option>)}</select></label>
+              <label>Tipo de grano<select value={actividadEnEdicion.tipoGrano || ''} onChange={(event) => actualizarBorrador({ tipoGrano: event.target.value as ActividadPlanificacion['tipoGrano'] || undefined })}><option value="">Sin definir</option><option value="fina">Fina</option><option value="gruesa">Gruesa</option></select></label>
+              <label>Tipo de cultivo<select value={actividadEnEdicion.tipoCultivo || ''} onChange={(event) => actualizarBorrador({ tipoCultivo: event.target.value as ActividadPlanificacion['tipoCultivo'] || undefined })}><option value="">Sin definir</option><option value="primera">Primera</option><option value="segunda">Segunda</option></select></label>
+              <label>Epoca de siembra<select value={actividadEnEdicion.epocaSiembra || ''} onChange={(event) => actualizarBorrador({ epocaSiembra: event.target.value as ActividadPlanificacion['epocaSiembra'] || undefined })}><option value="">Sin definir</option><option value="invierno">Invierno</option><option value="verano">Verano</option></select></label>
             </div>
             {existeCodigoDuplicado && <p className="form-error">Ya existe una actividad propia con ese codigo interno.</p>}
             <div className="modal-actions">

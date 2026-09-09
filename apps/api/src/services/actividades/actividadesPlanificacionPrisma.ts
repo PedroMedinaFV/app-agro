@@ -1,9 +1,20 @@
-import type { ActividadPlanificacion, GuardarActividadPlanificacionRequest, GuardarActividadPlanificacionResponse } from '@agro/tipos';
+import type {
+  ActividadPlanificacion,
+  EpocaSiembraActividad,
+  GuardarActividadPlanificacionRequest,
+  GuardarActividadPlanificacionResponse,
+  TipoCultivoActividad,
+  TipoGranoActividad,
+} from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
 type ActividadPrisma = Prisma.ActividadPlanificacionGetPayload<Record<string, never>>;
+
+const TIPOS_GRANO_VALIDOS = new Set<TipoGranoActividad>(['fina', 'gruesa']);
+const TIPOS_CULTIVO_VALIDOS = new Set<TipoCultivoActividad>(['primera', 'segunda']);
+const EPOCAS_SIEMBRA_VALIDAS = new Set<EpocaSiembraActividad>(['invierno', 'verano']);
 
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -23,6 +34,10 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
+function normalizarOmitirVacio<T extends string>(valor: T | undefined) {
+  return valor && valor.trim() ? valor : undefined;
+}
+
 function mapearActividad(actividad: ActividadPrisma): ActividadPlanificacion {
   return {
     id: actividad.id,
@@ -33,6 +48,9 @@ function mapearActividad(actividad: ActividadPrisma): ActividadPlanificacion {
     especieErpId: actividad.especieErpId || undefined,
     nombre: actividad.nombre,
     codigoInterno: actividad.codigoInterno || undefined,
+    tipoGrano: actividad.tipoGrano as ActividadPlanificacion['tipoGrano'] || undefined,
+    tipoCultivo: actividad.tipoCultivo as ActividadPlanificacion['tipoCultivo'] || undefined,
+    epocaSiembra: actividad.epocaSiembra as ActividadPlanificacion['epocaSiembra'] || undefined,
     estadoVinculacion: actividad.estadoVinculacion as ActividadPlanificacion['estadoVinculacion'],
     createdAt: actividad.createdAt.toISOString(),
     updatedAt: actividad.updatedAt.toISOString(),
@@ -47,6 +65,9 @@ function prepararActividad(actividad: ActividadPlanificacion): ActividadPlanific
     empresaErpId: actividad.empresaErpId || 'global',
     nombre,
     codigoInterno: actividad.codigoInterno ? normalizarCodigo(actividad.codigoInterno) : normalizarCodigo(nombre),
+    tipoGrano: normalizarOmitirVacio(actividad.tipoGrano),
+    tipoCultivo: normalizarOmitirVacio(actividad.tipoCultivo),
+    epocaSiembra: normalizarOmitirVacio(actividad.epocaSiembra),
     estadoVinculacion: actividad.actividadErpId ? 'vinculado_erp' : actividad.estadoVinculacion || 'provisorio',
   };
 }
@@ -66,6 +87,18 @@ async function validarActividad(actividad: ActividadPlanificacion, usuario?: Usu
 
   if (!actividad.especiePlanificacionId && !actividad.especieErpId) {
     throw crearErrorValidacion('La actividad debe estar asociada a una especie.');
+  }
+
+  if (actividad.tipoGrano && !TIPOS_GRANO_VALIDOS.has(actividad.tipoGrano)) {
+    throw crearErrorValidacion('El tipo de grano de la actividad no es valido.');
+  }
+
+  if (actividad.tipoCultivo && !TIPOS_CULTIVO_VALIDOS.has(actividad.tipoCultivo)) {
+    throw crearErrorValidacion('El tipo de cultivo de la actividad no es valido.');
+  }
+
+  if (actividad.epocaSiembra && !EPOCAS_SIEMBRA_VALIDAS.has(actividad.epocaSiembra)) {
+    throw crearErrorValidacion('La epoca de siembra de la actividad no es valida.');
   }
 
   const especiePlanificacion = actividad.especiePlanificacionId
@@ -152,6 +185,9 @@ export async function guardarActividadPlanificacionPersistida(
         especieErpId: actividad.especieErpId ?? null,
         nombre: actividad.nombre,
         codigoInterno: actividad.codigoInterno ?? null,
+        tipoGrano: actividad.tipoGrano ?? null,
+        tipoCultivo: actividad.tipoCultivo ?? null,
+        epocaSiembra: actividad.epocaSiembra ?? null,
         estadoVinculacion: actividad.estadoVinculacion,
         updatedBy: usuario?.id,
       },
@@ -164,6 +200,9 @@ export async function guardarActividadPlanificacionPersistida(
         especieErpId: actividad.especieErpId ?? null,
         nombre: actividad.nombre,
         codigoInterno: actividad.codigoInterno ?? null,
+        tipoGrano: actividad.tipoGrano ?? null,
+        tipoCultivo: actividad.tipoCultivo ?? null,
+        epocaSiembra: actividad.epocaSiembra ?? null,
         estadoVinculacion: actividad.estadoVinculacion,
         createdBy: usuario?.id,
         updatedBy: usuario?.id,
