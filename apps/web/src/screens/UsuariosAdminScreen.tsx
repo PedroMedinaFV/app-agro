@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ErpCampo, RolUsuario, SesionUsuario, UsuarioAdminResumen } from '@agro/tipos';
+import type { ErpCampo, ErpZona, RolUsuario, SesionUsuario, UsuarioAdminResumen } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import {
   guardarCamposUsuarioAdmin,
   guardarUsuarioAdmin,
   obtenerCamposErpImportados,
   obtenerUsuariosAdmin,
+  obtenerZonasErpImportadas,
 } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -46,6 +47,7 @@ function crearFormularioDesdeUsuario(usuario: UsuarioAdminResumen): UsuarioFormu
 export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenProps) {
   const [usuarios, setUsuarios] = useState<UsuarioAdminResumen[]>([]);
   const [campos, setCampos] = useState<ErpCampo[]>([]);
+  const [zonas, setZonas] = useState<ErpZona[]>([]);
   const [usuarioEnEdicion, setUsuarioEnEdicion] = useState<UsuarioFormulario | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [estado, setEstado] = useState('Cargando usuarios.');
@@ -59,16 +61,54 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
     () => new Map(camposAsignables.map((campo) => [campo.erpId, campo.nombre])),
     [camposAsignables],
   );
+  const zonasPorId = useMemo(() => {
+    const mapa = new Map<number, ErpZona>();
+
+    for (const zona of zonas) {
+      if (!mapa.has(zona.idZona)) {
+        mapa.set(zona.idZona, zona);
+      }
+    }
+
+    return mapa;
+  }, [zonas]);
+  const camposPorZona = useMemo(() => {
+    const grupos = new Map<string, { idZona?: number; nombre: string; campos: ErpCampo[] }>();
+
+    for (const campo of camposAsignables) {
+      const zona = typeof campo.idZona === 'number' ? zonasPorId.get(campo.idZona) : undefined;
+      const clave = typeof campo.idZona === 'number' ? `zona:${campo.idZona}` : 'sin-zona';
+
+      if (!grupos.has(clave)) {
+        grupos.set(clave, {
+          idZona: campo.idZona,
+          nombre: zona ? `${zona.codigo} - ${zona.nombre}` : 'Sin zona',
+          campos: [],
+        });
+      }
+
+      grupos.get(clave)?.campos.push(campo);
+    }
+
+    return Array.from(grupos.values())
+      .map((grupo) => ({
+        ...grupo,
+        campos: grupo.campos.sort((a, b) => a.nombre.localeCompare(b.nombre)),
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [camposAsignables, zonasPorId]);
 
   async function cargarDatos() {
     try {
-      const [respuestaUsuarios, respuestaCampos] = await Promise.all([
+      const [respuestaUsuarios, respuestaCampos, respuestaZonas] = await Promise.all([
         obtenerUsuariosAdmin(sesion.token),
         obtenerCamposErpImportados(sesion.token),
+        obtenerZonasErpImportadas(sesion.token),
       ]);
 
       setUsuarios(respuestaUsuarios.usuarios);
       setCampos(respuestaCampos.campos);
+      setZonas(respuestaZonas.zonas);
       setEstado('Usuarios cargados desde backend.');
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar usuarios.';
@@ -96,6 +136,27 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
         : [...actual.camposAsignados, campoErpId];
 
       return { ...actual, camposAsignados };
+    });
+  }
+
+  function alternarZona(campoErpIds: string[]) {
+    setUsuarioEnEdicion((actual) => {
+      if (!actual) {
+        return actual;
+      }
+
+      const todosSeleccionados = campoErpIds.every((campoErpId) => actual.camposAsignados.includes(campoErpId));
+      const seleccion = new Set(actual.camposAsignados);
+
+      for (const campoErpId of campoErpIds) {
+        if (todosSeleccionados) {
+          seleccion.delete(campoErpId);
+        } else {
+          seleccion.add(campoErpId);
+        }
+      }
+
+      return { ...actual, camposAsignados: Array.from(seleccion) };
     });
   }
 
@@ -240,21 +301,46 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                   <h3>Campos asignados</h3>
                   <p className="hint">Solo se muestran campos ERP sincronizados de empresas AGRO. Estos definen el alcance operativo y de seguridad del usuario comun.</p>
                 </div>
-                <div className="field-picker-grid">
-                  {camposAsignables.map((campo) => (
-                    <label key={campo.erpId} className="field-picker-item">
-                      <input
-                        type="checkbox"
-                        checked={usuarioEnEdicion.camposAsignados.includes(campo.erpId)}
-                        disabled={guardando || !puedeAsignarCampos}
-                        onChange={() => alternarCampo(campo.erpId)}
-                      />
-                      <span>
-                        <strong>{campo.nombre}</strong>
-                        <small>{campo.codigo || campo.erpId}</small>
-                      </span>
-                    </label>
-                  ))}
+                <div className="field-zone-list">
+                  {camposPorZona.map((grupo) => {
+                    const campoErpIds = grupo.campos.map((campo) => campo.erpId);
+                    const cantidadSeleccionada = campoErpIds.filter((campoErpId) => usuarioEnEdicion.camposAsignados.includes(campoErpId)).length;
+                    const todosSeleccionados = cantidadSeleccionada === campoErpIds.length && campoErpIds.length > 0;
+
+                    return (
+                      <section className="field-zone-group" key={grupo.idZona ?? 'sin-zona'}>
+                        <label className="field-zone-header">
+                          <input
+                            type="checkbox"
+                            checked={todosSeleccionados}
+                            disabled={guardando || !puedeAsignarCampos || campoErpIds.length === 0}
+                            onChange={() => alternarZona(campoErpIds)}
+                          />
+                          <span>
+                            <strong>{grupo.nombre}</strong>
+                            <small>{cantidadSeleccionada} de {campoErpIds.length} campos seleccionados</small>
+                          </span>
+                        </label>
+
+                        <div className="field-picker-grid">
+                          {grupo.campos.map((campo) => (
+                            <label key={campo.erpId} className="field-picker-item">
+                              <input
+                                type="checkbox"
+                                checked={usuarioEnEdicion.camposAsignados.includes(campo.erpId)}
+                                disabled={guardando || !puedeAsignarCampos}
+                                onChange={() => alternarCampo(campo.erpId)}
+                              />
+                              <span>
+                                <strong>{campo.nombre}</strong>
+                                <small>{campo.codigo || campo.erpId}</small>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               </section>
             )}

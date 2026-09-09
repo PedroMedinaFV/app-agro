@@ -1664,8 +1664,38 @@ nav a.active .nav-icon,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
-  max-height: 280px;
+}
+
+.field-zone-list {
+  display: grid;
+  gap: 14px;
+  max-height: 360px;
   overflow: auto;
+  padding-right: 4px;
+}
+
+.field-zone-group {
+  display: grid;
+  gap: 10px;
+}
+
+.field-zone-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border: 1px solid #cbded2;
+  border-radius: 8px;
+  background: #eef6f0;
+}
+
+.field-zone-header span {
+  display: grid;
+  gap: 3px;
+}
+
+.field-zone-header small {
+  color: #53625a;
 }
 
 .field-picker-item {

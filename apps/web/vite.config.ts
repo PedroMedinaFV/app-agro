@@ -4,6 +4,7 @@ import path from 'node:path';
 
 export default defineConfig({
   plugins: [react()],
+  envDir: path.resolve(__dirname, '../..'),
   resolve: {
     alias: {
       '@agro/tipos': path.resolve(__dirname, '../../packages/tipos/src/index.ts'),

@@ -39,8 +39,17 @@ Configura una App Registration en Microsoft Entra ID y usa el mismo Application/
 
 ```bash
 MICROSOFT_CLIENT_ID="..."
+VITE_MICROSOFT_CLIENT_ID="..."
 EXPO_PUBLIC_MICROSOFT_CLIENT_ID="..."
 ```
+
+Para desarrollo web, registra este redirect URI como Single-page application:
+
+```text
+http://localhost:5173
+```
+
+La web usa Vite y lee las variables `VITE_*` desde el `.env` de la raiz del monorepo. Despues de cambiar `VITE_MICROSOFT_CLIENT_ID`, `VITE_MICROSOFT_TENANT_ID` o `VITE_MICROSOFT_REDIRECT_URI`, hay que reiniciar `pnpm --filter agro-app-web dev`.
 
 Para desarrollo mobile, registra este redirect URI:
 
