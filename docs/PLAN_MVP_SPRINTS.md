@@ -341,7 +341,9 @@ Incluye:
 - [x] precarga de lotes activos al crear escenario, organizados como arbol zona-campo;
 - [x] copia de linea para doble cultivo y copia de escenario para simulaciones;
 - [x] pantalla completa de edicion tipo planilla;
+- [x] acciones masivas sobre lineas filtradas para aplicar protocolo, destino o rinde;
 - [x] lineas por lote y protocolo, tomando la actividad desde el protocolo cuando corresponde;
+- [x] resumen por zona/campo con hectareas, margen, pendientes y duplicados;
 - [x] select de lote dependiente del campo de la linea;
 - [x] propuesta automatica de destino, precio y gastos;
 - [x] carga de rinde estimado y hectareas;
@@ -365,7 +367,9 @@ Pendientes de refinamiento antes de cerrar sprint:
 
 - revisar ergonomia final de la planilla con datos reales voluminosos;
 - [x] mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
-- validar con usuario el flujo de edicion masiva antes de darlo por cerrado.
+- [x] mostrar indicadores por zona/campo para ubicar pendientes sin abrir toda la planilla;
+- [x] validar con usuario una primera version de edicion masiva basada en filtros.
+- validar en navegador con datos reales si la edicion masiva alcanza para cerrar el sprint.
 
 ## Sprint 6 - Mobile operativo V1
 

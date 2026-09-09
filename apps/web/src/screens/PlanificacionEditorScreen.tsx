@@ -55,6 +55,10 @@ export function PlanificacionEditorScreen({
   const [filtroZonaId, setFiltroZonaId] = useState('');
   const [filtroCampoId, setFiltroCampoId] = useState('');
   const [filtroEstadoCarga, setFiltroEstadoCarga] = useState<EstadoCargaFiltro>('todos');
+  const [protocoloMasivoId, setProtocoloMasivoId] = useState('');
+  const [destinoMasivo, setDestinoMasivo] = useState('');
+  const [rindeMasivo, setRindeMasivo] = useState('');
+  const [resultadoAccionMasiva, setResultadoAccionMasiva] = useState('');
   const zonasParaFiltro = useMemo(() => {
     const zonas = new Map<string, string>();
 
@@ -162,6 +166,30 @@ export function PlanificacionEditorScreen({
         campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       }));
   }, [lineasFiltradas, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+  const protocolosParaAccionMasiva = useMemo(() => {
+    const protocolos = new Map<string, { id: string; nombre: string }>();
+
+    for (const linea of lineasFiltradas) {
+      for (const protocolo of obtenerProtocolosParaLinea(linea)) {
+        protocolos.set(protocolo.id, { id: protocolo.id, nombre: protocolo.nombre });
+      }
+    }
+
+    return Array.from(protocolos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [lineasFiltradas, planificacion.protocolos, planificacionActiva?.campaniaErpId, camposPlanificacionPorId]);
+  const destinosParaAccionMasiva = useMemo(() => {
+    const destinos = new Map<string, string>();
+
+    for (const linea of lineasFiltradas) {
+      for (const destino of planificacion.destinosReferencia) {
+        if (destino.activo && (!destino.actividadPlanificacionId || destino.actividadPlanificacionId === linea.actividadPlanificacionId)) {
+          destinos.set(normalizarTexto(destino.destinoVenta), destino.destinoVenta);
+        }
+      }
+    }
+
+    return Array.from(destinos.values()).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [lineasFiltradas, planificacion.destinosReferencia]);
 
   useEffect(() => {
     setZonasAbiertas((actuales) => {
@@ -275,6 +303,76 @@ export function PlanificacionEditorScreen({
     setFiltroZonaId('');
     setFiltroCampoId('');
     setFiltroEstadoCarga('todos');
+  }
+
+  function aplicarProtocoloAFiltradas() {
+    if (!protocoloMasivoId || !puedeEditarPlanificacion) {
+      return;
+    }
+
+    let aplicadas = 0;
+
+    for (const linea of lineasFiltradas) {
+      if (obtenerProtocolosParaLinea(linea).some((protocolo) => protocolo.id === protocoloMasivoId)) {
+        cambiarProtocolo(linea.id, protocoloMasivoId);
+        aplicadas += 1;
+      }
+    }
+
+    setResultadoAccionMasiva(`Protocolo aplicado en ${aplicadas} de ${lineasFiltradas.length} linea(s) filtradas.`);
+  }
+
+  function aplicarDestinoAFiltradas() {
+    if (!destinoMasivo || !puedeEditarPlanificacion) {
+      return;
+    }
+
+    let aplicadas = 0;
+
+    for (const linea of lineasFiltradas) {
+      const destinoCompatible = planificacion.destinosReferencia.some((destino) => (
+        destino.activo
+        && destino.destinoVenta === destinoMasivo
+        && (!destino.actividadPlanificacionId || destino.actividadPlanificacionId === linea.actividadPlanificacionId)
+      ));
+
+      if (destinoCompatible) {
+        cambiarDestino(linea.id, destinoMasivo);
+        aplicadas += 1;
+      }
+    }
+
+    setResultadoAccionMasiva(`Destino aplicado en ${aplicadas} de ${lineasFiltradas.length} linea(s) filtradas.`);
+  }
+
+  function aplicarRindeAFiltradas() {
+    const rinde = leerNumero(rindeMasivo);
+
+    if (!Number.isFinite(rinde) || rinde < 0 || !puedeEditarPlanificacion) {
+      return;
+    }
+
+    for (const linea of lineasFiltradas) {
+      actualizarLinea(linea.id, { rindeEstimado: rinde });
+    }
+
+    setResultadoAccionMasiva(`Rinde aplicado en ${lineasFiltradas.length} linea(s) filtradas.`);
+  }
+
+  function lineaEstaCompleta(linea: PlanificacionAgricolaLinea) {
+    return Boolean(linea.protocoloId && linea.destinoVenta && linea.hectareasPlanificadas > 0 && linea.rindeEstimado > 0 && linea.precioVentaEstimado > 0);
+  }
+
+  function calcularResumenGrupo(lineas: PlanificacionAgricolaLinea[]) {
+    return {
+      hectareas: lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
+      margen: lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
+      pendientes: lineas.filter((linea) => !lineaEstaCompleta(linea)).length,
+      duplicadas: lineas.filter((linea) => {
+        const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
+        return clavesDuplicadas.has(claveLinea);
+      }).length,
+    };
   }
 
   function obtenerNombreZona(zonaPlanificacionId?: string, zonaErpId?: string) {
@@ -556,6 +654,52 @@ export function PlanificacionEditorScreen({
           </div>
         </section>
 
+        <section className="planning-bulk-actions" aria-label="Acciones masivas de planificacion">
+          <div>
+            <p className="eyebrow">Acciones masivas</p>
+            <h3>Aplicar sobre lineas filtradas</h3>
+          </div>
+          <label>
+            Protocolo
+            <select value={protocoloMasivoId} onChange={(event) => setProtocoloMasivoId(event.target.value)}>
+              <option value="">Seleccionar protocolo</option>
+              {protocolosParaAccionMasiva.map((protocolo) => (
+                <option key={protocolo.id} value={protocolo.id}>{protocolo.nombre}</option>
+              ))}
+            </select>
+          </label>
+          <button className="small" type="button" onClick={aplicarProtocoloAFiltradas} disabled={!puedeEditarPlanificacion || !protocoloMasivoId || lineasFiltradas.length === 0}>
+            Aplicar protocolo
+          </button>
+          <label>
+            Destino
+            <select value={destinoMasivo} onChange={(event) => setDestinoMasivo(event.target.value)}>
+              <option value="">Seleccionar destino</option>
+              {destinosParaAccionMasiva.map((destino) => (
+                <option key={destino} value={destino}>{destino}</option>
+              ))}
+            </select>
+          </label>
+          <button className="small" type="button" onClick={aplicarDestinoAFiltradas} disabled={!puedeEditarPlanificacion || !destinoMasivo || lineasFiltradas.length === 0}>
+            Aplicar destino
+          </button>
+          <label>
+            Rinde tn/ha
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={rindeMasivo}
+              onChange={(event) => setRindeMasivo(event.target.value)}
+              placeholder="Ej. 3.20"
+            />
+          </label>
+          <button className="small" type="button" onClick={aplicarRindeAFiltradas} disabled={!puedeEditarPlanificacion || !rindeMasivo || lineasFiltradas.length === 0}>
+            Aplicar rinde
+          </button>
+          {resultadoAccionMasiva && <span className="bulk-action-result">{resultadoAccionMasiva}</span>}
+        </section>
+
         <div className="planning-table">
           {lineasAgrupadas.length === 0 && (
             <p className="hint">{lineasPlanificacion.length === 0 ? 'No hay lotes activos para planificar. Primero crea o sincroniza lotes.' : 'No hay lineas que coincidan con los filtros aplicados.'}</p>
@@ -575,38 +719,57 @@ export function PlanificacionEditorScreen({
             </div>
           )}
           {lineasAgrupadas.map((zona) => (
-            <details
-              className="planning-tree-zone"
-              key={zona.id}
-              open={zonasAbiertas.has(zona.id)}
-              onToggle={(event) => alternarZona(zona.id, event.currentTarget.open)}
-            >
-              <summary>
-                <strong>{zona.nombre}</strong>
-                <span>{zona.campos.reduce((total, campo) => total + campo.lineas.length, 0)} lotes</span>
-                <div className="planning-tree-summary-actions">
-                  <button className="small tree-toggle-button" type="button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
-                    {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
-                  </button>
-                </div>
-              </summary>
-              {zona.campos.map((campo) => (
+            (() => {
+              const lineasZona = zona.campos.flatMap((campo) => campo.lineas);
+              const resumenZona = calcularResumenGrupo(lineasZona);
+
+              return (
                 <details
-                  className="planning-tree-field"
-                  key={campo.id}
-                  open={camposAbiertos.has(campo.id)}
-                  onToggle={(event) => alternarCampo(campo.id, event.currentTarget.open)}
+                  className="planning-tree-zone"
+                  key={zona.id}
+                  open={zonasAbiertas.has(zona.id)}
+                  onToggle={(event) => alternarZona(zona.id, event.currentTarget.open)}
                 >
                   <summary>
-                    <strong>{campo.nombre}</strong>
-                    <span>{campo.lineas.length} linea(s)</span>
+                    <strong>{zona.nombre}</strong>
+                    <span>{lineasZona.length} linea(s)</span>
+                    <span>{resumenZona.hectareas.toFixed(2)} ha</span>
+                    <span>{formatearUsd(resumenZona.margen)}</span>
+                    {resumenZona.pendientes > 0 && <em>{resumenZona.pendientes} pendiente(s)</em>}
+                    {resumenZona.duplicadas > 0 && <em className="summary-danger">{resumenZona.duplicadas} duplicada(s)</em>}
+                    <div className="planning-tree-summary-actions">
+                      <button className="small tree-toggle-button" type="button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
+                        {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
+                      </button>
+                    </div>
                   </summary>
-                  <div className="planning-tree-lines">
-                    {campo.lineas.map(renderLinea)}
-                  </div>
+                  {zona.campos.map((campo) => {
+                    const resumenCampo = calcularResumenGrupo(campo.lineas);
+
+                    return (
+                      <details
+                        className="planning-tree-field"
+                        key={campo.id}
+                        open={camposAbiertos.has(campo.id)}
+                        onToggle={(event) => alternarCampo(campo.id, event.currentTarget.open)}
+                      >
+                        <summary>
+                          <strong>{campo.nombre}</strong>
+                          <span>{campo.lineas.length} linea(s)</span>
+                          <span>{resumenCampo.hectareas.toFixed(2)} ha</span>
+                          <span>{formatearUsd(resumenCampo.margen)}</span>
+                          {resumenCampo.pendientes > 0 && <em>{resumenCampo.pendientes} pendiente(s)</em>}
+                          {resumenCampo.duplicadas > 0 && <em className="summary-danger">{resumenCampo.duplicadas} duplicada(s)</em>}
+                        </summary>
+                        <div className="planning-tree-lines">
+                          {campo.lineas.map(renderLinea)}
+                        </div>
+                      </details>
+                    );
+                  })}
                 </details>
-              ))}
-            </details>
+              );
+            })()
           ))}
         </div>
       </section>

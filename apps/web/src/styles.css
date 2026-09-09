@@ -1292,6 +1292,34 @@ nav a.active .nav-icon,
   font-size: 18px;
 }
 
+.planning-bulk-actions {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 1fr) auto minmax(150px, 1fr) auto minmax(120px, 0.7fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid #d8e4dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.planning-bulk-actions h3 {
+  margin: 2px 0 0;
+  font-size: 15px;
+}
+
+.planning-bulk-actions button {
+  min-height: 38px;
+}
+
+.bulk-action-result {
+  grid-column: 1 / -1;
+  color: #2d6a4f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .planning-table {
   display: grid;
   gap: 12px;
@@ -1354,6 +1382,24 @@ nav a.active .nav-icon,
   color: #64736a;
   font-size: 13px;
   font-weight: 700;
+}
+
+.planning-tree-zone > summary em,
+.planning-tree-field > summary em {
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #6c4a00;
+  background: #fff4d6;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.planning-tree-zone > summary em.summary-danger,
+.planning-tree-field > summary em.summary-danger {
+  color: #8a1f1f;
+  background: #ffe4e4;
 }
 
 .planning-tree-field {
@@ -1873,6 +1919,7 @@ nav a.active .nav-icon,
   .protocol-row,
   .planning-summary-row,
   .planning-filters,
+  .planning-bulk-actions,
   .planning-editor-header,
   .planning-row {
     grid-template-columns: 1fr;
