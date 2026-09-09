@@ -59,6 +59,7 @@ import {
   ResolverNotificacionVinculacionRequest,
   ResolverNotificacionVinculacionResponse,
   SesionUsuario,
+  SincronizacionesErpHistorialResponse,
   UsuariosAdminResponse,
   ZonaPlanificacion,
 } from '@agro/tipos';
@@ -167,6 +168,10 @@ export async function sincronizarPadronesErp(token?: string, items?: PadronErpSi
     method: 'POST',
     body: JSON.stringify({ items }),
   }, token);
+}
+
+export async function obtenerHistorialSincronizacionesErp(token?: string): Promise<SincronizacionesErpHistorialResponse> {
+  return request<SincronizacionesErpHistorialResponse>('/erp/sincronizaciones', {}, token);
 }
 
 export type CamposErpImportadosResponse = {

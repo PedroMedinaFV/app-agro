@@ -34,6 +34,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - Cada registro importado guarda `empresaErpId` para trazabilidad.
 - Los identificadores internos incluyen empresa para evitar colisiones entre tenants o empresas.
 - Durante el MVP temprano, la sincronizacion manual bloquea corridas simultaneas por cliente en memoria.
+- Cada corrida manual debe dejar historial persistido con usuario, cliente, items solicitados, items ejecutados, estado, resultado y errores.
 - Antes de produccion, el bloqueo de corridas simultaneas debe persistirse en base de datos para sobrevivir reinicios, multiples instancias y refrescos de navegador.
 - La sincronizacion futura debe guardar job, estado, usuario iniciador, fechas, conteos y errores sin exponer secretos ni tokens ERP.
 

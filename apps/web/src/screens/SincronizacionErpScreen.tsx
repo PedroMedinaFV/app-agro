@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { PadronErpSincronizable, padronesErpSincronizables } from '@agro/tipos';
+import { PadronErpSincronizable, padronesErpSincronizables, SincronizacionErpHistorialItem } from '@agro/tipos';
 import type { SincronizacionErpResultado } from '../services/api';
+import { DataTable } from '../components/DataTable';
 
 type SincronizacionItem = {
   id: PadronErpSincronizable;
@@ -12,6 +13,7 @@ interface SincronizacionErpScreenProps {
   puedeConfigurarErp: boolean;
   sincronizandoPadrones: boolean;
   ultimoResultadoSync: SincronizacionErpResultado['resultado'] | null;
+  historialSincronizaciones: SincronizacionErpHistorialItem[];
   empresasSeleccionadas: string[];
   sincronizarPadrones: (items?: PadronErpSincronizable[]) => void;
 }
@@ -39,13 +41,16 @@ export function SincronizacionErpScreen({
   puedeConfigurarErp,
   sincronizandoPadrones,
   ultimoResultadoSync,
+  historialSincronizaciones,
   empresasSeleccionadas,
   sincronizarPadrones,
 }: SincronizacionErpScreenProps) {
   const [seleccionados, setSeleccionados] = useState<PadronErpSincronizable[]>(padronesErpSincronizables.filter((item) => item !== 'empresas'));
+  const [syncSeleccionadaId, setSyncSeleccionadaId] = useState<string | null>(null);
   const todosSeleccionados = seleccionados.length === padronesErpSincronizables.length;
   const soloEmpresas = seleccionados.length === 1 && seleccionados[0] === 'empresas';
   const puedeSincronizar = puedeConfigurarErp && !sincronizandoPadrones && seleccionados.length > 0 && (soloEmpresas || empresasSeleccionadas.length > 0);
+  const syncSeleccionada = historialSincronizaciones.find((sync) => sync.id === syncSeleccionadaId) || historialSincronizaciones[0];
   const resumen = useMemo(() => ultimoResultadoSync ? [
     ['Empresas', ultimoResultadoSync.empresas],
     ['Zonas', ultimoResultadoSync.zonas],
@@ -134,6 +139,108 @@ export function SincronizacionErpScreen({
               </article>
             ))}
           </div>
+        </section>
+      )}
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Historial de sincronizaciones</h2>
+            <p className="hint">Ultimas corridas persistidas, con estado y detalle por empresa/padron.</p>
+          </div>
+        </div>
+
+        <DataTable
+          rows={historialSincronizaciones}
+          getRowKey={(sync) => sync.id}
+          emptyMessage="Todavia no hay corridas registradas."
+          initialPageSize={5}
+          columns={[
+            {
+              key: 'inicio',
+              label: 'Inicio',
+              width: 'minmax(112px, 0.9fr)',
+              render: (sync) => formatearFecha(sync.iniciadoEn),
+            },
+            {
+              key: 'estado',
+              label: 'Estado',
+              width: 'minmax(96px, 0.7fr)',
+              render: (sync) => <span className={sync.estado === 'error' ? 'badge-danger' : sync.estado === 'en_proceso' ? 'badge-warning' : 'badge-success'}>{sync.estado}</span>,
+            },
+            {
+              key: 'items',
+              label: 'Padrones',
+              width: 'minmax(180px, 1.5fr)',
+              render: (sync) => sync.itemsEjecutados.join(', '),
+            },
+            {
+              key: 'resultado',
+              label: 'Resultado',
+              width: 'minmax(150px, 1fr)',
+              render: (sync) => sync.error || `${sync.detalles.reduce((total, detalle) => total + detalle.registros, 0)} registros`,
+            },
+            {
+              key: 'acciones',
+              label: '',
+              width: '56px',
+              render: (sync) => (
+                <button className="small" type="button" title="Ver detalle" onClick={() => setSyncSeleccionadaId(sync.id)}>
+                  Ver
+                </button>
+              ),
+            },
+          ]}
+        />
+      </section>
+
+      {syncSeleccionada && (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Detalle por empresa y padron</h2>
+              <p className="hint">Corrida iniciada: {formatearFecha(syncSeleccionada.iniciadoEn)}</p>
+            </div>
+          </div>
+
+          <DataTable
+            rows={syncSeleccionada.detalles}
+            getRowKey={(detalle) => detalle.id}
+            emptyMessage="Esta corrida todavia no tiene detalle registrado."
+            initialPageSize={10}
+            columns={[
+              {
+                key: 'empresa',
+                label: 'Empresa',
+                width: 'minmax(110px, 0.9fr)',
+                render: (detalle) => detalle.empresaErpId,
+              },
+              {
+                key: 'padron',
+                label: 'Padron',
+                width: 'minmax(130px, 1fr)',
+                render: (detalle) => detalle.padron,
+              },
+              {
+                key: 'registros',
+                label: 'Registros',
+                width: '96px',
+                render: (detalle) => detalle.registros,
+              },
+              {
+                key: 'omitidos',
+                label: 'Omitidos',
+                width: '88px',
+                render: (detalle) => detalle.omitidos,
+              },
+              {
+                key: 'estado',
+                label: 'Estado',
+                width: 'minmax(96px, 0.7fr)',
+                render: (detalle) => <span className={detalle.estado === 'error' ? 'badge-danger' : 'badge-success'}>{detalle.estado}</span>,
+              },
+            ]}
+          />
         </section>
       )}
     </section>

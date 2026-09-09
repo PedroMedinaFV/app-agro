@@ -387,6 +387,15 @@ La respuesta de sincronizacion devuelve cantidades importadas por padron para va
 
 Si un registro dependiente llega sin su dato padre en la misma sincronizacion, no debe bloquear toda la corrida. Por ejemplo, si un lote referencia un campo que no vino en `Padrones/Campos`, el lote se omite y se informa en `omitidos.lotesSinCampo`. Esto evita guardar relaciones inconsistentes y permite revisar diferencias entre padrones del ERP.
 
+Historial de sincronizacion:
+
+- cada corrida iniciada desde web se guarda en `ErpSincronizacion`;
+- el estado puede ser `en_proceso`, `completada` o `error`;
+- los items solicitados y ejecutados se guardan para auditar dependencias agregadas automaticamente;
+- al finalizar correctamente se registra un detalle en `ErpSincronizacionDetalle` por empresa/padron cuando el padron depende de empresa, o como `global` cuando ALBOR devuelve un catalogo comun;
+- si la corrida falla, se guarda el mensaje de error controlado sin registrar secretos ni tokens;
+- la pantalla web `Sincronizacion ERP` muestra las ultimas corridas y el detalle persistido.
+
 ## Sincronizacion desde terminal
 
 Para validar solamente la conexion con el ERP, sin guardar datos:

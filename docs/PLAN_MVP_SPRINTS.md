@@ -168,13 +168,14 @@ Criterio de aceptacion:
 - [x] cada registro conserva `empresaErpId`;
 - [x] no se duplican registros en corridas sucesivas;
 - [x] la web permite disparar sincronizacion manual y ver conteos principales;
-- [ ] la web muestra historial de corridas y errores por empresa/padron;
+- [x] la web muestra historial de corridas y errores por empresa/padron;
 - [x] usuario comun solo ve campos asignados.
 
 Decision de alcance:
 
 - La sincronizacion web queda sincrona para MVP temprano.
 - El job persistido con `syncId`, polling, historial, errores por empresa/padron y bloqueo por base de datos queda planteado para hardening antes de produccion.
+- El historial persistido de corridas queda disponible para MVP. El polling en segundo plano y el bloqueo por base de datos quedan planteados para hardening antes de produccion.
 
 Validacion realizada:
 

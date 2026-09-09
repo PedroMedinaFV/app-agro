@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ErpEmpresa, ErpSnapshot, PadronErpSincronizable, SesionUsuario } from '@agro/tipos';
-import { guardarEmpresasErpAdmin, obtenerEmpresasErpAdmin, obtenerSnapshotErp, sincronizarPadronesErp, SincronizacionErpResultado } from '../services/api';
+import { ErpEmpresa, ErpSnapshot, PadronErpSincronizable, SesionUsuario, SincronizacionErpHistorialItem } from '@agro/tipos';
+import {
+  guardarEmpresasErpAdmin,
+  obtenerEmpresasErpAdmin,
+  obtenerHistorialSincronizacionesErp,
+  obtenerSnapshotErp,
+  sincronizarPadronesErp,
+  SincronizacionErpResultado,
+} from '../services/api';
 import { snapshotFallback } from '../data/demoData';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -18,7 +25,21 @@ export function useErpDemo(
   const [guardandoEmpresas, setGuardandoEmpresas] = useState(false);
   const [sincronizandoPadrones, setSincronizandoPadrones] = useState(false);
   const [ultimoResultadoSync, setUltimoResultadoSync] = useState<SincronizacionErpResultado['resultado'] | null>(null);
+  const [historialSincronizaciones, setHistorialSincronizaciones] = useState<SincronizacionErpHistorialItem[]>([]);
   const [estadoEmpresas, setEstadoEmpresas] = useState('Seleccion local para modo demo.');
+
+  async function cargarHistorialSincronizaciones() {
+    if (!sesion || !puedeConfigurarErp) {
+      return;
+    }
+
+    try {
+      const respuesta = await obtenerHistorialSincronizacionesErp(sesion.token);
+      setHistorialSincronizaciones(respuesta.sincronizaciones);
+    } catch (error) {
+      setHistorialSincronizaciones([]);
+    }
+  }
 
   useEffect(() => {
     async function cargarDatosErp() {
@@ -57,6 +78,7 @@ export function useErpDemo(
         setEmpresasDisponibles(respuesta.empresas);
         setEmpresasSeleccionadas(respuesta.seleccionadas.map((seleccion) => seleccion.empresaErpId));
         setEstadoEmpresas('Empresas cargadas desde backend.');
+        await cargarHistorialSincronizaciones();
       } catch (error) {
         setEmpresasDisponibles(snapshot.empresas);
         setEmpresasSeleccionadas((actuales) => actuales.length ? actuales : snapshot.empresas.slice(0, 1).map((empresa) => empresa.erpId));
@@ -64,7 +86,7 @@ export function useErpDemo(
       }
     }
 
-    cargarEmpresasAdmin();
+    void cargarEmpresasAdmin();
   }, [sesion, snapshot.empresas, puedeConfigurarErp]);
 
   function alternarEmpresa(empresaErpId: string) {
@@ -114,6 +136,7 @@ export function useErpDemo(
     try {
       const respuesta = await sincronizarPadronesErp(sesion.token, items);
       setUltimoResultadoSync(respuesta.resultado);
+      await cargarHistorialSincronizaciones();
       setEstadoEmpresas(`Padrones sincronizados: ${respuesta.resultado.sincronizadoEn}`);
       await onSincronizacionCompletada?.();
       const sugerencias = respuesta.resultado.sugerenciasVinculacion;
@@ -147,6 +170,7 @@ export function useErpDemo(
     guardandoEmpresas,
     sincronizandoPadrones,
     ultimoResultadoSync,
+    historialSincronizaciones,
     estadoEmpresas,
     alternarEmpresa,
     guardarSeleccionEmpresas,

@@ -7,6 +7,12 @@ import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
 import { requierePermiso } from '../middleware/permisos';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { listarEmpresasErpCliente } from '../services/erp/empresasCliente';
+import {
+  fallarSincronizacionErpHistorial,
+  finalizarSincronizacionErpHistorial,
+  iniciarSincronizacionErpHistorial,
+  listarHistorialSincronizacionesErp,
+} from '../services/erp/historialSincronizacionErp';
 import { prisma } from '../prisma';
 
 const router = Router();
@@ -384,6 +390,21 @@ router.get('/lotes-importados', async (req, res, next) => {
   }
 });
 
+router.get('/sincronizaciones', requierePermiso('erp:sincronizar'), async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    res.json(await listarHistorialSincronizacionesErp(clienteId));
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;
@@ -399,17 +420,27 @@ router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res,
 
     clientesSincronizando.add(clienteId);
 
+    const body = req.body as SincronizarErpRequest;
+    let historial: Awaited<ReturnType<typeof iniciarSincronizacionErpHistorial>> | null = null;
+
     try {
-      const body = req.body as SincronizarErpRequest;
+      historial = await iniciarSincronizacionErpHistorial(clienteId, user.sub, body.items);
       const resultado = await sincronizarSnapshotErp(clienteId, {
         id: user.sub,
         clienteId,
       }, body.items);
 
+      await finalizarSincronizacionErpHistorial(historial.id, clienteId, historial.itemsEjecutados, resultado);
+
       return res.json({
         ok: true,
         resultado,
       });
+    } catch (error) {
+      if (historial) {
+        await fallarSincronizacionErpHistorial(historial.id, error);
+      }
+      throw error;
     } finally {
       clientesSincronizando.delete(clienteId);
     }

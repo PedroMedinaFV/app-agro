@@ -392,6 +392,7 @@ export function App() {
           puedeConfigurarErp={puedeConfigurarErp}
           sincronizandoPadrones={erp.sincronizandoPadrones}
           ultimoResultadoSync={erp.ultimoResultadoSync}
+          historialSincronizaciones={erp.historialSincronizaciones}
           empresasSeleccionadas={erp.empresasSeleccionadas}
           sincronizarPadrones={erp.sincronizarPadrones}
         />

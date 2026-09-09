@@ -402,6 +402,38 @@ export type SincronizarErpRequest = {
   items?: PadronErpSincronizable[];
 };
 
+export type EstadoSincronizacionErp = 'en_proceso' | 'completada' | 'error';
+
+export type SincronizacionErpDetalle = {
+  id: string;
+  sincronizacionId: string;
+  empresaErpId: string;
+  padron: PadronErpSincronizable;
+  registros: number;
+  omitidos: number;
+  estado: EstadoSincronizacionErp;
+  error?: string;
+  createdAt: string;
+};
+
+export type SincronizacionErpHistorialItem = {
+  id: string;
+  clienteId: string;
+  usuarioId?: string;
+  estado: EstadoSincronizacionErp;
+  itemsSolicitados: PadronErpSincronizable[];
+  itemsEjecutados: PadronErpSincronizable[];
+  resultado?: unknown;
+  error?: string;
+  iniciadoEn: string;
+  finalizadoEn?: string;
+  detalles: SincronizacionErpDetalle[];
+};
+
+export type SincronizacionesErpHistorialResponse = {
+  sincronizaciones: SincronizacionErpHistorialItem[];
+};
+
 export type ErpAuthMode = 'mock' | 'apiKey' | 'bearer' | 'basic' | 'login';
 
 export type Cliente = {

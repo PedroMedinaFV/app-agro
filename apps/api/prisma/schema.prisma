@@ -94,6 +94,45 @@ model IntegracionErp {
   @@index([activo])
 }
 
+model ErpSincronizacion {
+  id                String   @id @default(uuid())
+  clienteId         String
+  usuarioId         String?
+  estado            String   @default("en_proceso")
+  itemsSolicitados  Json
+  itemsEjecutados   Json
+  resultado         Json?
+  error             String?
+  iniciadoEn        DateTime @default(now())
+  finalizadoEn      DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  detalles          ErpSincronizacionDetalle[]
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([iniciadoEn])
+}
+
+model ErpSincronizacionDetalle {
+  id                String   @id @default(uuid())
+  sincronizacion    ErpSincronizacion @relation(fields: [sincronizacionId], references: [id])
+  sincronizacionId  String
+  empresaErpId      String
+  padron            String
+  registros         Int      @default(0)
+  omitidos          Int      @default(0)
+  estado            String   @default("completada")
+  error             String?
+  createdAt         DateTime @default(now())
+
+  @@index([sincronizacionId])
+  @@index([empresaErpId])
+  @@index([padron])
+  @@index([estado])
+}
+
 model Pais {
   id        String   @id @default(uuid())
   nombre    String

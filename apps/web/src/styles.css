@@ -161,6 +161,34 @@ h1 {
   font-size: 14px;
 }
 
+.badge-success,
+.badge-warning,
+.badge-danger {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.badge-success {
+  color: #14532d;
+  background: #dcfce7;
+}
+
+.badge-warning {
+  color: #713f12;
+  background: #fef3c7;
+}
+
+.badge-danger {
+  color: #7f1d1d;
+  background: #fee2e2;
+}
+
 label {
   display: grid;
   gap: 7px;
