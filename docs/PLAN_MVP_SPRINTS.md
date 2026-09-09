@@ -350,6 +350,8 @@ Incluye:
 - [x] calculo de ingreso bruto, ingreso neto, costo productivo y margen bruto;
 - [x] validacion de duplicados por campania/campo/lote/actividad;
 - [x] guardado borrador;
+- [x] guardado de lineas en bloque para soportar escenarios con muchos lotes reales;
+- [x] auditoria resumida de planificacion para evitar payloads masivos en escenarios grandes;
 - [x] cierre de planificacion;
 - [x] auditoria de cambios e intentos bloqueados;
 - [x] mobile consulta de planificacion asignada.

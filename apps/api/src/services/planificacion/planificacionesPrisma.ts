@@ -177,6 +177,9 @@ const incluirPlanificacion = {
   },
 };
 
+const TAMANO_BLOQUE_LINEAS = 250;
+const TIMEOUT_TRANSACCION_PLANIFICACION_MS = 60000;
+
 export async function obtenerPlanificacionesPersistidas(clienteId: string) {
   const registros = await prisma.planificacionAgricola.findMany({
     where: { clienteId },
@@ -190,41 +193,62 @@ export async function obtenerPlanificacionesPersistidas(clienteId: string) {
 async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: PlanificacionAgricola) {
   await tx.planificacionAgricolaLinea.deleteMany({ where: { planificacionId: planificacion.id } });
 
-  for (const lineaOriginal of planificacion.lineas) {
+  const lineas = planificacion.lineas.map((lineaOriginal) => {
     const linea = recalcularLinea(lineaOriginal);
 
-    await tx.planificacionAgricolaLinea.create({
-      data: {
-        id: linea.id,
-        planificacionId: planificacion.id,
-        empresaErpId: linea.empresaErpId,
-        campoPlanificacionId: linea.campoPlanificacionId,
-        campoErpId: linea.campoErpId,
-        lotePlanificacionId: linea.lotePlanificacionId,
-        loteErpId: linea.loteErpId,
-        actividadPlanificacionId: linea.actividadPlanificacionId,
-        actividadErpId: linea.actividadErpId,
-        cultivoErpId: linea.cultivoErpId,
-        destinoReferenciaId: linea.destinoReferenciaId,
-        destinoVenta: linea.destinoVenta,
-        destinoVentaManual: linea.destinoVentaManual,
-        precioReferenciaId: linea.precioReferenciaId,
-        precioVentaEstimado: linea.precioVentaEstimado,
-        precioVentaManual: linea.precioVentaManual,
-        hectareasPlanificadas: linea.hectareasPlanificadas,
-        rindeEstimado: linea.rindeEstimado,
-        gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
-        gastosComercialesEstimados: linea.gastosComercialesEstimados,
-        protocoloId: linea.protocoloId,
-        ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
-        ingresoNetoEstimado: linea.ingresoNetoEstimado,
-        costoProduccionEstimado: linea.costoProduccionEstimado,
-        margenBrutoEstimado: linea.margenBrutoEstimado,
-        margenBrutoActualizado: linea.margenBrutoActualizado,
-        estado: linea.estado,
-      },
+    return {
+      id: linea.id,
+      planificacionId: planificacion.id,
+      empresaErpId: linea.empresaErpId,
+      campoPlanificacionId: linea.campoPlanificacionId,
+      campoErpId: linea.campoErpId,
+      lotePlanificacionId: linea.lotePlanificacionId,
+      loteErpId: linea.loteErpId,
+      actividadPlanificacionId: linea.actividadPlanificacionId,
+      actividadErpId: linea.actividadErpId,
+      cultivoErpId: linea.cultivoErpId,
+      destinoReferenciaId: linea.destinoReferenciaId,
+      destinoVenta: linea.destinoVenta,
+      destinoVentaManual: linea.destinoVentaManual,
+      precioReferenciaId: linea.precioReferenciaId,
+      precioVentaEstimado: linea.precioVentaEstimado,
+      precioVentaManual: linea.precioVentaManual,
+      hectareasPlanificadas: linea.hectareasPlanificadas,
+      rindeEstimado: linea.rindeEstimado,
+      gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
+      gastosComercialesEstimados: linea.gastosComercialesEstimados,
+      protocoloId: linea.protocoloId,
+      ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
+      ingresoNetoEstimado: linea.ingresoNetoEstimado,
+      costoProduccionEstimado: linea.costoProduccionEstimado,
+      margenBrutoEstimado: linea.margenBrutoEstimado,
+      margenBrutoActualizado: linea.margenBrutoActualizado,
+      estado: linea.estado,
+    };
+  });
+
+  for (let inicio = 0; inicio < lineas.length; inicio += TAMANO_BLOQUE_LINEAS) {
+    await tx.planificacionAgricolaLinea.createMany({
+      data: lineas.slice(inicio, inicio + TAMANO_BLOQUE_LINEAS),
     });
   }
+}
+
+function resumirPlanificacionAuditoria(planificacion: PlanificacionAgricola) {
+  return {
+    id: planificacion.id,
+    clienteId: planificacion.clienteId,
+    campaniaErpId: planificacion.campaniaErpId,
+    nombre: planificacion.nombre,
+    estado: planificacion.estado,
+    escenarioOriginal: planificacion.escenarioOriginal,
+    cantidadLineas: planificacion.lineas.length,
+    hectareasPlanificadas: planificacion.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
+    ingresoNetoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
+    costoProduccionEstimado: planificacion.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
+    margenBrutoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
+    lineasDuplicadasBloqueadas: 0,
+  };
 }
 
 export async function guardarPlanificacionPersistida(
@@ -311,8 +335,11 @@ export async function guardarPlanificacionPersistida(
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,
       motivo: request.motivo,
-      valoresAntes: existente ? mapearPlanificacion(existente) : undefined,
-      valoresDespues: planificacionMapeada,
+      valoresAntes: existente ? resumirPlanificacionAuditoria(mapearPlanificacion(existente)) : undefined,
+      valoresDespues: resumirPlanificacionAuditoria(planificacionMapeada),
+      metadata: {
+        detalle: 'Las lineas se guardan en tabla PlanificacionAgricolaLinea y se audita un resumen para evitar payloads masivos.',
+      },
     });
 
     return {
@@ -320,6 +347,9 @@ export async function guardarPlanificacionPersistida(
       auditado: true,
       mensaje: 'Planificacion guardada con auditoria.',
     };
+  }, {
+    maxWait: 10000,
+    timeout: TIMEOUT_TRANSACCION_PLANIFICACION_MS,
   });
 }
 
