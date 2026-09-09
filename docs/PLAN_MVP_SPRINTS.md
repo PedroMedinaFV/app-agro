@@ -368,6 +368,13 @@ Criterio de aceptacion:
 - si no hay conexion, queda pendiente;
 - al sincronizar, web puede ver esa informacion.
 
+Avance realizado:
+
+- [x] contrato mobile/backend para crear precipitaciones;
+- [x] pantalla mobile demo para cargar precipitaciones por campo/lote;
+- [x] guardado local pendiente en modo demo/offline;
+- [x] llamada preparada a `POST /precipitaciones` cuando exista sesion real.
+
 ## Sprint 7 - Web de seguimiento operativo
 
 Objetivo:

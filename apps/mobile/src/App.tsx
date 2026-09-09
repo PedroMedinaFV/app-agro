@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
+import { crearPrecipitacion } from './services/api';
+import { offlineStore } from './store/offlineStore';
 
 const planificacionDemo: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
@@ -105,6 +107,12 @@ export default function App() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [email, setEmail] = useState('demo@agroapp.local');
   const [rol, setRol] = useState<RolUsuario>('usuario');
+  const [campoSeleccionadoId, setCampoSeleccionadoId] = useState(planificacionDemo.camposPlanificacion[0]?.id || '');
+  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesPlanificacion[0]?.id || '');
+  const [milimetros, setMilimetros] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
+  const [pendientesOffline, setPendientesOffline] = useState(0);
 
   function entrarModoDemo() {
     // Mobile mantiene el mismo contrato de sesion que web/backend mientras no haya API disponible.
@@ -117,14 +125,76 @@ export default function App() {
   }
 
   if (sesion) {
+    const sesionActiva = sesion;
     const esAdmin = sesion.permisos.includes('erp:configurar');
     const planificacionActiva = planificacionDemo.planificaciones[0];
     const protocoloActivo = planificacionDemo.protocolos[0];
     const margenBruto = planificacionActiva.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
     const hectareas = planificacionActiva.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
+    const campoSeleccionado = planificacionDemo.camposPlanificacion.find((campo) => campo.id === campoSeleccionadoId) || planificacionDemo.camposPlanificacion[0];
+    const lotesDelCampo = planificacionDemo.lotesPlanificacion.filter((lote) => lote.campoPlanificacionId === campoSeleccionado?.id);
+    const loteSeleccionado = lotesDelCampo.find((lote) => lote.id === loteSeleccionadoId) || lotesDelCampo[0];
+
+    function seleccionarSiguienteCampo() {
+      const campos = planificacionDemo.camposPlanificacion;
+      const indiceActual = campos.findIndex((campo) => campo.id === campoSeleccionado?.id);
+      const siguiente = campos[(indiceActual + 1) % campos.length];
+
+      setCampoSeleccionadoId(siguiente.id);
+      setLoteSeleccionadoId(planificacionDemo.lotesPlanificacion.find((lote) => lote.campoPlanificacionId === siguiente.id)?.id || '');
+    }
+
+    function seleccionarSiguienteLote() {
+      if (!lotesDelCampo.length) {
+        setLoteSeleccionadoId('');
+        return;
+      }
+
+      const indiceActual = lotesDelCampo.findIndex((lote) => lote.id === loteSeleccionado?.id);
+      setLoteSeleccionadoId(lotesDelCampo[(indiceActual + 1) % lotesDelCampo.length].id);
+    }
+
+    async function guardarPrecipitacionMobile() {
+      const milimetrosNumericos = Number(milimetros);
+
+      if (!campoSeleccionado || !Number.isFinite(milimetrosNumericos) || milimetrosNumericos <= 0) {
+        Alert.alert('Precipitaciones', 'Selecciona campo e informa milimetros mayores a cero.');
+        return;
+      }
+
+      const payload = {
+        campoPlanificacionId: campoSeleccionado.id,
+        lotePlanificacionId: loteSeleccionado?.id,
+        milimetros: milimetrosNumericos,
+        fechaEvento: new Date().toISOString(),
+        observaciones: observaciones.trim() || undefined,
+        origen: 'mobile' as const,
+      };
+
+      setGuardandoPrecipitacion(true);
+      try {
+        if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
+          offlineStore.agregarPendiente('precipitacion', payload);
+          setPendientesOffline(offlineStore.listarPendientes().filter((item) => !item.sincronizado).length);
+          Alert.alert('Precipitaciones', 'Registro guardado como pendiente mobile.');
+        } else {
+          await crearPrecipitacion(payload, sesionActiva.token);
+          Alert.alert('Precipitaciones', 'Precipitacion enviada al backend.');
+        }
+
+        setMilimetros('');
+        setObservaciones('');
+      } catch (error) {
+        offlineStore.agregarPendiente('precipitacion', payload);
+        setPendientesOffline(offlineStore.listarPendientes().filter((item) => !item.sincronizado).length);
+        Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
+      } finally {
+        setGuardandoPrecipitacion(false);
+      }
+    }
 
     return (
-      <View style={styles.page}>
+      <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.card}>
           <Text style={styles.title}>Panel mobile</Text>
           <Text style={styles.subtitle}>Sesion demo activa para {sesion.usuario.email}</Text>
@@ -138,8 +208,8 @@ export default function App() {
           ) : (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Mi trabajo</Text>
-              <Text style={styles.note}>Campos asignados: 1</Text>
-              <Text style={styles.note}>Lotes disponibles: 2</Text>
+              <Text style={styles.note}>Campos asignados: {planificacionDemo.camposPlanificacion.length}</Text>
+              <Text style={styles.note}>Lotes disponibles: {planificacionDemo.lotesPlanificacion.length}</Text>
               <Text style={styles.note}>Campania actual: 19/20</Text>
               <Text style={styles.note}>Cultivos disponibles: 1</Text>
               <Text style={styles.note}>Insumos de referencia: 2</Text>
@@ -160,9 +230,43 @@ export default function App() {
             <Text style={styles.note}>Descripcion: {protocoloActivo.descripcion}</Text>
             <Text style={styles.note}>Costo estimado: USD {protocoloActivo.costoEstimadoPorHa} / ha</Text>
           </View>
+          {!esAdmin && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Precipitaciones</Text>
+              <Text style={styles.note}>Campo: {campoSeleccionado?.nombre || 'Sin campo'}</Text>
+              <View style={styles.buttonSpacing}>
+                <Button title="Cambiar campo" onPress={seleccionarSiguienteCampo} />
+              </View>
+              <Text style={styles.note}>Lote: {loteSeleccionado?.nombre || 'Campo completo'}</Text>
+              <View style={styles.buttonSpacing}>
+                <Button title="Cambiar lote" onPress={seleccionarSiguienteLote} />
+              </View>
+              <TextInput
+                style={styles.input}
+                keyboardType="decimal-pad"
+                placeholder="Milimetros"
+                value={milimetros}
+                onChangeText={setMilimetros}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Observaciones"
+                value={observaciones}
+                onChangeText={setObservaciones}
+              />
+              <View style={styles.buttonSpacing}>
+                <Button
+                  title={guardandoPrecipitacion ? 'Guardando...' : 'Guardar precipitacion'}
+                  disabled={guardandoPrecipitacion}
+                  onPress={guardarPrecipitacionMobile}
+                />
+              </View>
+              <Text style={styles.note}>Pendientes de sincronizacion: {pendientesOffline}</Text>
+            </View>
+          )}
           <Button title="Cerrar sesion" onPress={() => setSesion(null)} />
         </View>
-      </View>
+      </ScrollView>
     );
   }
 

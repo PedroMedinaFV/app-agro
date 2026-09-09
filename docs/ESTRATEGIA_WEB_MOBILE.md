@@ -124,4 +124,6 @@ Primer alcance recomendado:
 6. Historial de observaciones y precipitaciones por campo/lote.
 7. Vista web para consultar observaciones y precipitaciones cargadas desde mobile.
 
+La primera version mobile puede guardar precipitaciones como pendientes locales cuando se usa modo demo o no hay conectividad. Con una sesion real, el mismo contrato envia el registro a `POST /precipitaciones`; si falla el envio, debe quedar pendiente para sincronizacion posterior.
+
 La planificacion agricola y los protocolos quedan como funcionalidades principalmente web, con consulta resumida en mobile cuando aporte valor al usuario operativo.

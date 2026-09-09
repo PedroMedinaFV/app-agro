@@ -1,3 +1,5 @@
+import type { CrearPrecipitacionRequest, CrearPrecipitacionResponse, PrecipitacionesResponse } from '@agro/tipos';
+
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
 type PeticionOptions = RequestInit & {
@@ -55,4 +57,17 @@ export async function obtenerUsuarios(token: string) {
   }, token);
 
   return respuesta.usuarios;
+}
+
+export async function obtenerPrecipitaciones(token: string) {
+  return request<PrecipitacionesResponse>('/precipitaciones', {
+    method: 'GET',
+  }, token);
+}
+
+export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token: string) {
+  return request<CrearPrecipitacionResponse>('/precipitaciones', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
 }
