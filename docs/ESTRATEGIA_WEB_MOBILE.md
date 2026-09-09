@@ -6,8 +6,10 @@ La aplicacion no debe tratar web y mobile como copias exactas.
 
 Cada entorno tiene un rol propio:
 
-- Web: administracion, configuracion, planificacion, analisis, auditoria y trabajo comodo de escritorio.
-- Mobile: operacion diaria en campo, captura rapida de datos, georreferenciacion, imagenes y recorridas.
+- Web: planificacion, administracion, configuracion, usuarios, analisis, auditoria y trabajo comodo de escritorio.
+- Mobile: funcionalidades operativas propias de Agro App y funcionalidades de campo similares a SIMA, con captura rapida, georreferenciacion, imagenes, recorridas y uso offline.
+
+Para el MVP, mobile debe priorizar el dia a dia operativo del campo. Web debe priorizar la preparacion, configuracion y seguimiento de esa operacion.
 
 ## Rol de web
 
@@ -15,10 +17,10 @@ Web es el entorno principal para tareas que requieren pantalla amplia, revision 
 
 Funciones esperadas:
 
+- planificacion agricola y escenarios;
 - configuracion de integracion ERP;
 - seleccion de empresas ERP asociadas a AGRO;
 - usuarios, roles, permisos y asignacion de campos;
-- planificacion agricola;
 - protocolos productivos;
 - precios, destinos de venta y gastos comerciales;
 - consulta y analisis de informacion generada en mobile;
@@ -44,6 +46,8 @@ Funciones esperadas:
 - visualizar lotes mediante georreferenciacion geografica;
 - seleccionar lotes desde mapa o listado;
 - registrar recorridas;
+- consultar ficha operativa de lote/cultivo;
+- consultar planificacion, protocolo y supuestos relevantes del lote cuando aporte contexto operativo;
 - cargar precipitaciones por campo asignado y, cuando corresponda, asociarlas a lote;
 - cargar observaciones tecnicas;
 - agregar comentarios;
@@ -53,6 +57,8 @@ Funciones esperadas:
 - trabajar con sincronizacion posterior cuando haya escenarios offline o conectividad limitada.
 
 Mobile no debe intentar replicar pantallas de administracion o planillas complejas de web.
+
+Para el MVP, cuando se tome una funcionalidad de referencia de SIMA, debe adaptarse al foco operativo de Agro App. Ejemplos validos: recorridas, observaciones georreferenciadas, fotos, precipitaciones, monitoreo de adversidades, ficha de lote/cultivo e historial operativo. Quedan fuera del foco mobile inicial las altas masivas, configuraciones administrativas, planillas economicas extensas y parametrizaciones maestras.
 
 ## Relacion entre ambos entornos
 
@@ -80,6 +86,8 @@ La informacion generada en mobile debe poder verse en web, incluyendo:
 Mobile first para captura en campo.
 
 Web disponible cuando aporte comodidad, revision, analisis o control.
+
+Web first para planificacion, parametrizacion, usuarios, permisos, integraciones, padrones maestros, precios, gastos, protocolos y cierres/aprobaciones.
 
 Esto significa que una funcionalidad puede existir en ambos entornos si tiene sentido para la experiencia de usuario, pero la interfaz y el flujo deben adaptarse al contexto.
 
@@ -122,7 +130,8 @@ Primer alcance recomendado:
 4. Nueva observacion con comentario, tipo, fecha, ubicacion y fotos.
 5. Carga rapida de precipitacion por campo asignado, con lote opcional.
 6. Historial de observaciones y precipitaciones por campo/lote.
-7. Vista web para consultar observaciones y precipitaciones cargadas desde mobile.
+7. Consulta de planificacion/protocolo/supuestos relevantes del lote.
+8. Vista web para consultar observaciones y precipitaciones cargadas desde mobile.
 
 La primera version mobile puede guardar precipitaciones como pendientes locales cuando se usa modo demo o no hay conectividad. Con una sesion real, el mismo contrato envia el registro a `POST /precipitaciones`; si falla el envio, debe quedar pendiente para sincronizacion posterior.
 

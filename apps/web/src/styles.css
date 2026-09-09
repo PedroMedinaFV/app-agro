@@ -307,6 +307,29 @@ input:focus {
   padding: 0 10px;
 }
 
+.button-row.compact {
+  gap: 6px;
+}
+
+.button-row.compact button {
+  min-height: 32px;
+  padding: 0 9px;
+}
+
+.stacked-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stacked-cell span,
+.stacked-cell em {
+  color: #64736a;
+  font-size: 13px;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
 .button-content {
   display: inline-flex;
   align-items: center;

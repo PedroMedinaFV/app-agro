@@ -113,6 +113,7 @@ Mobile debe reflejar la misma regla funcional: usuarios admin pueden ver el resu
 17. El protocolo se filtra por actividad y compatibilidad con zona/campo.
 18. Los protocolos compatibles se muestran ordenados por ultima modificacion descendente.
 19. Mobile muestra una vista resumida de consulta para mantener paridad funcional inicial.
+20. Mobile consulta los supuestos comerciales del lote seleccionado, incluyendo destino, precio, rinde, gastos, protocolo y margen, siempre como solo lectura en el MVP.
 
 Los insumos se integran desde `Padrones/Insumos` como referencia para protocolos. La persistencia real de planificacion queda pendiente hasta tener PostgreSQL disponible.
 

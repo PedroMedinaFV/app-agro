@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ErpSnapshot, PlanificacionSnapshot, ProtocoloProductivoDetalle, ProtocolosSnapshot } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
 import { ProtocoloModal } from '../components/protocolos/ProtocoloModal';
 
 interface ProtocolosScreenProps {
@@ -26,6 +27,7 @@ interface ProtocolosScreenProps {
 
 export function ProtocolosScreen({
   protocolos,
+  snapshot,
   planificacion,
   puedeConfigurarPlanificacion,
   guardandoProtocolo,
@@ -91,41 +93,73 @@ export function ProtocolosScreen({
           <span className="status-pill">{protocolos.protocolos.length}</span>
         </div>
 
-        <div className="protocol-table">
-          <div className="protocol-row protocol-head">
-            <span>Nombre</span>
-            <span>Actividad</span>
-            <span>Campo</span>
-            <span>Costo</span>
-            <span>Actualizado</span>
-            <span>Acciones</span>
-          </div>
-          {!protocolos.protocolos.length && (
-            <div className="empty-state">Todavia no hay protocolos registrados.</div>
-          )}
-          {protocolos.protocolos.map((protocolo) => {
-            const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === protocolo.actividadPlanificacionId);
-            const campo = planificacion.camposPlanificacion.find((item) => item.id === protocolo.campoPlanificacionId);
-
-            return (
-              <div className="protocol-row" key={protocolo.id}>
-                <div>
+        <DataTable
+          rows={protocolos.protocolos}
+          getRowKey={(protocolo) => protocolo.id}
+          emptyMessage="Todavia no hay protocolos registrados."
+          columns={[
+            {
+              key: 'nombre',
+              label: 'Nombre',
+              width: 'minmax(170px, 1.25fr)',
+              render: (protocolo) => (
+                <div className="stacked-cell">
                   <strong>{protocolo.nombre}</strong>
                   <span>{protocolo.descripcion}</span>
                   {protocolo.protocoloOrigenId && <em>Copia de {protocolo.protocoloOrigenId}</em>}
                 </div>
-                <span>{actividad?.nombre || protocolo.actividadErpId || protocolo.actividadPlanificacionId}</span>
-                <span>{campo?.nombre || 'General'}</span>
-                <strong>{formatearUsd(protocolo.costoEstimadoPorHa)}</strong>
-                <span>{new Date(protocolo.updatedAt).toLocaleDateString('es-AR')}</span>
-                <div className="button-row">
+              ),
+            },
+            {
+              key: 'actividad',
+              label: 'Actividad',
+              width: 'minmax(130px, 0.9fr)',
+              render: (protocolo) => {
+                const actividad = planificacion.actividadesPlanificacion?.find((item) => item.id === protocolo.actividadPlanificacionId);
+                return actividad?.nombre || protocolo.actividadErpId || protocolo.actividadPlanificacionId;
+              },
+            },
+            {
+              key: 'alcance',
+              label: 'Alcance',
+              width: 'minmax(120px, 0.8fr)',
+              render: (protocolo) => {
+                const zona = planificacion.zonasPlanificacion?.find((item) => item.id === protocolo.zonaPlanificacionId);
+                const campo = planificacion.camposPlanificacion.find((item) => item.id === protocolo.campoPlanificacionId);
+                return campo?.nombre || zona?.nombre || 'General';
+              },
+            },
+            {
+              key: 'fecha',
+              label: 'Fechas',
+              width: 'minmax(110px, 0.7fr)',
+              render: (protocolo) => protocolo.tipoFecha === 'relativa_siembra' ? 'Relativa' : 'Absoluta',
+            },
+            {
+              key: 'costo',
+              label: 'Costo/ha',
+              width: 'minmax(100px, 0.65fr)',
+              render: (protocolo) => <strong>{formatearUsd(protocolo.costoEstimadoPorHa)}</strong>,
+            },
+            {
+              key: 'actualizado',
+              label: 'Actualizado',
+              width: 'minmax(106px, 0.65fr)',
+              render: (protocolo) => new Date(protocolo.updatedAt).toLocaleDateString('es-AR'),
+            },
+            {
+              key: 'acciones',
+              label: 'Acciones',
+              width: 'minmax(132px, 0.75fr)',
+              render: (protocolo) => (
+                <div className="button-row compact">
                   <button className="small" onClick={() => abrirEditarProtocolo(protocolo.id)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
                   <button className="small" onClick={() => abrirCopiarProtocolo(protocolo)} disabled={!puedeConfigurarPlanificacion}>Copiar</button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              ),
+            },
+          ]}
+        />
       </section>
 
       {modalAbierto && protocoloSeleccionado && (
@@ -133,6 +167,7 @@ export function ProtocolosScreen({
           modo={modoModal}
           protocolo={protocoloSeleccionado}
           planificacion={planificacion}
+          campanias={snapshot.campanias}
           puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
           guardandoProtocolo={guardandoProtocolo}
           onClose={() => setModalAbierto(false)}

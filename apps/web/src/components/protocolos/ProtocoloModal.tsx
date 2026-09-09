@@ -1,4 +1,4 @@
-import { PlanificacionSnapshot, ProtocoloProductivoDetalle } from '@agro/tipos';
+import { ErpCampania, PlanificacionSnapshot, ProtocoloProductivoDetalle } from '@agro/tipos';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo } from '../../utils/formatters';
 
@@ -8,6 +8,7 @@ interface ProtocoloModalProps {
   modo: ModoProtocoloModal;
   protocolo: ProtocoloProductivoDetalle;
   planificacion: PlanificacionSnapshot;
+  campanias: ErpCampania[];
   puedeConfigurarPlanificacion: boolean;
   guardandoProtocolo: boolean;
   onClose: () => void;
@@ -25,6 +26,7 @@ export function ProtocoloModal({
   modo,
   protocolo,
   planificacion,
+  campanias,
   puedeConfigurarPlanificacion,
   guardandoProtocolo,
   onClose,
@@ -45,6 +47,7 @@ export function ProtocoloModal({
   const estadiosCompatibles = [...planificacion.estadiosReferencia]
     .filter((estadio) => estadio.activo && (!estadio.actividadErpId || estadio.actividadErpId === protocolo.actividadErpId))
     .sort((a, b) => a.ordenCronologico - b.ordenCronologico || a.nombre.localeCompare(b.nombre, 'es'));
+  const zonasDisponibles = [...(planificacion.zonasPlanificacion || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const titulo = modo === 'crear' ? 'Nuevo protocolo' : modo === 'copiar' ? 'Guardar copia' : 'Editar protocolo';
   const textoAccion = guardandoProtocolo ? 'Guardando...' : modo === 'editar' ? 'Editar' : 'Guardar';
 
@@ -71,6 +74,19 @@ export function ProtocoloModal({
 
           <div className="protocol-form">
             <label>
+              Campania
+              <select
+                value={protocolo.campaniaErpId}
+                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, campaniaErpId: event.target.value }))}
+                disabled={!puedeConfigurarPlanificacion}
+              >
+                <option value="">Seleccionar campania</option>
+                {campanias.map((campania) => (
+                  <option key={campania.erpId} value={campania.erpId}>{campania.nombre || campania.codigo}</option>
+                ))}
+              </select>
+            </label>
+            <label>
               Nombre
               <input
                 value={protocolo.nombre}
@@ -94,6 +110,19 @@ export function ProtocoloModal({
               </select>
             </label>
             <label>
+              Zona
+              <select
+                value={protocolo.zonaPlanificacionId || ''}
+                onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, zonaPlanificacionId: event.target.value || undefined, campoPlanificacionId: undefined }))}
+                disabled={!puedeConfigurarPlanificacion}
+              >
+                <option value="">Todas las zonas</option>
+                {zonasDisponibles.map((zona) => (
+                  <option key={zona.id} value={zona.id}>{zona.codigoInterno ? `${zona.codigoInterno} - ` : ''}{zona.nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label>
               Campo
               <select
                 value={protocolo.campoPlanificacionId || ''}
@@ -101,11 +130,38 @@ export function ProtocoloModal({
                 disabled={!puedeConfigurarPlanificacion}
               >
                 <option value="">Todos los campos compatibles</option>
-                {planificacion.camposPlanificacion.map((campo) => (
+                {planificacion.camposPlanificacion
+                  .filter((campo) => !protocolo.zonaPlanificacionId || campo.zonaPlanificacionId === protocolo.zonaPlanificacionId)
+                  .map((campo) => (
                   <option key={campo.id} value={campo.id}>{campo.nombre}</option>
                 ))}
               </select>
             </label>
+            <label>
+              Tipo de fechas
+              <select
+                value={protocolo.tipoFecha}
+                onChange={(event) => actualizarProtocolos((actual) => ({
+                  ...actual,
+                  tipoFecha: event.target.value as ProtocoloProductivoDetalle['tipoFecha'],
+                }))}
+                disabled={!puedeConfigurarPlanificacion}
+              >
+                <option value="relativa_siembra">Relativa a siembra</option>
+                <option value="absoluta">Absoluta</option>
+              </select>
+            </label>
+            {protocolo.tipoFecha === 'relativa_siembra' && (
+              <label>
+                Fecha de siembra
+                <input
+                  type="date"
+                  value={protocolo.fechaSiembra || ''}
+                  onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, fechaSiembra: event.target.value }))}
+                  disabled={!puedeConfigurarPlanificacion}
+                />
+              </label>
+            )}
             <label>
               Descripcion
               <input
@@ -154,6 +210,40 @@ export function ProtocoloModal({
                     ))}
                   </select>
                   <span>Orden {etapa.orden}</span>
+                </div>
+
+                <div className="protocol-date-row">
+                  {protocolo.tipoFecha === 'relativa_siembra' ? (
+                    <label>
+                      Dias desde siembra
+                      <input
+                        type="number"
+                        step="1"
+                        value={etapa.diasDesdeSiembra ?? 0}
+                        onChange={(event) => actualizarEtapa(etapa.id, { diasDesdeSiembra: Number.parseInt(event.target.value || '0', 10), fechaObjetivo: undefined })}
+                        disabled={!puedeConfigurarPlanificacion}
+                        title="Puede ser negativo para labores anteriores a la siembra"
+                      />
+                    </label>
+                  ) : (
+                    <label>
+                      Fecha objetivo
+                      <input
+                        type="date"
+                        value={etapa.fechaObjetivo || ''}
+                        onChange={(event) => actualizarEtapa(etapa.id, { fechaObjetivo: event.target.value, diasDesdeSiembra: undefined })}
+                        disabled={!puedeConfigurarPlanificacion}
+                      />
+                    </label>
+                  )}
+                  <label>
+                    Observaciones de etapa
+                    <input
+                      value={etapa.observaciones || ''}
+                      onChange={(event) => actualizarEtapa(etapa.id, { observaciones: event.target.value })}
+                      disabled={!puedeConfigurarPlanificacion}
+                    />
+                  </label>
                 </div>
 
                 <div className="protocol-detail-grid">
@@ -377,7 +467,7 @@ export function ProtocoloModal({
 
         <div className="modal-actions">
           <button className="small" onClick={onClose}>Cancelar</button>
-          <button className="primary" onClick={onGuardar} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim()}>
+          <button className="primary" onClick={onGuardar} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim() || !protocolo.campaniaErpId || !protocolo.actividadPlanificacionId}>
             <span className="button-content">
               {guardandoProtocolo && <LoadingSpinner label="Guardando protocolo" />}
               {textoAccion}

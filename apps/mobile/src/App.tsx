@@ -171,6 +171,9 @@ export default function App() {
     const campoSeleccionado = datosOperativos.camposPlanificacion.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposPlanificacion[0];
     const lotesDelCampo = datosOperativos.lotesPlanificacion.filter((lote) => lote.campoPlanificacionId === campoSeleccionado?.id);
     const loteSeleccionado = lotesDelCampo.find((lote) => lote.id === loteSeleccionadoId) || lotesDelCampo[0];
+    const lineaSeleccionada = planificacionActiva.lineas.find((linea) => linea.lotePlanificacionId === loteSeleccionado?.id);
+    const actividadSeleccionada = datosOperativos.actividadesPlanificacion?.find((actividad) => actividad.id === lineaSeleccionada?.actividadPlanificacionId);
+    const protocoloSeleccionado = datosOperativos.protocolos.find((protocolo) => protocolo.id === lineaSeleccionada?.protocoloId) || protocoloActivo;
 
     function seleccionarSiguienteCampo() {
       const campos = datosOperativos.camposPlanificacion;
@@ -288,38 +291,59 @@ export default function App() {
             <Text style={styles.note}>Costo estimado: USD {protocoloActivo.costoEstimadoPorHa} / ha</Text>
           </View>
           {!esAdmin && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Precipitaciones</Text>
-              <Text style={styles.note}>Campo: {campoSeleccionado?.nombre || 'Sin campo'}</Text>
-              <View style={styles.buttonSpacing}>
-                <Button title="Cambiar campo" onPress={seleccionarSiguienteCampo} />
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Supuestos comerciales del lote</Text>
+                <Text style={styles.note}>Campo: {campoSeleccionado?.nombre || 'Sin campo'}</Text>
+                <Text style={styles.note}>Lote: {loteSeleccionado?.nombre || 'Sin lote'}</Text>
+                {lineaSeleccionada ? (
+                  <>
+                    <Text style={styles.note}>Actividad: {actividadSeleccionada?.nombre || lineaSeleccionada.actividadErpId || 'Sin actividad'}</Text>
+                    <Text style={styles.note}>Destino: {lineaSeleccionada.destinoVenta}</Text>
+                    <Text style={styles.note}>Precio: USD {lineaSeleccionada.precioVentaEstimado} / tn</Text>
+                    <Text style={styles.note}>Rinde estimado: {lineaSeleccionada.rindeEstimado} tn/ha</Text>
+                    <Text style={styles.note}>Gastos comerciales: USD {lineaSeleccionada.gastosComercialesEstimados}</Text>
+                    <Text style={styles.note}>Protocolo: {protocoloSeleccionado.nombre}</Text>
+                    <Text style={styles.note}>Margen bruto: USD {lineaSeleccionada.margenBrutoEstimado}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.note}>No hay una linea de planificacion asociada al lote seleccionado.</Text>
+                )}
               </View>
-              <Text style={styles.note}>Lote: {loteSeleccionado?.nombre || 'Campo completo'}</Text>
-              <View style={styles.buttonSpacing}>
-                <Button title="Cambiar lote" onPress={seleccionarSiguienteLote} />
-              </View>
-              <TextInput
-                style={styles.input}
-                keyboardType="decimal-pad"
-                placeholder="Milimetros"
-                value={milimetros}
-                onChangeText={setMilimetros}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Observaciones"
-                value={observaciones}
-                onChangeText={setObservaciones}
-              />
-              <View style={styles.buttonSpacing}>
-                <Button
-                  title={guardandoPrecipitacion ? 'Guardando...' : 'Guardar precipitacion'}
-                  disabled={guardandoPrecipitacion}
-                  onPress={guardarPrecipitacionMobile}
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Precipitaciones</Text>
+                <Text style={styles.note}>Campo: {campoSeleccionado?.nombre || 'Sin campo'}</Text>
+                <View style={styles.buttonSpacing}>
+                  <Button title="Cambiar campo" onPress={seleccionarSiguienteCampo} />
+                </View>
+                <Text style={styles.note}>Lote: {loteSeleccionado?.nombre || 'Campo completo'}</Text>
+                <View style={styles.buttonSpacing}>
+                  <Button title="Cambiar lote" onPress={seleccionarSiguienteLote} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="decimal-pad"
+                  placeholder="Milimetros"
+                  value={milimetros}
+                  onChangeText={setMilimetros}
                 />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Observaciones"
+                  value={observaciones}
+                  onChangeText={setObservaciones}
+                />
+                <View style={styles.buttonSpacing}>
+                  <Button
+                    title={guardandoPrecipitacion ? 'Guardando...' : 'Guardar precipitacion'}
+                    disabled={guardandoPrecipitacion}
+                    onPress={guardarPrecipitacionMobile}
+                  />
+                </View>
+                <Text style={styles.note}>Pendientes de sincronizacion: {pendientesOffline}</Text>
               </View>
-              <Text style={styles.note}>Pendientes de sincronizacion: {pendientesOffline}</Text>
-            </View>
+            </>
           )}
           <Button title="Cerrar sesion" onPress={() => setSesion(null)} />
         </View>

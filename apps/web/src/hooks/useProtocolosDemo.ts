@@ -36,7 +36,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
         const datos = await obtenerProtocolosSnapshot(sesion.token);
         setProtocolos(datos);
         setProtocoloSeleccionadoId((actual) => actual || datos.protocolos[0]?.id || '');
-        setProtocolosEstado('Protocolos desde API mock');
+        setProtocolosEstado('Protocolos cargados desde API.');
       } catch (error) {
         setProtocolos(protocolosFallback);
         setProtocoloSeleccionadoId((actual) => actual || protocolosFallback.protocolos[0]?.id || '');
@@ -205,7 +205,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     const actividadBase = planificacion.actividadesPlanificacion?.[0];
     const protocoloNuevo: ProtocoloProductivoDetalle = {
       id,
-      clienteId: 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || 'cliente-demo',
       nombre: 'Nuevo protocolo',
       descripcion: 'Protocolo en borrador',
       campaniaErpId: planificacionActiva?.campaniaErpId || snapshot.campanias[0]?.erpId || 'campania-pendiente',

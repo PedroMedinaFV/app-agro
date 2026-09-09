@@ -238,7 +238,7 @@ export function PreciosReferenciaScreen({
       return;
     }
 
-    const precioPreparado = await asegurarActividadPlanificacion(precioEnEdicion);
+    const precioPreparado = await asegurarActividadPlanificacion({ ...precioEnEdicion, unidad: 'tn' });
     const guardado = await guardarPrecioReferencia(precioPreparado);
 
     if (guardado) {
@@ -349,7 +349,7 @@ export function PreciosReferenciaScreen({
               )}
 
               <label>
-                Valor
+                Valor por tn
                 <input
                   type="number"
                   min="0"
@@ -369,11 +369,7 @@ export function PreciosReferenciaScreen({
 
               <label>
                 Unidad
-                <select value={precioEnEdicion.unidad} onChange={(event) => actualizarBorrador({ unidad: event.target.value })}>
-                  <option value="tn">tn</option>
-                  <option value="kg">kg</option>
-                  <option value="qq">qq</option>
-                </select>
+                <input value="tn" disabled aria-readonly="true" />
               </label>
 
               <label>

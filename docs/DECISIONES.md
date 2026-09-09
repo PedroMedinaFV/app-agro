@@ -12,6 +12,14 @@ Mobile queda orientada a operacion diaria de campo: georreferenciacion, recorrid
 
 La informacion generada desde mobile debe poder consultarse y analizarse desde web. Algunas acciones operativas tambien pueden existir en web cuando aporten comodidad, revision o control.
 
+Para el MVP, mobile debe concentrarse en funcionalidades operativas propias de Agro App y en funcionalidades de campo comparables a SIMA, adaptadas al flujo real del usuario en terreno. Web queda como superficie principal para planificacion, seteo de usuarios, asignacion de campos, padrones, integracion ERP, precios, gastos, protocolos, auditoria y reportes.
+
+La regla practica es:
+
+- si la tarea requiere recorrido, ubicacion, foto, observacion rapida o uso offline, nace en mobile;
+- si la tarea requiere pantalla amplia, grilla compleja, parametrizacion, permisos, revision o cierre, nace en web;
+- si una tarea aporta valor en ambos entornos, se implementa con flujos distintos y permisos compartidos desde backend.
+
 El detalle del acuerdo queda en `docs/ESTRATEGIA_WEB_MOBILE.md`.
 
 ## Precipitaciones operativas

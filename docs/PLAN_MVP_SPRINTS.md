@@ -104,6 +104,13 @@ Cada sprint debe cerrar una pieza usable, integrada y validable:
 6. documentacion;
 7. validacion tecnica.
 
+Acuerdo de producto web/mobile:
+
+- Mobile MVP: funcionalidades operativas propias de Agro App y funcionalidades de campo similares a SIMA, como recorridas, georreferenciacion, observaciones, fotos, precipitaciones, ficha de lote/cultivo, historial y uso offline.
+- Web MVP: planificacion agricola, escenarios, usuarios, roles, asignacion de campos, integracion ERP, sincronizacion, padrones maestros, precios, destinos, gastos, protocolos, auditoria, reportes y seguimiento operativo.
+- Backend: fuente de verdad para seguridad, permisos, auditoria, integraciones, persistencia y contratos que alimentan web y mobile.
+- Una funcionalidad puede existir en ambos entornos solo si aporta experiencia concreta en cada contexto; no se duplica por simetria.
+
 Premisa visual:
 
 - las pantallas con tablas deben usar un componente compartido de tabla paginada para mantener estructura, estilos, estados vacios y navegacion consistentes;
@@ -252,7 +259,7 @@ Criterio de aceptacion:
 
 ## Sprint 3 - Precios, destinos y gastos comerciales
 
-Estado: parcialmente implementado en web/backend.
+Estado: cerrado para MVP web/backend.
 
 Objetivo:
 
@@ -260,28 +267,39 @@ Objetivo:
 
 Incluye:
 
-- maestro de destinos de venta;
-- precios de referencia transversales, no atados a campania;
-- gastos comerciales por campania, actividad, destino y alcance geografico;
-- precios y gastos consumen actividades reales desde DB, combinando Agro App y ERP;
-- gastos comerciales consumen zonas y campos reales desde DB para definir alcance;
-- si se usa una actividad ERP en precios/gastos, se crea automaticamente una actividad operativa vinculada y auditada;
-- conceptos comerciales maestros;
-- normalizacion en backend para evitar duplicados;
-- auditoria real de cambios;
-- mobile solo consulta de supuestos relevantes por lote/cultivo.
+- [x] maestro de destinos de venta;
+- [x] precios de referencia transversales, no atados a campania;
+- [x] precios cargados como valor por tonelada para simplificar el supuesto comercial;
+- [x] gastos comerciales por campania, actividad, destino y alcance geografico;
+- [x] gastos comerciales cargados como items con valor por tonelada;
+- [x] precios y gastos consumen actividades reales desde DB, combinando Agro App y ERP;
+- [x] gastos comerciales consumen zonas y campos reales desde DB para definir alcance;
+- [x] si se usa una actividad ERP en precios/gastos, se crea automaticamente una actividad operativa vinculada y auditada;
+- [x] conceptos comerciales maestros;
+- [x] normalizacion en backend para evitar duplicados;
+- [x] auditoria real de cambios;
+- [x] mobile solo consulta de supuestos relevantes por lote/cultivo.
 
 Criterio de aceptacion:
 
-- se puede crear/editar precio desde modal;
-- se puede crear destino si no existe;
-- destino es unico por nombre normalizado y cliente;
-- gastos comerciales se calculan por tonelada;
-- la planificacion puede consumir precio y gasto sugerido.
+- [x] se puede crear/editar precio desde modal;
+- [x] se puede crear destino si no existe;
+- [x] destino es unico por nombre normalizado y cliente;
+- [x] gastos comerciales se calculan por tonelada;
+- [x] la planificacion puede consumir precio y gasto sugerido.
+
+Avance realizado:
+
+- [x] web administra precios desde tabla y modal de alta/edicion;
+- [x] web administra gastos comerciales desde tabla y modal de alta/edicion;
+- [x] web usa destinos como maestro transversal, no exclusivo de planificacion;
+- [x] mobile muestra supuestos comerciales del lote seleccionado desde `GET /planificacion/snapshot`;
+- [x] la consulta mobile respeta el alcance de campos/lotes filtrado por backend;
+- [x] mobile mantiene solo lectura para precios, gastos, destino, protocolo y margen.
 
 ## Sprint 4 - Protocolos productivos
 
-Estado: parcialmente implementado.
+Estado: cerrado para MVP web/backend.
 
 Objetivo:
 
@@ -289,23 +307,23 @@ Objetivo:
 
 Incluye:
 
-- listado principal de protocolos;
-- crear, editar y copiar protocolo;
-- cabecera con campania, actividad, zona/campo opcional, descripcion y tipo de fecha;
-- etapas basadas en maestro de estadios;
-- labores e insumos seleccionados desde padrones;
-- indice de aplicacion entre 0 y 1;
-- costos por hectarea;
-- fechas absolutas o relativas a siembra;
-- auditoria de creacion, edicion y copia;
-- mobile consulta/resumen de protocolo asignado.
+- [x] listado principal de protocolos con tabla compartida y paginacion;
+- [x] crear, editar y copiar protocolo;
+- [x] cabecera con campania, actividad, zona/campo opcional, descripcion y tipo de fecha;
+- [x] etapas basadas en maestro de estadios;
+- [x] labores e insumos seleccionados desde padrones;
+- [x] indice de aplicacion entre 0 y 1;
+- [x] costos por hectarea;
+- [x] fechas absolutas o relativas a siembra;
+- [x] auditoria de creacion, edicion y copia;
+- [x] mobile consulta/resumen de protocolo asignado.
 
 Criterio de aceptacion:
 
-- un protocolo calcula costo productivo por hectarea;
-- copiar protocolo no modifica el original;
-- los insumos/labores copiados quedan congelados como supuesto editable;
-- protocolo requiere permiso de configuracion para modificar.
+- [x] un protocolo calcula costo productivo por hectarea;
+- [x] copiar protocolo no modifica el original;
+- [x] los insumos/labores copiados quedan congelados como supuesto editable;
+- [x] protocolo requiere permiso de configuracion para modificar.
 
 ## Sprint 5 - Planificacion agricola tipo planilla
 
