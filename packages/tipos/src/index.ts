@@ -10,3 +10,4 @@ export type { LoginDemoRequest, Permiso, RolUsuario, SesionUsuario } from './aut
 export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
 export * from './erp';
 export * from './planificacion';
+export * from './precipitacion';

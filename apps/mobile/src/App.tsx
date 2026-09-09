@@ -66,6 +66,7 @@ const planificacionDemo: PlanificacionSnapshot = {
       campaniaErpId: 'empresa:mock:campania:961',
       nombre: 'Planificacion agricola demo',
       estado: 'borrador',
+      escenarioOriginal: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       lineas: [

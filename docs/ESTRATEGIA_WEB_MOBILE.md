@@ -44,6 +44,7 @@ Funciones esperadas:
 - visualizar lotes mediante georreferenciacion geografica;
 - seleccionar lotes desde mapa o listado;
 - registrar recorridas;
+- cargar precipitaciones por campo asignado y, cuando corresponda, asociarlas a lote;
 - cargar observaciones tecnicas;
 - agregar comentarios;
 - subir imagenes de cultivos, enfermedades, plagas, malezas, danos u otros hallazgos;
@@ -62,6 +63,7 @@ Web consulta, analiza, administra y eventualmente corrige esos datos.
 La informacion generada en mobile debe poder verse en web, incluyendo:
 
 - observaciones por campo, lote, cultivo y campania;
+- precipitaciones por campo, lote opcional, fecha y usuario;
 - fotos;
 - comentarios;
 - historial de recorridas;
@@ -84,6 +86,7 @@ Esto significa que una funcionalidad puede existir en ambos entornos si tiene se
 Ejemplos:
 
 - Una observacion rapida con foto nace naturalmente en mobile.
+- Una precipitacion cargada desde el campo nace naturalmente en mobile y puede revisarse luego desde web.
 - Un informe tecnico extenso puede cargarse o completarse mejor desde web.
 - Una observacion cargada en mobile puede revisarse, clasificar fotos o corregirse desde web si el usuario tiene permisos.
 - Una recorrida historica puede cargarse desde web si se esta migrando informacion previa.
@@ -101,6 +104,8 @@ Toda carga o edicion debe respetar:
 - trazabilidad de usuario, fecha, origen y cambios;
 - eventual sincronizacion offline/mobile cuando se implemente.
 
+Las precipitaciones deben validarse contra el alcance del usuario. Un usuario comun solo puede registrar lluvia sobre campos asignados; si selecciona lote, ese lote debe pertenecer al campo permitido. El valor debe guardarse con unidad normalizada en milimetros (`mm`), fecha/hora del evento, fecha/hora de carga, origen y usuario.
+
 El campo `origen` de las operaciones debe distinguir al menos:
 
 - `web`;
@@ -115,7 +120,8 @@ Primer alcance recomendado:
 2. Mapa o vista georreferenciada de lotes.
 3. Detalle de lote/cultivo.
 4. Nueva observacion con comentario, tipo, fecha, ubicacion y fotos.
-5. Historial de observaciones por lote.
-6. Vista web para consultar observaciones cargadas desde mobile.
+5. Carga rapida de precipitacion por campo asignado, con lote opcional.
+6. Historial de observaciones y precipitaciones por campo/lote.
+7. Vista web para consultar observaciones y precipitaciones cargadas desde mobile.
 
 La planificacion agricola y los protocolos quedan como funcionalidades principalmente web, con consulta resumida en mobile cuando aporte valor al usuario operativo.

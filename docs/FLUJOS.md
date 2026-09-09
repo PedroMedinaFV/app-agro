@@ -154,3 +154,31 @@ En modo demo, el backend guarda en memoria para validar UX y contratos. En persi
 10. Web puede permitir correccion, clasificacion, revision o informes si el usuario tiene permisos.
 
 La captura nace naturalmente en mobile, pero la consulta, analisis y revision pueden realizarse desde web.
+
+## Precipitaciones por campo asignado
+
+1. El usuario operativo inicia sesion desde mobile.
+2. Backend devuelve campos asignados y sus lotes permitidos.
+3. Mobile permite cargar una precipitacion rapida desde el campo.
+4. El usuario selecciona campo asignado; el lote es opcional y solo puede elegirse entre lotes del campo seleccionado.
+5. El usuario informa milimetros, fecha/hora del evento y observaciones opcionales.
+6. Mobile envia la precipitacion al backend con origen `mobile`.
+7. Backend valida autenticacion, permisos y alcance sobre el campo/lote.
+8. Backend persiste el registro en milimetros (`mm`), con usuario, fecha/hora de carga, origen y auditoria.
+9. Web permite consultar precipitaciones por empresa, campo, lote, campania, usuario y rango de fechas.
+10. Si mobile trabaja sin conexion, la precipitacion queda pendiente de sincronizacion y se envia cuando vuelva la conectividad.
+
+La carga de precipitaciones tambien puede existir en web para correcciones, migracion historica o carga de oficina, pero el flujo principal del MVP operativo debe estar pensado para mobile.
+
+Endpoints iniciales:
+
+- `GET /precipitaciones`: lista las ultimas precipitaciones del cliente, filtradas por alcance de campos para usuario comun.
+- `POST /precipitaciones`: crea una precipitacion con campo obligatorio, lote opcional, milimetros, fecha/hora del evento, observaciones y origen.
+
+Validaciones iniciales:
+
+- los milimetros deben ser mayores a cero;
+- el campo debe pertenecer al cliente de la sesion;
+- si se informa lote, debe pertenecer al campo seleccionado;
+- un usuario comun solo puede cargar o ver precipitaciones de campos asignados;
+- toda alta registra auditoria.

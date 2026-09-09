@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -40,6 +40,7 @@ export function Layout({
     { vista: 'protocolos' as const, label: 'Protocolos', icon: 'PR' },
     { vista: 'precios' as const, label: 'Precios', icon: 'US' },
     { vista: 'gastos' as const, label: 'Gastos', icon: 'GC' },
+    { vista: 'precipitaciones' as const, label: 'Precipitaciones', icon: 'MM' },
     { label: 'Siembra', icon: 'SI' },
     { label: 'Cosecha', icon: 'CO' },
     { label: 'Monitoreos', icon: 'MO' },

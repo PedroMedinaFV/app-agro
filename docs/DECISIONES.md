@@ -8,11 +8,15 @@ Se crea `apps/web` con React + Vite para validar rapido pantallas y flujos desde
 
 Web queda orientada a administracion, configuracion, planificacion, analisis, auditoria y trabajo de escritorio.
 
-Mobile queda orientada a operacion diaria de campo: georreferenciacion, recorridas, observaciones, fotos, comentarios y captura rapida sobre lotes asignados.
+Mobile queda orientada a operacion diaria de campo: georreferenciacion, recorridas, observaciones, precipitaciones, fotos, comentarios y captura rapida sobre lotes asignados.
 
 La informacion generada desde mobile debe poder consultarse y analizarse desde web. Algunas acciones operativas tambien pueden existir en web cuando aporten comodidad, revision o control.
 
 El detalle del acuerdo queda en `docs/ESTRATEGIA_WEB_MOBILE.md`.
+
+## Precipitaciones operativas
+
+La carga de precipitaciones se considera parte del modulo operativo mobile. El registro principal es por campo asignado, con lote opcional, valor en milimetros, fecha/hora del evento, usuario, origen y auditoria. Web debe poder consultarlo y eventualmente cargar o corregir datos cuando el permiso lo habilite.
 
 ## Login demo como desbloqueo
 

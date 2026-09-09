@@ -7,6 +7,7 @@ import { PlanificacionScreen } from './screens/PlanificacionScreen';
 import { ProtocolosScreen } from './screens/ProtocolosScreen';
 import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
 import { GastosComercialesScreen } from './screens/GastosComercialesScreen';
+import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
 import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
@@ -28,7 +29,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -89,6 +90,8 @@ export function App() {
       ? 'Precios de cereales'
     : vista === 'gastos'
       ? 'Gastos comerciales'
+    : vista === 'precipitaciones'
+      ? 'Precipitaciones'
     : vista === 'planificacion'
       ? 'Planificacion agricola'
       : vista === 'protocolos'
@@ -112,6 +115,8 @@ export function App() {
       ? 'Referencias comerciales para proponer precios en la planificacion'
     : vista === 'gastos'
       ? 'Referencias comerciales para estimar fletes, acondicionamiento y otros gastos'
+    : vista === 'precipitaciones'
+      ? 'Carga y consulta de lluvias por campo asignado'
     : vista === 'planificacion'
       ? planificacionDemo.planificacionEstado
       : vista === 'protocolos'
@@ -279,6 +284,10 @@ export function App() {
           formatearUsd={formatearUsd}
           leerNumero={leerNumero}
         />
+      )}
+
+      {vista === 'precipitaciones' && (
+        <PrecipitacionesScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'padrones-conceptos-gastos' && (

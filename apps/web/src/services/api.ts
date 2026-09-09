@@ -14,6 +14,8 @@ import {
   CerrarPlanificacionResponse,
   CampoPlanificacion,
   ConceptoGastoComercial,
+  CrearPrecipitacionRequest,
+  CrearPrecipitacionResponse,
   DestinoVentaReferencia,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
@@ -50,6 +52,7 @@ import {
   NotificacionUsuarioResumen,
   PadronErpSincronizable,
   PlanificacionSnapshot,
+  PrecipitacionesResponse,
   ProtocolosSnapshot,
   ResolverNotificacionVinculacionRequest,
   ResolverNotificacionVinculacionResponse,
@@ -479,6 +482,17 @@ export async function resolverNotificacionVinculacion(
   token?: string,
 ): Promise<ResolverNotificacionVinculacionResponse> {
   return request<ResolverNotificacionVinculacionResponse>(`/notificaciones/${id}/resolver-vinculacion`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function obtenerPrecipitaciones(token?: string): Promise<PrecipitacionesResponse> {
+  return request<PrecipitacionesResponse>('/precipitaciones', {}, token);
+}
+
+export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token?: string): Promise<CrearPrecipitacionResponse> {
+  return request<CrearPrecipitacionResponse>('/precipitaciones', {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);

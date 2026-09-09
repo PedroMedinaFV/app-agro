@@ -31,6 +31,7 @@ import zonasPlanificacionRuta from './routes/zonasPlanificacion';
 import camposPlanificacionRuta from './routes/camposPlanificacion';
 import lotesPlanificacionRuta from './routes/lotesPlanificacion';
 import notificacionesRuta from './routes/notificaciones';
+import precipitacionesRuta from './routes/precipitaciones';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -72,6 +73,7 @@ app.use('/zonas-planificacion', autenticacionBasica, zonasPlanificacionRuta);
 app.use('/campos-planificacion', autenticacionBasica, camposPlanificacionRuta);
 app.use('/lotes-planificacion', autenticacionBasica, lotesPlanificacionRuta);
 app.use('/notificaciones', autenticacionBasica, notificacionesRuta);
+app.use('/precipitaciones', autenticacionBasica, precipitacionesRuta);
 
 app.use(manejadorErrores);
 

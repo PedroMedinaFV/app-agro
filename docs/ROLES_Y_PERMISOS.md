@@ -27,6 +27,8 @@ Los permisos son declarativos y viven en `packages/tipos/src/auth.ts`.
 | `padrones-base:gestionar` | Si | No | Crear, editar o vincular zonas/campos/lotes/especies/actividades/insumos provisorios con ERP |
 | `registros:crear` | Si | Si | Crear registros de campo |
 | `registros:sincronizar` | Si | Si | Sincronizar pendientes mobile/offline |
+| `precipitaciones:crear` | Si | Si | Cargar precipitaciones sobre campos asignados |
+| `precipitaciones:leer` | Si | Si | Consultar precipitaciones dentro del alcance permitido |
 
 ## Backend
 
@@ -42,6 +44,7 @@ Ejemplos:
 - `/planificacion/:id/cerrar`: requiere `planificacion:cerrar`.
 - `/admin/planificacion/configuracion`: requiere `planificacion:configurar`.
 - `/admin/padrones-base`: requiere `padrones-base:gestionar`.
+- `/precipitaciones`: requiere `precipitaciones:leer` o `precipitaciones:crear` segun operacion.
 
 ## Frontend
 
@@ -80,6 +83,7 @@ El inicio de un usuario comun debe estar enfocado en la operacion diaria, no en 
 - resumen de campos asignados;
 - lotes disponibles;
 - acciones de carga permitidas;
+- carga rapida de precipitaciones sobre campos asignados;
 - pendientes de sincronizacion;
 - estado de conectividad cuando exista offline-first.
 

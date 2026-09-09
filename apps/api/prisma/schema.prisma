@@ -19,6 +19,7 @@ model Usuario {
   campos      Campo[]
   camposErpAsignados UsuarioCampoErp[]
   notificaciones NotificacionUsuario[]
+  precipitaciones PrecipitacionCampo[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -47,6 +48,7 @@ model Cliente {
   gastosComercialesReferencia GastosComercialesReferencia[]
   vinculacionesErpSugeridas VinculacionErpSugerida[]
   notificaciones NotificacionUsuario[]
+  precipitaciones PrecipitacionCampo[]
   auditoriaEventos AuditoriaEvento[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -523,6 +525,7 @@ model CampoPlanificacion {
   updatedAt         DateTime @updatedAt
   lotes             LotePlanificacion[]
   protocolos        ProtocoloProductivo[]
+  precipitaciones   PrecipitacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
@@ -548,12 +551,40 @@ model LotePlanificacion {
   updatedBy         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  precipitaciones   PrecipitacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
   @@index([campoPlanificacionId])
   @@index([loteErpId])
   @@index([estadoVinculacion])
+}
+
+model PrecipitacionCampo {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  usuario               Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId             String?
+  campoPlanificacion    CampoPlanificacion @relation(fields: [campoPlanificacionId], references: [id])
+  campoPlanificacionId  String
+  campoErpId            String?
+  lotePlanificacion     LotePlanificacion? @relation(fields: [lotePlanificacionId], references: [id])
+  lotePlanificacionId   String?
+  loteErpId             String?
+  milimetros            Float
+  fechaEvento           DateTime
+  observaciones         String?
+  origen                String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([campoPlanificacionId])
+  @@index([lotePlanificacionId])
+  @@index([fechaEvento])
+  @@index([origen])
 }
 
 model EspeciePlanificacion {

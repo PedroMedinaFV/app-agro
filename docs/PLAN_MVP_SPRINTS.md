@@ -350,6 +350,7 @@ Incluye:
 - vista geografica simple o preparacion de modelo georreferenciado;
 - ficha de lote/cultivo;
 - carga de observacion;
+- carga rapida de precipitaciones por campo asignado, con lote opcional;
 - foto adjunta;
 - comentario;
 - estado offline pendiente de sincronizar;
@@ -359,6 +360,7 @@ Criterio de aceptacion:
 
 - usuario comun ve solo sus campos;
 - puede crear una observacion de lote;
+- puede cargar una precipitacion en milimetros sobre un campo asignado;
 - puede adjuntar imagen;
 - si no hay conexion, queda pendiente;
 - al sincronizar, web puede ver esa informacion.
@@ -372,6 +374,7 @@ Objetivo:
 Incluye:
 
 - tablero de observaciones;
+- tablero/listado de precipitaciones;
 - filtros por empresa, campo, lote, campania, actividad, usuario y fecha;
 - detalle con imagenes, comentarios y georreferencia;
 - exportacion inicial;
