@@ -302,7 +302,7 @@ export function PlanificacionEditorScreen({
             aria-label="Copiar linea"
             title="Copiar linea"
           >
-            <span aria-hidden="true">⧉</span>
+            <span aria-hidden="true">Cop.</span>
           </button>
           <button
             className="icon-button danger-icon"
@@ -312,7 +312,7 @@ export function PlanificacionEditorScreen({
             aria-label="Quitar linea"
             title="Quitar linea"
           >
-            <span aria-hidden="true">×</span>
+            <span aria-hidden="true">X</span>
           </button>
         </div>
       </div>
@@ -457,3 +457,4 @@ export function PlanificacionEditorScreen({
     </section>
   );
 }
+

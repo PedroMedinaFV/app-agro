@@ -327,37 +327,45 @@ Criterio de aceptacion:
 
 ## Sprint 5 - Planificacion agricola tipo planilla
 
+Estado: en curso avanzado.
+
 Objetivo:
 
 - cerrar la funcionalidad central del MVP.
 
 Incluye:
 
-- listado de planificaciones con nombre, campania, estado, hectareas y margen;
-- multiples escenarios por campania, con cierre de un escenario original y deshabilitacion automatica de alternativas;
-- alta de nuevo escenario desde resumen web, con edicion posterior en pantalla completa;
-- precarga de lotes activos al crear escenario, organizados como arbol zona-campo;
-- copia de linea para doble cultivo y copia de escenario para simulaciones;
-- pantalla completa de edicion tipo planilla;
-- lineas por campo, lote, actividad y protocolo;
-- selects dependientes campo/lote;
-- propuesta automatica de destino, precio y gastos;
-- carga de rinde estimado y hectareas;
-- calculo de ingreso bruto, ingreso neto, costo productivo y margen bruto;
-- validacion de duplicados por campania/campo/lote/actividad;
-- guardado borrador;
-- cierre de planificacion;
-- auditoria de cambios e intentos bloqueados;
-- mobile consulta de planificacion asignada.
+- [x] listado de planificaciones con nombre, campania, estado, hectareas y margen;
+- [x] multiples escenarios por campania, con cierre de un escenario original y deshabilitacion automatica de alternativas;
+- [x] alta de nuevo escenario desde resumen web, con edicion posterior en pantalla completa;
+- [x] precarga de lotes activos al crear escenario, organizados como arbol zona-campo;
+- [x] copia de linea para doble cultivo y copia de escenario para simulaciones;
+- [x] pantalla completa de edicion tipo planilla;
+- [x] lineas por lote y protocolo, tomando la actividad desde el protocolo cuando corresponde;
+- [x] select de lote dependiente del campo de la linea;
+- [x] propuesta automatica de destino, precio y gastos;
+- [x] carga de rinde estimado y hectareas;
+- [x] calculo de ingreso bruto, ingreso neto, costo productivo y margen bruto;
+- [x] validacion de duplicados por campania/campo/lote/actividad;
+- [x] guardado borrador;
+- [x] cierre de planificacion;
+- [x] auditoria de cambios e intentos bloqueados;
+- [x] mobile consulta de planificacion asignada.
 
 Criterio de aceptacion:
 
-- se puede crear una planificacion completa;
-- no permite duplicar misma actividad en el mismo lote/campania;
-- una planificacion cerrada no se puede editar;
-- al cerrar una planificacion, las demas de la misma campania quedan deshabilitadas;
-- el margen queda calculado y visible;
-- todos los cambios relevantes quedan auditados.
+- [x] se puede crear una planificacion completa;
+- [x] no permite duplicar misma actividad en el mismo lote/campania;
+- [x] una planificacion cerrada no se puede editar;
+- [x] al cerrar una planificacion, las demas de la misma campania quedan deshabilitadas;
+- [x] el margen queda calculado y visible;
+- [x] todos los cambios relevantes quedan auditados.
+
+Pendientes de refinamiento antes de cerrar sprint:
+
+- revisar ergonomia final de la planilla con datos reales voluminosos;
+- mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
+- validar con usuario el flujo de edicion masiva antes de darlo por cerrado.
 
 ## Sprint 6 - Mobile operativo V1
 
