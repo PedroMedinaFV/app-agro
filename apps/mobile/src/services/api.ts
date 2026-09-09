@@ -1,4 +1,9 @@
-import type { CrearPrecipitacionRequest, CrearPrecipitacionResponse, PrecipitacionesResponse } from '@agro/tipos';
+import type {
+  CrearPrecipitacionRequest,
+  CrearPrecipitacionResponse,
+  PlanificacionSnapshot,
+  PrecipitacionesResponse,
+} from '@agro/tipos';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -61,6 +66,12 @@ export async function obtenerUsuarios(token: string) {
 
 export async function obtenerPrecipitaciones(token: string) {
   return request<PrecipitacionesResponse>('/precipitaciones', {
+    method: 'GET',
+  }, token);
+}
+
+export async function obtenerPlanificacionSnapshot(token: string) {
+  return request<PlanificacionSnapshot>('/planificacion/snapshot', {
     method: 'GET',
   }, token);
 }

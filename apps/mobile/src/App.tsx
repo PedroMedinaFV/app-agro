@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
-import { crearPrecipitacion } from './services/api';
-import { offlineStore } from './store/offlineStore';
+import { crearPrecipitacion, obtenerPlanificacionSnapshot } from './services/api';
+import { guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
 
 const planificacionDemo: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
@@ -113,6 +113,42 @@ export default function App() {
   const [observaciones, setObservaciones] = useState('');
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
+  const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionDemo);
+  const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
+  const [errorPlanificacion, setErrorPlanificacion] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function cargarDatosOperativos() {
+      if (!sesion) {
+        setPlanificacionOperativa(planificacionDemo);
+        return;
+      }
+
+      setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+
+      if (sesion.origen === 'demo' || sesion.token === 'demo-mobile-token') {
+        setPlanificacionOperativa(planificacionDemo);
+        setErrorPlanificacion(null);
+        return;
+      }
+
+      setCargandoPlanificacion(true);
+      try {
+        const snapshot = await obtenerPlanificacionSnapshot(sesion.token);
+        setPlanificacionOperativa(snapshot);
+        setCampoSeleccionadoId(snapshot.camposPlanificacion[0]?.id || '');
+        setLoteSeleccionadoId(snapshot.lotesPlanificacion[0]?.id || '');
+        setErrorPlanificacion(null);
+      } catch (error) {
+        setPlanificacionOperativa(planificacionDemo);
+        setErrorPlanificacion(error instanceof Error ? error.message : 'No se pudieron cargar los datos operativos.');
+      } finally {
+        setCargandoPlanificacion(false);
+      }
+    }
+
+    void cargarDatosOperativos();
+  }, [sesion]);
 
   function entrarModoDemo() {
     // Mobile mantiene el mismo contrato de sesion que web/backend mientras no haya API disponible.
@@ -127,21 +163,28 @@ export default function App() {
   if (sesion) {
     const sesionActiva = sesion;
     const esAdmin = sesion.permisos.includes('erp:configurar');
-    const planificacionActiva = planificacionDemo.planificaciones[0];
-    const protocoloActivo = planificacionDemo.protocolos[0];
+    const datosOperativos = planificacionOperativa;
+    const planificacionActiva = datosOperativos.planificaciones[0] || planificacionDemo.planificaciones[0];
+    const protocoloActivo = datosOperativos.protocolos[0] || planificacionDemo.protocolos[0];
     const margenBruto = planificacionActiva.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
     const hectareas = planificacionActiva.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
-    const campoSeleccionado = planificacionDemo.camposPlanificacion.find((campo) => campo.id === campoSeleccionadoId) || planificacionDemo.camposPlanificacion[0];
-    const lotesDelCampo = planificacionDemo.lotesPlanificacion.filter((lote) => lote.campoPlanificacionId === campoSeleccionado?.id);
+    const campoSeleccionado = datosOperativos.camposPlanificacion.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposPlanificacion[0];
+    const lotesDelCampo = datosOperativos.lotesPlanificacion.filter((lote) => lote.campoPlanificacionId === campoSeleccionado?.id);
     const loteSeleccionado = lotesDelCampo.find((lote) => lote.id === loteSeleccionadoId) || lotesDelCampo[0];
 
     function seleccionarSiguienteCampo() {
-      const campos = planificacionDemo.camposPlanificacion;
+      const campos = datosOperativos.camposPlanificacion;
+      if (!campos.length) {
+        setCampoSeleccionadoId('');
+        setLoteSeleccionadoId('');
+        return;
+      }
+
       const indiceActual = campos.findIndex((campo) => campo.id === campoSeleccionado?.id);
       const siguiente = campos[(indiceActual + 1) % campos.length];
 
       setCampoSeleccionadoId(siguiente.id);
-      setLoteSeleccionadoId(planificacionDemo.lotesPlanificacion.find((lote) => lote.campoPlanificacionId === siguiente.id)?.id || '');
+      setLoteSeleccionadoId(datosOperativos.lotesPlanificacion.find((lote) => lote.campoPlanificacionId === siguiente.id)?.id || '');
     }
 
     function seleccionarSiguienteLote() {
@@ -174,8 +217,14 @@ export default function App() {
       setGuardandoPrecipitacion(true);
       try {
         if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
-          offlineStore.agregarPendiente('precipitacion', payload);
-          setPendientesOffline(offlineStore.listarPendientes().filter((item) => !item.sincronizado).length);
+          await guardarRegistroLocal({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tipo: 'precipitacion',
+            payload,
+            creadoEn: new Date().toISOString(),
+            sincronizado: false,
+          });
+          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
           Alert.alert('Precipitaciones', 'Registro guardado como pendiente mobile.');
         } else {
           await crearPrecipitacion(payload, sesionActiva.token);
@@ -185,8 +234,14 @@ export default function App() {
         setMilimetros('');
         setObservaciones('');
       } catch (error) {
-        offlineStore.agregarPendiente('precipitacion', payload);
-        setPendientesOffline(offlineStore.listarPendientes().filter((item) => !item.sincronizado).length);
+        await guardarRegistroLocal({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          tipo: 'precipitacion',
+          payload,
+          creadoEn: new Date().toISOString(),
+          sincronizado: false,
+        });
+        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
         Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
       } finally {
         setGuardandoPrecipitacion(false);
@@ -199,6 +254,8 @@ export default function App() {
           <Text style={styles.title}>Panel mobile</Text>
           <Text style={styles.subtitle}>Sesion demo activa para {sesion.usuario.email}</Text>
           <Text style={styles.note}>Rol: {sesion.usuario.rol}</Text>
+          {cargandoPlanificacion && <Text style={styles.note}>Cargando campos y lotes asignados...</Text>}
+          {errorPlanificacion && <Text style={styles.errorText}>{errorPlanificacion}</Text>}
           {esAdmin ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Empresas ERP</Text>
@@ -208,11 +265,11 @@ export default function App() {
           ) : (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Mi trabajo</Text>
-              <Text style={styles.note}>Campos asignados: {planificacionDemo.camposPlanificacion.length}</Text>
-              <Text style={styles.note}>Lotes disponibles: {planificacionDemo.lotesPlanificacion.length}</Text>
+              <Text style={styles.note}>Campos asignados: {datosOperativos.camposPlanificacion.length}</Text>
+              <Text style={styles.note}>Lotes disponibles: {datosOperativos.lotesPlanificacion.length}</Text>
               <Text style={styles.note}>Campania actual: 19/20</Text>
-              <Text style={styles.note}>Cultivos disponibles: 1</Text>
-              <Text style={styles.note}>Insumos de referencia: 2</Text>
+              <Text style={styles.note}>Actividades disponibles: {datosOperativos.actividadesPlanificacion?.length || 0}</Text>
+              <Text style={styles.note}>Insumos de referencia: {datosOperativos.insumosPlanificacion?.length || 0}</Text>
               <Text style={styles.note}>Accion permitida: cargar registros de campo</Text>
             </View>
           )}
@@ -334,6 +391,11 @@ const styles = StyleSheet.create({
   note: {
     marginTop: 18,
     color: '#6b7280',
+    fontSize: 13,
+  },
+  errorText: {
+    marginTop: 12,
+    color: '#991b1b',
     fontSize: 13,
   },
   section: {

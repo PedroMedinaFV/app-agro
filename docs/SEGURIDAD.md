@@ -52,6 +52,10 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - La UI puede ocultar secciones administrativas, pero no debe ser la barrera principal.
 - Los endpoints deben evitar aceptar `clienteId`, `empresaErpId` o `campoErpId` del cliente sin validar que pertenecen al usuario autenticado.
 - Para futuras escrituras offline/mobile, el backend debe validar que el registro enviado pertenece a un campo asignado al usuario antes de persistirlo o sincronizarlo al ERP.
+- `POST /sincronizacion` debe exigir autenticacion y permiso `registros:sincronizar`.
+- Los registros offline se tratan como datos no confiables: el backend vuelve a validar cliente, usuario, campo, lote, limites y permisos antes de persistir.
+- Los registros mobile deben enviar un identificador local idempotente, por ejemplo `registroMovilId`, para evitar duplicados cuando hay reintentos.
+- Si un tipo de registro offline aun no esta soportado, debe quedar pendiente con error controlado y no marcarse como sincronizado.
 - `GET /erp/snapshot` debe responder al usuario comun con un subconjunto ya filtrado desde backend, incluyendo empresas y padrones maestros recortados al alcance operativo cuando aplique.
 - Los cultivos deben filtrarse por lotes permitidos, no solo por empresa, porque son datos operativos ligados al campo/lote.
 

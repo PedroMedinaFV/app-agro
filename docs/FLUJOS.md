@@ -167,6 +167,9 @@ La captura nace naturalmente en mobile, pero la consulta, analisis y revision pu
 8. Backend persiste el registro en milimetros (`mm`), con usuario, fecha/hora de carga, origen y auditoria.
 9. Web permite consultar precipitaciones por empresa, campo, lote, campania, usuario y rango de fechas.
 10. Si mobile trabaja sin conexion, la precipitacion queda pendiente de sincronizacion y se envia cuando vuelva la conectividad.
+11. La sincronizacion offline usa `POST /sincronizacion` con token valido y permiso `registros:sincronizar`.
+12. Cada registro mobile envia su identificador local como `registroMovilId` para que el backend no duplique la precipitacion ante reintentos.
+13. El backend revalida campo, lote, usuario, cliente y permisos antes de persistir cualquier pendiente.
 
 La carga de precipitaciones tambien puede existir en web para correcciones, migracion historica o carga de oficina, pero el flujo principal del MVP operativo debe estar pensado para mobile.
 
@@ -174,6 +177,7 @@ Endpoints iniciales:
 
 - `GET /precipitaciones`: lista las ultimas precipitaciones del cliente, filtradas por alcance de campos para usuario comun.
 - `POST /precipitaciones`: crea una precipitacion con campo obligatorio, lote opcional, milimetros, fecha/hora del evento, observaciones y origen.
+- `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion`; otros tipos quedan pendientes con error controlado.
 
 Validaciones iniciales:
 
@@ -181,7 +185,9 @@ Validaciones iniciales:
 - el campo debe pertenecer al cliente de la sesion;
 - si se informa lote, debe pertenecer al campo seleccionado;
 - un usuario comun solo puede cargar o ver precipitaciones de campos asignados;
-- toda alta registra auditoria.
+- toda alta registra auditoria;
+- la sincronizacion offline no confia en el payload mobile y vuelve a ejecutar las mismas validaciones del alta online;
+- `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos.
 
 ## Alta de usuarios, rol y enlace Microsoft
 

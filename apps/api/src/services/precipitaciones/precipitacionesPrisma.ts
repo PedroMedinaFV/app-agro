@@ -23,6 +23,7 @@ type PrecipitacionRow = {
   campoErpId: string | null;
   lotePlanificacionId: string | null;
   loteErpId: string | null;
+  registroMovilId: string | null;
   milimetros: number;
   fechaEvento: Date;
   observaciones: string | null;
@@ -64,6 +65,7 @@ function mapearPrecipitacion(row: PrecipitacionRow): PrecipitacionCampo {
     campoErpId: row.campoErpId || undefined,
     lotePlanificacionId: row.lotePlanificacionId || undefined,
     loteErpId: row.loteErpId || undefined,
+    registroMovilId: row.registroMovilId || undefined,
     milimetros: row.milimetros,
     fechaEvento: row.fechaEvento.toISOString(),
     observaciones: row.observaciones || undefined,
@@ -189,6 +191,24 @@ export async function crearPrecipitacionPersistida(
   const observaciones = request.observaciones ? limpiarTextoVisible(request.observaciones) : null;
 
   return prisma.$transaction(async (tx) => {
+    if (request.registroMovilId) {
+      const existenteMovil = await tx.$queryRaw<PrecipitacionRow[]>`
+        SELECT *
+        FROM "PrecipitacionCampo"
+        WHERE "clienteId" = ${clienteId}
+          AND "registroMovilId" = ${request.registroMovilId}
+        LIMIT 1
+      `;
+
+      if (existenteMovil[0]) {
+        return {
+          precipitacion: mapearPrecipitacion(existenteMovil[0]),
+          auditado: true,
+          mensaje: 'Precipitacion ya sincronizada previamente.',
+        };
+      }
+    }
+
     const usuarioExistente = usuario.id
       ? await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id"
@@ -207,6 +227,7 @@ export async function crearPrecipitacionPersistida(
         "campoErpId",
         "lotePlanificacionId",
         "loteErpId",
+        "registroMovilId",
         "milimetros",
         "fechaEvento",
         "observaciones",
@@ -221,6 +242,7 @@ export async function crearPrecipitacionPersistida(
         ${validacion.campo.campoErpId},
         ${request.lotePlanificacionId || null},
         ${validacion.lote?.loteErpId || null},
+        ${request.registroMovilId || null},
         ${request.milimetros},
         ${validacion.fechaEvento},
         ${observaciones},

@@ -8,6 +8,7 @@ export type PrecipitacionCampo = {
   campoErpId?: string;
   lotePlanificacionId?: string;
   loteErpId?: string;
+  registroMovilId?: string;
   milimetros: number;
   fechaEvento: string;
   observaciones?: string;
@@ -19,6 +20,7 @@ export type PrecipitacionCampo = {
 export type CrearPrecipitacionRequest = {
   campoPlanificacionId: string;
   lotePlanificacionId?: string;
+  registroMovilId?: string;
   milimetros: number;
   fechaEvento: string;
   observaciones?: string;

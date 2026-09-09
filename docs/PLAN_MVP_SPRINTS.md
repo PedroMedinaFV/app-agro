@@ -160,7 +160,7 @@ Incluye:
 - [x] accion web admin para sincronizar padrones y ver conteos principales;
 - [x] pantalla web dedicada de sincronizacion con seleccion de padrones;
 - [x] dependencias automaticas de sincronizacion para mantener cache consistente;
-- [ ] mobile solo lectura de campos/lotes/cultivos asignados.
+- [x] mobile solo lectura de campos/lotes/cultivos asignados.
 
 Criterio de aceptacion:
 
@@ -169,7 +169,7 @@ Criterio de aceptacion:
 - [x] no se duplican registros en corridas sucesivas;
 - [x] la web permite disparar sincronizacion manual y ver conteos principales;
 - [ ] la web muestra historial de corridas y errores por empresa/padron;
-- [ ] usuario comun solo ve campos asignados.
+- [x] usuario comun solo ve campos asignados.
 
 Decision de alcance:
 
@@ -374,6 +374,10 @@ Avance realizado:
 - [x] pantalla mobile demo para cargar precipitaciones por campo/lote;
 - [x] guardado local pendiente en modo demo/offline;
 - [x] llamada preparada a `POST /precipitaciones` cuando exista sesion real.
+- [x] `POST /sincronizacion` autenticado para procesar pendientes mobile de precipitaciones;
+- [x] idempotencia por `registroMovilId` para no duplicar precipitaciones ante reintentos;
+- [x] mobile marca como sincronizados solo los pendientes aceptados por backend.
+- [x] mobile consume `GET /planificacion/snapshot` con sesion real para mostrar campos/lotes asignados.
 
 ## Sprint 7 - Web de seguimiento operativo
 

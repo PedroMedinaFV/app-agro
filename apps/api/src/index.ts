@@ -55,7 +55,7 @@ app.use('/analisis-suelo', autenticacionBasica, analisisSueloRuta);
 app.use('/avances-siembra', autenticacionBasica, avancesSiembraRuta);
 app.use('/avances-cosecha', autenticacionBasica, avancesCosechaRuta);
 app.use('/monitoreos', autenticacionBasica, monitoreosRuta);
-app.use('/sincronizacion', sincronizacionRuta);
+app.use('/sincronizacion', autenticacionBasica, requierePermiso('registros:sincronizar'), sincronizacionRuta);
 app.use('/erp', autenticacionBasica, requierePermiso('erp:leer'), erpRuta);
 app.use('/admin/integracion-erp', autenticacionBasica, requierePermiso('erp:configurar'), adminIntegracionErpRuta);
 app.use('/admin/asignaciones', autenticacionBasica, requierePermiso('usuarios:asignar-campos'), adminUsuariosCamposRuta);

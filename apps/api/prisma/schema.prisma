@@ -572,6 +572,7 @@ model PrecipitacionCampo {
   lotePlanificacion     LotePlanificacion? @relation(fields: [lotePlanificacionId], references: [id])
   lotePlanificacionId   String?
   loteErpId             String?
+  registroMovilId       String?
   milimetros            Float
   fechaEvento           DateTime
   observaciones         String?
@@ -583,8 +584,10 @@ model PrecipitacionCampo {
   @@index([usuarioId])
   @@index([campoPlanificacionId])
   @@index([lotePlanificacionId])
+  @@index([registroMovilId])
   @@index([fechaEvento])
   @@index([origen])
+  @@unique([clienteId, registroMovilId])
 }
 
 model EspeciePlanificacion {
