@@ -50,7 +50,9 @@ export async function loginMicrosoft(idToken: string) {
 }
 
 export async function obtenerUsuarios(token: string) {
-  return request<Array<{ id: string; email: string; nombre?: string | null }>>('/usuarios', {
+  const respuesta = await request<{ usuarios: Array<{ id: string; email: string; nombre?: string | null }> }>('/usuarios', {
     method: 'GET',
   }, token);
+
+  return respuesta.usuarios;
 }

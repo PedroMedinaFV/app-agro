@@ -43,6 +43,8 @@ import {
   GuardarPrecioReferenciaResponse,
   GuardarProtocoloRequest,
   GuardarProtocoloResponse,
+  GuardarUsuarioAdminRequest,
+  GuardarUsuarioAdminResponse,
   LaborReferencia,
   ActividadPlanificacion,
   EspeciePlanificacion,
@@ -57,6 +59,7 @@ import {
   ResolverNotificacionVinculacionRequest,
   ResolverNotificacionVinculacionResponse,
   SesionUsuario,
+  UsuariosAdminResponse,
   ZonaPlanificacion,
 } from '@agro/tipos';
 import { startBackendActivity } from '../utils/backendActivity';
@@ -495,5 +498,27 @@ export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token
   return request<CrearPrecipitacionResponse>('/precipitaciones', {
     method: 'POST',
     body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function obtenerUsuariosAdmin(token?: string): Promise<UsuariosAdminResponse> {
+  return request<UsuariosAdminResponse>('/usuarios', {}, token);
+}
+
+export async function guardarUsuarioAdmin(
+  id: string,
+  datos: GuardarUsuarioAdminRequest,
+  token?: string,
+): Promise<GuardarUsuarioAdminResponse> {
+  return request<GuardarUsuarioAdminResponse>(`/usuarios/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function guardarCamposUsuarioAdmin(clienteId: string, usuarioId: string, camposErpIds: string[], token?: string) {
+  return request(`/admin/asignaciones/${clienteId}/usuarios/${usuarioId}/campos`, {
+    method: 'PUT',
+    body: JSON.stringify({ camposErpIds }),
   }, token);
 }

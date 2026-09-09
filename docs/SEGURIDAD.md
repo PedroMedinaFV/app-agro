@@ -93,6 +93,15 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - Las pantallas pueden ocultar acciones no permitidas, pero la autorizacion real debe estar en backend.
 - Toda modificacion de padrones maestros debe auditarse.
 
+## Usuarios y Microsoft
+
+- La creacion de usuarios debe realizarse desde una pantalla administrativa protegida por `usuarios:gestionar`.
+- La asignacion de campos debe requerir `usuarios:asignar-campos`.
+- El usuario comun solo debe recibir alcance sobre campos ERP asignados explicitamente.
+- El enlace con Microsoft debe hacerse por email preconfigurado por un administrador, conservando `clienteId`, rol y campos asignados.
+- La autoalta libre por Microsoft queda fuera del MVP productivo recomendado porque puede crear usuarios sin alcance ni aprobacion administrativa.
+- Toda alta, cambio de rol y reemplazo de campos asignados debe quedar auditado.
+
 ## Auditoria
 
 - Toda alta, modificacion, baja logica, cambio de estado, asignacion o aprobacion debe registrar quien hizo el cambio, cuando y sobre que entidad.

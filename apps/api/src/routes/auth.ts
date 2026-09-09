@@ -103,15 +103,20 @@ router.post('/microsoft', async (req, res, next) => {
     }
 
     const identidad = await validarIdTokenMicrosoft(idToken);
+    const email = identidad.email.trim().toLowerCase();
+    const usuarioExistente = await prisma.usuario.findUnique({ where: { email } });
 
-    const usuario = await prisma.usuario.upsert({
-      where: { email: identidad.email },
-      update: {
-        nombre: identidad.nombre,
-        microsoftId: identidad.microsoftId,
-      },
-      create: {
-        email: identidad.email,
+    if (!usuarioExistente || !usuarioExistente.clienteId) {
+      return res.status(403).json({ error: 'El usuario Microsoft no esta habilitado en Agro App. Solicita el alta a un administrador.' });
+    }
+
+    if (usuarioExistente.microsoftId && usuarioExistente.microsoftId !== identidad.microsoftId) {
+      return res.status(403).json({ error: 'El email ya esta enlazado a otra identidad Microsoft.' });
+    }
+
+    const usuario = await prisma.usuario.update({
+      where: { id: usuarioExistente.id },
+      data: {
         nombre: identidad.nombre,
         microsoftId: identidad.microsoftId,
       },

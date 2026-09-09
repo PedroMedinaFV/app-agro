@@ -129,6 +129,8 @@ Incluye:
 - [x] importacion de `Sistema/Empresas` a `ErpEmpresa`;
 - [x] seleccion AGRO en `ClienteEmpresaErp`;
 - [x] pantalla web `Empresas ERP`;
+- [x] pantalla web inicial `Usuarios` para alta, rol y campos asignados;
+- [x] enlace seguro de login Microsoft contra usuarios preconfigurados por email;
 - [x] scripts `erp:test`, `erp:sync:empresas`, `erp:list:empresas`;
 - [x] documentacion de integracion y secretos.
 
@@ -138,6 +140,7 @@ Criterio de aceptacion:
 - [x] `erp:sync:empresas` guarda empresas en Supabase;
 - [x] la web muestra todas las empresas importadas;
 - [x] el admin puede guardar seleccion AGRO;
+- [x] el admin puede crear usuarios y asignar campos operativos;
 - [x] ningun secreto se muestra en frontend ni queda versionado.
 
 ## Sprint 1 - Sincronizacion de padrones base ALBOR

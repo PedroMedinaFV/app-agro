@@ -38,6 +38,7 @@ Ejemplos:
 
 - `/erp`: requiere `erp:leer`.
 - `/erp/sincronizar`: requiere `erp:sincronizar`.
+- `/usuarios`: requiere `usuarios:gestionar`.
 - `/admin/integracion-erp`: requiere `erp:configurar`.
 - `/admin/asignaciones`: requiere `usuarios:asignar-campos`.
 - `/planificacion`: requiere `planificacion:leer` o `planificacion:editar` segun operacion.

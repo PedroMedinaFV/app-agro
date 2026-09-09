@@ -34,8 +34,12 @@ export function PantallaInicio() {
   );
 
   const cargarUsuarios = async (jwt: string) => {
-    const datos = await obtenerUsuarios(jwt);
-    setUsuarios(datos);
+    try {
+      const datos = await obtenerUsuarios(jwt);
+      setUsuarios(datos);
+    } catch {
+      setUsuarios([]);
+    }
   };
 
   const handleLogin = async () => {

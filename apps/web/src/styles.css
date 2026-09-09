@@ -1641,6 +1641,48 @@ nav a.active .nav-icon,
   width: min(1120px, 100%);
 }
 
+.field-picker {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #dbe5de;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.field-picker h3 {
+  margin: 0 0 4px;
+  color: #071b3a;
+}
+
+.field-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.field-picker-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border: 1px solid #dbe5de;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.field-picker-item span {
+  display: grid;
+  gap: 3px;
+}
+
+.field-picker-item small {
+  color: #53625a;
+}
+
 .modal-inner-panel {
   margin-top: 14px;
   border-color: #edf1ee;

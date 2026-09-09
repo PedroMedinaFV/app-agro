@@ -182,3 +182,18 @@ Validaciones iniciales:
 - si se informa lote, debe pertenecer al campo seleccionado;
 - un usuario comun solo puede cargar o ver precipitaciones de campos asignados;
 - toda alta registra auditoria.
+
+## Alta de usuarios, rol y enlace Microsoft
+
+1. Un administrador ingresa a la pantalla web `Usuarios`.
+2. Crea un usuario con email, nombre y rol inicial.
+3. Si el rol es `usuario`, asigna los campos ERP permitidos para operar.
+4. Backend valida que el usuario pertenezca al cliente de la sesion.
+5. Backend valida que los campos asignados pertenezcan al mismo cliente y esten vinculados al ERP.
+6. Backend persiste usuario, rol y asignaciones con auditoria.
+7. El usuario inicia sesion con Microsoft usando el mismo email.
+8. Backend valida el `id_token` con Microsoft y busca/upsertea por email.
+9. Si el email ya fue creado por el administrador, se conserva `clienteId`, rol y campos asignados, y se guarda `microsoftId`.
+10. La sesion queda enlazada a Microsoft desde ese momento.
+
+Para el MVP no se recomienda autoalta libre por Microsoft. Si un email no fue configurado previamente por un administrador, el sistema puede crearlo como usuario sin cliente o rechazarlo segun la politica final. La opcion mas segura para produccion es exigir prealta administrativa.

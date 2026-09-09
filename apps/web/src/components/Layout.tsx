@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -14,6 +14,7 @@ interface LayoutProps {
   descripcion: string;
   puedeConfigurarErp: boolean;
   puedeConfigurarPlanificacion: boolean;
+  puedeGestionarUsuarios: boolean;
   notificacionesPendientes: number;
   children: ReactNode;
 }
@@ -29,6 +30,7 @@ export function Layout({
   descripcion,
   puedeConfigurarErp,
   puedeConfigurarPlanificacion,
+  puedeGestionarUsuarios,
   notificacionesPendientes,
   children,
 }: LayoutProps) {
@@ -132,6 +134,16 @@ export function Layout({
                   </div>
                 )}
               </div>
+            )}
+            {puedeGestionarUsuarios && (
+              <a
+                className={vista === 'usuarios' ? 'active' : ''}
+                onClick={() => onVistaChange('usuarios')}
+                title="Usuarios"
+              >
+                <span className="nav-icon">US</span>
+                <span className="nav-label">Usuarios</span>
+              </a>
             )}
             {puedeConfigurarErp && (
               <>

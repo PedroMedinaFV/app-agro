@@ -71,6 +71,34 @@ export type LoginDemoRequest = {
   clienteId?: string;
 };
 
+export type UsuarioAdminResumen = {
+  id: string;
+  email: string;
+  nombre?: string;
+  rol: RolUsuario;
+  clienteId: string;
+  microsoftId?: string;
+  camposAsignados: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UsuariosAdminResponse = {
+  usuarios: UsuarioAdminResumen[];
+};
+
+export type GuardarUsuarioAdminRequest = {
+  email: string;
+  nombre?: string;
+  rol: RolUsuario;
+};
+
+export type GuardarUsuarioAdminResponse = {
+  usuario: UsuarioAdminResumen;
+  auditado: boolean;
+  mensaje: string;
+};
+
 export function obtenerPermisosRol(rol: string | undefined): Permiso[] {
   return permisosPorRol[rol === 'admin' ? 'admin' : 'usuario'];
 }

@@ -8,6 +8,7 @@ import { ProtocolosScreen } from './screens/ProtocolosScreen';
 import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
 import { GastosComercialesScreen } from './screens/GastosComercialesScreen';
 import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
+import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
 import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
@@ -29,7 +30,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -39,6 +40,7 @@ export function App() {
   const sesion = auth.sesion;
   const [notificacionesPendientes, setNotificacionesPendientes] = useState(0);
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
+  const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
   const refrescarNotificaciones = useCallback(async () => {
     if (!sesion || !sesion.permisos.includes('planificacion:configurar')) {
       setNotificacionesPendientes(0);
@@ -78,6 +80,8 @@ export function App() {
     ? 'Empresas ERP'
     : vista === 'sincronizacion-erp'
       ? 'Sincronizacion ERP'
+    : vista === 'usuarios'
+      ? 'Usuarios'
     : vista === 'notificaciones'
       ? 'Notificaciones'
     : vista === 'campos'
@@ -103,6 +107,8 @@ export function App() {
     ? erp.estadoEmpresas
     : vista === 'sincronizacion-erp'
       ? 'Importacion selectiva de informacion desde ALBOR'
+    : vista === 'usuarios'
+      ? 'Alta de usuarios, roles y campos asignados'
     : vista === 'notificaciones'
       ? 'Avisos internos generados por el sistema'
     : vista === 'campos'
@@ -153,6 +159,7 @@ export function App() {
         descripcion={descripcionVista}
         puedeConfigurarErp={puedeConfigurarErp}
         puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+        puedeGestionarUsuarios={puedeGestionarUsuarios}
         notificacionesPendientes={notificacionesPendientes}
       >
         {vista === 'inicio' && (
@@ -288,6 +295,10 @@ export function App() {
 
       {vista === 'precipitaciones' && (
         <PrecipitacionesScreen sesion={sesion} notificar={toast.notify} />
+      )}
+
+      {vista === 'usuarios' && (
+        <UsuariosAdminScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'padrones-conceptos-gastos' && (
