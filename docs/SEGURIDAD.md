@@ -84,6 +84,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - El bloqueo de planificaciones cerradas debe validarse en backend, no solo en la interfaz.
 - Cerrar una planificacion debe requerir el permiso especifico `planificacion:cerrar` y quedar auditado.
 - El backend puede aceptar `0` hectareas en borradores para permitir cargas incompletas, pero debe rechazar valores negativos y exigir hectareas mayores a cero antes del cierre.
+- Las pantallas operativas, como precipitaciones, deben consumir datos filtrados por alcance de usuario y no endpoints administrativos de padrones.
 
 ## Padrones maestros
 

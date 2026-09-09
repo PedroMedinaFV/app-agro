@@ -3,8 +3,7 @@ import type { CampoPlanificacion, LotePlanificacion, PrecipitacionCampo, SesionU
 import { DataTable } from '../components/DataTable';
 import {
   crearPrecipitacion,
-  obtenerCamposPlanificacion,
-  obtenerLotesPlanificacion,
+  obtenerPlanificacionSnapshot,
   obtenerPrecipitaciones,
 } from '../services/api';
 
@@ -57,19 +56,18 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
 
   async function cargarDatos() {
     try {
-      const [respuestaPrecipitaciones, respuestaCampos, respuestaLotes] = await Promise.all([
+      const [respuestaPrecipitaciones, respuestaPlanificacion] = await Promise.all([
         obtenerPrecipitaciones(sesion.token),
-        obtenerCamposPlanificacion(sesion.token),
-        obtenerLotesPlanificacion(sesion.token),
+        obtenerPlanificacionSnapshot(sesion.token),
       ]);
 
       setPrecipitaciones(respuestaPrecipitaciones.precipitaciones);
-      setCampos(respuestaCampos.campos);
-      setLotes(respuestaLotes.lotes);
+      setCampos(respuestaPlanificacion.camposPlanificacion);
+      setLotes(respuestaPlanificacion.lotesPlanificacion);
       setFormulario((actual) => (
         actual.campoPlanificacionId
           ? actual
-          : crearFormularioInicial(respuestaCampos.campos[0]?.id || '')
+          : crearFormularioInicial(respuestaPlanificacion.camposPlanificacion[0]?.id || '')
       ));
       setEstado('Precipitaciones cargadas desde backend.');
     } catch (error) {
