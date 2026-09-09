@@ -364,7 +364,7 @@ Criterio de aceptacion:
 Pendientes de refinamiento antes de cerrar sprint:
 
 - revisar ergonomia final de la planilla con datos reales voluminosos;
-- mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
+- [x] mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
 - validar con usuario el flujo de edicion masiva antes de darlo por cerrado.
 
 ## Sprint 6 - Mobile operativo V1

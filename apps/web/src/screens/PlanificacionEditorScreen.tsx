@@ -8,6 +8,16 @@ type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
   onVolverResumen: () => void;
 };
 
+type EstadoCargaFiltro = 'todos' | 'completas' | 'pendientes' | 'duplicadas';
+
+function normalizarTexto(valor: string) {
+  return valor
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
 export function PlanificacionEditorScreen({
   planificacion,
   snapshot,
@@ -41,10 +51,98 @@ export function PlanificacionEditorScreen({
 }: PlanificacionEditorScreenProps) {
   const [zonasAbiertas, setZonasAbiertas] = useState<Set<string>>(new Set());
   const [camposAbiertos, setCamposAbiertos] = useState<Set<string>>(new Set());
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroZonaId, setFiltroZonaId] = useState('');
+  const [filtroCampoId, setFiltroCampoId] = useState('');
+  const [filtroEstadoCarga, setFiltroEstadoCarga] = useState<EstadoCargaFiltro>('todos');
+  const zonasParaFiltro = useMemo(() => {
+    const zonas = new Map<string, string>();
+
+    for (const linea of lineasPlanificacion) {
+      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
+      zonas.set(zonaId, obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId));
+    }
+
+    return Array.from(zonas.entries())
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [lineasPlanificacion, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+  const camposParaFiltro = useMemo(() => {
+    const campos = new Map<string, { id: string; nombre: string; zonaId: string }>();
+
+    for (const linea of lineasPlanificacion) {
+      const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+      const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
+
+      if (!filtroZonaId || filtroZonaId === zonaId) {
+        campos.set(linea.campoPlanificacionId, {
+          id: linea.campoPlanificacionId,
+          nombre: campo?.nombre || 'Campo no disponible',
+          zonaId,
+        });
+      }
+    }
+
+    return Array.from(campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [lineasPlanificacion, camposPlanificacionPorId, filtroZonaId]);
+  const busquedaNormalizada = normalizarTexto(busqueda);
+  const lineasFiltradas = useMemo(() => lineasPlanificacion.filter((linea) => {
+    const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
+    const lote = lotesPlanificacionPorId.get(linea.lotePlanificacionId);
+    const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
+    const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
+    const zonaNombre = obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId);
+    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoPlanificacionId}|${linea.lotePlanificacionId}|${linea.actividadPlanificacionId}`;
+    const lineaDuplicada = clavesDuplicadas.has(claveLinea);
+    const lineaCompleta = Boolean(linea.protocoloId && linea.destinoVenta && linea.hectareasPlanificadas > 0 && linea.rindeEstimado > 0 && linea.precioVentaEstimado > 0);
+    const textoLinea = normalizarTexto([
+      zonaNombre,
+      campo?.nombre,
+      lote?.nombre,
+      protocolo?.nombre,
+      linea.destinoVenta,
+    ].filter(Boolean).join(' '));
+
+    if (filtroZonaId && filtroZonaId !== zonaId) {
+      return false;
+    }
+
+    if (filtroCampoId && filtroCampoId !== linea.campoPlanificacionId) {
+      return false;
+    }
+
+    if (filtroEstadoCarga === 'completas' && !lineaCompleta) {
+      return false;
+    }
+
+    if (filtroEstadoCarga === 'pendientes' && lineaCompleta) {
+      return false;
+    }
+
+    if (filtroEstadoCarga === 'duplicadas' && !lineaDuplicada) {
+      return false;
+    }
+
+    return !busquedaNormalizada || textoLinea.includes(busquedaNormalizada);
+  }), [
+    lineasPlanificacion,
+    camposPlanificacionPorId,
+    lotesPlanificacionPorId,
+    protocolosPorId,
+    planificacionActiva?.campaniaErpId,
+    clavesDuplicadas,
+    filtroZonaId,
+    filtroCampoId,
+    filtroEstadoCarga,
+    busquedaNormalizada,
+    planificacion.zonasPlanificacion,
+    snapshot.zonas,
+  ]);
   const lineasAgrupadas = useMemo(() => {
     const zonas = new Map<string, { id: string; nombre: string; campos: Map<string, { id: string; nombre: string; lineas: PlanificacionAgricolaLinea[] }> }>();
 
-    for (const linea of lineasPlanificacion) {
+    for (const linea of lineasFiltradas) {
       const campo = camposPlanificacionPorId.get(linea.campoPlanificacionId);
       const zonaId = campo?.zonaPlanificacionId || campo?.zonaErpId || 'sin-zona';
       const zonaNombre = obtenerNombreZona(campo?.zonaPlanificacionId, campo?.zonaErpId);
@@ -63,7 +161,7 @@ export function PlanificacionEditorScreen({
         ...zona,
         campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       }));
-  }, [lineasPlanificacion, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
+  }, [lineasFiltradas, camposPlanificacionPorId, planificacion.zonasPlanificacion, snapshot.zonas]);
 
   useEffect(() => {
     setZonasAbiertas((actuales) => {
@@ -170,6 +268,13 @@ export function PlanificacionEditorScreen({
     } else {
       expandirCamposDeZona(campoIds);
     }
+  }
+
+  function limpiarFiltros() {
+    setBusqueda('');
+    setFiltroZonaId('');
+    setFiltroCampoId('');
+    setFiltroEstadoCarga('todos');
   }
 
   function obtenerNombreZona(zonaPlanificacionId?: string, zonaErpId?: string) {
@@ -400,9 +505,60 @@ export function PlanificacionEditorScreen({
           </article>
         </section>
 
+        <section className="planning-filters" aria-label="Filtros de planificacion">
+          <label>
+            Buscar
+            <input
+              value={busqueda}
+              onChange={(event) => setBusqueda(event.target.value)}
+              placeholder="Zona, campo, lote, protocolo o destino"
+            />
+          </label>
+          <label>
+            Zona
+            <select
+              value={filtroZonaId}
+              onChange={(event) => {
+                setFiltroZonaId(event.target.value);
+                setFiltroCampoId('');
+              }}
+            >
+              <option value="">Todas las zonas</option>
+              {zonasParaFiltro.map((zona) => (
+                <option key={zona.id} value={zona.id}>{zona.nombre}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Campo
+            <select value={filtroCampoId} onChange={(event) => setFiltroCampoId(event.target.value)}>
+              <option value="">Todos los campos</option>
+              {camposParaFiltro.map((campo) => (
+                <option key={campo.id} value={campo.id}>{campo.nombre}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Estado de carga
+            <select value={filtroEstadoCarga} onChange={(event) => setFiltroEstadoCarga(event.target.value as EstadoCargaFiltro)}>
+              <option value="todos">Todos</option>
+              <option value="completas">Completas</option>
+              <option value="pendientes">Pendientes</option>
+              <option value="duplicadas">Duplicadas</option>
+            </select>
+          </label>
+          <div className="planning-filter-summary">
+            <strong>{lineasFiltradas.length}</strong>
+            <span>de {lineasPlanificacion.length} lineas</span>
+            <button className="small" type="button" onClick={limpiarFiltros} disabled={!busqueda && !filtroZonaId && !filtroCampoId && filtroEstadoCarga === 'todos'}>
+              Limpiar
+            </button>
+          </div>
+        </section>
+
         <div className="planning-table">
           {lineasAgrupadas.length === 0 && (
-            <p className="hint">No hay lotes activos para planificar. Primero crea o sincroniza lotes.</p>
+            <p className="hint">{lineasPlanificacion.length === 0 ? 'No hay lotes activos para planificar. Primero crea o sincroniza lotes.' : 'No hay lineas que coincidan con los filtros aplicados.'}</p>
           )}
           {lineasAgrupadas.length > 0 && (
             <div className="planning-tree-toolbar">

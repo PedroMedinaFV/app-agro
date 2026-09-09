@@ -1264,6 +1264,34 @@ nav a.active .nav-icon,
   min-width: 0;
 }
 
+.planning-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(150px, 0.8fr) minmax(160px, 0.9fr) minmax(150px, 0.75fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+  background: #f8fbf8;
+}
+
+.planning-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  color: #64736a;
+  font-size: 13px;
+}
+
+.planning-filter-summary strong {
+  color: #172033;
+  font-size: 18px;
+}
+
 .planning-table {
   display: grid;
   gap: 12px;
@@ -1844,6 +1872,7 @@ nav a.active .nav-icon,
   .protocol-item,
   .protocol-row,
   .planning-summary-row,
+  .planning-filters,
   .planning-editor-header,
   .planning-row {
     grid-template-columns: 1fr;
