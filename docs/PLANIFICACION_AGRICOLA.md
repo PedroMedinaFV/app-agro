@@ -835,6 +835,16 @@ Decision UX:
 - el operador de campo podra consultar o usar protocolos, pero no modificarlos salvo permiso especifico futuro;
 - la modificacion de protocolos globales requiere permiso `planificacion:configurar`.
 
+## Atributos de actividades
+
+Las actividades del ERP se pueden complementar desde Agro App con:
+
+- tipo de grano: fina o gruesa;
+- tipo de cultivo: primera o segunda;
+- epoca de siembra: invierno o verano.
+
+Cuando una actividad viene del ERP, estos atributos se editan desde la pantalla de actividades y se guardan en `ActividadApp` vinculada a `ErpActividad`. La identidad del padron ERP no se edita desde Agro App; solo se cargan atributos propios para mejorar planificacion y filtros.
+
 ## Relacion entre planificacion y protocolo
 
 La planificacion referencia un protocolo, pero debe poder ajustar valores por lote.
@@ -851,8 +861,8 @@ Esto evita cambios retroactivos peligrosos y mejora la trazabilidad.
 ## Seguridad y permisos
 
 - Usuarios autorizados pueden crear y modificar protocolos base.
-- Usuario comun puede usar protocolos solo en campos/lotes asignados.
-- Usuario comun no puede modificar protocolos globales salvo permiso futuro especifico.
+- Operador de campo puede usar protocolos solo en campos/lotes asignados.
+- Operador de campo no puede modificar protocolos globales salvo permiso futuro especifico.
 - Toda planificacion debe validar en backend que el usuario tenga acceso al `campoErpId`/`loteErpId`.
 - Los valores economicos pueden ser sensibles; deben respetar `clienteId` y permisos.
 - Toda edicion debe quedar auditada: planificacion, lineas, protocolos, etapas, labores, insumos, costos, precios, rindes, gastos y cambios de estado.

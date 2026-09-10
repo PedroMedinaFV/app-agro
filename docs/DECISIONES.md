@@ -292,6 +292,14 @@ Tercer padron implementado:
 - auditoria obligatoria por backend;
 - mapper ERP preparado para `Padrones/Servicios`.
 
+## Atributos Agro App sobre actividades ERP
+
+Las actividades sincronizadas desde ERP pueden tener atributos propios de Agro App: tipo de grano, tipo de cultivo y epoca de siembra.
+
+Estos campos no modifican el ERP. Se guardan en `ActividadApp` vinculada por `actividadErpId`, con nombre, codigo y especie tomados del ERP, y atributos editables desde web. Esto permite enriquecer el padron importado para planificacion, protocolos, precios y gastos sin romper la cache `ErpActividad`.
+
+Toda edicion de estos atributos debe pasar por backend, validar permiso `planificacion:configurar` y registrar auditoria.
+
 ## Limpieza de modelo legacy
 
 Se eliminan las tablas iniciales `Campo`, `Lote`, `Pais`, `Cultivo`, `Labor`, `AnalisisSuelo`, `AvanceSiembra`, `AvanceCosecha` y `Monitoreo`.
