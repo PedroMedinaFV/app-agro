@@ -459,6 +459,7 @@ Avance realizado:
 - [x] web muestra cantidad y nombres de adjuntos asociados a observaciones.
 - [x] web abre adjuntos con URL firmada de lectura.
 - [x] web permite abrir ficha operativa de lote desde observaciones.
+- [x] pantalla web dedicada `Seguimiento operativo` con filtros, ficha de lote, observaciones, adjuntos y precipitaciones.
 
 ## Sprint 8 - Ordenes de trabajo e integracion ALBOR futura
 

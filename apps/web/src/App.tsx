@@ -9,6 +9,7 @@ import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
 import { GastosComercialesScreen } from './screens/GastosComercialesScreen';
 import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
 import { ObservacionesScreen } from './screens/ObservacionesScreen';
+import { SeguimientoOperativoScreen } from './screens/SeguimientoOperativoScreen';
 import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
@@ -31,7 +32,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -95,6 +96,8 @@ export function App() {
       ? 'Precios de cereales'
     : vista === 'gastos'
       ? 'Gastos comerciales'
+    : vista === 'seguimiento-operativo'
+      ? 'Seguimiento operativo'
     : vista === 'precipitaciones'
       ? 'Precipitaciones'
     : vista === 'observaciones'
@@ -124,6 +127,8 @@ export function App() {
       ? 'Referencias comerciales para proponer precios en la planificacion'
     : vista === 'gastos'
       ? 'Referencias comerciales para estimar fletes, acondicionamiento y otros gastos'
+    : vista === 'seguimiento-operativo'
+      ? 'Ficha operativa, observaciones, fotos y precipitaciones'
     : vista === 'precipitaciones'
       ? 'Carga y consulta de lluvias por campo asignado'
     : vista === 'observaciones'
@@ -295,6 +300,10 @@ export function App() {
 
       {vista === 'precipitaciones' && (
         <PrecipitacionesScreen sesion={sesion} notificar={toast.notify} />
+      )}
+
+      {vista === 'seguimiento-operativo' && (
+        <SeguimientoOperativoScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'observaciones' && (

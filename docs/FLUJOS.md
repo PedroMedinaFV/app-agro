@@ -238,7 +238,8 @@ Validaciones iniciales:
    - resumen de precipitaciones;
    - resumen de observaciones y adjuntos.
 5. Mobile muestra la ficha antes de cargar nuevas observaciones o precipitaciones.
-6. Web queda preparada para consumir el mismo endpoint en tableros de seguimiento operativo.
+6. Web consume el mismo endpoint desde `Seguimiento operativo`.
+7. La pantalla web consolida filtros, ficha de lote, observaciones, fotos y precipitaciones.
 
 Validaciones iniciales:
 
@@ -246,6 +247,18 @@ Validaciones iniciales:
 - el lote debe pertenecer a un campo permitido para el operador;
 - la ficha no devuelve datos de otros clientes;
 - la web/mobile no calculan permisos localmente, solo consumen lo que backend ya filtro.
+
+## Seguimiento operativo web
+
+1. El usuario ingresa a `Seguimiento`.
+2. La web carga campos/lotes desde `GET /planificacion/snapshot`.
+3. La web carga observaciones desde `GET /observaciones`.
+4. La web carga precipitaciones desde `GET /precipitaciones`.
+5. Al seleccionar lote, la web carga `GET /operativo/lotes/:loteAppId/ficha`.
+6. Los filtros iniciales permiten revisar por campo, lote, severidad, fecha y texto.
+7. Los adjuntos se abren con URL firmada temporal.
+
+Esta pantalla es de consulta y analisis. Las cargas rapidas siguen estando en `Observaciones`, `Precipitaciones` y mobile.
 
 ## Alta de usuarios, rol y enlace Microsoft
 

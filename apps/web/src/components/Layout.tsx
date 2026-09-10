@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -46,6 +46,7 @@ export function Layout({
     { vista: 'protocolos' as const, label: 'Protocolos', icon: 'PR' },
     { vista: 'precios' as const, label: 'Precios', icon: 'US' },
     { vista: 'gastos' as const, label: 'Gastos', icon: 'GC' },
+    { vista: 'seguimiento-operativo' as const, label: 'Seguimiento', icon: 'SG' },
     { vista: 'precipitaciones' as const, label: 'Precipitaciones', icon: 'MM' },
     { vista: 'observaciones' as const, label: 'Observaciones', icon: 'OB' },
     { label: 'Siembra', icon: 'SI' },
