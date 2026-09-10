@@ -516,27 +516,37 @@ export function GastosComercialesScreen({
           getRowKey={(gasto) => gasto.id}
           emptyMessage="Todavia no hay gastos comerciales registrados."
           columns={[
-            { key: 'descripcion', label: 'Descripcion', width: 'minmax(150px, 1.15fr)', render: (gasto) => <strong>{gasto.descripcion}</strong> },
-            { key: 'campania', label: 'Campania', width: 'minmax(88px, 0.6fr)', render: (gasto) => describirCampania(gasto.campaniaErpId) },
-            { key: 'actividad', label: 'Actividad', width: 'minmax(130px, 0.95fr)', render: (gasto) => actividadesPropiasPorId.get(gasto.actividadAppId)?.nombre || gasto.actividadErpId || 'Sin actividad' },
-            { key: 'destino', label: 'Destino', width: 'minmax(100px, 0.75fr)', render: (gasto) => gasto.destinoVenta || 'General' },
-            { key: 'alcance', label: 'Alcance', width: 'minmax(120px, 0.85fr)', render: (gasto) => describirAlcance(gasto) },
+            { key: 'descripcion', label: 'Descripcion', width: 'minmax(120px, 1fr)', render: (gasto) => <strong>{gasto.descripcion}</strong> },
+            { key: 'campania', label: 'Campania', width: 'minmax(78px, 0.55fr)', render: (gasto) => describirCampania(gasto.campaniaErpId) },
+            { key: 'actividad', label: 'Actividad', width: 'minmax(110px, 0.8fr)', render: (gasto) => actividadesPropiasPorId.get(gasto.actividadAppId)?.nombre || gasto.actividadErpId || 'Sin actividad' },
+            { key: 'destino', label: 'Destino', width: 'minmax(86px, 0.65fr)', render: (gasto) => gasto.destinoVenta || 'General' },
+            { key: 'alcance', label: 'Alcance', width: 'minmax(96px, 0.7fr)', render: (gasto) => describirAlcance(gasto) },
             {
               key: 'items',
               label: 'Items',
-              width: 'minmax(110px, 0.75fr)',
+              width: 'minmax(96px, 0.65fr)',
               render: (gasto) => {
                 const totalPorTonelada = totalPorToneladaUsd(gasto);
                 return <span title={resumirItems(gasto)}>{gasto.items.length} item{gasto.items.length === 1 ? '' : 's'}{totalPorTonelada ? ` | ${formatearUsd(totalPorTonelada)}/tn` : ''}</span>;
               },
             },
-            { key: 'actualizado', label: 'Actualizado', width: 'minmax(106px, 0.7fr)', render: (gasto) => formatearFecha(gasto.updatedAt || gasto.createdAt) },
-            { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (gasto) => <em>{gasto.activo ? 'Activo' : 'Inactivo'}</em> },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(92px, 0.58fr)', render: (gasto) => formatearFecha(gasto.updatedAt || gasto.createdAt) },
+            { key: 'estado', label: 'Estado', width: 'minmax(76px, 0.46fr)', render: (gasto) => <em>{gasto.activo ? 'Activo' : 'Inactivo'}</em> },
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(86px, 0.5fr)',
-              render: (gasto) => <button className="small" onClick={() => abrirEditarGasto(gasto)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+              width: 'minmax(76px, 0.44fr)',
+              render: (gasto) => (
+                <button
+                  className="small"
+                  type="button"
+                  title="Editar gasto comercial"
+                  onClick={() => abrirEditarGasto(gasto)}
+                  disabled={!puedeConfigurarPlanificacion}
+                >
+                  Editar
+                </button>
+              ),
             },
           ]}
         />

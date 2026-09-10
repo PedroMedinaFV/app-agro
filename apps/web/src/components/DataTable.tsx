@@ -58,7 +58,7 @@ export function DataTable<T>({
       {visibleRows.map((row) => (
         <div className="data-table-row" key={getRowKey(row)} style={{ gridTemplateColumns }}>
           {columns.map((column) => (
-            <div className="data-table-cell" key={column.key}>
+            <div className={`data-table-cell ${column.key === 'acciones' ? 'data-table-actions' : ''}`} key={column.key}>
               {column.render(row)}
             </div>
           ))}
