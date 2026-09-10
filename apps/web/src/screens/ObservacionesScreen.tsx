@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoApp, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
+import type { CampoApp, FichaLoteOperativoResponse, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import {
   crearObservacion,
   crearUrlLecturaAdjuntoObservacion,
   crearUrlSubidaAdjuntoObservacion,
+  obtenerFichaLoteOperativo,
   obtenerObservaciones,
   obtenerPlanificacionSnapshot,
   subirArchivoAFirmaSupabase,
@@ -75,6 +76,8 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   const [filtroSeveridad, setFiltroSeveridad] = useState<SeveridadObservacion | 'todas'>('todas');
   const [filtroTexto, setFiltroTexto] = useState('');
   const [archivoAdjunto, setArchivoAdjunto] = useState<File | null>(null);
+  const [fichaLote, setFichaLote] = useState<FichaLoteOperativoResponse | null>(null);
+  const [cargandoFicha, setCargandoFicha] = useState(false);
 
   async function cargarDatos() {
     try {
@@ -205,6 +208,23 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo abrir el adjunto.';
       notificar?.({ tipo: 'error', titulo: 'No se abrio el adjunto', mensaje });
+    }
+  }
+
+  async function verFichaLote(loteAppId: string | undefined) {
+    if (!loteAppId) {
+      notificar?.({ tipo: 'info', titulo: 'Sin lote especifico', mensaje: 'La observacion corresponde al campo completo.' });
+      return;
+    }
+
+    setCargandoFicha(true);
+    try {
+      setFichaLote(await obtenerFichaLoteOperativo(loteAppId, sesion.token));
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo cargar la ficha del lote.';
+      notificar?.({ tipo: 'error', titulo: 'No se cargo la ficha', mensaje });
+    } finally {
+      setCargandoFicha(false);
     }
   }
 
@@ -455,9 +475,74 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
                   : 'Sin adjuntos';
               },
             },
+            {
+              key: 'acciones',
+              label: '',
+              width: 'minmax(54px, 0.35fr)',
+              render: (observacion) => (
+                <button
+                  className="icon-button"
+                  type="button"
+                  title="Ver ficha del lote"
+                  disabled={!observacion.loteAppId || cargandoFicha}
+                  onClick={() => verFichaLote(observacion.loteAppId)}
+                >
+                  FI
+                </button>
+              ),
+            },
           ]}
         />
       </section>
+
+      {fichaLote && (
+        <section className="panel operative-detail-panel">
+          <div className="panel-header">
+            <div>
+              <h2>Ficha del lote</h2>
+              <p className="hint">{fichaLote.campo.nombre} / {fichaLote.lote.nombre}</p>
+            </div>
+            <button className="ghost" type="button" onClick={() => setFichaLote(null)}>Cerrar</button>
+          </div>
+
+          <section className="metrics operative-metrics">
+            <article><span>Superficie total</span><strong>{fichaLote.lote.superficieTotal.toFixed(1)} ha</strong></article>
+            <article><span>Productiva</span><strong>{fichaLote.lote.superficieProductiva.toFixed(1)} ha</strong></article>
+            <article><span>Lluvias 30 dias</span><strong>{fichaLote.precipitaciones.milimetrosUltimos30Dias.toFixed(1)} mm</strong></article>
+            <article><span>Observaciones altas</span><strong>{fichaLote.observaciones.cantidadAlta}</strong></article>
+          </section>
+
+          <div className="operative-detail-grid">
+            <article>
+              <h3>Ubicacion operativa</h3>
+              <p><strong>Zona:</strong> {fichaLote.zona?.nombre || 'Sin zona'}</p>
+              <p><strong>Estado lote:</strong> {fichaLote.lote.estadoVinculacion}</p>
+              <p><strong>Codigo:</strong> {fichaLote.lote.codigoInterno || 'Sin codigo'}</p>
+            </article>
+
+            <article>
+              <h3>Cultivos ERP</h3>
+              {fichaLote.cultivos.length ? fichaLote.cultivos.slice(0, 4).map((cultivo) => (
+                <p key={cultivo.id}>{cultivo.nombre} - {cultivo.campaniaNombre || 'Sin campania'} - {cultivo.hectareas.toFixed(1)} ha</p>
+              )) : <p>Sin cultivos ERP asociados.</p>}
+            </article>
+
+            <article>
+              <h3>Planificacion</h3>
+              {fichaLote.planificaciones.length ? fichaLote.planificaciones.slice(0, 4).map((linea) => (
+                <p key={linea.id}>{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {linea.margenBrutoEstimado.toFixed(0)}</p>
+              )) : <p>Sin lineas de planificacion asociadas.</p>}
+            </article>
+
+            <article>
+              <h3>Ultimas observaciones</h3>
+              {fichaLote.observaciones.ultimas.length ? fichaLote.observaciones.ultimas.map((observacion) => (
+                <p key={observacion.id}>{formatearFecha(observacion.fechaEvento)} - {observacion.severidad} - {observacion.titulo} - {observacion.cantidadAdjuntos} adj.</p>
+              )) : <p>Sin observaciones registradas.</p>}
+            </article>
+          </div>
+        </section>
+      )}
     </section>
   );
 }

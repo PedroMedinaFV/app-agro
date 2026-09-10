@@ -315,6 +315,39 @@ textarea:focus {
   text-decoration: underline;
 }
 
+.operative-detail-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.operative-metrics {
+  margin-bottom: 0;
+}
+
+.operative-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.operative-detail-grid article {
+  min-width: 0;
+  border: 1px solid #dce5de;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f8fbf8;
+}
+
+.operative-detail-grid h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.operative-detail-grid p {
+  margin: 8px 0;
+  color: #47584f;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;
@@ -1912,7 +1945,8 @@ nav a.active .nav-icon,
 
   .metrics,
   .content-grid,
-  .company-summary {
+  .company-summary,
+  .operative-detail-grid {
     grid-template-columns: 1fr;
   }
 

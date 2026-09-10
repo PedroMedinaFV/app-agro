@@ -458,6 +458,7 @@ Avance realizado:
 - [x] auditoria de creacion de observaciones.
 - [x] web muestra cantidad y nombres de adjuntos asociados a observaciones.
 - [x] web abre adjuntos con URL firmada de lectura.
+- [x] web permite abrir ficha operativa de lote desde observaciones.
 
 ## Sprint 8 - Ordenes de trabajo e integracion ALBOR futura
 
