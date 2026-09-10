@@ -419,7 +419,8 @@ Avance realizado:
 - [x] validacion backend de adjuntos por cantidad, tamano, MIME, ruta de storage, estado y checksum opcional;
 - [x] subida real de binarios a Supabase Storage con URL firmada cuando hay sesion online;
 - [x] selector/camara mobile para tomar o adjuntar imagen real.
-- [ ] sincronizacion offline diferida de binarios cuando la observacion se carga sin conexion.
+- [x] sincronizacion offline diferida de fotos cuando la observacion se carga sin conexion.
+- [ ] hardening mobile para copiar el archivo al sandbox de la app antes de dejarlo pendiente.
 
 ## Sprint 7 - Web de seguimiento operativo
 

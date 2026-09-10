@@ -180,11 +180,17 @@ Validaciones iniciales:
 - toda alta registra auditoria;
 - `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos offline.
 
-Pendiente para completar offline avanzado de fotos:
+Offline de fotos:
 
-- conservar el binario local cuando no hay conexion;
-- subir fotos pendientes al recuperar conectividad;
-- asociar metadata despues de confirmar la subida diferida.
+- si la observacion se guarda sin conexion, mobile conserva la referencia local del archivo junto al registro pendiente;
+- al sincronizar, mobile sube primero la foto a Supabase Storage con URL firmada;
+- luego envia la observacion con metadata del adjunto ya subido;
+- si falla la subida o la persistencia, el registro sigue pendiente.
+
+Pendiente de hardening mobile:
+
+- guardar una copia persistente del archivo dentro del sandbox de la app para no depender de URIs temporales del sistema operativo;
+- reintentar adjuntos individualmente y mostrar detalle por foto pendiente.
 
 ## Precipitaciones por campo asignado
 

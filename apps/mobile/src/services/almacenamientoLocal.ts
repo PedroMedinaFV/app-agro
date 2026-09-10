@@ -2,8 +2,16 @@ export type RegistroLocal = {
   id: string;
   tipo: string;
   payload: unknown;
+  adjuntosLocales?: AdjuntoLocalPendiente[];
   creadoEn: string;
   sincronizado: boolean;
+};
+
+export type AdjuntoLocalPendiente = {
+  uri: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanioBytes: number;
 };
 
 const clave = 'agro-app-registros-local';

@@ -9,7 +9,8 @@ import {
   obtenerPlanificacionSnapshot,
   subirArchivoAFirmaSupabase,
 } from './services/api';
-import { guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
+import { AdjuntoLocalPendiente, guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
+import { sincronizarPendientes } from './services/sincronizacion';
 
 const planificacionDemo: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
@@ -127,6 +128,7 @@ export default function App() {
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
   const [guardandoObservacion, setGuardandoObservacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
+  const [sincronizandoOffline, setSincronizandoOffline] = useState(false);
   const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionDemo);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
   const [errorPlanificacion, setErrorPlanificacion] = useState<string | null>(null);
@@ -282,6 +284,14 @@ export default function App() {
       const nombreFoto = fotoSeleccionada?.fileName || `observacion-${Date.now()}.jpg`;
       const mimeFoto = fotoSeleccionada?.mimeType || 'image/jpeg';
       const tamanioFoto = fotoSeleccionada?.fileSize || 1;
+      const adjuntosLocales: AdjuntoLocalPendiente[] = fotoSeleccionada
+        ? [{
+          uri: fotoSeleccionada.uri,
+          nombreArchivo: nombreFoto,
+          mimeType: mimeFoto,
+          tamanioBytes: tamanioFoto,
+        }]
+        : [];
 
       const payload = {
         campoAppId: campoSeleccionado.id,
@@ -302,6 +312,7 @@ export default function App() {
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             tipo: 'observacion',
             payload,
+            adjuntosLocales,
             creadoEn: new Date().toISOString(),
             sincronizado: false,
           });
@@ -346,6 +357,7 @@ export default function App() {
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           tipo: 'observacion',
           payload,
+          adjuntosLocales,
           creadoEn: new Date().toISOString(),
           sincronizado: false,
         });
@@ -353,6 +365,22 @@ export default function App() {
         Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
       } finally {
         setGuardandoObservacion(false);
+      }
+    }
+
+    async function sincronizarRegistrosPendientes() {
+      setSincronizandoOffline(true);
+      try {
+        const resultado = await sincronizarPendientes(sesionActiva.token);
+        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+
+        if (resultado.ok) {
+          Alert.alert('Sincronizacion', `Registros sincronizados: ${resultado.sincronizados}`);
+        } else {
+          Alert.alert('Sincronizacion', resultado.error || `Quedan pendientes: ${resultado.restantes}`);
+        }
+      } finally {
+        setSincronizandoOffline(false);
       }
     }
 
@@ -505,6 +533,13 @@ export default function App() {
                     title={guardandoObservacion ? 'Guardando...' : 'Guardar observacion'}
                     disabled={guardandoObservacion}
                     onPress={guardarObservacionMobile}
+                  />
+                </View>
+                <View style={styles.buttonSpacing}>
+                  <Button
+                    title={sincronizandoOffline ? 'Sincronizando...' : 'Sincronizar pendientes'}
+                    disabled={sincronizandoOffline || pendientesOffline === 0}
+                    onPress={sincronizarRegistrosPendientes}
                   />
                 </View>
               </View>
