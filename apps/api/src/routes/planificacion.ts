@@ -26,6 +26,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
     const gastosPersistidos = await obtenerGastosComercialesPersistidos(clienteId);
     const conceptosPersistidos = await obtenerConceptosGastosComercialesPersistidos(clienteId);
+    const protocolosPersistidos = await obtenerProtocolosPersistidos(clienteId);
     const estadiosPersistidos = await asegurarEstadiosReferenciaSemilla(clienteId);
     const usuarioAutorizado = request.user?.sub ? {
       sub: request.user.sub,
@@ -47,6 +48,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       actividadesApp: padronesPersistidos.actividadesApp.length ? padronesPersistidos.actividadesApp : demo.actividadesApp,
       insumosApp: padronesPersistidos.insumosApp.length ? padronesPersistidos.insumosApp : demo.insumosApp,
       planificaciones: planificacionesPersistidas.length ? planificacionesPersistidas : demo.planificaciones,
+      protocolos: protocolosPersistidos.protocolos.length ? protocolosPersistidos.protocolos : demo.protocolos,
       preciosReferencia: preciosPersistidos.length ? preciosPersistidos : demo.preciosReferencia,
       destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
       conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),

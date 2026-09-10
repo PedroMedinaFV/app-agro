@@ -70,6 +70,14 @@ export function App() {
     refrescarNotificaciones();
   }, [refrescarNotificaciones]);
 
+  useEffect(() => {
+    if (!sesion || !protocolosDemo.protocolos.protocolos.length) {
+      return;
+    }
+
+    planificacionDemo.refrescarPlanificacion();
+  }, [sesion, protocolosDemo.protocolos.sincronizadoEn]);
+
   const lotes = erp.snapshot.lotes.map((lote) => ({
     ...lote,
     campo: erp.snapshot.campos.find((campo) => campo.erpId === lote.campoErpId),
