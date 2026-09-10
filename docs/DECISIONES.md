@@ -87,6 +87,8 @@ Los IDs internos importados incluyen la empresa, por ejemplo `empresa:1:campo:24
 
 La sincronizacion se administra desde una pantalla propia, separada de `Empresas ERP`. La pantalla permite seleccionar todos los padrones o solo algunos. El backend agrega dependencias tecnicas cuando corresponda para mantener relaciones consistentes, por ejemplo lotes requiere campos, campos requiere zonas, cultivos requiere lotes/campos/campanias/actividades/especies, e insumos o servicios requieren unidades de medida.
 
+Los padrones que ALBOR devuelve iguales para todas las empresas se tratan como globales: zonas, actividades, especies, campanias, insumos, servicios, unidades de medida, monedas y puertos. Para reducir tiempo de sincronizacion, se consultan una sola vez usando la primera empresa AGRO seleccionada como `x-company`, se guardan con `empresaErpId = global` y se deduplican por `erpId`.
+
 La pantalla `Empresas ERP` queda enfocada en elegir que empresas pertenecen a AGRO. La pantalla `Sincronizacion ERP` queda enfocada en importar o refrescar informacion desde ALBOR.
 
 ## Seguridad como requisito transversal

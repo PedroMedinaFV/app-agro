@@ -42,6 +42,7 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
     insumos: snapshot.insumos,
     servicios: snapshot.servicios,
     unidadesMedida: snapshot.unidadesMedida,
+    monedas: snapshot.monedas,
     puertos: snapshot.puertos,
   };
 }
@@ -308,6 +309,37 @@ router.get('/servicios-importados', async (req, res, next) => {
         activo: servicio.activo,
         imputaDosis: servicio.imputaDosis,
         actualizadoEn: servicio.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/monedas-importadas', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const monedas = await prisma.erpMoneda.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ nombre: 'asc' }],
+    });
+
+    res.json({
+      monedas: monedas.map((moneda) => ({
+        empresaErpId: moneda.empresaErpId,
+        erpId: moneda.erpId,
+        idMoneda: moneda.idMoneda,
+        codigo: moneda.codigo,
+        nombre: moneda.nombre,
+        simbolo: moneda.simbolo ?? undefined,
+        activo: moneda.activo,
+        actualizadoEn: moneda.actualizadoEn.toISOString(),
       })),
     });
   } catch (error) {

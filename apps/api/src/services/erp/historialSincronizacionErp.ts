@@ -137,6 +137,7 @@ async function contarPadronGlobal(padron: PadronErpSincronizable): Promise<numbe
   if (padron === 'insumos') return prisma.erpInsumo.count({ where: { empresaErpId: 'global' } });
   if (padron === 'servicios') return prisma.erpServicio.count({ where: { empresaErpId: 'global' } });
   if (padron === 'unidadesMedida') return prisma.erpUnidadMedida.count({ where: { empresaErpId: 'global' } });
+  if (padron === 'monedas') return prisma.erpMoneda.count({ where: { empresaErpId: 'global' } });
   if (padron === 'puertos') return prisma.erpPuerto.count({ where: { empresaErpId: 'global' } });
 
   return 0;

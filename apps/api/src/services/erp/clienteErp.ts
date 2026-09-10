@@ -7,6 +7,7 @@ import {
   ErpPadronEspecie,
   ErpPadronInsumo,
   ErpPadronLote,
+  ErpPadronMoneda,
   ErpPadronPuerto,
   ErpPadronServicio,
   ErpPadronUnidadMedida,
@@ -21,6 +22,7 @@ import { mapearRespuestaAgriculturaActividades } from './mappers/agriculturaActi
 import { mapearRespuestaAgriculturaCampanias } from './mappers/agriculturaCampanias';
 import { mapearRespuestaAgriculturaCultivos } from './mappers/agriculturaCultivos';
 import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecies';
+import { mapearRespuestaContabilidadMonedas } from './mappers/contabilidadMonedas';
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
@@ -382,31 +384,35 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
   const empresas = await obtenerEmpresasSistemaErp(clienteId);
   const empresasAgro = await obtenerEmpresasAgro(clienteId, empresas);
   const snapshotsPorEmpresa = [];
+  const empresaParaPadronesGlobales = empresasAgro[0];
 
   for (const empresaErpId of empresasAgro) {
     console.log(`[erp-sync] Consultando padrones de ${empresaErpId}`);
+    const consultarGlobales = empresaErpId === empresaParaPadronesGlobales;
 
-    const respuestaZonas = padrones.has('zonas') ? await getErpPaginado<ErpPadronZona>(configuracion, configuracion.pathZonas, empresaErpId) : crearRespuestaVacia<ErpPadronZona>();
+    const respuestaZonas = padrones.has('zonas') && consultarGlobales ? await getErpPaginado<ErpPadronZona>(configuracion, configuracion.pathZonas, empresaErpId) : crearRespuestaVacia<ErpPadronZona>();
     console.log(`[erp-sync] ${empresaErpId} zonas: ${respuestaZonas.data.length}`);
     const respuestaCampos = padrones.has('campos') ? await getErpPaginado<ErpPadronCampo>(configuracion, configuracion.pathCampos, empresaErpId) : crearRespuestaVacia<ErpPadronCampo>();
     console.log(`[erp-sync] ${empresaErpId} campos: ${respuestaCampos.data.length}`);
     const respuestaLotes = padrones.has('lotes') ? await getErpPaginado<ErpPadronLote>(configuracion, configuracion.pathLotes, empresaErpId) : crearRespuestaVacia<ErpPadronLote>();
     console.log(`[erp-sync] ${empresaErpId} lotes: ${respuestaLotes.data.length}`);
-    const respuestaActividades = padrones.has('actividades') ? await getErpPaginado<ErpPadronActividad>(configuracion, configuracion.pathActividades, empresaErpId) : crearRespuestaVacia<ErpPadronActividad>();
+    const respuestaActividades = padrones.has('actividades') && consultarGlobales ? await getErpPaginado<ErpPadronActividad>(configuracion, configuracion.pathActividades, empresaErpId) : crearRespuestaVacia<ErpPadronActividad>();
     console.log(`[erp-sync] ${empresaErpId} actividades: ${respuestaActividades.data.length}`);
-    const respuestaEspecies = padrones.has('especies') ? await getErpPaginado<ErpPadronEspecie>(configuracion, configuracion.pathEspecies, empresaErpId) : crearRespuestaVacia<ErpPadronEspecie>();
+    const respuestaEspecies = padrones.has('especies') && consultarGlobales ? await getErpPaginado<ErpPadronEspecie>(configuracion, configuracion.pathEspecies, empresaErpId) : crearRespuestaVacia<ErpPadronEspecie>();
     console.log(`[erp-sync] ${empresaErpId} especies: ${respuestaEspecies.data.length}`);
-    const respuestaCampanias = padrones.has('campanias') ? await getErpPaginado<ErpPadronCampania>(configuracion, configuracion.pathCampanias, empresaErpId) : crearRespuestaVacia<ErpPadronCampania>();
+    const respuestaCampanias = padrones.has('campanias') && consultarGlobales ? await getErpPaginado<ErpPadronCampania>(configuracion, configuracion.pathCampanias, empresaErpId) : crearRespuestaVacia<ErpPadronCampania>();
     console.log(`[erp-sync] ${empresaErpId} campanias: ${respuestaCampanias.data.length}`);
     const respuestaCultivos = padrones.has('cultivos') ? await getErpPaginado<ErpPadronCultivo>(configuracion, configuracion.pathCultivos, empresaErpId) : crearRespuestaVacia<ErpPadronCultivo>();
     console.log(`[erp-sync] ${empresaErpId} cultivos: ${respuestaCultivos.data.length}`);
-    const respuestaInsumos = padrones.has('insumos') ? await getErpPaginado<ErpPadronInsumo>(configuracion, configuracion.pathInsumos, empresaErpId) : crearRespuestaVacia<ErpPadronInsumo>();
+    const respuestaInsumos = padrones.has('insumos') && consultarGlobales ? await getErpPaginado<ErpPadronInsumo>(configuracion, configuracion.pathInsumos, empresaErpId) : crearRespuestaVacia<ErpPadronInsumo>();
     console.log(`[erp-sync] ${empresaErpId} insumos: ${respuestaInsumos.data.length}`);
-    const respuestaServicios = padrones.has('servicios') ? await getErpPaginado<ErpPadronServicio>(configuracion, configuracion.pathServicios, empresaErpId) : crearRespuestaVacia<ErpPadronServicio>();
+    const respuestaServicios = padrones.has('servicios') && consultarGlobales ? await getErpPaginado<ErpPadronServicio>(configuracion, configuracion.pathServicios, empresaErpId) : crearRespuestaVacia<ErpPadronServicio>();
     console.log(`[erp-sync] ${empresaErpId} servicios: ${respuestaServicios.data.length}`);
-    const respuestaUnidadesMedida = padrones.has('unidadesMedida') ? await getErpPaginado<ErpPadronUnidadMedida>(configuracion, configuracion.pathUnidadesMedida, empresaErpId) : crearRespuestaVacia<ErpPadronUnidadMedida>();
+    const respuestaUnidadesMedida = padrones.has('unidadesMedida') && consultarGlobales ? await getErpPaginado<ErpPadronUnidadMedida>(configuracion, configuracion.pathUnidadesMedida, empresaErpId) : crearRespuestaVacia<ErpPadronUnidadMedida>();
     console.log(`[erp-sync] ${empresaErpId} unidadesMedida: ${respuestaUnidadesMedida.data.length}`);
-    const respuestaPuertos = padrones.has('puertos') ? await getErpPaginado<ErpPadronPuerto>(configuracion, configuracion.pathPuertos, empresaErpId) : crearRespuestaVacia<ErpPadronPuerto>();
+    const respuestaMonedas = padrones.has('monedas') && consultarGlobales ? await getErpPaginado<ErpPadronMoneda>(configuracion, configuracion.pathMonedas, empresaErpId) : crearRespuestaVacia<ErpPadronMoneda>();
+    console.log(`[erp-sync] ${empresaErpId} monedas: ${respuestaMonedas.data.length}`);
+    const respuestaPuertos = padrones.has('puertos') && consultarGlobales ? await getErpPaginado<ErpPadronPuerto>(configuracion, configuracion.pathPuertos, empresaErpId) : crearRespuestaVacia<ErpPadronPuerto>();
     console.log(`[erp-sync] ${empresaErpId} puertos: ${respuestaPuertos.data.length}`);
 
     snapshotsPorEmpresa.push({
@@ -420,6 +426,7 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
       insumos: mapearRespuestaPadronesInsumos(respuestaInsumos, empresaErpId),
       servicios: mapearRespuestaPadronesServicios(respuestaServicios, empresaErpId),
       unidadesMedida: mapearRespuestaPadronesUnidadesMedida(respuestaUnidadesMedida, empresaErpId),
+      monedas: mapearRespuestaContabilidadMonedas(respuestaMonedas),
       puertos: mapearRespuestaPadronesPuertos(respuestaPuertos, empresaErpId),
     });
   }
@@ -438,6 +445,7 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
     insumos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos)),
     servicios: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios)),
     unidadesMedida: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida)),
+    monedas: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.monedas)),
     puertos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.puertos)),
     empresas,
     sincronizadoEn: new Date().toISOString(),

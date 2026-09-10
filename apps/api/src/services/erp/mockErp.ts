@@ -3,6 +3,7 @@ import { mapearRespuestaAgriculturaActividades } from './mappers/agriculturaActi
 import { mapearRespuestaAgriculturaCampanias } from './mappers/agriculturaCampanias';
 import { mapearRespuestaAgriculturaCultivos } from './mappers/agriculturaCultivos';
 import { mapearRespuestaAgriculturaEspecies } from './mappers/agriculturaEspecies';
+import { mapearRespuestaContabilidadMonedas } from './mappers/contabilidadMonedas';
 import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
@@ -474,6 +475,36 @@ const respuestaPadronesUnidadesMedidaMock = {
   ],
 };
 
+const respuestaContabilidadMonedasMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 2,
+    totalPages: 1,
+    totalRecords: 2,
+  },
+  data: [
+    {
+      idMoneda: 1,
+      codigo: 'ARS',
+      nombre: 'Pesos',
+      simbolo: '$',
+      activo: true,
+      fechaUltimaActualizacion: ahora,
+    },
+    {
+      idMoneda: 2,
+      codigo: 'USD',
+      nombre: 'Dolares',
+      simbolo: 'U$S',
+      activo: true,
+      fechaUltimaActualizacion: ahora,
+    },
+  ],
+};
+
 const respuestaPadronesPuertosMock = {
   succeeded: true,
   message: null,
@@ -503,6 +534,7 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const cultivos = mapearRespuestaAgriculturaCultivos(respuestaAgriculturaCultivosMock);
   const insumos = mapearRespuestaPadronesInsumos(respuestaPadronesInsumosMock);
   const unidadesMedida = mapearRespuestaPadronesUnidadesMedida(respuestaPadronesUnidadesMedidaMock);
+  const monedas = mapearRespuestaContabilidadMonedas(respuestaContabilidadMonedasMock);
   const puertos = mapearRespuestaPadronesPuertos(respuestaPadronesPuertosMock);
 
   return {
@@ -518,6 +550,7 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
     insumos,
     servicios: [],
     unidadesMedida,
+    monedas,
     puertos,
   };
 }

@@ -34,6 +34,7 @@ export type ConfiguracionErp = {
   pathInsumos: string;
   pathServicios: string;
   pathUnidadesMedida: string;
+  pathMonedas: string;
   pathPuertos: string;
   pathEmpresas: string;
   pathLogin: string;
@@ -94,6 +95,7 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
+    pathMonedas: process.env.ERP_PATH_MONEDAS || 'Contabilidad/Monedas',
     pathPuertos: process.env.ERP_PATH_PUERTOS || 'Padrones/Puertos',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
     pathLogin: process.env.ERP_PATH_LOGIN || 'auth/login',
@@ -153,6 +155,7 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
+    pathMonedas: process.env.ERP_PATH_MONEDAS || 'Contabilidad/Monedas',
     pathPuertos: process.env.ERP_PATH_PUERTOS || 'Padrones/Puertos',
     pathEmpresas: process.env.ERP_PATH_EMPRESAS || 'Sistema/Empresas',
     pathLogin: process.env.ERP_PATH_LOGIN || 'auth/Login',

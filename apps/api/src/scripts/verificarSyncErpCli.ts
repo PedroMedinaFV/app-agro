@@ -31,6 +31,7 @@ async function main() {
   const insumos = await prisma.erpInsumo.count();
   const servicios = await prisma.erpServicio.count();
   const unidadesMedida = await prisma.erpUnidadMedida.count();
+  const monedas = await prisma.erpMoneda.count();
   const puertos = await prisma.erpPuerto.count();
   const integracion = await prisma.integracionErp.findUnique({
     where: { clienteId },
@@ -55,6 +56,7 @@ async function main() {
   const insumosAgro = await prisma.erpInsumo.count({ where: { empresaErpId: 'global' } });
   const serviciosAgro = await prisma.erpServicio.count({ where: { empresaErpId: 'global' } });
   const unidadesMedidaAgro = await prisma.erpUnidadMedida.count({ where: { empresaErpId: 'global' } });
+  const monedasAgro = await prisma.erpMoneda.count({ where: { empresaErpId: 'global' } });
   const puertosAgro = await prisma.erpPuerto.count({ where: { empresaErpId: 'global' } });
 
   console.log(
@@ -74,6 +76,7 @@ async function main() {
         insumos,
         servicios,
         unidadesMedida,
+        monedas,
         puertos,
         soloEmpresasAgro: {
           zonas: zonasAgro,
@@ -86,6 +89,7 @@ async function main() {
           insumos: insumosAgro,
           servicios: serviciosAgro,
           unidadesMedida: unidadesMedidaAgro,
+          monedas: monedasAgro,
           puertos: puertosAgro,
         },
         integracion,

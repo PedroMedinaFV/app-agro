@@ -30,6 +30,7 @@ const itemsDisponibles: SincronizacionItem[] = [
   { id: 'insumos', label: 'Insumos', descripcion: 'Padron de insumos para protocolos.' },
   { id: 'servicios', label: 'Servicios/Labores', descripcion: 'Servicios ERP usados como labores.' },
   { id: 'unidadesMedida', label: 'Unidades de medida', descripcion: 'Unidades para insumos y labores.' },
+  { id: 'monedas', label: 'Monedas', descripcion: 'Padron contable global para precios y costos.' },
   { id: 'puertos', label: 'Puertos', descripcion: 'Puertos/destinos comerciales del ERP.' },
 ];
 
@@ -63,6 +64,7 @@ export function SincronizacionErpScreen({
     ['Insumos', ultimoResultadoSync.insumos],
     ['Servicios', ultimoResultadoSync.servicios],
     ['Unidades', ultimoResultadoSync.unidadesMedida],
+    ['Monedas', ultimoResultadoSync.monedas],
     ['Puertos', ultimoResultadoSync.puertos],
     ['Sugerencias', ultimoResultadoSync.sugerenciasVinculacion?.creadas ?? 0],
   ] : [], [ultimoResultadoSync]);

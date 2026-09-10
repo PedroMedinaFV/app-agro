@@ -45,6 +45,7 @@ async function main() {
     prisma.erpInsumo.deleteMany(),
     prisma.erpServicio.deleteMany(),
     prisma.erpUnidadMedida.deleteMany(),
+    prisma.erpMoneda.deleteMany(),
   ]);
 
   console.log('[dev-clean] Limpieza finalizada.');

@@ -130,6 +130,7 @@ function crearResultadoVacio(sincronizadoEn = new Date().toISOString()) {
     insumos: 0,
     servicios: 0,
     unidadesMedida: 0,
+    monedas: 0,
     puertos: 0,
     omitidos: {
       lotesSinCampo: 0,
@@ -233,6 +234,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
   if (padrones.has('insumos')) borrados.push(prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('servicios')) borrados.push(prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('unidadesMedida')) borrados.push(prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('monedas')) borrados.push(prisma.erpMoneda.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('puertos')) borrados.push(prisma.erpPuerto.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
 
   await prisma.$transaction(borrados);
@@ -440,6 +442,21 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
+  if (padrones.has('monedas')) await crearEnBloques('monedas', snapshot.monedas, (bloque) =>
+    prisma.erpMoneda.createMany({
+      data: bloque.map((moneda) => ({
+        empresaErpId: moneda.empresaErpId,
+        erpId: moneda.erpId,
+        idMoneda: moneda.idMoneda,
+        codigo: moneda.codigo,
+        nombre: moneda.nombre,
+        simbolo: moneda.simbolo ?? null,
+        activo: moneda.activo,
+        actualizadoEn: new Date(moneda.actualizadoEn),
+      })),
+    }),
+  );
+
   if (padrones.has('puertos')) await crearEnBloques('puertos', snapshot.puertos, (bloque) =>
     prisma.erpPuerto.createMany({
       data: bloque.map((puerto) => ({
@@ -486,6 +503,7 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     insumos: padrones.has('insumos') ? snapshot.insumos.length : 0,
     servicios: padrones.has('servicios') ? snapshot.servicios.length : 0,
     unidadesMedida: padrones.has('unidadesMedida') ? snapshot.unidadesMedida.length : 0,
+    monedas: padrones.has('monedas') ? snapshot.monedas.length : 0,
     puertos: padrones.has('puertos') ? snapshot.puertos.length : 0,
     omitidos: {
       lotesSinCampo: lotesOmitidosPorCampo,

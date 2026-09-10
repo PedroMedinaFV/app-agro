@@ -5,6 +5,7 @@ import {
   ErpEspecie,
   ErpCampo,
   ErpInsumo,
+  ErpMoneda,
   ErpZona,
   ErpLote,
   ErpPuerto,
@@ -151,6 +152,7 @@ export type SincronizacionErpResultado = {
     insumos: number;
     servicios: number;
     unidadesMedida: number;
+    monedas: number;
     puertos: number;
     omitidos: {
       lotesSinCampo: number;
@@ -233,6 +235,14 @@ export async function obtenerServiciosErpImportados(token?: string): Promise<Ser
 export type PuertosErpImportadosResponse = {
   puertos: ErpPuerto[];
 };
+
+export type MonedasErpImportadasResponse = {
+  monedas: ErpMoneda[];
+};
+
+export async function obtenerMonedasErpImportadas(token?: string): Promise<MonedasErpImportadasResponse> {
+  return request<MonedasErpImportadasResponse>('/erp/monedas-importadas', {}, token);
+}
 
 export async function obtenerPuertosErpImportados(token?: string): Promise<PuertosErpImportadosResponse> {
   return request<PuertosErpImportadosResponse>('/erp/puertos-importados', {}, token);

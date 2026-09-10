@@ -186,6 +186,16 @@ export type ErpPadronUnidadMedida = {
   fechaUltimaActualizacion: string | null;
 };
 
+export type ErpPadronMoneda = {
+  idMoneda: number;
+  codigo?: string | null;
+  nombre?: string | null;
+  descripcion?: string | null;
+  simbolo?: string | null;
+  activo?: boolean | null;
+  fechaUltimaActualizacion?: string | null;
+};
+
 export type ErpPadronPuerto = {
   idPuerto: number;
   codigo?: string | null;
@@ -343,6 +353,17 @@ export type ErpUnidadMedida = {
   actualizadoEn: string;
 };
 
+export type ErpMoneda = {
+  empresaErpId: string;
+  erpId: string;
+  idMoneda: number;
+  codigo: string;
+  nombre: string;
+  simbolo?: string;
+  activo: boolean;
+  actualizadoEn: string;
+};
+
 export type ErpPuerto = {
   empresaErpId: string;
   erpId: string;
@@ -365,6 +386,7 @@ export type ErpSnapshot = {
   insumos: ErpInsumo[];
   servicios: ErpServicio[];
   unidadesMedida: ErpUnidadMedida[];
+  monedas: ErpMoneda[];
   puertos: ErpPuerto[];
   sincronizadoEn: string;
 };
@@ -381,6 +403,7 @@ export type PadronErpSincronizable =
   | 'insumos'
   | 'servicios'
   | 'unidadesMedida'
+  | 'monedas'
   | 'puertos';
 
 export const padronesErpSincronizables: PadronErpSincronizable[] = [
@@ -395,6 +418,7 @@ export const padronesErpSincronizables: PadronErpSincronizable[] = [
   'insumos',
   'servicios',
   'unidadesMedida',
+  'monedas',
   'puertos',
 ];
 

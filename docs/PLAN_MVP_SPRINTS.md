@@ -161,7 +161,7 @@ Objetivo:
 Incluye:
 
 - [x] sincronizar por cada empresa AGRO seleccionada usando `x-company`;
-- [x] importar zonas, campos, lotes, campanias, actividades, especies, cultivos, insumos, servicios/labores, unidades de medida y puertos;
+- [x] importar zonas, campos, lotes, campanias, actividades, especies, cultivos, insumos, servicios/labores, unidades de medida, monedas y puertos;
 - [x] registrar conteos e incidencias de sincronizacion;
 - [x] evitar que referencias huerfanas rompan toda la corrida;
 - [x] accion web admin para sincronizar padrones y ver conteos principales;
@@ -189,7 +189,7 @@ Validacion realizada:
 - `db:clean:dev` limpio datos operativos/cache de desarrollo preservando cliente, usuario, configuracion ERP, empresas ERP y seleccion AGRO;
 - `erp:sync -- --clienteId=cliente-demo` importo datos reales para `empresa:1`, `empresa:3`, `empresa:18` y `empresa:19`;
 - conteos filtrados por empresas AGRO: 6 zonas, 25 campos, 847 lotes, 72 actividades, 46 especies, 16 campanias, 3267 cultivos, 991 insumos, 147 servicios/labores, 18 unidades de medida y puertos segun ERP;
-- `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
+- `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida`, `Contabilidad/Monedas` y `Padrones/Puertos` se deduplican como padrones globales porque ALBOR devuelve el mismo catalogo para cualquier `x-company`;
 - `erp:verify` confirma `ultimoSyncEn` en `IntegracionErp`;
 - las tablas `Erp*` se refrescan como cache por empresa y las ediciones de usuario quedan fuera de esa cache.
 - [x] los campos provisorios se pueden vincular manualmente contra campos ERP disponibles; la accion queda auditada, valida empresa/zona y evita duplicados por cliente.

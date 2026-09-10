@@ -115,7 +115,7 @@ El arreglo `precios` queda fuera del contrato interno del MVP hasta definir si A
 
 ### Agricultura/Campanias
 
-El contrato de `Agricultura/Campanias` trae campañas agrícolas por empresa ERP.
+El contrato de `Agricultura/Campanias` trae campañas agrícolas. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo padron para todas las empresas AGRO, por lo que Agro App lo sincroniza como padron global deduplicado.
 
 Campos relevantes:
 
@@ -127,11 +127,28 @@ Campos relevantes:
 - `fechaUltimaActualizacion`
 - `fechasCampanias`
 
-Para campañas, `erpId` se deriva como `campania:${idCampania}`.
+Para campañas, `erpId` se deriva como `campania:${idCampania}` y `empresaErpId` se guarda como `global`.
 
 Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
 El campo `esActual` se conserva porque permite sugerir una campaña por defecto en la carga de registros. El arreglo `fechasCampanias` queda fuera del contrato interno del MVP hasta definir si se usará para validar fechas operativas.
+
+### Contabilidad/Monedas
+
+El contrato de `Contabilidad/Monedas` trae el padron contable de monedas. Puede recibir `NoPaginate` para traer todos los registros.
+
+Aunque el endpoint se consulta con `x-company`, la informacion es la misma para todas las empresas AGRO. Agro App lo sincroniza una sola vez por corrida como padron global deduplicado.
+
+Campos mapeados:
+
+- `idMoneda`
+- `codigo`
+- `nombre` o `descripcion`
+- `simbolo`
+- `activo`
+- `fechaUltimaActualizacion`
+
+Para monedas, `erpId` se deriva como `moneda:${idMoneda}` y `empresaErpId` se guarda como `global`.
 
 ### Padrones/Servicios
 
@@ -327,7 +344,7 @@ Por eso el flujo queda asi:
 3. Para cada empresa seleccionada, Agro App consulta los padrones operativos enviando `x-company: <idEmpresa>`.
 4. Cada registro importado guarda `empresaErpId` para saber desde qué empresa vino.
 
-Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida` y `Padrones/Puertos` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
+Excepcion: `Padrones/Zonas`, `Agricultura/Actividades`, `Agricultura/Especies`, `Agricultura/Campanias`, `Padrones/Insumos`, `Padrones/Servicios`, `Padrones/UnidadesMedida`, `Contabilidad/Monedas` y `Padrones/Puertos` se tratan como padrones globales deduplicados porque ALBOR devuelve el mismo catalogo sin importar el `x-company`. En zonas, la relacion con empresa se infiere a traves de los campos que usan cada `idZona`, no desde la respuesta de zonas.
 
 La sincronizacion puede ejecutarse para todos los padrones o para una seleccion puntual desde la pantalla web `Sincronizacion ERP`. Aunque el usuario seleccione algunos items, el backend puede sumar dependencias necesarias para no dejar relaciones inconsistentes. Por ejemplo, sincronizar lotes tambien refresca campos y zonas; sincronizar cultivos tambien refresca campanias, actividades, especies, lotes y campos.
 

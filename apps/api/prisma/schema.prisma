@@ -376,6 +376,25 @@ model ErpServicio {
   @@index([activo])
 }
 
+model ErpMoneda {
+  id             String    @id @default(uuid())
+  empresaErpId   String
+  erpId          String    @unique
+  idMoneda       Int
+  codigo         String
+  nombre         String
+  simbolo        String?
+  activo         Boolean
+  actualizadoEn  DateTime
+  importadoEn    DateTime  @default(now())
+
+  @@index([empresaErpId])
+  @@index([idMoneda])
+  @@index([codigo])
+  @@index([nombre])
+  @@index([activo])
+}
+
 model ErpUnidadMedida {
   id                    String    @id @default(uuid())
   empresaErpId          String
