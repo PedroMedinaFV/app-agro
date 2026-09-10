@@ -5,6 +5,7 @@ import type {
   CrearPrecipitacionResponse,
   CrearUrlSubidaAdjuntoRequest,
   CrearUrlSubidaAdjuntoResponse,
+  FichaLoteOperativoResponse,
   ObservacionesResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
@@ -83,6 +84,12 @@ export async function obtenerObservaciones(token: string) {
 
 export async function obtenerPlanificacionSnapshot(token: string) {
   return request<PlanificacionSnapshot>('/planificacion/snapshot', {
+    method: 'GET',
+  }, token);
+}
+
+export async function obtenerFichaLoteOperativo(loteAppId: string, token: string) {
+  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${loteAppId}/ficha`, {
     method: 'GET',
   }, token);
 }

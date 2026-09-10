@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
+import { FichaLoteOperativoResponse, obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
 import {
   crearObservacion,
   crearPrecipitacion,
   crearUrlSubidaAdjuntoObservacion,
+  obtenerFichaLoteOperativo,
   obtenerPlanificacionSnapshot,
   subirArchivoAFirmaSupabase,
 } from './services/api';
@@ -130,6 +131,8 @@ export default function App() {
   const [pendientesOffline, setPendientesOffline] = useState(0);
   const [sincronizandoOffline, setSincronizandoOffline] = useState(false);
   const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionDemo);
+  const [fichaLote, setFichaLote] = useState<FichaLoteOperativoResponse | null>(null);
+  const [cargandoFichaLote, setCargandoFichaLote] = useState(false);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
   const [errorPlanificacion, setErrorPlanificacion] = useState<string | null>(null);
 
@@ -165,6 +168,26 @@ export default function App() {
 
     void cargarDatosOperativos();
   }, [sesion]);
+
+  useEffect(() => {
+    async function cargarFichaLote() {
+      if (!sesion || !loteSeleccionadoId || sesion.origen === 'demo' || sesion.token === 'demo-mobile-token') {
+        setFichaLote(null);
+        return;
+      }
+
+      setCargandoFichaLote(true);
+      try {
+        setFichaLote(await obtenerFichaLoteOperativo(loteSeleccionadoId, sesion.token));
+      } catch {
+        setFichaLote(null);
+      } finally {
+        setCargandoFichaLote(false);
+      }
+    }
+
+    void cargarFichaLote();
+  }, [loteSeleccionadoId, sesion]);
 
   function entrarModoDemo() {
     // Mobile mantiene el mismo contrato de sesion que web/backend mientras no haya API disponible.
@@ -478,6 +501,33 @@ export default function App() {
                 ) : (
                   <Text style={styles.note}>No hay una linea de planificacion asociada al lote seleccionado.</Text>
                 )}
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Ficha del lote</Text>
+                {cargandoFichaLote && <Text style={styles.note}>Actualizando ficha operativa...</Text>}
+                <Text style={styles.note}>Superficie total: {fichaLote?.lote.superficieTotal ?? loteSeleccionado?.superficieTotal ?? 0} ha</Text>
+                <Text style={styles.note}>Superficie productiva: {fichaLote?.lote.superficieProductiva ?? loteSeleccionado?.superficieProductiva ?? 0} ha</Text>
+                <Text style={styles.note}>Estado: {fichaLote?.lote.estadoVinculacion ?? loteSeleccionado?.estadoVinculacion ?? 'sin datos'}</Text>
+                <Text style={styles.note}>Zona: {fichaLote?.zona?.nombre || 'Sin zona informada'}</Text>
+                <Text style={styles.note}>Cultivos ERP: {fichaLote?.cultivos.length ?? 0}</Text>
+                {fichaLote?.cultivos.slice(0, 2).map((cultivo) => (
+                  <Text key={cultivo.id} style={styles.note}>
+                    {cultivo.nombre} - {cultivo.campaniaNombre || 'Sin campania'} - {cultivo.hectareas} ha
+                  </Text>
+                ))}
+                <Text style={styles.note}>Planificaciones: {fichaLote?.planificaciones.length ?? (lineaSeleccionada ? 1 : 0)}</Text>
+                {fichaLote?.planificaciones.slice(0, 2).map((linea) => (
+                  <Text key={linea.id} style={styles.note}>
+                    {linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {linea.margenBrutoEstimado}
+                  </Text>
+                ))}
+                <Text style={styles.note}>
+                  Lluvias ultimos 30 dias: {fichaLote?.precipitaciones.milimetrosUltimos30Dias ?? 0} mm
+                </Text>
+                <Text style={styles.note}>
+                  Observaciones: {fichaLote?.observaciones.cantidadRegistros ?? 0} ({fichaLote?.observaciones.cantidadAlta ?? 0} alta)
+                </Text>
               </View>
 
               <View style={styles.section}>

@@ -226,6 +226,27 @@ Validaciones iniciales:
 - la sincronizacion offline no confia en el payload mobile y vuelve a ejecutar las mismas validaciones del alta online;
 - `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos.
 
+## Ficha operativa de lote
+
+1. El operador selecciona un campo y lote desde mobile.
+2. Mobile consulta `GET /operativo/lotes/:loteAppId/ficha`.
+3. Backend valida sesion, `clienteId` y alcance por campos asignados.
+4. Backend arma una vista consolidada del lote:
+   - campo, lote y zona;
+   - cultivos ERP vinculados al lote;
+   - lineas de planificacion asociadas;
+   - resumen de precipitaciones;
+   - resumen de observaciones y adjuntos.
+5. Mobile muestra la ficha antes de cargar nuevas observaciones o precipitaciones.
+6. Web queda preparada para consumir el mismo endpoint en tableros de seguimiento operativo.
+
+Validaciones iniciales:
+
+- el lote debe pertenecer al cliente de la sesion;
+- el lote debe pertenecer a un campo permitido para el operador;
+- la ficha no devuelve datos de otros clientes;
+- la web/mobile no calculan permisos localmente, solo consumen lo que backend ya filtro.
+
 ## Alta de usuarios, rol y enlace Microsoft
 
 1. Un administrador ingresa a la pantalla web `Usuarios`.

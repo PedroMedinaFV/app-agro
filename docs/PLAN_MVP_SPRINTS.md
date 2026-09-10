@@ -411,6 +411,8 @@ Avance realizado:
 - [x] idempotencia por `registroMovilId` para no duplicar precipitaciones ante reintentos;
 - [x] mobile marca como sincronizados solo los pendientes aceptados por backend.
 - [x] mobile consume `GET /planificacion/snapshot` con sesion real para mostrar campos/lotes asignados.
+- [x] endpoint backend `GET /operativo/lotes/:loteAppId/ficha` para ficha operativa filtrada por alcance.
+- [x] mobile muestra ficha de lote con superficies, cultivos ERP, planificacion, precipitaciones y observaciones.
 - [x] contrato y endpoint backend para crear observaciones operativas por campo/lote;
 - [x] mobile puede cargar observaciones con titulo, descripcion, severidad y ubicacion opcional;
 - [x] observaciones mobile quedan pendientes offline cuando no se pueden enviar;

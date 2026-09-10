@@ -11,6 +11,7 @@ import {
   ErpPuerto,
   ErpServicio,
   ErpSnapshot,
+  FichaLoteOperativoResponse,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
   CampoApp,
@@ -272,6 +273,10 @@ export async function guardarEmpresasErpAdmin(clienteId: string, empresasErpIds:
 
 export async function obtenerPlanificacionSnapshot(token?: string): Promise<PlanificacionSnapshot> {
   return request<PlanificacionSnapshot>('/planificacion/snapshot', {}, token);
+}
+
+export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {
+  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${loteAppId}/ficha`, {}, token);
 }
 
 export async function guardarPlanificacion(id: string, datos: GuardarPlanificacionRequest, token?: string): Promise<GuardarPlanificacionResponse> {
