@@ -228,8 +228,35 @@ export type CampaniasErpImportadasResponse = {
   campanias: ErpCampania[];
 };
 
-export async function obtenerCampaniasErpImportadas(token?: string): Promise<CampaniasErpImportadasResponse> {
-  return request<CampaniasErpImportadasResponse>('/erp/campanias-importadas', {}, token);
+let campaniasErpCache: { token?: string; respuesta: CampaniasErpImportadasResponse } | null = null;
+let campaniasErpEnVuelo: { token?: string; promesa: Promise<CampaniasErpImportadasResponse> } | null = null;
+
+export async function obtenerCampaniasErpImportadas(token?: string, opciones: { forzar?: boolean } = {}): Promise<CampaniasErpImportadasResponse> {
+  const cache = campaniasErpCache;
+  const enVuelo = campaniasErpEnVuelo;
+
+  if (!opciones.forzar && cache && cache.token === token) {
+    return cache.respuesta;
+  }
+
+  if (!opciones.forzar && enVuelo && enVuelo.token === token) {
+    return enVuelo.promesa;
+  }
+
+  const promesa = request<CampaniasErpImportadasResponse>('/erp/campanias-importadas', {}, token)
+    .then((respuesta) => {
+      campaniasErpCache = { token, respuesta };
+      return respuesta;
+    })
+    .finally(() => {
+      if (campaniasErpEnVuelo?.promesa === promesa) {
+        campaniasErpEnVuelo = null;
+      }
+    });
+
+  campaniasErpEnVuelo = { token, promesa };
+
+  return promesa;
 }
 
 export type InsumosErpImportadosResponse = {

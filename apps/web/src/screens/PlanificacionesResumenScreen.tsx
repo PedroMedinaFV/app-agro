@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
@@ -11,7 +11,7 @@ type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
 
 export function PlanificacionesResumenScreen({
   planificacion,
-  snapshot,
+  campaniasDisponibles,
   puedeEditarPlanificacion,
   puedeEditarPlanificacionPorPermiso,
   puedeCerrarPlanificacion,
@@ -31,14 +31,15 @@ export function PlanificacionesResumenScreen({
   onNuevoEscenario,
   onCopiarEscenario,
 }: PlanificacionesResumenScreenProps) {
-  const campaniaInicial = planificacionActiva?.campaniaErpId || snapshot.campanias.find((campania) => campania.esActual)?.erpId || snapshot.campanias[0]?.erpId || '';
+  const campaniaInicial = planificacionActiva?.campaniaErpId || campaniasDisponibles.find((campania) => campania.esActual)?.erpId || campaniasDisponibles[0]?.erpId || '';
   const [modalEscenarioAbierto, setModalEscenarioAbierto] = useState(false);
   const [nuevoEscenario, setNuevoEscenario] = useState({
     nombre: '',
     campaniaErpId: campaniaInicial,
     descripcion: '',
   });
-  const campaniaActiva = snapshot.campanias.find((campania) => campania.erpId === planificacionActiva?.campaniaErpId);
+  const campaniasPorId = useMemo(() => new Map(campaniasDisponibles.map((campania) => [campania.erpId, campania])), [campaniasDisponibles]);
+  const campaniaActiva = campaniasPorId.get(planificacionActiva?.campaniaErpId || '');
   const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
     item.campaniaErpId === nuevoEscenario.campaniaErpId
     && item.estado === 'cerrada'
@@ -130,7 +131,7 @@ export function PlanificacionesResumenScreen({
             <p className="hint">Vista principal de nombre, campania, estado y resultado economico.</p>
           </div>
           <div className="button-row">
-            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || snapshot.campanias.length === 0}>
+            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || campaniasDisponibles.length === 0}>
               Nuevo escenario
             </button>
             <button className="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
@@ -165,7 +166,7 @@ export function PlanificacionesResumenScreen({
               key: 'campania',
               label: 'Campania',
               width: 'minmax(84px, 0.55fr)',
-              render: (item) => snapshot.campanias.find((campania) => campania.erpId === item.campaniaErpId)?.codigo || item.campaniaErpId,
+              render: (item) => campaniasPorId.get(item.campaniaErpId)?.codigo || item.campaniaErpId,
             },
             {
               key: 'estado',
@@ -267,7 +268,7 @@ export function PlanificacionesResumenScreen({
               <label>
                 Campania
                 <select value={nuevoEscenario.campaniaErpId} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, campaniaErpId: event.target.value }))}>
-                  {snapshot.campanias.map((campania) => (
+                  {campaniasDisponibles.map((campania) => (
                     <option key={campania.erpId} value={campania.erpId}>
                       {campania.codigo} {campania.esActual ? '(actual)' : ''}
                     </option>

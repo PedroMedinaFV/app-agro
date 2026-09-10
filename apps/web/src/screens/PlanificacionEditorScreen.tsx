@@ -21,6 +21,7 @@ function normalizarTexto(valor: string) {
 export function PlanificacionEditorScreen({
   planificacion,
   snapshot,
+  campaniasDisponibles,
   puedeEditarPlanificacion,
   guardandoPlanificacion,
   planificacionActiva,
@@ -573,7 +574,7 @@ export function PlanificacionEditorScreen({
           <label>
             Campania
             <select value={planificacionActiva?.campaniaErpId || ''} onChange={(event) => cambiarCampaniaPlanificacion(event.target.value)} disabled={!puedeEditarPlanificacion}>
-              {snapshot.campanias.map((campania) => (
+              {campaniasDisponibles.map((campania) => (
                 <option key={campania.erpId} value={campania.erpId}>
                   {campania.codigo} {campania.esActual ? '(actual)' : ''}
                 </option>

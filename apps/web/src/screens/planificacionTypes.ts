@@ -1,10 +1,12 @@
 import {
   CampoApp,
+  ErpCampania,
   ErpSnapshot,
   LoteApp,
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
   ProtocoloProductivoResumen,
+  SesionUsuario,
 } from '@agro/tipos';
 
 export type PlanificacionActiva = PlanificacionSnapshot['planificaciones'][number];
@@ -12,6 +14,8 @@ export type PlanificacionActiva = PlanificacionSnapshot['planificaciones'][numbe
 export type PlanificacionBaseProps = {
   planificacion: PlanificacionSnapshot;
   snapshot: ErpSnapshot;
+  sesion: SesionUsuario;
+  campaniasDisponibles: ErpCampania[];
   puedeEditarPlanificacion: boolean;
   puedeEditarPlanificacionPorPermiso: boolean;
   puedeCerrarPlanificacion: boolean;

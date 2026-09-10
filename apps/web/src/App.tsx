@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { ErpCampania } from '@agro/tipos';
 import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
 import { HomeScreen } from './screens/HomeScreen';
@@ -24,7 +25,7 @@ import { CamposScreen } from './screens/CamposScreen';
 import { LotesScreen } from './screens/LotesScreen';
 import { VinculacionesPadronesScreen } from './screens/VinculacionesPadronesScreen';
 import { ToastViewport } from './components/ToastViewport';
-import { obtenerNotificaciones } from './services/api';
+import { obtenerCampaniasErpImportadas, obtenerNotificaciones } from './services/api';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
 import { usePlanificacionDemo } from './hooks/usePlanificacionDemo';
@@ -41,6 +42,7 @@ export function App() {
   const auth = useDemoAuth();
   const sesion = auth.sesion;
   const [notificacionesPendientes, setNotificacionesPendientes] = useState(0);
+  const [campaniasImportadas, setCampaniasImportadas] = useState<ErpCampania[]>([]);
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
   const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
   const refrescarNotificaciones = useCallback(async () => {
@@ -69,6 +71,17 @@ export function App() {
   useEffect(() => {
     refrescarNotificaciones();
   }, [refrescarNotificaciones]);
+
+  useEffect(() => {
+    if (!sesion) {
+      setCampaniasImportadas([]);
+      return;
+    }
+
+    obtenerCampaniasErpImportadas(sesion.token)
+      .then((respuesta) => setCampaniasImportadas(respuesta.campanias))
+      .catch(() => setCampaniasImportadas([]));
+  }, [sesion]);
 
   useEffect(() => {
     if (!sesion || !protocolosDemo.protocolos.protocolos.length) {
@@ -217,8 +230,10 @@ export function App() {
 
       {vista === 'planificacion' && (
         <PlanificacionScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
+          campaniasDisponibles={campaniasImportadas.length ? campaniasImportadas : erp.snapshot.campanias}
           puedeEditarPlanificacion={planificacionDemo.puedeEditarPlanificacion}
           puedeEditarPlanificacionPorPermiso={planificacionDemo.puedeEditarPlanificacionPorPermiso}
           puedeCerrarPlanificacion={planificacionDemo.puedeCerrarPlanificacion}
