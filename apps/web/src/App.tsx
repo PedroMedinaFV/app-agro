@@ -252,6 +252,7 @@ export function App() {
 
       {vista === 'protocolos' && (
         <ProtocolosScreen
+          sesion={sesion}
           protocolos={protocolosDemo.protocolos}
           snapshot={erp.snapshot}
           planificacion={planificacionDemo.planificacion}

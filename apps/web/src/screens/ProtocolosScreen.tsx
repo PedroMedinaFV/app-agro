@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { ErpSnapshot, PlanificacionSnapshot, ProtocoloProductivoDetalle, ProtocolosSnapshot } from '@agro/tipos';
+import { useEffect, useState } from 'react';
+import { ErpCampania, ErpSnapshot, PlanificacionSnapshot, ProtocoloProductivoDetalle, ProtocolosSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { ProtocoloModal } from '../components/protocolos/ProtocoloModal';
+import { obtenerCampaniasErpImportadas } from '../services/api';
 
 interface ProtocolosScreenProps {
+  sesion: SesionUsuario;
   protocolos: ProtocolosSnapshot;
   snapshot: ErpSnapshot;
   planificacion: PlanificacionSnapshot;
@@ -26,6 +28,7 @@ interface ProtocolosScreenProps {
 }
 
 export function ProtocolosScreen({
+  sesion,
   protocolos,
   snapshot,
   planificacion,
@@ -47,6 +50,17 @@ export function ProtocolosScreen({
 }: ProtocolosScreenProps) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoModal, setModoModal] = useState<'crear' | 'editar' | 'copiar'>('editar');
+  const [campaniasErp, setCampaniasErp] = useState<ErpCampania[]>([]);
+  const campaniasDisponibles = campaniasErp.length ? campaniasErp : snapshot.campanias;
+
+  useEffect(() => {
+    async function cargarCampaniasReales() {
+      const respuesta = await obtenerCampaniasErpImportadas(sesion.token);
+      setCampaniasErp(respuesta.campanias);
+    }
+
+    cargarCampaniasReales().catch(() => undefined);
+  }, [sesion.token]);
 
   function abrirNuevoProtocolo() {
     crearProtocoloVacio();
@@ -167,7 +181,7 @@ export function ProtocolosScreen({
           modo={modoModal}
           protocolo={protocoloSeleccionado}
           planificacion={planificacion}
-          campanias={snapshot.campanias}
+          campanias={campaniasDisponibles}
           puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
           guardandoProtocolo={guardandoProtocolo}
           onClose={() => setModalAbierto(false)}
