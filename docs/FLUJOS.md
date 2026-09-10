@@ -31,15 +31,15 @@ El login demo permite validar pantallas y navegacion sin depender de PostgreSQL,
 
 ## Roles demo
 
-1. En web, el usuario selecciona `admin` o `usuario`.
+1. En desarrollo, el usuario puede ingresar con modo demo.
 2. `POST /auth/demo` devuelve una sesion con permisos segun rol.
 3. La web manda el token al consultar `/erp/snapshot`.
 4. El backend valida el JWT y aplica permisos.
-5. Las secciones administrativas solo aparecen para `admin`.
+5. Las secciones administrativas aparecen segun permisos, no solo por nombre de rol.
 
 ## Asignacion de campos por usuario
 
-1. Un admin asigna campos ERP a un usuario.
+1. Un admin asigna campos ERP a un operador de campo.
 2. El backend guarda las asignaciones en `UsuarioCampoErp`.
 3. Cada campo ERP ya contiene `empresaErpId`, por lo que la empresa queda asociada de forma implicita al campo.
 4. Cuando el usuario consulta `GET /erp/snapshot`, el backend filtra campos, lotes y datos operativos relacionados.
@@ -47,10 +47,10 @@ El login demo permite validar pantallas y navegacion sin depender de PostgreSQL,
 6. Si el usuario tiene campos asignados de mas de una empresa AGRO, puede trabajar sobre esos campos aunque provengan de distintas empresas ERP.
 7. Si una empresa AGRO no tiene campos asignados al usuario, el usuario no ve datos operativos de esa empresa.
 
-## Inicio de usuario comun
+## Inicio de operador de campo
 
-1. El usuario inicia sesion con Microsoft Entra ID o, durante desarrollo, con modo demo `usuario`.
-2. Backend valida la sesion y devuelve permisos de `usuario`.
+1. El usuario inicia sesion con Microsoft Entra ID o, durante desarrollo, con modo demo.
+2. Backend valida la sesion y devuelve permisos de `operador_campo`.
 3. La app web/mobile solicita el snapshot operativo con el token del usuario.
 4. Backend identifica el `clienteId` y las asignaciones en `UsuarioCampoErp`.
 5. Backend filtra la informacion antes de responder:
@@ -67,15 +67,15 @@ El login demo permite validar pantallas y navegacion sin depender de PostgreSQL,
    - campaña actual;
    - pendientes o acciones de carga;
    - estado de sincronizacion.
-7. El usuario no ve pantallas administrativas como `Empresas ERP`, configuracion de integracion ni asignacion de campos.
+7. El operador no ve pantallas administrativas como `Empresas ERP`, configuracion de integracion ni asignacion de campos.
 
-La empresa ERP no se asigna directamente al usuario comun. Se deriva desde los campos asignados mediante `empresaErpId`. Esto permite que un usuario trabaje en campos puntuales sin darle acceso completo a toda una empresa.
+La empresa ERP no se asigna directamente al operador. Se deriva desde los campos asignados mediante `empresaErpId`. Esto permite que trabaje en campos puntuales sin darle acceso completo a toda una empresa.
 
 ### Estado implementado
 
 - Backend: `GET /erp/snapshot` filtra campos, lotes, empresas, zonas, especies y actividades por las empresas derivadas de los campos asignados.
-- Web: el rol `usuario` ve un inicio `Mi trabajo` con foco en sus campos, lotes y acciones permitidas.
-- Mobile: el rol `usuario` ve una version demo de `Mi trabajo` con campos/lotes asignados y accion operativa permitida.
+- Web: el rol `operador_campo` ve un inicio `Mi trabajo` con foco en sus campos, lotes y acciones permitidas.
+- Mobile: el rol `operador_campo` ve una version demo de `Mi trabajo` con campos/lotes asignados y accion operativa permitida.
 
 ## Empresas ERP para AGRO
 
@@ -176,7 +176,7 @@ La carga de precipitaciones tambien puede existir en web para correcciones, migr
 
 Endpoints iniciales:
 
-- `GET /precipitaciones`: lista las ultimas precipitaciones del cliente, filtradas por alcance de campos para usuario comun.
+- `GET /precipitaciones`: lista las ultimas precipitaciones del cliente, filtradas por alcance de campos para operador de campo.
 - `POST /precipitaciones`: crea una precipitacion con campo obligatorio, lote opcional, milimetros, fecha/hora del evento, observaciones y origen.
 - `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion`; otros tipos quedan pendientes con error controlado.
 
@@ -185,7 +185,7 @@ Validaciones iniciales:
 - los milimetros deben ser mayores a cero;
 - el campo debe pertenecer al cliente de la sesion;
 - si se informa lote, debe pertenecer al campo seleccionado;
-- un usuario comun solo puede cargar o ver precipitaciones de campos asignados;
+- un operador de campo solo puede cargar o ver precipitaciones de campos asignados;
 - toda alta registra auditoria;
 - la sincronizacion offline no confia en el payload mobile y vuelve a ejecutar las mismas validaciones del alta online;
 - `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos.
@@ -194,7 +194,7 @@ Validaciones iniciales:
 
 1. Un administrador ingresa a la pantalla web `Usuarios`.
 2. Crea un usuario con email, nombre y rol inicial.
-3. Si el rol es `usuario`, asigna los campos ERP permitidos para operar.
+3. Si el rol es `operador_campo`, asigna los campos ERP permitidos para operar.
 4. Backend valida que el usuario pertenezca al cliente de la sesion.
 5. Backend valida que los campos asignados pertenezcan al mismo cliente y esten vinculados al ERP.
 6. Backend persiste usuario, rol y asignaciones con auditoria.

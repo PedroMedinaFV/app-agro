@@ -36,7 +36,11 @@ function normalizarEmail(email: string) {
 }
 
 function normalizarRol(rol: string): RolUsuario {
-  return rol === 'admin' ? 'admin' : 'usuario';
+  if (rol === 'admin' || rol === 'planificador' || rol === 'operador_campo') {
+    return rol;
+  }
+
+  return 'operador_campo';
 }
 
 async function mapearUsuario(usuario: UsuarioAdminRow): Promise<UsuarioAdminResumen> {

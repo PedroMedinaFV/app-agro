@@ -52,12 +52,12 @@ Roles y permisos:
 - Web muestra u oculta configuracion ERP segun permisos.
 - Asignacion de campos ERP por usuario preparada para filtrar datos operativos.
 - Usuario comun definido con alcance por campos asignados; la empresa ERP se deriva de cada campo mediante `empresaErpId`.
-- Inicio de usuario comun implementado en modo demo web/mobile como vista operativa `Mi trabajo`.
+- Inicio de operador de campo implementado en modo demo web/mobile como vista operativa `Mi trabajo`.
 
 Pantallas actuales:
 
-- Web: dashboard demo, pantalla admin `Empresas ERP` e inicio `Mi trabajo` para usuario comun.
-- Mobile: login demo, panel mobile admin y panel `Mi trabajo` para usuario comun.
+- Web: dashboard demo, pantalla admin `Empresas ERP` e inicio `Mi trabajo` para operador de campo.
+- Mobile: login demo, panel mobile admin y panel `Mi trabajo` para operador de campo.
 
 Proxima pantalla sugerida:
 

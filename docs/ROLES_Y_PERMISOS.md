@@ -1,34 +1,48 @@
 # Roles y Permisos
 
-## Roles iniciales
+## Decision MVP
 
-- `admin`: administra configuracion, integraciones y usuarios.
-- `usuario`: opera la app de campo y consulta datos sincronizados.
+Para el MVP cada usuario tiene un solo rol principal.
+
+Motivo:
+
+- reduce ambiguedad operativa;
+- evita combinaciones dificiles de explicar al usuario;
+- simplifica auditoria y soporte;
+- mantiene seguridad por defecto con menor superficie de error.
+
+La autorizacion no queda atada solamente al nombre del rol: el backend valida permisos declarativos. Esto permite sumar roles multiples o permisos especiales mas adelante sin reescribir todas las rutas.
+
+## Roles
+
+- `admin`: administra configuracion, integraciones ERP, usuarios, empresas AGRO, sincronizacion, padrones, seguridad y auditoria.
+- `planificador`: gestiona planificacion agricola, escenarios, protocolos, precios, gastos comerciales y padrones propios de Agro App.
+- `operador_campo`: trabaja en campo, principalmente desde mobile, sobre campos/lotes asignados. Puede cargar datos operativos como precipitaciones y, mas adelante, recorridas, observaciones e imagenes.
 
 ## Permisos
 
 Los permisos son declarativos y viven en `packages/tipos/src/auth.ts`.
 
-| Permiso | Admin | Usuario | Uso |
-| --- | --- | --- | --- |
-| `erp:configurar` | Si | No | Configurar credenciales e integracion ERP |
-| `erp:sincronizar` | Si | No | Disparar sincronizacion ERP |
-| `erp:leer` | Si | Si | Consultar snapshot ERP |
-| `usuarios:gestionar` | Si | No | Administrar usuarios |
-| `usuarios:asignar-campos` | Si | No | Asignar campos ERP visibles por usuario |
-| `campos:leer` | Si | Si | Consultar campos |
-| `lotes:leer` | Si | Si | Consultar lotes |
-| `actividades:leer` | Si | Si | Consultar actividades |
-| `planificacion:leer` | Si | Si | Consultar planificaciones dentro del alcance permitido |
-| `planificacion:editar` | Si | Si | Crear o editar planificaciones en campos/lotes permitidos |
-| `planificacion:aprobar` | Si | No | Aprobar planificaciones |
-| `planificacion:cerrar` | Si | No | Cerrar planificaciones y bloquear ediciones |
-| `planificacion:configurar` | Si | No | Administrar protocolos, precios y destinos sugeridos |
-| `padrones-base:gestionar` | Si | No | Crear, editar o vincular zonas/campos/lotes/especies/actividades/insumos provisorios con ERP |
-| `registros:crear` | Si | Si | Crear registros de campo |
-| `registros:sincronizar` | Si | Si | Sincronizar pendientes mobile/offline |
-| `precipitaciones:crear` | Si | Si | Cargar precipitaciones sobre campos asignados |
-| `precipitaciones:leer` | Si | Si | Consultar precipitaciones dentro del alcance permitido |
+| Permiso | Admin | Planificador | Operador de campo | Uso |
+| --- | --- | --- | --- | --- |
+| `erp:configurar` | Si | No | No | Configurar credenciales e integracion ERP |
+| `erp:sincronizar` | Si | No | No | Disparar sincronizacion ERP |
+| `erp:leer` | Si | Si | Si | Consultar snapshot ERP |
+| `usuarios:gestionar` | Si | No | No | Administrar usuarios |
+| `usuarios:asignar-campos` | Si | No | No | Asignar campos ERP visibles por operador |
+| `campos:leer` | Si | Si | Si | Consultar campos |
+| `lotes:leer` | Si | Si | Si | Consultar lotes |
+| `actividades:leer` | Si | Si | Si | Consultar actividades |
+| `planificacion:leer` | Si | Si | Si | Consultar planificaciones dentro del alcance permitido |
+| `planificacion:editar` | Si | Si | No | Crear o editar planificaciones |
+| `planificacion:aprobar` | Si | Si | No | Aprobar planificaciones |
+| `planificacion:cerrar` | Si | Si | No | Cerrar planificaciones y bloquear ediciones |
+| `planificacion:configurar` | Si | Si | No | Administrar protocolos, precios y destinos sugeridos |
+| `padrones-base:gestionar` | Si | Si | No | Crear, editar o vincular zonas/campos/lotes/especies/actividades/insumos provisorios con ERP |
+| `registros:crear` | Si | No | Si | Crear registros de campo |
+| `registros:sincronizar` | Si | No | Si | Sincronizar pendientes mobile/offline |
+| `precipitaciones:crear` | Si | No | Si | Cargar precipitaciones sobre campos asignados |
+| `precipitaciones:leer` | Si | Si | Si | Consultar precipitaciones dentro del alcance permitido |
 
 ## Backend
 
@@ -51,22 +65,21 @@ Ejemplos:
 
 La web usa los permisos de la sesion para mostrar u ocultar secciones. Por ejemplo, `Config. ERP` solo aparece si el usuario tiene `erp:configurar`.
 
-## Demo
-
-El login web real no permite seleccionar rol: el rol y los campos asignados se obtienen del backend segun el usuario preconfigurado por el administrador. Para desarrollo local queda un acceso `demo admin` sin selector visible de rol.
+El login web real no permite seleccionar rol: el rol y los campos asignados se obtienen del backend segun el usuario preconfigurado por el administrador. Para desarrollo local queda un acceso `demo admin`.
 
 ## Alcance por campos
 
-Cada usuario puede tener asignados campos ERP especificos para trabajar. El backend filtra el snapshot ERP usando esas asignaciones.
+Cada operador de campo tiene asignados campos ERP especificos para trabajar. El backend filtra el snapshot ERP usando esas asignaciones.
 
 - `admin`: ve todos los campos del cliente.
-- `usuario`: ve solo campos asignados.
+- `planificador`: ve todos los campos del cliente para poder planificar.
+- `operador_campo`: ve solo campos asignados.
 
-Los campos importados desde ERP incluyen `empresaErpId`. Por lo tanto, la empresa no se asigna directamente al usuario comun: se infiere desde los campos asignados.
+Los campos importados desde ERP incluyen `empresaErpId`. Por lo tanto, la empresa no se asigna directamente al operador: se infiere desde los campos asignados.
 
 Ejemplo:
 
-- Si el usuario tiene `empresa:1:campo:241`, puede ver ese campo y sus lotes.
+- Si el operador tiene `empresa:1:campo:241`, puede ver ese campo y sus lotes.
 - Si tambien tiene `empresa:2:campo:241`, puede ver ese otro campo aunque tenga el mismo identificador numerico del ERP.
 - Si no tiene campos asignados de `empresa:2`, no ve datos operativos de esa empresa.
 
@@ -75,32 +88,37 @@ Endpoints preparados:
 - `GET /admin/asignaciones/:clienteId/usuarios/:usuarioId/campos`
 - `PUT /admin/asignaciones/:clienteId/usuarios/:usuarioId/campos`
 
-En modo demo, un usuario comun ve solo `empresa:mock:campo:241` para poder validar el recorte sin base de datos.
+## Inicio por rol
 
-## Inicio de usuario comun
+`admin` inicia en una vista de control y configuracion.
 
-El inicio de un usuario comun debe estar enfocado en la operacion diaria, no en administracion:
+`planificador` inicia en una vista orientada a planificacion, protocolos, precios, gastos y padrones necesarios.
 
-- resumen de campos asignados;
+`operador_campo` inicia en una vista operativa:
+
+- campos asignados;
 - lotes disponibles;
 - acciones de carga permitidas;
-- carga rapida de precipitaciones sobre campos asignados;
+- carga rapida de precipitaciones;
 - pendientes de sincronizacion;
 - estado de conectividad cuando exista offline-first.
 
-No debe mostrar:
+El operador no debe ver:
 
 - configuracion ERP;
 - seleccion de empresas ERP;
 - administracion de usuarios;
-- asignacion de campos.
+- asignacion de campos;
+- cierre o configuracion de planificaciones.
 
-## Planificacion y padrones base provisorios
+## Roles multiples
 
-El usuario comun puede crear o editar planificacion solo sobre campos/lotes dentro de su alcance operativo.
+No se implementan roles multiples en el MVP.
 
-La creacion y vinculacion de padrones base provisorios queda reservada inicialmente a usuarios con permiso especifico. Esta operacion es sensible porque puede cambiar la relacion entre datos propios de Agro App y padrones del ERP.
+Si mas adelante un usuario necesita capacidades mixtas, se evaluara una de estas opciones:
 
-Aplica a zonas, campos, lotes, especies, actividades e insumos. No aplica a datos operativos importados desde ERP como `Agricultura/Cultivos`.
+- cambiarlo a un rol superior;
+- crear un nuevo rol compuesto;
+- agregar permisos explicitos por usuario con auditoria y fecha de vigencia.
 
-El cierre de una planificacion queda reservado a usuarios con `planificacion:cerrar`. Una vez cerrada, ningun rol puede modificarla desde el flujo normal.
+La opcion recomendada para escalar es agregar permisos explicitos, no asignar una lista libre de roles, porque es mas auditable y reduce conflictos.

@@ -73,7 +73,7 @@ export function App() {
     campo: erp.snapshot.campos.find((campo) => campo.erpId === lote.campoErpId),
   }));
   const zonasPorEmpresaYId = new Map(erp.snapshot.zonas.map((zona) => [`${zona.empresaErpId}:${zona.idZona}`, zona]));
-  const esUsuarioComun = sesion?.usuario.rol === 'usuario';
+  const esUsuarioComun = sesion?.usuario.rol === 'operador_campo';
   const empresasOperativas = new Set(erp.snapshot.campos.map((campo) => campo.empresaErpId));
   const campaniaActual = erp.snapshot.campanias.find((campania) => campania.esActual);
   const tituloVista = vista === 'empresas-erp'

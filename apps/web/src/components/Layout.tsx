@@ -19,6 +19,10 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+function obtenerEtiquetaRol(rol: SesionUsuario['usuario']['rol']) {
+  return rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo';
+}
+
 export function Layout({
   sesion,
   sidebarAbierto,
@@ -85,7 +89,7 @@ export function Layout({
         <aside className={`sidebar ${!sidebarAbierto ? 'collapsed' : ''}`}>
           <div className="sidebar-profile">
             <strong className="sidebar-logo">AA</strong>
-            <p className="user">{sesion.usuario.rol}</p>
+            <p className="user">{obtenerEtiquetaRol(sesion.usuario.rol)}</p>
           </div>
           <nav>
             {navItems.map((item) => {

@@ -29,9 +29,13 @@ function crearUsuarioFormulario(): UsuarioFormulario {
     id: `usuario-${Date.now()}`,
     email: '',
     nombre: '',
-    rol: 'usuario',
+    rol: 'operador_campo',
     camposAsignados: [],
   };
+}
+
+function obtenerEtiquetaRol(rol: RolUsuario) {
+  return rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo';
 }
 
 function crearFormularioDesdeUsuario(usuario: UsuarioAdminResumen): UsuarioFormulario {
@@ -177,7 +181,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
         nombre: usuarioEnEdicion.nombre || undefined,
         rol: usuarioEnEdicion.rol,
       }, sesion.token);
-      const camposAsignados = usuarioEnEdicion.rol === 'usuario' ? usuarioEnEdicion.camposAsignados : [];
+      const camposAsignados = usuarioEnEdicion.rol === 'operador_campo' ? usuarioEnEdicion.camposAsignados : [];
 
       if (puedeAsignarCampos) {
         await guardarCamposUsuarioAdmin(respuestaUsuario.usuario.clienteId, respuestaUsuario.usuario.id, camposAsignados, sesion.token);
@@ -223,7 +227,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
           columns={[
             { key: 'usuario', label: 'Usuario', width: 'minmax(180px, 1.2fr)', render: (usuario) => <strong>{usuario.nombre || usuario.email}</strong> },
             { key: 'email', label: 'Email', width: 'minmax(190px, 1.2fr)', render: (usuario) => usuario.email },
-            { key: 'rol', label: 'Rol', width: 'minmax(90px, 0.5fr)', render: (usuario) => <em>{usuario.rol}</em> },
+            { key: 'rol', label: 'Rol', width: 'minmax(120px, 0.7fr)', render: (usuario) => <em>{obtenerEtiquetaRol(usuario.rol)}</em> },
             {
               key: 'microsoft',
               label: 'Microsoft',
@@ -234,7 +238,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
               key: 'campos',
               label: 'Campos',
               width: 'minmax(110px, 0.6fr)',
-              render: (usuario) => usuario.rol === 'admin' ? 'Todos' : usuario.camposAsignados.length,
+              render: (usuario) => usuario.rol === 'admin' ? 'Todos' : usuario.rol === 'operador_campo' ? usuario.camposAsignados.length : 'No aplica',
             },
             {
               key: 'acciones',
@@ -289,17 +293,18 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                   disabled={guardando}
                   onChange={(event) => actualizarFormulario({ rol: event.target.value as RolUsuario })}
                 >
-                  <option value="usuario">Usuario</option>
                   <option value="admin">Admin</option>
+                  <option value="planificador">Planificador</option>
+                  <option value="operador_campo">Operador de campo</option>
                 </select>
               </label>
             </div>
 
-            {usuarioEnEdicion.rol === 'usuario' && (
+            {usuarioEnEdicion.rol === 'operador_campo' && (
               <section className="field-picker">
                 <div>
                   <h3>Campos asignados</h3>
-                  <p className="hint">Solo se muestran campos ERP sincronizados de empresas AGRO. Estos definen el alcance operativo y de seguridad del usuario comun.</p>
+                  <p className="hint">Solo se muestran campos ERP sincronizados de empresas AGRO. Estos definen el alcance operativo y de seguridad del operador de campo.</p>
                 </div>
                 <div className="field-zone-list">
                   {camposPorZona.map((grupo) => {

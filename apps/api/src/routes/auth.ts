@@ -11,17 +11,17 @@ const SECRET = process.env.JWT_SECRET || 'secret-dev';
 
 function crearTokenSesion(usuario: { id: string; email: string; rol?: string; clienteId?: string | null }) {
   return jwt.sign(
-    { sub: usuario.id, email: usuario.email, rol: usuario.rol || 'usuario', clienteId: usuario.clienteId || undefined },
+    { sub: usuario.id, email: usuario.email, rol: usuario.rol || 'operador_campo', clienteId: usuario.clienteId || undefined },
     SECRET,
     { expiresIn: '8h' },
   );
 }
 
 router.post('/demo', (req, res) => {
-  const { email = 'demo@agroapp.local', nombre = 'Usuario Demo', rol = 'usuario', clienteId = 'cliente-demo' } = req.body as LoginDemoRequest;
-  const rolSesion: RolUsuario = rol === 'admin' ? 'admin' : 'usuario';
+  const { email = 'demo@agroapp.local', nombre = 'Usuario Demo', rol = 'operador_campo', clienteId = 'cliente-demo' } = req.body as LoginDemoRequest;
+  const rolSesion: RolUsuario = rol === 'admin' || rol === 'planificador' || rol === 'operador_campo' ? rol : 'operador_campo';
   const usuario = {
-    id: rolSesion === 'admin' ? 'demo-admin' : 'demo-user',
+    id: rolSesion === 'admin' ? 'demo-admin' : rolSesion === 'planificador' ? 'demo-planificador' : 'demo-operador',
     email,
     nombre,
     rol: rolSesion,
@@ -60,7 +60,7 @@ router.post('/registro', async (req, res) => {
   res.status(201).json({
     mensaje: 'Usuario creado',
     token,
-    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
+    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol as RolUsuario, clienteId: usuario.clienteId || undefined },
     origen: 'email',
     permisos: obtenerPermisosRol(usuario.rol),
   });
@@ -88,7 +88,7 @@ router.post('/login', async (req, res) => {
   res.json({
     mensaje: 'Login correcto',
     token,
-    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
+    usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol as RolUsuario, clienteId: usuario.clienteId || undefined },
     origen: 'email',
     permisos: obtenerPermisosRol(usuario.rol),
   });
@@ -127,7 +127,7 @@ router.post('/microsoft', async (req, res, next) => {
     res.json({
       mensaje: 'Login Microsoft correcto',
       token,
-      usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol === 'admin' ? 'admin' : 'usuario', clienteId: usuario.clienteId || undefined },
+      usuario: { id: usuario.id, email: usuario.email, nombre: usuario.nombre, rol: usuario.rol as RolUsuario, clienteId: usuario.clienteId || undefined },
       origen: 'microsoft',
       permisos: obtenerPermisosRol(usuario.rol),
     });

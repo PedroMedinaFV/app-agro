@@ -176,7 +176,7 @@ Criterio de aceptacion:
 - [x] no se duplican registros en corridas sucesivas;
 - [x] la web permite disparar sincronizacion manual y ver conteos principales;
 - [x] la web muestra historial de corridas y errores por empresa/padron;
-- [x] usuario comun solo ve campos asignados.
+- [x] operador de campo solo ve campos asignados.
 
 Decision de alcance:
 
@@ -394,7 +394,7 @@ Incluye:
 
 Criterio de aceptacion:
 
-- usuario comun ve solo sus campos;
+- operador de campo ve solo sus campos;
 - puede crear una observacion de lote;
 - puede cargar una precipitacion en milimetros sobre un campo asignado;
 - puede adjuntar imagen;

@@ -46,7 +46,7 @@ El backend expone solamente el estado de configuracion, nunca los valores secret
 
 ## Permisos declarativos
 
-Aunque el MVP solo tenga `admin` y `usuario`, se definen permisos explicitos. Esto evita acoplar las rutas a comparaciones de rol y permite sumar perfiles futuros sin reescribir toda la autorizacion.
+El MVP usa tres roles principales: `admin`, `planificador` y `operador_campo`. Cada usuario tiene un solo rol principal. Los permisos siguen siendo declarativos para evitar acoplar rutas a comparaciones de rol y permitir sumar permisos especiales o roles multiples en una etapa posterior sin reescribir toda la autorizacion.
 
 ## Avance en tres capas
 
@@ -113,7 +113,7 @@ Esta decision aplica a administracion, planificacion agricola, protocolos, asign
 
 ## Alcance de usuario por campos
 
-El usuario comun no se asigna a una empresa ERP completa. Se le asignan campos ERP especificos.
+El operador de campo no se asigna a una empresa ERP completa. Se le asignan campos ERP especificos.
 
 La empresa queda asociada de forma implicita porque cada campo importado guarda `empresaErpId`. Esto permite:
 

@@ -106,7 +106,7 @@ const planificacionDemo: PlanificacionSnapshot = {
 export default function App() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
   const [email, setEmail] = useState('demo@agroapp.local');
-  const [rol, setRol] = useState<RolUsuario>('usuario');
+  const [rol, setRol] = useState<RolUsuario>('operador_campo');
   const [campoSeleccionadoId, setCampoSeleccionadoId] = useState(planificacionDemo.camposApp[0]?.id || '');
   const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesApp[0]?.id || '');
   const [milimetros, setMilimetros] = useState('');
@@ -359,7 +359,10 @@ export default function App() {
         <TextInput style={styles.input} placeholder="Correo" autoCapitalize="none" value={email} onChangeText={setEmail} />
         <TextInput style={styles.input} placeholder="Contrasena" secureTextEntry />
         <View style={styles.buttonSpacing}>
-          <Button title={`Rol: ${rol}`} onPress={() => setRol(rol === 'admin' ? 'usuario' : 'admin')} />
+          <Button
+            title={`Rol: ${rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo'}`}
+            onPress={() => setRol(rol === 'admin' ? 'planificador' : rol === 'planificador' ? 'operador_campo' : 'admin')}
+          />
         </View>
         <View style={styles.buttonSpacing}>
           <Button title="Entrar en modo demo" onPress={entrarModoDemo} />

@@ -112,7 +112,7 @@ Toda carga o edicion debe respetar:
 - trazabilidad de usuario, fecha, origen y cambios;
 - eventual sincronizacion offline/mobile cuando se implemente.
 
-Las precipitaciones deben validarse contra el alcance del usuario. Un usuario comun solo puede registrar lluvia sobre campos asignados; si selecciona lote, ese lote debe pertenecer al campo permitido. El valor debe guardarse con unidad normalizada en milimetros (`mm`), fecha/hora del evento, fecha/hora de carga, origen y usuario.
+Las precipitaciones deben validarse contra el alcance del usuario. Un operador de campo solo puede registrar lluvia sobre campos asignados; si selecciona lote, ese lote debe pertenecer al campo permitido. El valor debe guardarse con unidad normalizada en milimetros (`mm`), fecha/hora del evento, fecha/hora de carga, origen y usuario.
 
 El campo `origen` de las operaciones debe distinguir al menos:
 

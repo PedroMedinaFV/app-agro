@@ -43,13 +43,13 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - Todo dato sensible o administrativo debe quedar asociado a `clienteId` cuando aplique.
 - Un usuario no debe poder leer ni modificar configuracion de otro cliente.
 - Las asignaciones de campos y empresas ERP se guardan por cliente.
-- El usuario comun no recibe acceso por empresa completa; recibe acceso por campos asignados.
+- El operador de campo no recibe acceso por empresa completa; recibe acceso por campos asignados.
 - La empresa de un dato operativo se infiere con `empresaErpId`, pero no habilita por si sola acceso a todos los datos de esa empresa.
 - El filtrado por campos debe ejecutarse en backend antes de responder al frontend.
 
-## Usuario comun
+## Operador de campo
 
-- Un usuario comun solo puede consultar datos de sus campos asignados.
+- Un operador de campo solo puede consultar datos de sus campos asignados.
 - La UI puede ocultar secciones administrativas, pero no debe ser la barrera principal.
 - Los endpoints deben evitar aceptar `clienteId`, `empresaErpId` o `campoErpId` del cliente sin validar que pertenecen al usuario autenticado.
 - Para futuras escrituras offline/mobile, el backend debe validar que el registro enviado pertenece a un campo asignado al usuario antes de persistirlo o sincronizarlo al ERP.
@@ -57,7 +57,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - Los registros offline se tratan como datos no confiables: el backend vuelve a validar cliente, usuario, campo, lote, limites y permisos antes de persistir.
 - Los registros mobile deben enviar un identificador local idempotente, por ejemplo `registroMovilId`, para evitar duplicados cuando hay reintentos.
 - Si un tipo de registro offline aun no esta soportado, debe quedar pendiente con error controlado y no marcarse como sincronizado.
-- `GET /erp/snapshot` debe responder al usuario comun con un subconjunto ya filtrado desde backend, incluyendo empresas y padrones maestros recortados al alcance operativo cuando aplique.
+- `GET /erp/snapshot` debe responder al operador de campo con un subconjunto ya filtrado desde backend, incluyendo empresas y padrones maestros recortados al alcance operativo cuando aplique.
 - Los cultivos deben filtrarse por lotes permitidos, no solo por empresa, porque son datos operativos ligados al campo/lote.
 
 ## Limites de payload
@@ -103,7 +103,7 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 
 - La creacion de usuarios debe realizarse desde una pantalla administrativa protegida por `usuarios:gestionar`.
 - La asignacion de campos debe requerir `usuarios:asignar-campos`.
-- El usuario comun solo debe recibir alcance sobre campos ERP asignados explicitamente.
+- El operador de campo solo debe recibir alcance sobre campos ERP asignados explicitamente.
 - La pantalla de login no debe permitir elegir rol; el rol siempre viene de la configuracion persistida del usuario.
 - El enlace con Microsoft debe hacerse por email preconfigurado por un administrador, conservando `clienteId`, rol y campos asignados.
 - La autoalta libre por Microsoft queda fuera del MVP productivo recomendado porque puede crear usuarios sin alcance ni aprobacion administrativa.

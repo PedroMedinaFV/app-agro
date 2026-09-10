@@ -13,7 +13,7 @@ model Usuario {
   nombre      String?
   password    String?
   microsoftId String?   @unique
-  rol         String    @default("usuario")
+  rol         String    @default("operador_campo")
   cliente     Cliente?  @relation(fields: [clienteId], references: [id])
   clienteId   String?
   camposErpAsignados UsuarioCampoErp[]

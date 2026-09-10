@@ -832,7 +832,7 @@ Decision UX:
 - la vista principal de protocolos debe ser un listado limpio;
 - crear, editar y copiar protocolos se realiza en un modal amplio, consistente con precios, gastos comerciales y padrones maestros;
 - mobile muestra consulta/resumen para validar datos de campo sin forzar una experiencia pesada;
-- el usuario comun podra consultar o usar protocolos, pero no modificarlos salvo permiso especifico futuro;
+- el operador de campo podra consultar o usar protocolos, pero no modificarlos salvo permiso especifico futuro;
 - la modificacion de protocolos globales requiere permiso `planificacion:configurar`.
 
 ## Relacion entre planificacion y protocolo
