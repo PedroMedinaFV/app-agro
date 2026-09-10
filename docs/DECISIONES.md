@@ -317,6 +317,12 @@ La cache `ErpInsumo` y `ErpServicio` no se modifica. El valor editable vive en A
 
 Toda edicion debe pasar por backend, validar permisos, cliente y vinculacion ERP, y registrar auditoria con valores anteriores y nuevos.
 
+## Estadios fenologicos semilla
+
+Hasta contar con un endpoint ERP para estadios, Agro App mantiene `EstadioFenologicoReferencia` como padron semilla persistido por cliente.
+
+El backend debe asegurar esa semilla al consultar snapshots de planificacion/protocolos y antes de guardar un protocolo. Motivo: las etapas de protocolo tienen una FK real contra `EstadioFenologicoReferencia`, por lo que no deben guardar IDs que solo existan en memoria o en datos demo.
+
 ## Limpieza de modelo legacy
 
 Se eliminan las tablas iniciales `Campo`, `Lote`, `Pais`, `Cultivo`, `Labor`, `AnalisisSuelo`, `AvanceSiembra`, `AvanceCosecha` y `Monitoreo`.

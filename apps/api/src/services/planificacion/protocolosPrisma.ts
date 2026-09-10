@@ -11,6 +11,9 @@ import type {
 import { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from './auditoria';
+import { asegurarEstadiosReferenciaSemilla } from './estadiosReferenciaPrisma';
+
+const TIMEOUT_TRANSACCION_PROTOCOLO_MS = 60000;
 
 function crearErrorValidacion(message: string) {
   const error = new Error(message) as Error & { statusCode?: number };
@@ -200,6 +203,20 @@ function mapearProtocolo(protocolo: ProtocoloPrisma): ProtocoloProductivoDetalle
 }
 
 async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: ProtocoloProductivoDetalle) {
+  await tx.protocoloLabor.deleteMany({
+    where: {
+      etapa: {
+        protocoloId: protocolo.id,
+      },
+    },
+  });
+  await tx.protocoloInsumo.deleteMany({
+    where: {
+      etapa: {
+        protocoloId: protocolo.id,
+      },
+    },
+  });
   await tx.protocoloEtapa.deleteMany({ where: { protocoloId: protocolo.id } });
 
   for (const [indice, etapa] of protocolo.etapas.entries()) {
@@ -275,6 +292,7 @@ export async function obtenerProtocolosPersistidos(clienteId: string): Promise<P
 async function guardarProtocoloConCliente(
   client: PrismaClient | Prisma.TransactionClient,
   protocolo: ProtocoloProductivoDetalle,
+  usuario?: UsuarioAuditoria,
 ) {
   return client.protocoloProductivo.upsert({
     where: { id: protocolo.id },
@@ -292,6 +310,7 @@ async function guardarProtocoloConCliente(
       campoAppId: protocolo.campoAppId,
       costoEstimadoPorHa: calcularCostoProtocolo(protocolo),
       activo: protocolo.activo,
+      updatedBy: usuario?.id,
     },
     create: {
       id: protocolo.id,
@@ -309,6 +328,8 @@ async function guardarProtocoloConCliente(
       campoAppId: protocolo.campoAppId,
       costoEstimadoPorHa: calcularCostoProtocolo(protocolo),
       activo: protocolo.activo,
+      createdBy: usuario?.id,
+      updatedBy: usuario?.id,
     },
     include: incluirDetalleProtocolo,
   });
@@ -319,16 +340,28 @@ export async function guardarProtocoloPersistido(
   request: GuardarProtocoloRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarProtocoloResponse> {
-  const protocolo = { ...request.protocolo, id };
+  const protocolo = {
+    ...request.protocolo,
+    id,
+    clienteId: usuario?.clienteId || request.protocolo.clienteId,
+  };
   validarProtocolo(protocolo);
+
+  await asegurarEstadiosReferenciaSemilla(protocolo.clienteId);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.protocoloProductivo.findUnique({
       where: { id },
       include: incluirDetalleProtocolo,
     });
+    if (existente && existente.clienteId !== protocolo.clienteId) {
+      const error = new Error('No se puede modificar un protocolo de otro cliente.') as Error & { statusCode?: number };
+      error.statusCode = 403;
+      throw error;
+    }
+
     const accion = existente ? 'actualizar' : 'crear';
-    const guardado = await guardarProtocoloConCliente(tx, protocolo);
+    const guardado = await guardarProtocoloConCliente(tx, protocolo, usuario);
 
     await reemplazarEtapas(tx, protocolo);
 
@@ -355,6 +388,9 @@ export async function guardarProtocoloPersistido(
       auditado: true,
       mensaje: guardado ? 'Protocolo guardado con auditoria.' : 'Protocolo guardado.',
     };
+  }, {
+    maxWait: 10000,
+    timeout: TIMEOUT_TRANSACCION_PROTOCOLO_MS,
   });
 }
 

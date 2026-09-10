@@ -548,6 +548,7 @@ Un protocolo se compone de etapas. Cada etapa puede tener labores e insumos.
 ## Padron inicial de estadios
 
 Mientras no exista integracion ERP para estadios, Agro App usa un padron semilla inicial.
+El backend debe asegurar que esa semilla este persistida por cliente antes de devolver snapshots o guardar protocolos. Asi, cada `ProtocoloEtapa.estadioReferenciaId` apunta a una fila real de `EstadioFenologicoReferencia` y no a un dato temporal de demo.
 
 Origen inicial:
 

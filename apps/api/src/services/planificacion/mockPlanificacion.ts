@@ -8,7 +8,7 @@ import type {
   ProtocolosSnapshot,
 } from '@agro/tipos';
 
-const estadiosReferenciaDemo = [
+export const estadiosReferenciaDemo = [
   { id: 'estadio-semilla-108', idEstadio: 108, codigo: 'BQ1', nombre: 'Barbecho Quimico 1', ordenCronologico: 4, activo: true, origen: 'semilla' as const },
   { id: 'estadio-semilla-109', idEstadio: 109, codigo: 'Si', nombre: 'Siembra', ordenCronologico: 9, activo: true, origen: 'semilla' as const },
   { id: 'estadio-semilla-111', idEstadio: 111, codigo: 'Pr2', nombre: 'Proteccion 1', ordenCronologico: 12, activo: true, origen: 'semilla' as const },

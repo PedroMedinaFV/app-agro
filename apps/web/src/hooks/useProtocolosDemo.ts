@@ -294,11 +294,15 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
         origen: 'web',
         motivo: 'Guardado de protocolo desde demo web',
       }, sesion.token);
+      const protocolosPersistidos = await obtenerProtocolosSnapshot(sesion.token);
 
       setProtocolos((actual) => ({
-        ...actual,
-        protocolos: actual.protocolos.map((protocolo) => protocolo.id === respuesta.protocolo.id ? respuesta.protocolo : protocolo),
+        ...protocolosPersistidos,
+        protocolos: protocolosPersistidos.protocolos.length
+          ? protocolosPersistidos.protocolos
+          : actual.protocolos.map((protocolo) => protocolo.id === respuesta.protocolo.id ? respuesta.protocolo : protocolo),
       }));
+      setProtocoloSeleccionadoId(respuesta.protocolo.id);
       setProtocolosEstado(respuesta.mensaje);
       notificar?.({
         tipo: 'success',

@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
 import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarProtocoloDemo, obtenerPlanificacionDemo, obtenerProtocolosDemo } from '../services/planificacion/mockPlanificacion';
+import { obtenerPlanificacionDemo, obtenerProtocolosDemo } from '../services/planificacion/mockPlanificacion';
 import { cerrarPlanificacionPersistida, guardarPlanificacionPersistida, obtenerPlanificacionesPersistidas } from '../services/planificacion/planificacionesPrisma';
 import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
@@ -9,6 +9,7 @@ import { obtenerGastosComercialesPersistidos } from '../services/gastosComercial
 import { obtenerConceptosGastosComercialesPersistidos, obtenerConceptosGastosComercialesSemilla } from '../services/gastosComerciales/conceptosGastosComerciales';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { asegurarPadronesPlanificacionDesdeErp, obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
+import { asegurarEstadiosReferenciaSemilla } from '../services/planificacion/estadiosReferenciaPrisma';
 
 const router = Router();
 type RequestConUsuario = Request & {
@@ -25,6 +26,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
     const gastosPersistidos = await obtenerGastosComercialesPersistidos(clienteId);
     const conceptosPersistidos = await obtenerConceptosGastosComercialesPersistidos(clienteId);
+    const estadiosPersistidos = await asegurarEstadiosReferenciaSemilla(clienteId);
     const usuarioAutorizado = request.user?.sub ? {
       sub: request.user.sub,
       rol: request.user.rol,
@@ -49,6 +51,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
       conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),
       gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
+      estadiosReferencia: estadiosPersistidos.length ? estadiosPersistidos : demo.estadiosReferencia,
       serviciosApp: padronesPersistidos.serviciosApp.length ? padronesPersistidos.serviciosApp : demo.serviciosApp,
       sincronizadoEn: new Date().toISOString(),
     });
@@ -89,6 +92,7 @@ router.get('/protocolos/snapshot', requierePermiso('planificacion:leer'), async 
   try {
     const request = req as RequestConUsuario;
     const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
+    await asegurarEstadiosReferenciaSemilla(clienteId);
     const persistidos = await obtenerProtocolosPersistidos(clienteId);
 
     res.json(persistidos.protocolos.length ? persistidos : obtenerProtocolosDemo(clienteId));
@@ -122,11 +126,7 @@ router.put('/protocolos/:id', requierePermiso('planificacion:configurar'), async
       email: request.user?.email,
     }));
   } catch (error) {
-    try {
-      res.json(guardarProtocoloDemo(req.params.id, req.body as GuardarProtocoloRequest));
-    } catch (fallbackError) {
-      next(error || fallbackError);
-    }
+    next(error);
   }
 });
 
