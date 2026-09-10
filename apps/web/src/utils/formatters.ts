@@ -23,7 +23,7 @@ export function formatearMoneda(valor: number, moneda = 'USD') {
 }
 
 export function leerNumero(valor: string) {
-  const numero = Number(valor);
+  const numero = Number(valor.replace(',', '.'));
 
   return Number.isFinite(numero) ? numero : 0;
 }

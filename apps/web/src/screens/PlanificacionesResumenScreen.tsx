@@ -84,13 +84,13 @@ export function PlanificacionesResumenScreen({
           <h2>Planificaciones agricolas</h2>
           <p className="hint">Resumen de campaña, estado y margen. La carga detallada se edita en una pantalla aparte.</p>
         </div>
-        <div className="planning-hero-summary">
+        {/* <div className="planning-hero-summary">
           <span>{campaniaActiva?.codigo || 'Sin campania'}</span>
           <strong>{planificacionActiva ? `${lineasPlanificacion.length} lineas` : 'Sin planificacion'}</strong>
         </div>
         <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
           {planificacionActiva?.estado || 'sin_estado'}
-        </div>
+        </div> */}
       </section>
 
       {camposProvisorios > 0 && (

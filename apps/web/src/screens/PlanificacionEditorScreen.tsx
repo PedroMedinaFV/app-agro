@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { PlanificacionAgricolaLinea } from '@agro/tipos';
+import { DecimalInput } from '../components/DecimalInput';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
@@ -60,6 +61,32 @@ export function PlanificacionEditorScreen({
   const [destinoMasivo, setDestinoMasivo] = useState('');
   const [rindeMasivo, setRindeMasivo] = useState('');
   const [resultadoAccionMasiva, setResultadoAccionMasiva] = useState('');
+  const zonasAppPorId = useMemo(() => new Map((planificacion.zonasApp || []).map((zona) => [zona.id, zona])), [planificacion.zonasApp]);
+  const zonasErpPorId = useMemo(() => new Map(snapshot.zonas.flatMap((zona) => [
+    [zona.erpId, zona.nombre],
+    [`${zona.empresaErpId}:${zona.idZona}`, zona.nombre],
+    [`zona:${zona.idZona}`, zona.nombre],
+    [String(zona.idZona), zona.nombre],
+  ])), [snapshot.zonas]);
+  const lotesPorCampo = useMemo(() => {
+    const grupos = new Map<string, typeof planificacion.lotesApp>();
+
+    for (const lote of planificacion.lotesApp) {
+      const lotes = grupos.get(lote.campoAppId) || [];
+      lotes.push(lote);
+      grupos.set(lote.campoAppId, lotes);
+    }
+
+    return grupos;
+  }, [planificacion.lotesApp]);
+  const destinosDisponibles = useMemo(() => (
+    planificacion.destinosReferencia
+      .filter((item) => item.activo)
+      .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta))
+  ), [planificacion.destinosReferencia]);
+  const gastosComercialesPorId = useMemo(() => (
+    new Map(planificacion.gastosComercialesReferencia.map((gasto) => [gasto.id, gasto]))
+  ), [planificacion.gastosComercialesReferencia]);
   const zonasParaFiltro = useMemo(() => {
     const zonas = new Map<string, string>();
 
@@ -190,34 +217,34 @@ export function PlanificacionEditorScreen({
     }
 
     return Array.from(destinos.values()).sort((a, b) => a.localeCompare(b, 'es'));
-  }, [lineasFiltradas, planificacion.destinosReferencia]);
+  }, [lineasFiltradas, destinosDisponibles]);
+
+  const estructuraArbolKey = useMemo(() => (
+    lineasAgrupadas
+      .map((zona) => `${zona.id}:${zona.campos.map((campo) => campo.id).join(',')}`)
+      .join('|')
+  ), [lineasAgrupadas]);
 
   useEffect(() => {
     setZonasAbiertas((actuales) => {
-      const siguientes = new Set(actuales);
-
-      for (const zona of lineasAgrupadas) {
-        if (!siguientes.has(zona.id)) {
-          siguientes.add(zona.id);
-        }
+      if (actuales.size > 0) {
+        return actuales;
       }
 
-      return siguientes;
+      const primeraZona = lineasAgrupadas[0];
+
+      return primeraZona ? new Set([primeraZona.id]) : actuales;
     });
     setCamposAbiertos((actuales) => {
-      const siguientes = new Set(actuales);
-
-      for (const zona of lineasAgrupadas) {
-        for (const campo of zona.campos) {
-          if (!siguientes.has(campo.id)) {
-            siguientes.add(campo.id);
-          }
-        }
+      if (actuales.size > 0) {
+        return actuales;
       }
 
-      return siguientes;
+      const primerCampo = lineasAgrupadas[0]?.campos[0];
+
+      return primerCampo ? new Set([primerCampo.id]) : actuales;
     });
-  }, [lineasAgrupadas]);
+  }, [estructuraArbolKey, lineasAgrupadas]);
 
   function alternarZona(zonaId: string, abierta: boolean) {
     setZonasAbiertas((actuales) => {
@@ -376,15 +403,19 @@ export function PlanificacionEditorScreen({
   }
 
   function obtenerNombreZona(zonaAppId?: string, zonaErpId?: string) {
-    const zonaPropia = planificacion.zonasApp?.find((zona) => zona.id === zonaAppId);
+    const zonaPropia = zonaAppId ? zonasAppPorId.get(zonaAppId) : undefined;
 
     if (zonaPropia) {
       return zonaPropia.nombre;
     }
 
-    const zonaErp = snapshot.zonas.find((zona) => zona.erpId === zonaErpId || zonaErpId?.endsWith(`:${zona.idZona}`));
+    if (!zonaErpId) {
+      return 'Sin zona';
+    }
 
-    return zonaErp?.nombre || 'Sin zona';
+    return zonasErpPorId.get(zonaErpId)
+      || Array.from(zonasErpPorId.entries()).find(([id]) => zonaErpId.endsWith(`:${id}`))?.[1]
+      || 'Sin zona';
   }
 
   function obtenerProtocolosParaLinea(linea: PlanificacionAgricolaLinea) {
@@ -407,19 +438,14 @@ export function PlanificacionEditorScreen({
   function renderLinea(linea: PlanificacionAgricolaLinea) {
     const lote = lotesAppPorId.get(linea.loteAppId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
-    const gastoReferencia = linea.gastosComercialesReferenciaId
-      ? planificacion.gastosComercialesReferencia.find((item) => item.id === linea.gastosComercialesReferenciaId)
-      : undefined;
+    const gastoReferencia = linea.gastosComercialesReferenciaId ? gastosComercialesPorId.get(linea.gastosComercialesReferenciaId) : undefined;
     const gastosResumen = gastoReferencia?.items
       .map((item) => `${formatearUsd(item.valorPorTonelada)} / ${item.unidadCalculo || 'Tn'}`)
       .join(' + ');
     const produccionEstimada = linea.hectareasPlanificadas * linea.rindeEstimado;
     const margenPorHa = linea.hectareasPlanificadas > 0 ? linea.margenBrutoEstimado / linea.hectareasPlanificadas : 0;
     const costoProduccionPorHa = protocolo?.costoEstimadoPorHa || 0;
-    const lotesDelCampo = planificacion.lotesApp.filter((item) => item.campoAppId === linea.campoAppId);
-    const destinosDisponibles = planificacion.destinosReferencia
-      .filter((item) => item.activo)
-      .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta));
+    const lotesDelCampo = lotesPorCampo.get(linea.campoAppId) || [];
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
     const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
@@ -451,25 +477,25 @@ export function PlanificacionEditorScreen({
 
         <div className="planning-cell-medium">
           <span className="cell-label">Hectareas</span>
-          <input type="number" min="0" step="0.01" value={linea.hectareasPlanificadas} onChange={(event) => actualizarLinea(linea.id, { hectareasPlanificadas: leerNumero(event.target.value) })} disabled={!puedeEditarPlanificacion} />
+          <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} />
           <span>ha</span>
         </div>
 
         <div className="planning-cell-medium">
           <span className="cell-label">Rinde</span>
-          <input type="number" min="0" step="0.01" value={linea.rindeEstimado} onChange={(event) => actualizarLinea(linea.id, { rindeEstimado: leerNumero(event.target.value) })} disabled={!puedeEditarPlanificacion} />
+          <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => actualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditarPlanificacion} />
           <span>tn/ha - prod. {produccionEstimada.toFixed(2)} tn</span>
         </div>
 
         <div className="planning-cell-medium">
           <span className="cell-label">Precio venta</span>
-          <input type="number" min="0" step="0.01" value={linea.precioVentaEstimado} onChange={(event) => actualizarLinea(linea.id, { precioVentaEstimado: leerNumero(event.target.value), precioVentaManual: true })} disabled={!puedeEditarPlanificacion} />
+          <DecimalInput value={linea.precioVentaEstimado} onValueChange={(value) => actualizarLinea(linea.id, { precioVentaEstimado: value, precioVentaManual: true })} disabled={!puedeEditarPlanificacion} />
           <span>{linea.precioVentaManual ? 'Manual' : 'Referencia'}</span>
         </div>
 
         <div className="planning-cell-medium">
           <span className="cell-label">Gastos comerciales</span>
-          <input type="number" min="0" step="0.01" value={linea.gastosComercialesEstimados} onChange={(event) => actualizarLinea(linea.id, { gastosComercialesEstimados: leerNumero(event.target.value), gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} />
+          <DecimalInput value={linea.gastosComercialesEstimados} onValueChange={(value) => actualizarLinea(linea.id, { gastosComercialesEstimados: value, gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} />
           <span>{gastoReferencia ? `${gastosResumen} - ${gastoReferencia.items.length} items` : 'Manual'}</span>
         </div>
 
@@ -687,14 +713,7 @@ export function PlanificacionEditorScreen({
           </button>
           <label>
             Rinde tn/ha
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={rindeMasivo}
-              onChange={(event) => setRindeMasivo(event.target.value)}
-              placeholder="Ej. 3.20"
-            />
+            <input type="text" inputMode="decimal" value={rindeMasivo} onChange={(event) => setRindeMasivo(event.target.value)} placeholder="Ej. 3.20" />
           </label>
           <button className="small" type="button" onClick={aplicarRindeAFiltradas} disabled={!puedeEditarPlanificacion || !rindeMasivo || lineasFiltradas.length === 0}>
             Aplicar rinde
@@ -724,12 +743,13 @@ export function PlanificacionEditorScreen({
             (() => {
               const lineasZona = zona.campos.flatMap((campo) => campo.lineas);
               const resumenZona = calcularResumenGrupo(lineasZona);
+              const zonaAbierta = zonasAbiertas.has(zona.id);
 
               return (
                 <details
                   className="planning-tree-zone"
                   key={zona.id}
-                  open={zonasAbiertas.has(zona.id)}
+                  open={zonaAbierta}
                   onToggle={(event) => alternarZona(zona.id, event.currentTarget.open)}
                 >
                   <summary>
@@ -745,14 +765,15 @@ export function PlanificacionEditorScreen({
                       </button>
                     </div>
                   </summary>
-                  {zona.campos.map((campo) => {
+                  {zonaAbierta && zona.campos.map((campo) => {
                     const resumenCampo = calcularResumenGrupo(campo.lineas);
+                    const campoAbierto = camposAbiertos.has(campo.id);
 
                     return (
                       <details
                         className="planning-tree-field"
                         key={campo.id}
-                        open={camposAbiertos.has(campo.id)}
+                        open={campoAbierto}
                         onToggle={(event) => alternarCampo(campo.id, event.currentTarget.open)}
                       >
                         <summary>
@@ -763,9 +784,11 @@ export function PlanificacionEditorScreen({
                           {resumenCampo.pendientes > 0 && <em>{resumenCampo.pendientes} pendiente(s)</em>}
                           {resumenCampo.duplicadas > 0 && <em className="summary-danger">{resumenCampo.duplicadas} duplicada(s)</em>}
                         </summary>
-                        <div className="planning-tree-lines">
-                          {campo.lineas.map(renderLinea)}
-                        </div>
+                        {campoAbierto && (
+                          <div className="planning-tree-lines">
+                            {campo.lineas.map(renderLinea)}
+                          </div>
+                        )}
                       </details>
                     );
                   })}

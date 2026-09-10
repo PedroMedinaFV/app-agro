@@ -135,6 +135,7 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - una planificacion en `borrador` puede guardar lineas con `0` hectareas para no bloquear la carga inicial, pero no puede guardar valores negativos;
 - la grilla de edicion se organiza como arbol expandible `zona -> campo -> lotes` para facilitar la navegacion;
 - el arbol de planificacion permite expandir o contraer toda la vista, y tambien expandir o contraer todos los campos dentro de una zona con botones compactos de accion contextual;
+- por performance, las zonas/campos cerrados no deben montar sus filas en el DOM. El editor abre inicialmente una zona y un campo, y el usuario expande lo que necesita;
 - dentro de cada linea no se muestra selector de campo porque el campo ya esta definido por el grupo del arbol;
 - el protocolo seleccionado define la actividad de la linea; si el usuario cambia protocolo, la actividad se actualiza segun el protocolo;
 - la actividad no se edita como campo independiente en la planilla para evitar inconsistencias entre protocolo y actividad;

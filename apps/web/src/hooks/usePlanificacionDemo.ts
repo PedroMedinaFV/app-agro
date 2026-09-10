@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ConceptoGastoComercial,
   DestinoVentaReferencia,
@@ -97,14 +97,25 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
   const planificacionActiva = planificacion.planificaciones.find((item) => item.id === planificacionSeleccionadaId) || planificacion.planificaciones[0];
   const lineasPlanificacion = planificacionActiva?.lineas || [];
-  const camposAppPorId = new Map(planificacion.camposApp.map((campo) => [campo.id, campo]));
-  const lotesAppPorId = new Map(planificacion.lotesApp.map((lote) => [lote.id, lote]));
-  const protocolosPorId = new Map(planificacion.protocolos.map((protocolo) => [protocolo.id, protocolo]));
-  const margenBrutoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
-  const ingresoNetoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0);
-  const costoTotal = lineasPlanificacion.reduce((total, linea) => total + linea.costoProduccionEstimado, 0);
-  const hectareasPlanificadas = lineasPlanificacion.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
-  const camposProvisorios = planificacion.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length;
+  const camposAppPorId = useMemo(() => new Map(planificacion.camposApp.map((campo) => [campo.id, campo])), [planificacion.camposApp]);
+  const lotesAppPorId = useMemo(() => new Map(planificacion.lotesApp.map((lote) => [lote.id, lote])), [planificacion.lotesApp]);
+  const protocolosPorId = useMemo(() => new Map(planificacion.protocolos.map((protocolo) => [protocolo.id, protocolo])), [planificacion.protocolos]);
+  const resumenPlanificacion = useMemo(() => lineasPlanificacion.reduce((total, linea) => ({
+    margenBrutoTotal: total.margenBrutoTotal + linea.margenBrutoEstimado,
+    ingresoNetoTotal: total.ingresoNetoTotal + linea.ingresoNetoEstimado,
+    costoTotal: total.costoTotal + linea.costoProduccionEstimado,
+    hectareasPlanificadas: total.hectareasPlanificadas + linea.hectareasPlanificadas,
+  }), {
+    margenBrutoTotal: 0,
+    ingresoNetoTotal: 0,
+    costoTotal: 0,
+    hectareasPlanificadas: 0,
+  }), [lineasPlanificacion]);
+  const margenBrutoTotal = resumenPlanificacion.margenBrutoTotal;
+  const ingresoNetoTotal = resumenPlanificacion.ingresoNetoTotal;
+  const costoTotal = resumenPlanificacion.costoTotal;
+  const hectareasPlanificadas = resumenPlanificacion.hectareasPlanificadas;
+  const camposProvisorios = useMemo(() => planificacion.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length, [planificacion.camposApp]);
   const puedeEditarPlanificacionPorPermiso = Boolean(sesion?.permisos.includes('planificacion:editar'));
   const planificacionActivaBloqueada = planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada';
   const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && !planificacionActivaBloqueada);
@@ -143,8 +154,16 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       destinosReferencia: [crearDestinoReferenciaDesdePrecio(precio), ...snapshotActual.destinosReferencia],
     };
   }
-  const clavesLineas = lineasPlanificacion.map((linea) => `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`);
-  const clavesDuplicadas = new Set(clavesLineas.filter((clave, indice) => clavesLineas.indexOf(clave) !== indice));
+  const clavesDuplicadas = useMemo(() => {
+    const cantidades = new Map<string, number>();
+
+    for (const linea of lineasPlanificacion) {
+      const clave = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+      cantidades.set(clave, (cantidades.get(clave) || 0) + 1);
+    }
+
+    return new Set(Array.from(cantidades.entries()).filter(([, cantidad]) => cantidad > 1).map(([clave]) => clave));
+  }, [lineasPlanificacion, planificacionActiva?.campaniaErpId]);
   const tieneLineasDuplicadas = clavesDuplicadas.size > 0;
 
   function recalcularLinea(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
