@@ -134,15 +134,17 @@ Cuando un protocolo se asigna a una fila de planificacion, se copia a una versio
 
 Los insumos deberan venir idealmente del ERP mediante un padron especifico pendiente de integrar.
 
-## Precios de referencia y supuestos congelados
+## Precios App y supuestos congelados
 
-Agro App tendra una entidad transversal de precios de referencia por actividad/cultivo y destino de venta. No pertenece exclusivamente a planificacion.
+Agro App tendra una entidad transversal `PrecioApp` por actividad/cultivo y destino de venta. No pertenece exclusivamente a planificacion.
 
 La planificacion agricola consumira esa entidad para proponer precios.
 
 Al crear una linea de planificacion, el sistema propone un precio desde esa tabla, pero copia el valor a la linea para conservar el supuesto original. El usuario puede modificar el precio manualmente.
 
 Los cambios posteriores en la tabla de precios no deben reescribir planificaciones aprobadas. Sirven para calcular margen bruto actualizado y comparar contra el margen bruto planificado.
+
+El nombre tecnico de la tabla es `PrecioApp`. El endpoint principal es `/precios-app`; `/precios-referencia` queda solo como alias de compatibilidad mientras terminamos de limpiar nombres historicos del front y contratos compartidos.
 
 ## Gastos comerciales de referencia
 

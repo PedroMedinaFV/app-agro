@@ -448,7 +448,7 @@ Estado UX actual:
 - la creacion automatica del destino debe auditarse igual que la creacion o edicion del precio;
 - esos precios quedan disponibles para proponer valores al crear lineas de planificacion;
 - cada guardado/edicion desde el modal debe mostrar estado de carga, spinner y toast de confirmacion;
-- la persistencia real de precios usa endpoint transversal `/precios-referencia/:id`;
+- la persistencia real de precios usa endpoint transversal `/precios-app/:id`;
 - toda alta o edicion de precio debe quedar auditada con usuario, fecha, valores anteriores, valores nuevos, origen y motivo;
 - editar un precio de referencia no debe reescribir automaticamente planificaciones aprobadas o cerradas.
 
@@ -809,7 +809,7 @@ Tablas principales agregadas:
 - `PlanificacionAgricola`
 - `PlanificacionAgricolaLinea`
 - `DestinoVentaReferencia`
-- `PrecioReferencia`
+- `PrecioApp`
 - `GastosComercialesReferencia`
 - `VinculacionErpSugerida`
 - `NotificacionUsuario`

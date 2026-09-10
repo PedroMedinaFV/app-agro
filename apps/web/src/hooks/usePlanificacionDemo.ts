@@ -763,27 +763,15 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
       return true;
     } catch (error) {
-      const precioDemo = { ...precio, destinoVenta: limpiarTextoVisible(precio.destinoVenta), updatedAt: new Date().toISOString() };
-
-      setPlanificacion((actual) => {
-        const existe = actual.preciosReferencia.some((item) => item.id === precioDemo.id);
-        const siguiente = anexarDestinoSiNoExiste(actual, precioDemo);
-
-        return {
-          ...siguiente,
-          preciosReferencia: existe
-            ? siguiente.preciosReferencia.map((item) => (item.id === precioDemo.id ? precioDemo : item))
-            : [precioDemo, ...siguiente.preciosReferencia],
-        };
-      });
-      setPlanificacionEstado('API de precios no disponible. Precio guardado en memoria demo.');
+      const mensaje = error instanceof Error ? error.message : 'No se pudo guardar el precio en la base.';
+      setPlanificacionEstado(`No se pudo guardar el precio: ${mensaje}`);
       notificar?.({
-        tipo: 'info',
-        titulo: 'Precio guardado en demo',
-        mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
+        tipo: 'error',
+        titulo: 'No se guardo el precio',
+        mensaje,
       });
 
-      return true;
+      return false;
     } finally {
       setGuardandoPrecios(false);
     }

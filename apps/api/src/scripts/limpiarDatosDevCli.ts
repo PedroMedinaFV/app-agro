@@ -22,7 +22,7 @@ async function main() {
     prisma.protocoloProductivo.deleteMany(),
 
     prisma.gastosComercialesReferencia.deleteMany(),
-    prisma.precioReferencia.deleteMany(),
+    prisma.precioApp.deleteMany(),
     prisma.destinoVentaReferencia.deleteMany(),
     prisma.conceptoGastoComercial.deleteMany(),
 

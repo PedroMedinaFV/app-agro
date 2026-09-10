@@ -4,6 +4,7 @@ import type {
   GuardarDestinoVentaReferenciaResponse,
   GuardarPrecioReferenciaRequest,
   GuardarPrecioReferenciaResponse,
+  PrecioApp,
   PrecioReferencia,
 } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
@@ -28,7 +29,7 @@ function normalizarTexto(valor: string) {
     .toUpperCase();
 }
 
-type PrecioPrisma = Prisma.PrecioReferenciaGetPayload<Record<string, never>>;
+type PrecioPrisma = Prisma.PrecioAppGetPayload<Record<string, never>>;
 type DestinoPrisma = Prisma.DestinoVentaReferenciaGetPayload<Record<string, never>>;
 
 function mapearPrecio(precio: PrecioPrisma): PrecioReferencia {
@@ -73,6 +74,14 @@ function validarPrecio(precio: PrecioReferencia) {
   if (!precio.moneda.trim() || !precio.unidad.trim()) {
     throw crearErrorValidacion('El precio debe tener moneda y unidad.');
   }
+}
+
+function obtenerClienteAutorizado(precio: PrecioReferencia, usuario?: UsuarioAuditoria) {
+  if (usuario?.clienteId) {
+    return usuario.clienteId;
+  }
+
+  return precio.clienteId;
 }
 
 function validarDestino(destino: DestinoVentaReferencia, usuario?: UsuarioAuditoria) {
@@ -152,14 +161,14 @@ async function asegurarDestinoReferencia(
     origen: request.origen,
     motivo: request.motivo || 'Destino creado automaticamente al guardar precio de referencia.',
     valoresDespues: mapearDestino(destinoCreado),
-    metadata: { creadoDesde: 'PrecioReferencia', precioReferenciaId: precio.id },
+    metadata: { creadoDesde: 'PrecioApp', precioAppId: precio.id },
   });
 
   return destinoCreado;
 }
 
 export async function obtenerPreciosReferenciaPersistidos(clienteId: string): Promise<PrecioReferencia[]> {
-  const precios = await prisma.precioReferencia.findMany({
+  const precios = await prisma.precioApp.findMany({
     where: { clienteId },
     orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
   });
@@ -273,14 +282,24 @@ export async function guardarPrecioReferenciaPersistido(
   request: GuardarPrecioReferenciaRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarPrecioReferenciaResponse> {
-  const precio = { ...request.precio, id, destinoVenta: limpiarTextoVisible(request.precio.destinoVenta) };
+  const precio: PrecioApp = {
+    ...request.precio,
+    id,
+    clienteId: obtenerClienteAutorizado(request.precio, usuario),
+    destinoVenta: limpiarTextoVisible(request.precio.destinoVenta),
+  };
   validarPrecio(precio);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.precioReferencia.findUnique({ where: { id } });
+    const existente = await tx.precioApp.findUnique({ where: { id } });
+
+    if (existente && existente.clienteId !== precio.clienteId) {
+      throw crearErrorValidacion('No se puede modificar un precio de otro cliente.', 403);
+    }
+
     await asegurarDestinoReferencia(tx, precio, request, usuario);
 
-    const guardado = await tx.precioReferencia.upsert({
+    const guardado = await tx.precioApp.upsert({
       where: { id },
       update: {
         empresaErpId: precio.empresaErpId,
@@ -323,7 +342,7 @@ export async function guardarPrecioReferenciaPersistido(
     await registrarAuditoria(tx, {
       clienteId: precio.clienteId,
       usuario,
-      entidad: 'PrecioReferencia',
+      entidad: 'PrecioApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

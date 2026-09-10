@@ -114,7 +114,7 @@ export type DestinoVentaReferencia = {
   updatedAt: string;
 };
 
-export type PrecioReferencia = {
+export type PrecioApp = {
   id: string;
   clienteId: string;
   empresaErpId?: string;
@@ -133,6 +133,8 @@ export type PrecioReferencia = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type PrecioReferencia = PrecioApp;
 
 export type GastoComercialItemReferencia = {
   conceptoGastoComercialId: string;
@@ -356,13 +358,13 @@ export type GuardarPlanificacionResponse = {
 };
 
 export type GuardarPrecioReferenciaRequest = {
-  precio: PrecioReferencia;
+  precio: PrecioApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
 export type GuardarPrecioReferenciaResponse = {
-  precio: PrecioReferencia;
+  precio: PrecioApp;
   auditado: boolean;
   mensaje: string;
 };

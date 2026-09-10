@@ -89,7 +89,7 @@ Primera etapa:
 - `ProtocoloEtapa`
 - `ProtocoloLabor`
 - `ProtocoloInsumo`
-- `PrecioReferencia`
+- `PrecioApp`
 - `DestinoVentaReferencia`
 - `GastosComercialesReferencia`
 

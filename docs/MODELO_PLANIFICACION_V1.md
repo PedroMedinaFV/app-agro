@@ -425,7 +425,7 @@ Reglas:
 - Si se necesita sugerir destinos por zona/campo/actividad, esa configuracion debe vivir en una tabla de reglas que referencie el destino global y no duplicarlo.
 - El padron maestro no expone prioridad al usuario. Si una regla de sugerencia necesitara orden, esa prioridad pertenecera a la regla, no al destino.
 
-## PrecioReferencia
+## PrecioApp
 
 Entidad transversal de Agro App para sugerir precios de venta y seguir valores comerciales.
 
@@ -460,11 +460,11 @@ Reglas:
 - `destinoVenta` debe seleccionarse desde catalogo; si no existe, se debe crear desde la misma experiencia.
 - En MVP no se expone `tipoPrecio` al usuario. Si mas adelante se necesita distinguir mercado, forward, fijado o estimado, se reabrira la decision con un nombre funcional claro.
 - Toda alta o modificacion debe auditarse con valores previos y posteriores.
-- Editar un precio de referencia solo cambia propuestas futuras y calculos actualizados; no modifica supuestos copiados en planificaciones aprobadas o cerradas.
+- Editar un `PrecioApp` solo cambia propuestas futuras y calculos actualizados; no modifica supuestos copiados en planificaciones aprobadas o cerradas.
 
 Endpoint MVP:
 
-- `PUT /precios-referencia/:id`
+- `PUT /precios-app/:id`
 
 ## GastosComercialesReferencia
 
