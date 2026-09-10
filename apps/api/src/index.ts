@@ -47,7 +47,9 @@ app.use('/admin/empresas-erp', autenticacionBasica, requierePermiso('erp:configu
 app.use('/planificacion', autenticacionBasica, planificacionRuta);
 app.use('/precios-app', autenticacionBasica, preciosReferenciaRuta);
 app.use('/precios-referencia', autenticacionBasica, preciosReferenciaRuta);
+app.use('/gastos-comerciales-app', autenticacionBasica, gastosComercialesReferenciaRuta);
 app.use('/gastos-comerciales-referencia', autenticacionBasica, gastosComercialesReferenciaRuta);
+app.use('/conceptos-gastos-comerciales-app', autenticacionBasica, conceptosGastosComercialesRuta);
 app.use('/conceptos-gastos-comerciales', autenticacionBasica, conceptosGastosComercialesRuta);
 app.use('/destinos-venta', autenticacionBasica, destinosVentaRuta);
 app.use('/servicios-app', autenticacionBasica, serviciosAppRuta);

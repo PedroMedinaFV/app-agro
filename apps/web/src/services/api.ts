@@ -4,6 +4,7 @@ import {
   ErpEmpresa,
   ErpEspecie,
   ErpCampo,
+  ErpCampania,
   ErpInsumo,
   ErpMoneda,
   ErpZona,
@@ -223,6 +224,14 @@ export async function obtenerActividadesErpImportadas(token?: string): Promise<A
   return request<ActividadesErpImportadasResponse>('/erp/actividades-importadas', {}, token);
 }
 
+export type CampaniasErpImportadasResponse = {
+  campanias: ErpCampania[];
+};
+
+export async function obtenerCampaniasErpImportadas(token?: string): Promise<CampaniasErpImportadasResponse> {
+  return request<CampaniasErpImportadasResponse>('/erp/campanias-importadas', {}, token);
+}
+
 export type InsumosErpImportadosResponse = {
   insumos: ErpInsumo[];
 };
@@ -305,7 +314,7 @@ export async function guardarGastoComercialReferencia(
   datos: GuardarGastosComercialesReferenciaRequest,
   token?: string,
 ): Promise<GuardarGastosComercialesReferenciaResponse> {
-  return request<GuardarGastosComercialesReferenciaResponse>(`/gastos-comerciales-referencia/${id}`, {
+  return request<GuardarGastosComercialesReferenciaResponse>(`/gastos-comerciales-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -316,7 +325,7 @@ export type ConceptosGastosComercialesResponse = {
 };
 
 export async function obtenerConceptosGastosComerciales(token?: string): Promise<ConceptosGastosComercialesResponse> {
-  return request<ConceptosGastosComercialesResponse>('/conceptos-gastos-comerciales', {}, token);
+  return request<ConceptosGastosComercialesResponse>('/conceptos-gastos-comerciales-app', {}, token);
 }
 
 export async function guardarConceptoGastoComercial(
@@ -324,7 +333,7 @@ export async function guardarConceptoGastoComercial(
   datos: GuardarConceptoGastoComercialRequest,
   token?: string,
 ): Promise<GuardarConceptoGastoComercialResponse> {
-  return request<GuardarConceptoGastoComercialResponse>(`/conceptos-gastos-comerciales/${id}`, {
+  return request<GuardarConceptoGastoComercialResponse>(`/conceptos-gastos-comerciales-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

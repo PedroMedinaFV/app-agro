@@ -262,26 +262,27 @@ Cada item debe incluir:
 - `conceptoGastoComercialId`
 - `conceptoNombre`
 - `valorPorTonelada`
+- `unidadCalculo`
 - `moneda`
 - `observaciones` opcional
 
-El concepto se selecciona desde el maestro `ConceptoGastoComercial`. No se permite carga libre en el flujo normal para evitar duplicados como `Flete`, `flete` o `FLETE`.
+El concepto se selecciona desde el maestro `ConceptoGastoComercialApp`. No se permite carga libre en el flujo normal para evitar duplicados como `Flete`, `flete` o `FLETE`.
 
 Decision MVP:
 
 - Los gastos comerciales pertenecen a una campania agricola.
 - Pueden aplicar a todas las zonas, a una zona especifica o a un campo especifico.
 - Si se selecciona campo, ese alcance tiene prioridad sobre zona.
-- Por simplicidad operativa, todos los gastos comerciales se cargan como valor por tonelada.
+- Cada concepto define unidad de calculo `Tn` o `Ha`.
+- Cada item copia unidad, moneda y valor desde el concepto seleccionado.
 - Los items se cargan desde un select alimentado por un maestro de conceptos.
-- No se expone `tipoCalculo` ni `unidad` en la pantalla inicial.
 - Si mas adelante aparece la necesidad real, se podran reabrir tipos como por hectarea, porcentaje de ingreso o importe fijo.
 
 Calculo:
 
 ```txt
 produccionEstimadaTn = hectareasPlanificadas * rindeEstimado
-gastosComercialesEstimados = produccionEstimadaTn * suma(valorPorTonelada)
+gastosComercialesEstimados = suma(valorItem * produccionEstimadaTn si unidad=Tn, o valorItem * hectareas si unidad=Ha)
 ```
 
 Items iniciales a validar:

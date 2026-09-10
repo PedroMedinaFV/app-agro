@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActividadApp,
   ErpActividad,
+  ErpCampania,
   ErpCampo,
   ErpEspecie,
   ErpPuerto,
@@ -17,6 +18,7 @@ import {
   guardarActividadApp,
   obtenerActividadesErpImportadas,
   obtenerActividadesApp,
+  obtenerCampaniasErpImportadas,
   obtenerCamposErpImportados,
   obtenerEspeciesErpImportadas,
   obtenerPuertosErpImportados,
@@ -102,6 +104,7 @@ export function GastosComercialesScreen({
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadApp[]>([]);
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
+  const [campaniasErp, setCampaniasErp] = useState<ErpCampania[]>([]);
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
@@ -110,6 +113,7 @@ export function GastosComercialesScreen({
   const zonas = planificacion.zonasApp || [];
   const campos = planificacion.camposApp;
   const conceptosGastos = planificacion.conceptosGastosComerciales.filter((concepto) => concepto.activo);
+  const campaniasDisponibles = campaniasErp.length ? campaniasErp : campanias;
   const planificacionActiva = planificacion.planificaciones[0];
   const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
   const actividadesPropiasErpIds = new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean));
@@ -196,9 +200,10 @@ export function GastosComercialesScreen({
 
   useEffect(() => {
     async function cargarPadronesReales() {
-      const [actividadesPropiasRespuesta, actividadesErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
+      const [actividadesPropiasRespuesta, actividadesErpRespuesta, campaniasErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
         obtenerActividadesApp(sesion.token),
         obtenerActividadesErpImportadas(sesion.token),
+        obtenerCampaniasErpImportadas(sesion.token),
         obtenerEspeciesErpImportadas(sesion.token),
         obtenerZonasErpImportadas(sesion.token),
         obtenerCamposErpImportados(sesion.token),
@@ -207,6 +212,7 @@ export function GastosComercialesScreen({
 
       setActividadesPropiasDb(actividadesPropiasRespuesta.actividades);
       setActividadesErp(actividadesErpRespuesta.actividades);
+      setCampaniasErp(campaniasErpRespuesta.campanias);
       setEspeciesErp(especiesErpRespuesta.especies);
       setZonasErp(zonasErpRespuesta.zonas);
       setCamposErp(camposErpRespuesta.campos);
@@ -242,10 +248,13 @@ export function GastosComercialesScreen({
   }, [planificacion.destinosReferencia, planificacion.gastosComercialesReferencia, planificacion.preciosReferencia, puertosErp]);
 
   function crearItem(): GastoComercialItemReferencia {
+    const concepto = conceptosGastos[0];
+
     return {
-      conceptoGastoComercialId: conceptosGastos[0]?.id || '',
-      conceptoNombre: conceptosGastos[0]?.nombre || '',
+      conceptoGastoComercialId: concepto?.id || '',
+      conceptoNombre: concepto?.nombre || '',
       valorPorTonelada: 0,
+      unidadCalculo: concepto?.unidadCalculo || 'Tn',
       moneda: 'USD',
       observaciones: '',
     };
@@ -258,7 +267,7 @@ export function GastosComercialesScreen({
     return {
       id: `gastos-comerciales-${Date.now()}`,
       clienteId: planificacion.gastosComercialesReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
-      campaniaErpId: planificacionActiva?.campaniaErpId || campanias.find((campania) => campania.esActual)?.erpId || campanias[0]?.erpId || '',
+      campaniaErpId: planificacionActiva?.campaniaErpId || campaniasDisponibles.find((campania) => campania.esActual)?.erpId || campaniasDisponibles[0]?.erpId || '',
       empresaErpId: actividad?.empresaErpId || planificacion.camposApp[0]?.empresaErpId || 'global',
       actividadAppId: actividad?.actividadAppId || '',
       actividadErpId: actividad?.actividadErpId,
@@ -446,18 +455,22 @@ export function GastosComercialesScreen({
   }
 
   function describirCampania(campaniaErpId: string) {
-    const campania = campanias.find((item) => item.erpId === campaniaErpId);
+    const campania = campaniasDisponibles.find((item) => item.erpId === campaniaErpId);
 
     return campania?.nombre || campania?.codigo || campaniaErpId || 'Sin campania';
   }
 
+  function describirUnidadItem(item: GastoComercialItemReferencia) {
+    return `${item.moneda}/${item.unidadCalculo || 'Tn'}`;
+  }
+
   function resumirItems(gasto: GastosComercialesReferencia) {
-    return gasto.items.map((item) => `${item.conceptoNombre || 'Sin concepto'}: ${item.moneda} ${item.valorPorTonelada}/tn`).join(' | ');
+    return gasto.items.map((item) => `${item.conceptoNombre || 'Sin concepto'}: ${item.valorPorTonelada} ${describirUnidadItem(item)}`).join(' | ');
   }
 
   function totalPorToneladaUsd(gasto: GastosComercialesReferencia) {
     return gasto.items
-      .filter((item) => item.moneda === 'USD')
+      .filter((item) => item.moneda === 'USD' && (item.unidadCalculo || 'Tn') === 'Tn')
       .reduce((total, item) => total + item.valorPorTonelada, 0);
   }
 
@@ -472,7 +485,7 @@ export function GastosComercialesScreen({
     || !gastoEnEdicion.campaniaErpId
     || !gastoEnEdicion.descripcion.trim()
     || (creandoDestino && !gastoEnEdicion.destinoVenta?.trim())
-    || gastoEnEdicion.items.some((item) => !item.conceptoGastoComercialId.trim() || !item.conceptoNombre.trim() || item.valorPorTonelada < 0 || !item.moneda.trim());
+    || gastoEnEdicion.items.some((item) => !item.conceptoGastoComercialId.trim() || !item.conceptoNombre.trim() || item.valorPorTonelada < 0 || !item.moneda.trim() || !item.unidadCalculo);
 
   return (
     <section className="planning-stack">
@@ -548,8 +561,8 @@ export function GastosComercialesScreen({
                   onChange={(event) => actualizarBorrador({ campaniaErpId: event.target.value })}
                 >
                   <option value="">Seleccionar campania</option>
-                  {campanias.map((item) => (
-                    <option key={item.erpId} value={item.erpId}>{item.nombre || item.codigo}</option>
+                  {campaniasDisponibles.map((item) => (
+                    <option key={item.erpId} value={item.erpId}>{item.nombre || item.codigo}{item.esActual ? ' (actual)' : ''}</option>
                   ))}
                 </select>
               </label>
@@ -653,6 +666,7 @@ export function GastosComercialesScreen({
                         actualizarItem(indice, {
                           conceptoGastoComercialId: conceptoSeleccionado?.id || '',
                           conceptoNombre: conceptoSeleccionado?.nombre || '',
+                          unidadCalculo: conceptoSeleccionado?.unidadCalculo || 'Tn',
                         });
                       }}
                     >
@@ -663,7 +677,7 @@ export function GastosComercialesScreen({
                     </select>
                   </label>
                   <label>
-                    Valor por tn
+                    Valor
                     <input
                       type="number"
                       min="0"
@@ -671,6 +685,10 @@ export function GastosComercialesScreen({
                       value={item.valorPorTonelada}
                       onChange={(event) => actualizarItem(indice, { valorPorTonelada: leerNumero(event.target.value) })}
                     />
+                  </label>
+                  <label>
+                    Unidad
+                    <input value={item.unidadCalculo || 'Tn'} readOnly />
                   </label>
                   <label>
                     Moneda

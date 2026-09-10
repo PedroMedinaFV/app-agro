@@ -44,8 +44,8 @@ model Cliente {
   planificacionesAgricolas PlanificacionAgricola[]
   preciosApp PrecioApp[]
   destinosVentaReferencia DestinoVentaReferencia[]
-  conceptosGastosComerciales ConceptoGastoComercial[]
-  gastosComercialesReferencia GastosComercialesReferencia[]
+  conceptosGastosComerciales ConceptoGastoComercialApp[]
+  gastosComercialesReferencia GastoComercialApp[]
   vinculacionesErpSugeridas VinculacionErpSugerida[]
   notificaciones NotificacionUsuario[]
   precipitaciones PrecipitacionCampo[]
@@ -657,7 +657,7 @@ model ActividadApp {
   lineasPlanificacion   PlanificacionAgricolaLinea[]
   destinosReferencia    DestinoVentaReferencia[]
   preciosApp            PrecioApp[]
-  gastosReferencia      GastosComercialesReferencia[]
+  gastosReferencia      GastoComercialApp[]
 
   @@index([clienteId])
   @@index([empresaErpId])
@@ -990,13 +990,14 @@ model PrecioApp {
   @@index([activo])
 }
 
-model ConceptoGastoComercial {
+model ConceptoGastoComercialApp {
   id                String   @id @default(uuid())
   cliente           Cliente  @relation(fields: [clienteId], references: [id])
   clienteId         String
   codigo            String
   nombre            String
   nombreNormalizado String
+  unidadCalculo     String   @default("Tn")
   descripcion       String?
   activo            Boolean  @default(true)
   createdBy         String?
@@ -1010,7 +1011,7 @@ model ConceptoGastoComercial {
   @@index([activo])
 }
 
-model GastosComercialesReferencia {
+model GastoComercialApp {
   id                    String   @id @default(uuid())
   cliente               Cliente  @relation(fields: [clienteId], references: [id])
   clienteId             String

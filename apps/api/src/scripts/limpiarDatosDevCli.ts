@@ -21,10 +21,10 @@ async function main() {
     prisma.protocoloEtapa.deleteMany(),
     prisma.protocoloProductivo.deleteMany(),
 
-    prisma.gastosComercialesReferencia.deleteMany(),
+    prisma.gastoComercialApp.deleteMany(),
     prisma.precioApp.deleteMany(),
     prisma.destinoVentaReferencia.deleteMany(),
-    prisma.conceptoGastoComercial.deleteMany(),
+    prisma.conceptoGastoComercialApp.deleteMany(),
 
     prisma.servicioApp.deleteMany(),
     prisma.insumoApp.deleteMany(),

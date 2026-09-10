@@ -19,7 +19,7 @@ function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
 
-type GastoPrisma = Prisma.GastosComercialesReferenciaGetPayload<Record<string, never>>;
+type GastoPrisma = Prisma.GastoComercialAppGetPayload<Record<string, never>>;
 
 function mapearItems(valor: Prisma.JsonValue): GastoComercialItemReferencia[] {
   if (!Array.isArray(valor)) {
@@ -34,6 +34,7 @@ function mapearItems(valor: Prisma.JsonValue): GastoComercialItemReferencia[] {
       conceptoGastoComercialId: itemJson.conceptoGastoComercialId || '',
       conceptoNombre,
       valorPorTonelada: itemJson.valorPorTonelada ?? itemJson.valor ?? 0,
+      unidadCalculo: itemJson.unidadCalculo === 'Ha' ? 'Ha' : 'Tn',
       moneda: itemJson.moneda || 'USD',
       observaciones: itemJson.observaciones,
     };
@@ -71,7 +72,11 @@ function validarItem(item: GastoComercialItemReferencia, indice: number) {
   }
 
   if (item.valorPorTonelada < 0) {
-    throw crearErrorValidacion(`El item ${indice + 1} no puede tener valor por tonelada negativo.`);
+    throw crearErrorValidacion(`El item ${indice + 1} no puede tener valor negativo.`);
+  }
+
+  if (item.unidadCalculo !== 'Tn' && item.unidadCalculo !== 'Ha') {
+    throw crearErrorValidacion(`El item ${indice + 1} debe tener unidad Tn o Ha.`);
   }
 
   if (!item.moneda.trim()) {
@@ -117,6 +122,7 @@ function prepararGasto(gasto: GastosComercialesReferencia): GastosComercialesRef
       ...item,
       conceptoGastoComercialId: limpiarTextoVisible(item.conceptoGastoComercialId),
       conceptoNombre: limpiarTextoVisible(item.conceptoNombre),
+      unidadCalculo: item.unidadCalculo || 'Tn',
       moneda: limpiarTextoVisible(item.moneda).toUpperCase(),
       observaciones: item.observaciones ? limpiarTextoVisible(item.observaciones) : undefined,
     })),
@@ -124,7 +130,7 @@ function prepararGasto(gasto: GastosComercialesReferencia): GastosComercialesRef
 }
 
 export async function obtenerGastosComercialesPersistidos(clienteId: string): Promise<GastosComercialesReferencia[]> {
-  const gastos = await prisma.gastosComercialesReferencia.findMany({
+  const gastos = await prisma.gastoComercialApp.findMany({
     where: { clienteId },
     orderBy: [{ campaniaErpId: 'desc' }, { updatedAt: 'desc' }, { createdAt: 'desc' }],
   });
@@ -138,11 +144,19 @@ export async function guardarGastoComercialPersistido(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarGastosComercialesReferenciaResponse> {
   const gasto = prepararGasto({ ...request.gasto, id });
+  if (usuario?.clienteId) {
+    gasto.clienteId = usuario.clienteId;
+  }
   validarGasto(gasto);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.gastosComercialesReferencia.findUnique({ where: { id } });
-    const guardado = await tx.gastosComercialesReferencia.upsert({
+    const existente = await tx.gastoComercialApp.findUnique({ where: { id } });
+
+    if (existente && existente.clienteId !== gasto.clienteId) {
+      throw crearErrorValidacion('No se puede modificar gastos comerciales de otro cliente.', 403);
+    }
+
+    const guardado = await tx.gastoComercialApp.upsert({
       where: { id },
       update: {
         empresaErpId: gasto.empresaErpId,
@@ -183,7 +197,7 @@ export async function guardarGastoComercialPersistido(
     await registrarAuditoria(tx, {
       clienteId: gasto.clienteId,
       usuario,
-      entidad: 'GastosComercialesReferencia',
+      entidad: 'GastoComercialApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

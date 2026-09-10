@@ -1,5 +1,6 @@
 import type {
   ConceptoGastoComercial,
+  ConceptoGastoComercialApp,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
 } from '@agro/tipos';
@@ -7,7 +8,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 
-type ConceptoPrisma = Prisma.ConceptoGastoComercialGetPayload<Record<string, never>>;
+type ConceptoPrisma = Prisma.ConceptoGastoComercialAppGetPayload<Record<string, never>>;
 
 function normalizarTexto(valor: string) {
   return valor.trim().replace(/\s+/g, ' ')
@@ -34,6 +35,7 @@ function mapearConcepto(concepto: ConceptoPrisma): ConceptoGastoComercial {
     codigo: concepto.codigo,
     nombre: concepto.nombre,
     nombreNormalizado: concepto.nombreNormalizado,
+    unidadCalculo: (concepto.unidadCalculo as ConceptoGastoComercialApp['unidadCalculo']) || 'Tn',
     descripcion: concepto.descripcion || undefined,
     activo: concepto.activo,
     createdAt: concepto.createdAt.toISOString(),
@@ -44,12 +46,12 @@ function mapearConcepto(concepto: ConceptoPrisma): ConceptoGastoComercial {
 export function obtenerConceptosGastosComercialesSemilla(clienteId: string): ConceptoGastoComercial[] {
   const ahora = new Date().toISOString();
   const conceptos = [
-    { id: 'concepto-gasto-flete', codigo: 'FLETE', nombre: 'Flete', descripcion: 'Transporte de cereal' },
-    { id: 'concepto-gasto-acondicionamiento', codigo: 'ACOND', nombre: 'Acondicionamiento', descripcion: 'Secado, zarandeo o acondicionamiento comercial' },
-    { id: 'concepto-gasto-comision', codigo: 'COM', nombre: 'Comision comercial', descripcion: 'Comision o intermediacion comercial' },
-    { id: 'concepto-gasto-secada', codigo: 'SEC', nombre: 'Secada' },
-    { id: 'concepto-gasto-puerto-acopio', codigo: 'PYA', nombre: 'Puerto / acopio' },
-    { id: 'concepto-gasto-otros', codigo: 'OTROS', nombre: 'Otros gastos de venta' },
+    { id: 'concepto-gasto-flete', codigo: 'FLETE', nombre: 'Flete', unidadCalculo: 'Tn' as const, descripcion: 'Transporte de cereal' },
+    { id: 'concepto-gasto-acondicionamiento', codigo: 'ACOND', nombre: 'Acondicionamiento', unidadCalculo: 'Tn' as const, descripcion: 'Secado, zarandeo o acondicionamiento comercial' },
+    { id: 'concepto-gasto-comision', codigo: 'COM', nombre: 'Comision comercial', unidadCalculo: 'Tn' as const, descripcion: 'Comision o intermediacion comercial' },
+    { id: 'concepto-gasto-secada', codigo: 'SEC', nombre: 'Secada', unidadCalculo: 'Tn' as const },
+    { id: 'concepto-gasto-puerto-acopio', codigo: 'PYA', nombre: 'Puerto / acopio', unidadCalculo: 'Tn' as const },
+    { id: 'concepto-gasto-otros', codigo: 'OTROS', nombre: 'Otros gastos de venta', unidadCalculo: 'Tn' as const },
   ];
 
   return conceptos.map((concepto) => ({
@@ -63,7 +65,7 @@ export function obtenerConceptosGastosComercialesSemilla(clienteId: string): Con
 }
 
 export async function obtenerConceptosGastosComercialesPersistidos(clienteId: string): Promise<ConceptoGastoComercial[]> {
-  const conceptos = await prisma.conceptoGastoComercial.findMany({
+  const conceptos = await prisma.conceptoGastoComercialApp.findMany({
     where: { clienteId },
     orderBy: [{ nombre: 'asc' }],
   });
@@ -80,6 +82,7 @@ function prepararConcepto(concepto: ConceptoGastoComercial): ConceptoGastoComerc
     codigo: normalizarTexto(codigoBase),
     nombre,
     nombreNormalizado: normalizarTexto(nombre),
+    unidadCalculo: concepto.unidadCalculo || 'Tn',
     descripcion: concepto.descripcion ? limpiarTextoVisible(concepto.descripcion) : undefined,
     activo: concepto.activo,
   };
@@ -101,6 +104,10 @@ function validarConcepto(concepto: ConceptoGastoComercial, usuario?: UsuarioAudi
   if (!concepto.codigo.trim()) {
     throw crearErrorValidacion('El concepto debe tener codigo.');
   }
+
+  if (concepto.unidadCalculo !== 'Tn' && concepto.unidadCalculo !== 'Ha') {
+    throw crearErrorValidacion('La unidad de calculo del concepto debe ser Tn o Ha.');
+  }
 }
 
 export async function guardarConceptoGastoComercialPersistido(
@@ -112,8 +119,8 @@ export async function guardarConceptoGastoComercialPersistido(
   validarConcepto(concepto, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.conceptoGastoComercial.findUnique({ where: { id } });
-    const existenteMismoNombre = await tx.conceptoGastoComercial.findUnique({
+    const existente = await tx.conceptoGastoComercialApp.findUnique({ where: { id } });
+    const existenteMismoNombre = await tx.conceptoGastoComercialApp.findUnique({
       where: {
         clienteId_nombreNormalizado: {
           clienteId: concepto.clienteId,
@@ -126,12 +133,13 @@ export async function guardarConceptoGastoComercialPersistido(
       throw crearErrorValidacion('Ya existe un concepto de gasto comercial con ese nombre.');
     }
 
-    const guardado = await tx.conceptoGastoComercial.upsert({
+    const guardado = await tx.conceptoGastoComercialApp.upsert({
       where: { id },
       update: {
         codigo: concepto.codigo,
         nombre: concepto.nombre,
         nombreNormalizado: concepto.nombreNormalizado,
+        unidadCalculo: concepto.unidadCalculo,
         descripcion: concepto.descripcion,
         activo: concepto.activo,
         updatedBy: usuario?.id,
@@ -142,6 +150,7 @@ export async function guardarConceptoGastoComercialPersistido(
         codigo: concepto.codigo,
         nombre: concepto.nombre,
         nombreNormalizado: concepto.nombreNormalizado,
+        unidadCalculo: concepto.unidadCalculo,
         descripcion: concepto.descripcion,
         activo: concepto.activo,
         createdBy: usuario?.id,
@@ -153,7 +162,7 @@ export async function guardarConceptoGastoComercialPersistido(
     await registrarAuditoria(tx, {
       clienteId: concepto.clienteId,
       usuario,
-      entidad: 'ConceptoGastoComercial',
+      entidad: 'ConceptoGastoComercialApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

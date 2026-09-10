@@ -234,6 +234,37 @@ router.get('/actividades-importadas', async (req, res, next) => {
   }
 });
 
+router.get('/campanias-importadas', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const campanias = await prisma.erpCampania.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ codigo: 'desc' }],
+    });
+
+    res.json({
+      campanias: campanias.map((campania) => ({
+        empresaErpId: campania.empresaErpId,
+        erpId: campania.erpId,
+        idCampania: campania.idCampania,
+        codigo: campania.codigo,
+        nombre: campania.nombre,
+        activo: campania.activo,
+        esActual: campania.esActual,
+        actualizadoEn: campania.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/insumos-importados', async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;

@@ -176,7 +176,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
     const produccionEstimadaTn = linea.hectareasPlanificadas * linea.rindeEstimado;
 
-    return referencia.items.reduce((total, item) => total + item.valorPorTonelada * produccionEstimadaTn, 0);
+    return referencia.items.reduce((total, item) => {
+      const baseCalculo = item.unidadCalculo === 'Ha' ? linea.hectareasPlanificadas : produccionEstimadaTn;
+
+      return total + item.valorPorTonelada * baseCalculo;
+    }, 0);
   }
 
   function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId' | 'actividadAppId'>) {
@@ -882,6 +886,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         codigo: normalizarTexto(concepto.codigo || nombre),
         nombre,
         nombreNormalizado: normalizarTexto(nombre),
+        unidadCalculo: concepto.unidadCalculo || 'Tn',
         descripcion: concepto.descripcion ? limpiarTextoVisible(concepto.descripcion) : undefined,
         updatedAt: new Date().toISOString(),
       };

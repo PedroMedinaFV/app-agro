@@ -52,12 +52,12 @@ function crearserviciosAppDemo(clienteId: string, ahora: string) {
 
 function crearConceptosGastosComercialesDemo(clienteId: string, ahora: string) {
   return [
-    { id: 'concepto-gasto-flete', clienteId, codigo: 'FLETE', nombre: 'Flete', nombreNormalizado: 'FLETE', descripcion: 'Transporte de cereal', activo: true, createdAt: ahora, updatedAt: ahora },
-    { id: 'concepto-gasto-acondicionamiento', clienteId, codigo: 'ACOND', nombre: 'Acondicionamiento', nombreNormalizado: 'ACONDICIONAMIENTO', descripcion: 'Secado, zarandeo o acondicionamiento comercial', activo: true, createdAt: ahora, updatedAt: ahora },
-    { id: 'concepto-gasto-comision', clienteId, codigo: 'COM', nombre: 'Comision comercial', nombreNormalizado: 'COMISION COMERCIAL', descripcion: 'Comision o intermediacion comercial', activo: true, createdAt: ahora, updatedAt: ahora },
-    { id: 'concepto-gasto-secada', clienteId, codigo: 'SEC', nombre: 'Secada', nombreNormalizado: 'SECADA', activo: true, createdAt: ahora, updatedAt: ahora },
-    { id: 'concepto-gasto-puerto-acopio', clienteId, codigo: 'PYA', nombre: 'Puerto / acopio', nombreNormalizado: 'PUERTO / ACOPIO', activo: true, createdAt: ahora, updatedAt: ahora },
-    { id: 'concepto-gasto-otros', clienteId, codigo: 'OTROS', nombre: 'Otros gastos de venta', nombreNormalizado: 'OTROS GASTOS DE VENTA', activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-flete', clienteId, codigo: 'FLETE', nombre: 'Flete', nombreNormalizado: 'FLETE', unidadCalculo: 'Tn' as const, descripcion: 'Transporte de cereal', activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-acondicionamiento', clienteId, codigo: 'ACOND', nombre: 'Acondicionamiento', nombreNormalizado: 'ACONDICIONAMIENTO', unidadCalculo: 'Tn' as const, descripcion: 'Secado, zarandeo o acondicionamiento comercial', activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-comision', clienteId, codigo: 'COM', nombre: 'Comision comercial', nombreNormalizado: 'COMISION COMERCIAL', unidadCalculo: 'Tn' as const, descripcion: 'Comision o intermediacion comercial', activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-secada', clienteId, codigo: 'SEC', nombre: 'Secada', nombreNormalizado: 'SECADA', unidadCalculo: 'Tn' as const, activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-puerto-acopio', clienteId, codigo: 'PYA', nombre: 'Puerto / acopio', nombreNormalizado: 'PUERTO / ACOPIO', unidadCalculo: 'Tn' as const, activo: true, createdAt: ahora, updatedAt: ahora },
+    { id: 'concepto-gasto-otros', clienteId, codigo: 'OTROS', nombre: 'Otros gastos de venta', nombreNormalizado: 'OTROS GASTOS DE VENTA', unidadCalculo: 'Tn' as const, activo: true, createdAt: ahora, updatedAt: ahora },
   ];
 }
 
@@ -450,9 +450,9 @@ export function obtenerPlanificacionDemo(clienteId = 'cliente-demo'): Planificac
         destinoVenta: 'Puerto Quequen',
         descripcion: 'Flete y acondicionamiento girasol a Puerto Quequen',
         items: [
-          { conceptoGastoComercialId: 'concepto-gasto-flete', conceptoNombre: 'Flete', valorPorTonelada: 18, moneda: 'USD', observaciones: 'Valor demo por tonelada' },
-          { conceptoGastoComercialId: 'concepto-gasto-acondicionamiento', conceptoNombre: 'Acondicionamiento', valorPorTonelada: 6, moneda: 'USD' },
-          { conceptoGastoComercialId: 'concepto-gasto-comision', conceptoNombre: 'Comision comercial', valorPorTonelada: 3, moneda: 'USD' },
+          { conceptoGastoComercialId: 'concepto-gasto-flete', conceptoNombre: 'Flete', valorPorTonelada: 18, unidadCalculo: 'Tn', moneda: 'USD', observaciones: 'Valor demo por tonelada' },
+          { conceptoGastoComercialId: 'concepto-gasto-acondicionamiento', conceptoNombre: 'Acondicionamiento', valorPorTonelada: 6, unidadCalculo: 'Tn', moneda: 'USD' },
+          { conceptoGastoComercialId: 'concepto-gasto-comision', conceptoNombre: 'Comision comercial', valorPorTonelada: 3, unidadCalculo: 'Tn', moneda: 'USD' },
         ],
         activo: true,
         createdAt: ahora,

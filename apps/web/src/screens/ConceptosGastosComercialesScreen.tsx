@@ -42,6 +42,7 @@ export function ConceptosGastosComercialesScreen({
       codigo: '',
       nombre: '',
       nombreNormalizado: '',
+      unidadCalculo: 'Tn',
       descripcion: '',
       activo: true,
       createdAt: ahora,
@@ -138,6 +139,7 @@ export function ConceptosGastosComercialesScreen({
           columns={[
             { key: 'nombre', label: 'Nombre', width: 'minmax(160px, 1.1fr)', render: (concepto) => <strong>{concepto.nombre}</strong> },
             { key: 'codigo', label: 'Codigo', width: 'minmax(90px, 0.6fr)', render: (concepto) => concepto.codigo },
+            { key: 'unidad', label: 'Unidad', width: 'minmax(86px, 0.55fr)', render: (concepto) => concepto.unidadCalculo },
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(180px, 1.3fr)', render: (concepto) => concepto.descripcion || 'Sin descripcion' },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (concepto) => <em>{concepto.activo ? 'Activo' : 'Inactivo'}</em> },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (concepto) => new Intl.DateTimeFormat('es-AR').format(new Date(concepto.updatedAt || concepto.createdAt)) },
@@ -179,6 +181,17 @@ export function ConceptosGastosComercialesScreen({
                   placeholder="Ej. FLETE"
                   onChange={(event) => actualizarBorrador({ codigo: event.target.value })}
                 />
+              </label>
+
+              <label>
+                Unidad de calculo
+                <select
+                  value={conceptoEnEdicion.unidadCalculo}
+                  onChange={(event) => actualizarBorrador({ unidadCalculo: event.target.value as ConceptoGastoComercial['unidadCalculo'] })}
+                >
+                  <option value="Tn">Por tonelada</option>
+                  <option value="Ha">Por hectarea</option>
+                </select>
               </label>
 
               <label className="reference-wide">

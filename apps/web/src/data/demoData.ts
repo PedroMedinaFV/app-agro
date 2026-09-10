@@ -94,12 +94,12 @@ export const snapshotFallback: ErpSnapshot = {
 export const planificacionFallback: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
   conceptosGastosComerciales: [
-    { id: 'concepto-gasto-flete', clienteId: 'cliente-demo', codigo: 'FLETE', nombre: 'Flete', nombreNormalizado: 'FLETE', descripcion: 'Transporte de cereal', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'concepto-gasto-acondicionamiento', clienteId: 'cliente-demo', codigo: 'ACOND', nombre: 'Acondicionamiento', nombreNormalizado: 'ACONDICIONAMIENTO', descripcion: 'Secado, zarandeo o acondicionamiento comercial', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'concepto-gasto-comision', clienteId: 'cliente-demo', codigo: 'COM', nombre: 'Comision comercial', nombreNormalizado: 'COMISION COMERCIAL', descripcion: 'Comision o intermediacion comercial', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'concepto-gasto-secada', clienteId: 'cliente-demo', codigo: 'SEC', nombre: 'Secada', nombreNormalizado: 'SECADA', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'concepto-gasto-puerto-acopio', clienteId: 'cliente-demo', codigo: 'PYA', nombre: 'Puerto / acopio', nombreNormalizado: 'PUERTO / ACOPIO', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'concepto-gasto-otros', clienteId: 'cliente-demo', codigo: 'OTROS', nombre: 'Otros gastos de venta', nombreNormalizado: 'OTROS GASTOS DE VENTA', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-flete', clienteId: 'cliente-demo', codigo: 'FLETE', nombre: 'Flete', nombreNormalizado: 'FLETE', unidadCalculo: 'Tn', descripcion: 'Transporte de cereal', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-acondicionamiento', clienteId: 'cliente-demo', codigo: 'ACOND', nombre: 'Acondicionamiento', nombreNormalizado: 'ACONDICIONAMIENTO', unidadCalculo: 'Tn', descripcion: 'Secado, zarandeo o acondicionamiento comercial', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-comision', clienteId: 'cliente-demo', codigo: 'COM', nombre: 'Comision comercial', nombreNormalizado: 'COMISION COMERCIAL', unidadCalculo: 'Tn', descripcion: 'Comision o intermediacion comercial', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-secada', clienteId: 'cliente-demo', codigo: 'SEC', nombre: 'Secada', nombreNormalizado: 'SECADA', unidadCalculo: 'Tn', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-puerto-acopio', clienteId: 'cliente-demo', codigo: 'PYA', nombre: 'Puerto / acopio', nombreNormalizado: 'PUERTO / ACOPIO', unidadCalculo: 'Tn', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 'concepto-gasto-otros', clienteId: 'cliente-demo', codigo: 'OTROS', nombre: 'Otros gastos de venta', nombreNormalizado: 'OTROS GASTOS DE VENTA', unidadCalculo: 'Tn', activo: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ],
   camposApp: [
     {
@@ -265,9 +265,9 @@ export const planificacionFallback: PlanificacionSnapshot = {
       destinoVenta: 'Puerto Quequen',
       descripcion: 'Flete y acondicionamiento girasol a Puerto Quequen',
       items: [
-        { conceptoGastoComercialId: 'concepto-gasto-flete', conceptoNombre: 'Flete', valorPorTonelada: 18, moneda: 'USD', observaciones: 'Valor demo por tonelada' },
-        { conceptoGastoComercialId: 'concepto-gasto-acondicionamiento', conceptoNombre: 'Acondicionamiento', valorPorTonelada: 6, moneda: 'USD' },
-        { conceptoGastoComercialId: 'concepto-gasto-comision', conceptoNombre: 'Comision comercial', valorPorTonelada: 3, moneda: 'USD' },
+        { conceptoGastoComercialId: 'concepto-gasto-flete', conceptoNombre: 'Flete', valorPorTonelada: 18, unidadCalculo: 'Tn', moneda: 'USD', observaciones: 'Valor demo por tonelada' },
+        { conceptoGastoComercialId: 'concepto-gasto-acondicionamiento', conceptoNombre: 'Acondicionamiento', valorPorTonelada: 6, unidadCalculo: 'Tn', moneda: 'USD' },
+        { conceptoGastoComercialId: 'concepto-gasto-comision', conceptoNombre: 'Comision comercial', valorPorTonelada: 3, unidadCalculo: 'Tn', moneda: 'USD' },
       ],
       activo: true,
       createdAt: new Date().toISOString(),

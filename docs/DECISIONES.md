@@ -146,15 +146,15 @@ Los cambios posteriores en la tabla de precios no deben reescribir planificacion
 
 El nombre tecnico de la tabla es `PrecioApp`. El endpoint principal es `/precios-app`; `/precios-referencia` queda solo como alias de compatibilidad mientras terminamos de limpiar nombres historicos del front y contratos compartidos.
 
-## Gastos comerciales de referencia
+## Gastos comerciales App
 
-Agro App tendra una entidad de gastos comerciales de referencia para modelar flete, acondicionamiento, comisiones y otros gastos de venta.
+Agro App tendra entidades propias `ConceptoGastoComercialApp` y `GastoComercialApp` para modelar flete, acondicionamiento, comisiones y otros gastos de venta.
 
 La planificacion agricola consumira esa entidad para proponer gastos segun campania, actividad, destino y alcance. Al crear una linea se copia el resultado calculado para conservar el supuesto original.
 
-Los gastos comerciales pertenecen a una campania agricola porque los costos comerciales pueden cambiar entre campanias. Pueden aplicar a todas las zonas, a una zona especifica o a un campo especifico; campo tiene prioridad sobre zona. Para el MVP, cada item se carga como valor por tonelada. Se evita exponer tipos de calculo y unidad hasta que exista una necesidad operativa concreta.
+Los gastos comerciales pertenecen a una campania agricola porque los costos comerciales pueden cambiar entre campanias. Pueden aplicar a todas las zonas, a una zona especifica o a un campo especifico; campo tiene prioridad sobre zona.
 
-Los conceptos de gastos comerciales se administran como maestro propio por cliente. En la carga normal se seleccionan desde un listado, no como texto libre, para evitar variantes de escritura y facilitar reportes consistentes.
+Los conceptos de gastos comerciales se administran como maestro propio por cliente. En la carga normal se seleccionan desde un listado, no como texto libre, para evitar variantes de escritura y facilitar reportes consistentes. Cada concepto define unidad de calculo `Tn` o `Ha`; al armar un gasto, cada item copia concepto, unidad, moneda y valor para conservar el supuesto aplicado.
 
 La administracion web se realiza desde una tabla con alta/edicion en modal. Toda alta o modificacion debe persistirse desde backend y auditarse.
 

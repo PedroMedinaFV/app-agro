@@ -466,7 +466,7 @@ Endpoint MVP:
 
 - `PUT /precios-app/:id`
 
-## GastosComercialesReferencia
+## GastoComercialApp
 
 Tabla propia para sugerir gastos comerciales por zona/campo/actividad/destino.
 
@@ -489,19 +489,18 @@ Campos sugeridos:
 - `createdAt`
 - `updatedAt`
 
-Cada item debe guardar `conceptoGastoComercialId`, `conceptoNombre`, `valorPorTonelada`, `moneda` y `observaciones` opcional.
+Cada item debe guardar `conceptoGastoComercialId`, `conceptoNombre`, `valorPorTonelada`, `unidadCalculo`, `moneda` y `observaciones` opcional.
 
-El concepto se elige desde un maestro `ConceptoGastoComercial`; no se carga como texto libre. El nombre queda copiado en el item como snapshot legible para reportes y auditoria, pero la referencia principal es el ID del maestro.
+El concepto se elige desde un maestro `ConceptoGastoComercialApp`; no se carga como texto libre. El nombre y la unidad quedan copiados en el item como snapshot legible para reportes y auditoria, pero la referencia principal es el ID del maestro.
 
 Decision MVP:
 
 - Los gastos comerciales pertenecen a una campania agricola.
 - Pueden configurarse para todas las zonas, para una zona especifica o para un campo especifico.
 - Campo tiene prioridad sobre zona al sugerir gastos en una linea de planificacion.
-- Todos los gastos comerciales se cargan como valor por tonelada.
+- Cada concepto define unidad de calculo `Tn` o `Ha`.
 - Los items se seleccionan desde un listado maestro para evitar variantes escritas por el usuario.
-- El sistema calcula el total multiplicando la produccion estimada en toneladas por la suma de los valores por tonelada.
-- No se expone `tipoCalculo` ni `unidad` en el MVP para reducir carga cognitiva.
+- El sistema calcula cada item multiplicando por produccion estimada en toneladas o por hectareas planificadas segun su unidad.
 - Si mas adelante aparece la necesidad real, se podran sumar calculos por hectarea, porcentaje de ingreso o importe fijo.
 
 La linea de planificacion guarda `gastosComercialesReferenciaId` y copia el total calculado en `gastosComercialesEstimados`.
@@ -515,7 +514,7 @@ Reglas:
 
 Endpoint MVP:
 
-- `PUT /gastos-comerciales-referencia/:id`
+- `PUT /gastos-comerciales-app/:id`
 
 ## ProtocoloProductivo
 

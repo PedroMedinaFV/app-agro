@@ -140,23 +140,27 @@ export type GastoComercialItemReferencia = {
   conceptoGastoComercialId: string;
   conceptoNombre: string;
   valorPorTonelada: number;
+  unidadCalculo: 'Tn' | 'Ha';
   moneda: string;
   observaciones?: string;
 };
 
-export type ConceptoGastoComercial = {
+export type ConceptoGastoComercialApp = {
   id: string;
   clienteId: string;
   codigo: string;
   nombre: string;
   nombreNormalizado: string;
+  unidadCalculo: 'Tn' | 'Ha';
   descripcion?: string;
   activo: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
-export type GastosComercialesReferencia = {
+export type ConceptoGastoComercial = ConceptoGastoComercialApp;
+
+export type GastoComercialApp = {
   id: string;
   clienteId: string;
   campaniaErpId: string;
@@ -174,6 +178,8 @@ export type GastosComercialesReferencia = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type GastosComercialesReferencia = GastoComercialApp;
 
 export type EstadioFenologicoReferencia = {
   id: string;

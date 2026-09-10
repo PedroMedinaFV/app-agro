@@ -410,7 +410,9 @@ export function PlanificacionEditorScreen({
     const gastoReferencia = linea.gastosComercialesReferenciaId
       ? planificacion.gastosComercialesReferencia.find((item) => item.id === linea.gastosComercialesReferenciaId)
       : undefined;
-    const gastosPorTonelada = gastoReferencia?.items.reduce((total, item) => total + item.valorPorTonelada, 0) || 0;
+    const gastosResumen = gastoReferencia?.items
+      .map((item) => `${formatearUsd(item.valorPorTonelada)} / ${item.unidadCalculo || 'Tn'}`)
+      .join(' + ');
     const produccionEstimada = linea.hectareasPlanificadas * linea.rindeEstimado;
     const margenPorHa = linea.hectareasPlanificadas > 0 ? linea.margenBrutoEstimado / linea.hectareasPlanificadas : 0;
     const costoProduccionPorHa = protocolo?.costoEstimadoPorHa || 0;
@@ -468,7 +470,7 @@ export function PlanificacionEditorScreen({
         <div className="planning-cell-medium">
           <span className="cell-label">Gastos comerciales</span>
           <input type="number" min="0" step="0.01" value={linea.gastosComercialesEstimados} onChange={(event) => actualizarLinea(linea.id, { gastosComercialesEstimados: leerNumero(event.target.value), gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} />
-          <span>{gastoReferencia ? `${formatearUsd(gastosPorTonelada)} / tn - ${gastoReferencia.items.length} items` : 'Manual'}</span>
+          <span>{gastoReferencia ? `${gastosResumen} - ${gastoReferencia.items.length} items` : 'Manual'}</span>
         </div>
 
         <div className="planning-cell-wide">
