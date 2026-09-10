@@ -299,6 +299,22 @@ textarea:focus {
   background: #ffe0e0;
 }
 
+.link-button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1b6b4a;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;

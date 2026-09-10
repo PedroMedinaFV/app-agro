@@ -28,6 +28,26 @@ export type CrearAdjuntoObservacionInput = {
   estado?: EstadoAdjuntoObservacion;
 };
 
+export type CrearUrlSubidaAdjuntoRequest = {
+  nombreArchivo: string;
+  mimeType: string;
+  tamanioBytes: number;
+  checksumSha256?: string;
+};
+
+export type CrearUrlSubidaAdjuntoResponse = {
+  storageBucket: string;
+  storagePath: string;
+  signedUploadUrl: string;
+  token?: string;
+  expiresAt: string;
+};
+
+export type CrearUrlLecturaAdjuntoResponse = {
+  signedUrl: string;
+  expiresAt: string;
+};
+
 export type ObservacionCampo = {
   id: string;
   clienteId: string;

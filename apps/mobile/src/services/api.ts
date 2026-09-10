@@ -3,6 +3,8 @@ import type {
   CrearObservacionResponse,
   CrearPrecipitacionRequest,
   CrearPrecipitacionResponse,
+  CrearUrlSubidaAdjuntoRequest,
+  CrearUrlSubidaAdjuntoResponse,
   ObservacionesResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
@@ -97,4 +99,27 @@ export async function crearObservacion(datos: CrearObservacionRequest, token: st
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
+}
+
+export async function crearUrlSubidaAdjuntoObservacion(datos: CrearUrlSubidaAdjuntoRequest, token: string) {
+  return request<CrearUrlSubidaAdjuntoResponse>('/observaciones/adjuntos/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function subirArchivoAFirmaSupabase(signedUploadUrl: string, uri: string, mimeType: string) {
+  const archivo = await fetch(uri);
+  const blob = await archivo.blob();
+  const respuesta = await fetch(signedUploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': mimeType,
+    },
+    body: blob,
+  });
+
+  if (!respuesta.ok) {
+    throw new Error('No se pudo subir el adjunto al storage.');
+  }
 }

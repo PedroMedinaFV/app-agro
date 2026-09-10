@@ -19,6 +19,9 @@ import {
   CrearPrecipitacionResponse,
   CrearObservacionRequest,
   CrearObservacionResponse,
+  CrearUrlLecturaAdjuntoResponse,
+  CrearUrlSubidaAdjuntoRequest,
+  CrearUrlSubidaAdjuntoResponse,
   DestinoVentaReferencia,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
@@ -534,6 +537,45 @@ export async function crearObservacion(datos: CrearObservacionRequest, token?: s
   return request<CrearObservacionResponse>('/observaciones', {
     method: 'POST',
     body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function crearUrlSubidaAdjuntoObservacion(
+  datos: CrearUrlSubidaAdjuntoRequest,
+  token?: string,
+): Promise<CrearUrlSubidaAdjuntoResponse> {
+  return request<CrearUrlSubidaAdjuntoResponse>('/observaciones/adjuntos/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function subirArchivoAFirmaSupabase(signedUploadUrl: string, archivo: File) {
+  const finishBackendActivity = startBackendActivity('Subiendo adjunto...');
+
+  try {
+    const respuesta = await fetch(signedUploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': archivo.type,
+      },
+      body: archivo,
+    });
+
+    if (!respuesta.ok) {
+      throw new Error('No se pudo subir el adjunto al storage.');
+    }
+  } finally {
+    finishBackendActivity();
+  }
+}
+
+export async function crearUrlLecturaAdjuntoObservacion(
+  adjuntoId: string,
+  token?: string,
+): Promise<CrearUrlLecturaAdjuntoResponse> {
+  return request<CrearUrlLecturaAdjuntoResponse>(`/observaciones/adjuntos/${adjuntoId}/signed-url`, {
+    method: 'POST',
   }, token);
 }
 

@@ -3,8 +3,11 @@ import type { CampoApp, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObser
 import { DataTable } from '../components/DataTable';
 import {
   crearObservacion,
+  crearUrlLecturaAdjuntoObservacion,
+  crearUrlSubidaAdjuntoObservacion,
   obtenerObservaciones,
   obtenerPlanificacionSnapshot,
+  subirArchivoAFirmaSupabase,
 } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -23,10 +26,6 @@ type FormularioObservacion = {
   latitud: string;
   longitud: string;
   fechaEvento: string;
-  adjuntoNombreArchivo: string;
-  adjuntoMimeType: string;
-  adjuntoTamanioBytes: string;
-  adjuntoStoragePath: string;
 };
 
 function fechaActualInput() {
@@ -53,10 +52,6 @@ function crearFormularioInicial(campoAppId = ''): FormularioObservacion {
     latitud: '',
     longitud: '',
     fechaEvento: fechaActualInput(),
-    adjuntoNombreArchivo: '',
-    adjuntoMimeType: 'image/jpeg',
-    adjuntoTamanioBytes: '',
-    adjuntoStoragePath: '',
   };
 }
 
@@ -79,6 +74,7 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   const [filtroLoteId, setFiltroLoteId] = useState('');
   const [filtroSeveridad, setFiltroSeveridad] = useState<SeveridadObservacion | 'todas'>('todas');
   const [filtroTexto, setFiltroTexto] = useState('');
+  const [archivoAdjunto, setArchivoAdjunto] = useState<File | null>(null);
 
   async function cargarDatos() {
     try {
@@ -143,8 +139,6 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   async function guardar() {
     const latitud = formulario.latitud.trim() ? Number(formulario.latitud) : undefined;
     const longitud = formulario.longitud.trim() ? Number(formulario.longitud) : undefined;
-    const tamanioAdjunto = formulario.adjuntoTamanioBytes.trim() ? Number(formulario.adjuntoTamanioBytes) : undefined;
-    const tieneAdjunto = Boolean(formulario.adjuntoStoragePath.trim() || formulario.adjuntoNombreArchivo.trim() || formulario.adjuntoTamanioBytes.trim());
 
     if (!formulario.campoAppId || !formulario.titulo.trim() || !formulario.descripcion.trim()) {
       notificar?.({ tipo: 'error', titulo: 'Datos incompletos', mensaje: 'Selecciona campo, titulo y descripcion.' });
@@ -156,13 +150,20 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
       return;
     }
 
-    if (tieneAdjunto && (!formulario.adjuntoStoragePath.trim() || !formulario.adjuntoNombreArchivo.trim() || !tamanioAdjunto || tamanioAdjunto <= 0)) {
-      notificar?.({ tipo: 'error', titulo: 'Adjunto incompleto', mensaje: 'Informa ruta, nombre y tamano del archivo.' });
-      return;
-    }
-
     setGuardando(true);
     try {
+      const adjuntoSubido = archivoAdjunto
+        ? await crearUrlSubidaAdjuntoObservacion({
+          nombreArchivo: archivoAdjunto.name,
+          mimeType: archivoAdjunto.type,
+          tamanioBytes: archivoAdjunto.size,
+        }, sesion.token)
+        : null;
+
+      if (archivoAdjunto && adjuntoSubido) {
+        await subirArchivoAFirmaSupabase(adjuntoSubido.signedUploadUrl, archivoAdjunto);
+      }
+
       const respuesta = await crearObservacion({
         campoAppId: formulario.campoAppId,
         loteAppId: formulario.loteAppId || undefined,
@@ -173,12 +174,13 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
         longitud,
         fechaEvento: new Date(formulario.fechaEvento).toISOString(),
         origen: 'web',
-        adjuntos: tieneAdjunto && tamanioAdjunto
+        adjuntos: archivoAdjunto && adjuntoSubido
           ? [{
-            storagePath: formulario.adjuntoStoragePath.trim(),
-            nombreArchivo: formulario.adjuntoNombreArchivo.trim(),
-            mimeType: formulario.adjuntoMimeType,
-            tamanioBytes: tamanioAdjunto,
+            storageBucket: adjuntoSubido.storageBucket,
+            storagePath: adjuntoSubido.storagePath,
+            nombreArchivo: archivoAdjunto.name,
+            mimeType: archivoAdjunto.type,
+            tamanioBytes: archivoAdjunto.size,
             estado: 'disponible',
           }]
           : undefined,
@@ -186,12 +188,23 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
 
       setObservaciones((actual) => [respuesta.observacion, ...actual]);
       setFormulario(crearFormularioInicial(formulario.campoAppId));
+      setArchivoAdjunto(null);
       notificar?.({ tipo: 'success', titulo: 'Observacion registrada', mensaje: respuesta.mensaje });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo guardar la observacion.';
       notificar?.({ tipo: 'error', titulo: 'No se guardo', mensaje });
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function abrirAdjunto(adjuntoId: string) {
+    try {
+      const respuesta = await crearUrlLecturaAdjuntoObservacion(adjuntoId, sesion.token);
+      window.open(respuesta.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo abrir el adjunto.';
+      notificar?.({ tipo: 'error', titulo: 'No se abrio el adjunto', mensaje });
     }
   }
 
@@ -310,52 +323,15 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
             />
           </label>
 
-          <label>
-            Archivo
-            <input
-              value={formulario.adjuntoNombreArchivo}
-              disabled={!puedeCrear || guardando}
-              placeholder="foto-lote.jpg"
-              onChange={(event) => actualizarFormulario({ adjuntoNombreArchivo: event.target.value })}
-            />
-          </label>
-
-          <label>
-            Tipo archivo
-            <select
-              value={formulario.adjuntoMimeType}
-              disabled={!puedeCrear || guardando}
-              onChange={(event) => actualizarFormulario({ adjuntoMimeType: event.target.value })}
-            >
-              <option value="image/jpeg">JPEG</option>
-              <option value="image/png">PNG</option>
-              <option value="image/webp">WEBP</option>
-              <option value="image/heic">HEIC</option>
-              <option value="image/heif">HEIF</option>
-            </select>
-          </label>
-
-          <label>
-            Tamano bytes
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={formulario.adjuntoTamanioBytes}
-              disabled={!puedeCrear || guardando}
-              placeholder="524288"
-              onChange={(event) => actualizarFormulario({ adjuntoTamanioBytes: event.target.value })}
-            />
-          </label>
-
           <label className="reference-wide">
-            Ruta storage
+            Foto adjunta
             <input
-              value={formulario.adjuntoStoragePath}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               disabled={!puedeCrear || guardando}
-              placeholder="cliente-demo/observaciones/foto-lote.jpg"
-              onChange={(event) => actualizarFormulario({ adjuntoStoragePath: event.target.value })}
+              onChange={(event) => setArchivoAdjunto(event.target.files?.[0] || null)}
             />
+            {archivoAdjunto && <span>{archivoAdjunto.name} - {Math.round(archivoAdjunto.size / 1024)} KB</span>}
           </label>
         </div>
 
@@ -466,7 +442,16 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
                 const adjuntos = observacion.adjuntos || [];
 
                 return adjuntos.length
-                  ? <><strong>{adjuntos.length}</strong><span>{adjuntos.map((adjunto) => adjunto.nombreArchivo).join(', ')}</span></>
+                  ? (
+                    <>
+                      <strong>{adjuntos.length}</strong>
+                      {adjuntos.map((adjunto) => (
+                        <button className="link-button" key={adjunto.id} type="button" onClick={() => abrirAdjunto(adjunto.id)}>
+                          {adjunto.nombreArchivo}
+                        </button>
+                      ))}
+                    </>
+                  )
                   : 'Sin adjuntos';
               },
             },

@@ -76,6 +76,10 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - La ruta de storage no puede tener path traversal, barras invertidas ni comenzar con `/`.
 - Las URLs publicas no deben persistirse como fuente de verdad; para lectura segura se deben usar URLs firmadas y de corta duracion.
 - La subida real a Supabase Storage debe hacerse con un endpoint backend que genere rutas controladas y URLs firmadas, evitando que el cliente decida ubicaciones sensibles.
+- El backend requiere `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`; estos valores nunca se exponen al frontend.
+- Las URLs firmadas de subida expiran por `OBSERVACION_ADJUNTO_UPLOAD_EXPIRES_SECONDS`.
+- Las URLs firmadas de lectura expiran por `OBSERVACION_ADJUNTO_READ_EXPIRES_SECONDS`.
+- La lectura de adjuntos valida `clienteId` y alcance de campos antes de generar la URL firmada.
 
 ## Planificacion agricola
 

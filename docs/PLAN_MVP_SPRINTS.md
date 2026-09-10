@@ -417,8 +417,9 @@ Avance realizado:
 - [x] `POST /sincronizacion` procesa pendientes mobile de observaciones con idempotencia por `registroMovilId`.
 - [x] contrato compartido y persistencia de metadata segura para adjuntos/fotos de observaciones;
 - [x] validacion backend de adjuntos por cantidad, tamano, MIME, ruta de storage, estado y checksum opcional;
-- [ ] subida real de binarios a Supabase Storage con URL firmada;
-- [ ] selector/camara mobile para tomar o adjuntar imagen real.
+- [x] subida real de binarios a Supabase Storage con URL firmada cuando hay sesion online;
+- [x] selector/camara mobile para tomar o adjuntar imagen real.
+- [ ] sincronizacion offline diferida de binarios cuando la observacion se carga sin conexion.
 
 ## Sprint 7 - Web de seguimiento operativo
 
@@ -453,7 +454,7 @@ Avance realizado:
 - [x] permisos especificos `observaciones:crear` y `observaciones:leer`;
 - [x] auditoria de creacion de observaciones.
 - [x] web muestra cantidad y nombres de adjuntos asociados a observaciones.
-- [ ] web abre adjuntos con URL firmada de lectura.
+- [x] web abre adjuntos con URL firmada de lectura.
 
 ## Sprint 8 - Ordenes de trabajo e integracion ALBOR futura
 

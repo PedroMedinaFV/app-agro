@@ -146,14 +146,16 @@ En modo demo, el backend guarda en memoria para validar UX y contratos. En persi
    - descripcion/comentario;
    - severidad;
    - ubicacion GPS opcional;
-   - adjuntos/fotos mediante metadata segura cuando el archivo ya fue subido al storage;
+   - adjuntos/fotos mediante URL firmada de Supabase Storage;
    - fecha/hora;
    - estado fenologico cuando aplique en una etapa posterior.
-6. Mobile envia la observacion al backend con origen `mobile`.
-7. Backend valida autenticacion, permisos y alcance sobre el lote.
-8. Backend persiste la observacion y auditoria.
-9. Web permite consultar la informacion generada en mobile por campo, lote, cultivo, campania, usuario, fecha y tipo.
-10. Web puede permitir correccion, clasificacion, revision o informes si el usuario tiene permisos.
+6. Mobile solicita al backend una URL firmada para subir la foto.
+7. Mobile sube el binario directamente a Supabase Storage con URL temporal.
+8. Mobile envia la observacion al backend con origen `mobile` y metadata del adjunto.
+9. Backend valida autenticacion, permisos, alcance sobre el lote y metadata del adjunto.
+10. Backend persiste la observacion, la metadata del adjunto y auditoria.
+11. Web permite consultar la informacion generada en mobile por campo, lote, cultivo, campania, usuario, fecha y tipo.
+12. Web puede abrir adjuntos mediante URL firmada de lectura de corta duracion.
 
 La captura nace naturalmente en mobile, pero la consulta, analisis y revision pueden realizarse desde web.
 
@@ -161,6 +163,8 @@ Endpoints iniciales:
 
 - `GET /observaciones`: lista las ultimas observaciones del cliente, filtradas por alcance de campos para operador de campo.
 - `POST /observaciones`: crea una observacion con campo obligatorio, lote opcional, titulo, descripcion, severidad, coordenadas opcionales, fecha/hora del evento y origen.
+- `POST /observaciones/adjuntos/upload-url`: genera una URL firmada temporal para subir una foto validada.
+- `POST /observaciones/adjuntos/:id/signed-url`: genera una URL firmada temporal para leer un adjunto persistido.
 - `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion` y `tipo = observacion`.
 
 Validaciones iniciales:
@@ -176,12 +180,11 @@ Validaciones iniciales:
 - toda alta registra auditoria;
 - `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos offline.
 
-Pendiente para completar captura real de fotos:
+Pendiente para completar offline avanzado de fotos:
 
-- endpoint backend para generar ruta y URL firmada de subida a Supabase Storage;
-- picker/camara mobile para seleccionar o tomar la foto;
-- carga del binario contra storage antes de confirmar la observacion;
-- lectura mediante URL firmada de corta duracion en web y mobile.
+- conservar el binario local cuando no hay conexion;
+- subir fotos pendientes al recuperar conectividad;
+- asociar metadata despues de confirmar la subida diferida.
 
 ## Precipitaciones por campo asignado
 

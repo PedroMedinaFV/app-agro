@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
-import { crearObservacion, crearPrecipitacion, obtenerPlanificacionSnapshot } from './services/api';
+import {
+  crearObservacion,
+  crearPrecipitacion,
+  crearUrlSubidaAdjuntoObservacion,
+  obtenerPlanificacionSnapshot,
+  subirArchivoAFirmaSupabase,
+} from './services/api';
 import { guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
 
 const planificacionDemo: PlanificacionSnapshot = {
@@ -116,9 +123,7 @@ export default function App() {
   const [severidadObservacion, setSeveridadObservacion] = useState<'baja' | 'media' | 'alta'>('media');
   const [latitudObservacion, setLatitudObservacion] = useState('');
   const [longitudObservacion, setLongitudObservacion] = useState('');
-  const [fotoNombreArchivo, setFotoNombreArchivo] = useState('');
-  const [fotoStoragePath, setFotoStoragePath] = useState('');
-  const [fotoTamanioBytes, setFotoTamanioBytes] = useState('');
+  const [fotoSeleccionada, setFotoSeleccionada] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
   const [guardandoObservacion, setGuardandoObservacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
@@ -268,18 +273,15 @@ export default function App() {
 
       const latitud = latitudObservacion.trim() ? Number(latitudObservacion) : undefined;
       const longitud = longitudObservacion.trim() ? Number(longitudObservacion) : undefined;
-      const tamanioFoto = fotoTamanioBytes.trim() ? Number(fotoTamanioBytes) : undefined;
-      const tieneFoto = Boolean(fotoNombreArchivo.trim() || fotoStoragePath.trim() || fotoTamanioBytes.trim());
 
       if ((latitud !== undefined && !Number.isFinite(latitud)) || (longitud !== undefined && !Number.isFinite(longitud))) {
         Alert.alert('Observaciones', 'Las coordenadas deben ser numericas.');
         return;
       }
 
-      if (tieneFoto && (!fotoNombreArchivo.trim() || !fotoStoragePath.trim() || !tamanioFoto || tamanioFoto <= 0)) {
-        Alert.alert('Observaciones', 'Informa nombre, ruta de storage y tamano de la foto.');
-        return;
-      }
+      const nombreFoto = fotoSeleccionada?.fileName || `observacion-${Date.now()}.jpg`;
+      const mimeFoto = fotoSeleccionada?.mimeType || 'image/jpeg';
+      const tamanioFoto = fotoSeleccionada?.fileSize || 1;
 
       const payload = {
         campoAppId: campoSeleccionado.id,
@@ -291,15 +293,6 @@ export default function App() {
         longitud,
         fechaEvento: new Date().toISOString(),
         origen: 'mobile' as const,
-        adjuntos: tieneFoto && tamanioFoto
-          ? [{
-            storagePath: fotoStoragePath.trim(),
-            nombreArchivo: fotoNombreArchivo.trim(),
-            mimeType: 'image/jpeg',
-            tamanioBytes: tamanioFoto,
-            estado: 'disponible' as const,
-          }]
-          : undefined,
       };
 
       setGuardandoObservacion(true);
@@ -315,7 +308,31 @@ export default function App() {
           setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
           Alert.alert('Observaciones', 'Observacion guardada como pendiente mobile.');
         } else {
-          await crearObservacion(payload, sesionActiva.token);
+          const adjuntoSubido = fotoSeleccionada
+            ? await crearUrlSubidaAdjuntoObservacion({
+              nombreArchivo: nombreFoto,
+              mimeType: mimeFoto,
+              tamanioBytes: tamanioFoto,
+            }, sesionActiva.token)
+            : null;
+
+          if (fotoSeleccionada && adjuntoSubido) {
+            await subirArchivoAFirmaSupabase(adjuntoSubido.signedUploadUrl, fotoSeleccionada.uri, mimeFoto);
+          }
+
+          await crearObservacion({
+            ...payload,
+            adjuntos: fotoSeleccionada && adjuntoSubido
+              ? [{
+                storageBucket: adjuntoSubido.storageBucket,
+                storagePath: adjuntoSubido.storagePath,
+                nombreArchivo: nombreFoto,
+                mimeType: mimeFoto,
+                tamanioBytes: tamanioFoto,
+                estado: 'disponible',
+              }]
+              : undefined,
+          }, sesionActiva.token);
           Alert.alert('Observaciones', 'Observacion enviada al backend.');
         }
 
@@ -323,9 +340,7 @@ export default function App() {
         setDescripcionObservacion('');
         setLatitudObservacion('');
         setLongitudObservacion('');
-        setFotoNombreArchivo('');
-        setFotoStoragePath('');
-        setFotoTamanioBytes('');
+        setFotoSeleccionada(null);
       } catch {
         await guardarRegistroLocal({
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -338,6 +353,42 @@ export default function App() {
         Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
       } finally {
         setGuardandoObservacion(false);
+      }
+    }
+
+    async function seleccionarFotoObservacion() {
+      const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permiso.granted) {
+        Alert.alert('Observaciones', 'Necesitamos permiso para acceder a tus fotos.');
+        return;
+      }
+
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.82,
+      });
+
+      if (!resultado.canceled) {
+        setFotoSeleccionada(resultado.assets[0]);
+      }
+    }
+
+    async function tomarFotoObservacion() {
+      const permiso = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permiso.granted) {
+        Alert.alert('Observaciones', 'Necesitamos permiso para usar la camara.');
+        return;
+      }
+
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.82,
+      });
+
+      if (!resultado.canceled) {
+        setFotoSeleccionada(resultado.assets[0]);
       }
     }
 
@@ -438,25 +489,17 @@ export default function App() {
                   value={longitudObservacion}
                   onChangeText={setLongitudObservacion}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nombre foto opcional"
-                  value={fotoNombreArchivo}
-                  onChangeText={setFotoNombreArchivo}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ruta storage opcional"
-                  value={fotoStoragePath}
-                  onChangeText={setFotoStoragePath}
-                />
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  placeholder="Tamano foto en bytes"
-                  value={fotoTamanioBytes}
-                  onChangeText={setFotoTamanioBytes}
-                />
+                <View style={styles.buttonSpacing}>
+                  <Button title="Elegir foto" onPress={seleccionarFotoObservacion} />
+                </View>
+                <View style={styles.buttonSpacing}>
+                  <Button title="Tomar foto" onPress={tomarFotoObservacion} />
+                </View>
+                {fotoSeleccionada && (
+                  <Text style={styles.note}>
+                    Foto: {fotoSeleccionada.fileName || 'imagen seleccionada'}
+                  </Text>
+                )}
                 <View style={styles.buttonSpacing}>
                   <Button
                     title={guardandoObservacion ? 'Guardando...' : 'Guardar observacion'}

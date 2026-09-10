@@ -1,6 +1,7 @@
 import { Request, Router } from 'express';
 import type { CrearObservacionRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
+import { crearUrlLecturaAdjuntoObservacion, crearUrlSubidaAdjuntoObservacion } from '../services/observaciones/adjuntosStorage';
 import { crearObservacionPersistida, obtenerObservacionesPersistidas } from '../services/observaciones/observacionesPrisma';
 
 const router = Router();
@@ -34,6 +35,36 @@ router.post('/', requierePermiso('observaciones:crear'), async (req, res, next) 
     const request = req as RequestConUsuario;
 
     res.status(201).json(await crearObservacionPersistida(req.body as CrearObservacionRequest, {
+      id: request.user?.sub,
+      clienteId: request.user?.clienteId,
+      email: request.user?.email,
+      rol: request.user?.rol,
+    }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/adjuntos/upload-url', requierePermiso('observaciones:crear'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+
+    res.status(201).json(await crearUrlSubidaAdjuntoObservacion(req.body, {
+      id: request.user?.sub,
+      clienteId: request.user?.clienteId,
+      email: request.user?.email,
+      rol: request.user?.rol,
+    }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/adjuntos/:id/signed-url', requierePermiso('observaciones:leer'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+
+    res.json(await crearUrlLecturaAdjuntoObservacion(req.params.id, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

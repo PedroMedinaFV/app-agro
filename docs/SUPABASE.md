@@ -65,8 +65,27 @@ pnpm --filter agro-app-api db:seed
 - Mantener `SECRETS_ENCRYPTION_KEY` fuera del repositorio y con un valor fuerte.
 - Web y mobile deben llamar a la API propia, nunca directo a tablas sensibles.
 
+## Storage para observaciones
+
+Las fotos de observaciones se guardan en Supabase Storage. La API genera URLs firmadas; web/mobile no reciben la `service_role`.
+
+Variables requeridas en backend:
+
+```env
+SUPABASE_URL="https://PROJECT_REF.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="..."
+OBSERVACION_ADJUNTO_BUCKET="observaciones"
+OBSERVACION_ADJUNTO_MAX_CANTIDAD=5
+OBSERVACION_ADJUNTO_MAX_BYTES=10485760
+OBSERVACION_ADJUNTO_UPLOAD_EXPIRES_SECONDS=600
+OBSERVACION_ADJUNTO_READ_EXPIRES_SECONDS=300
+```
+
+El bucket `observaciones` debe ser privado. La lectura y subida se hacen con URLs firmadas generadas por backend despues de validar sesion, permisos, cliente y alcance de campos.
+
 ## Pendiente
 
 - Evaluar RLS si se exponen tablas mediante Data API.
 - Revisar politicas antes de habilitar acceso directo desde frontend.
 - Definir manejo de backups y rotacion de credenciales para ambientes productivos.
+- Automatizar la creacion del bucket privado por ambiente.
