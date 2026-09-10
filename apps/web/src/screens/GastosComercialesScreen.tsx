@@ -145,6 +145,10 @@ export function GastosComercialesScreen({
   }, [actividadesErp, actividadesPropias, actividadesPropiasErpIds, especiesErpPorId]);
   const actividadesPorClave = useMemo(() => new Map(actividades.map((actividad) => [actividad.clave, actividad])), [actividades]);
   const actividadesPropiasPorId = useMemo(() => new Map(actividadesPropias.map((actividad) => [actividad.id, actividad])), [actividadesPropias]);
+  const zonasPropiasErpIds = useMemo(() => new Set(zonas.map((zona) => zona.zonaErpId).filter(Boolean)), [zonas]);
+  const zonasPropiasPorErpId = useMemo(() => new Map(zonas.filter((zona) => zona.zonaErpId).map((zona) => [zona.zonaErpId, zona])), [zonas]);
+  const camposPropiosErpIds = useMemo(() => new Set(campos.map((campo) => campo.campoErpId).filter(Boolean)), [campos]);
+  const camposPropiosPorErpId = useMemo(() => new Map(campos.filter((campo) => campo.campoErpId).map((campo) => [campo.campoErpId, campo])), [campos]);
   const zonasDisponibles = useMemo<ZonaSeleccionable[]>(() => {
     const propias = zonas.map((zona) => ({
       clave: `agro:${zona.id}`,
@@ -154,17 +158,19 @@ export function GastosComercialesScreen({
       zonaErpId: zona.zonaErpId,
       origen: 'agro' as const,
     }));
-    const erp = zonasErp.map((zona) => ({
-      clave: `erp:${zona.erpId}`,
-      nombre: zona.nombre,
-      codigo: zona.codigo,
-      zonaErpId: zona.erpId,
-      idZona: zona.idZona,
-      origen: 'erp' as const,
-    }));
+    const erp = zonasErp
+      .filter((zona) => !zonasPropiasErpIds.has(zona.erpId))
+      .map((zona) => ({
+        clave: `erp:${zona.erpId}`,
+        nombre: zona.nombre,
+        codigo: zona.codigo,
+        zonaErpId: zona.erpId,
+        idZona: zona.idZona,
+        origen: 'erp' as const,
+      }));
 
     return [...propias, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [zonas, zonasErp]);
+  }, [zonas, zonasErp, zonasPropiasErpIds]);
   const zonasPorClave = useMemo(() => new Map(zonasDisponibles.map((zona) => [zona.clave, zona])), [zonasDisponibles]);
   const camposDisponibles = useMemo<CampoSeleccionable[]>(() => {
     const zonaSeleccionada = zonaSeleccionadaClave ? zonasPorClave.get(zonaSeleccionadaClave) : undefined;
@@ -182,6 +188,7 @@ export function GastosComercialesScreen({
         origen: 'agro' as const,
       }));
     const erp = camposErp
+      .filter((campo) => !camposPropiosErpIds.has(campo.erpId))
       .filter((campo) => !zonaSeleccionada?.idZona || campo.idZona === zonaSeleccionada.idZona)
       .map((campo) => ({
         clave: `erp:${campo.erpId}`,
@@ -195,7 +202,7 @@ export function GastosComercialesScreen({
       }));
 
     return [...propios, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [campos, camposErp, zonaSeleccionadaClave, zonasPorClave]);
+  }, [campos, camposErp, camposPropiosErpIds, zonaSeleccionadaClave, zonasPorClave]);
   const camposPorClave = useMemo(() => new Map(camposDisponibles.map((campo) => [campo.clave, campo])), [camposDisponibles]);
 
   useEffect(() => {
@@ -290,11 +297,14 @@ export function GastosComercialesScreen({
   }
 
   function abrirEditarGasto(gasto: GastosComercialesReferencia) {
+    const zonaPropiaVinculada = gasto.zonaErpId ? zonasPropiasPorErpId.get(gasto.zonaErpId) : undefined;
+    const campoPropioVinculado = gasto.campoErpId ? camposPropiosPorErpId.get(gasto.campoErpId) : undefined;
+
     setModoModal('editar');
     setCreandoDestino(false);
     setActividadSeleccionadaClave(`agro:${gasto.actividadAppId}`);
-    setZonaSeleccionadaClave(gasto.zonaAppId ? `agro:${gasto.zonaAppId}` : gasto.zonaErpId ? `erp:${gasto.zonaErpId}` : '');
-    setCampoSeleccionadoClave(gasto.campoAppId ? `agro:${gasto.campoAppId}` : gasto.campoErpId ? `erp:${gasto.campoErpId}` : '');
+    setZonaSeleccionadaClave(gasto.zonaAppId ? `agro:${gasto.zonaAppId}` : zonaPropiaVinculada ? `agro:${zonaPropiaVinculada.id}` : gasto.zonaErpId ? `erp:${gasto.zonaErpId}` : '');
+    setCampoSeleccionadoClave(gasto.campoAppId ? `agro:${gasto.campoAppId}` : campoPropioVinculado ? `agro:${campoPropioVinculado.id}` : gasto.campoErpId ? `erp:${gasto.campoErpId}` : '');
     setGastoEnEdicion({ ...gasto, items: gasto.items.map((item) => ({ ...item })) });
   }
 
