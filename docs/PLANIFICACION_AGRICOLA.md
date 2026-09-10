@@ -156,7 +156,9 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - al cambiar la campania de la planificacion, se buscan nuevamente gastos comerciales compatibles con esa campania; si no existen, el gasto de la linea queda en cero para carga manual;
 - guardar la planificacion como borrador;
 - bloquear la edicion cuando la planificacion este cerrada;
-- cerrar una planificacion exige que todas las lineas tengan hectareas mayores a cero.
+- cerrar una planificacion exige que todas las lineas tengan hectareas mayores a cero;
+- si el backend rechaza el cierre, la UI no debe simular el cierre ni bloquear botones localmente. Debe mantener el estado previo, mostrar el error y permitir que el usuario corrija los datos;
+- pendiente UX: el cierre debe ejecutarse sobre un escenario elegido de forma explicita. En el listado principal conviene tener accion `Cerrar` por fila o una confirmacion que muestre nombre, campania y resumen del escenario a cerrar, para evitar cerrar accidentalmente la planificacion activa incorrecta.
 
 Mobile debe comenzar como vista de consulta/resumen para no forzar una carga pesada en pantalla chica. La carga mobile puede quedar para casos puntuales o flujos simplificados posteriores.
 

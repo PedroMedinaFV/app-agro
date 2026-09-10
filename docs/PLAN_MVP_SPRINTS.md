@@ -368,6 +368,7 @@ Criterio de aceptacion:
 Pendientes de refinamiento antes de cerrar sprint:
 
 - revisar ergonomia final de la planilla con datos reales voluminosos;
+- [ ] ajustar cierre de planificacion para seleccionar/cerrar explicitamente un escenario desde el listado, evitando depender solo de la planificacion activa;
 - [x] mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
 - [x] mostrar indicadores por zona/campo para ubicar pendientes sin abrir toda la planilla;
 - [x] validar con usuario una primera version de edicion masiva basada en filtros.

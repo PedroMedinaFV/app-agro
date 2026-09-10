@@ -80,9 +80,9 @@ export function PlanificacionesResumenScreen({
     <section className="planning-stack">
       <section className="planning-hero">
         <div>
-          <p className="eyebrow">Planificacion</p>
+          <p className="eyebrow">Planificación</p>
           <h2>Planificaciones agricolas</h2>
-          <p className="hint">Resumen de campania, estado y margen. La carga detallada se edita en una pantalla aparte.</p>
+          <p className="hint">Resumen de campaña, estado y margen. La carga detallada se edita en una pantalla aparte.</p>
         </div>
         <div className="planning-hero-summary">
           <span>{campaniaActiva?.codigo || 'Sin campania'}</span>
@@ -91,25 +91,6 @@ export function PlanificacionesResumenScreen({
         <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
           {planificacionActiva?.estado || 'sin_estado'}
         </div>
-      </section>
-
-      <section className="metrics planning-metrics">
-        <article>
-          <span>Hectareas planificadas</span>
-          <strong>{hectareasPlanificadas}</strong>
-        </article>
-        <article>
-          <span>Ingreso neto</span>
-          <strong>{formatearUsd(ingresoNetoTotal)}</strong>
-        </article>
-        <article>
-          <span>Costo produccion</span>
-          <strong>{formatearUsd(costoTotal)}</strong>
-        </article>
-        <article>
-          <span>Margen bruto</span>
-          <strong>{formatearUsd(margenBrutoTotal)}</strong>
-        </article>
       </section>
 
       {camposProvisorios > 0 && (

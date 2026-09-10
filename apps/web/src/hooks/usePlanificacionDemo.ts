@@ -1223,20 +1223,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         mensaje: respuesta.auditado ? 'Quedo como escenario original y se deshabilitaron escenarios alternativos de la campania.' : respuesta.mensaje,
       });
     } catch (error) {
-      const mensaje = error instanceof Error ? `${error.message}. Cierre aplicado localmente para demo.` : 'Planificacion cerrada localmente para demo.';
-      actualizarPlanificacionActiva((actual) => ({
-        ...actual,
-        estado: 'cerrada',
-        escenarioOriginal: true,
-        escenarioBloqueadoPorId: undefined,
-        cerradaPor: sesion.usuario.id,
-        cerradaAt: new Date().toISOString(),
-        motivoCierre: 'Cierre local para validar UX sin base de datos disponible.',
-      }));
+      const mensaje = error instanceof Error ? error.message : 'No se pudo cerrar la planificacion.';
       setPlanificacionEstado(mensaje);
       notificar?.({
-        tipo: 'info',
-        titulo: 'Cierre simulado',
+        tipo: 'error',
+        titulo: 'No se pudo cerrar',
         mensaje,
       });
     } finally {
