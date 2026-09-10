@@ -415,6 +415,10 @@ Avance realizado:
 - [x] mobile puede cargar observaciones con titulo, descripcion, severidad y ubicacion opcional;
 - [x] observaciones mobile quedan pendientes offline cuando no se pueden enviar;
 - [x] `POST /sincronizacion` procesa pendientes mobile de observaciones con idempotencia por `registroMovilId`.
+- [x] contrato compartido y persistencia de metadata segura para adjuntos/fotos de observaciones;
+- [x] validacion backend de adjuntos por cantidad, tamano, MIME, ruta de storage, estado y checksum opcional;
+- [ ] subida real de binarios a Supabase Storage con URL firmada;
+- [ ] selector/camara mobile para tomar o adjuntar imagen real.
 
 ## Sprint 7 - Web de seguimiento operativo
 
@@ -448,6 +452,8 @@ Avance realizado:
 - [x] filtros web iniciales por campo, lote y texto para precipitaciones;
 - [x] permisos especificos `observaciones:crear` y `observaciones:leer`;
 - [x] auditoria de creacion de observaciones.
+- [x] web muestra cantidad y nombres de adjuntos asociados a observaciones.
+- [ ] web abre adjuntos con URL firmada de lectura.
 
 ## Sprint 8 - Ordenes de trabajo e integracion ALBOR futura
 

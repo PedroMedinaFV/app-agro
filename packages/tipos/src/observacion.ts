@@ -2,6 +2,32 @@ export type OrigenObservacion = 'web' | 'mobile' | 'api';
 
 export type SeveridadObservacion = 'baja' | 'media' | 'alta';
 
+export type EstadoAdjuntoObservacion = 'pendiente_subida' | 'disponible' | 'rechazado';
+
+export type AdjuntoObservacion = {
+  id: string;
+  observacionId: string;
+  storageBucket: string;
+  storagePath: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanioBytes: number;
+  checksumSha256?: string;
+  estado: EstadoAdjuntoObservacion;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearAdjuntoObservacionInput = {
+  storageBucket?: string;
+  storagePath: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanioBytes: number;
+  checksumSha256?: string;
+  estado?: EstadoAdjuntoObservacion;
+};
+
 export type ObservacionCampo = {
   id: string;
   clienteId: string;
@@ -18,6 +44,7 @@ export type ObservacionCampo = {
   longitud?: number;
   fechaEvento: string;
   origen: OrigenObservacion;
+  adjuntos?: AdjuntoObservacion[];
   createdAt: string;
   updatedAt: string;
 };
@@ -33,6 +60,7 @@ export type CrearObservacionRequest = {
   longitud?: number;
   fechaEvento: string;
   origen: OrigenObservacion;
+  adjuntos?: CrearAdjuntoObservacionInput[];
 };
 
 export type CrearObservacionResponse = {

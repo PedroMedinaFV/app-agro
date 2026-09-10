@@ -50,6 +50,7 @@ model Cliente {
   notificaciones NotificacionUsuario[]
   precipitaciones PrecipitacionCampo[]
   observaciones ObservacionCampo[]
+  observacionAdjuntos ObservacionAdjunto[]
   auditoriaEventos AuditoriaEvento[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -575,6 +576,7 @@ model ObservacionCampo {
   origen                String
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  adjuntos              ObservacionAdjunto[]
 
   @@index([clienteId])
   @@index([usuarioId])
@@ -585,6 +587,29 @@ model ObservacionCampo {
   @@index([fechaEvento])
   @@index([origen])
   @@unique([clienteId, registroMovilId])
+}
+
+model ObservacionAdjunto {
+  id              String   @id @default(uuid())
+  cliente         Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId       String
+  observacion     ObservacionCampo @relation(fields: [observacionId], references: [id], onDelete: Cascade)
+  observacionId   String
+  storageBucket   String
+  storagePath     String
+  nombreArchivo   String
+  mimeType        String
+  tamanioBytes    Int
+  checksumSha256  String?
+  estado          String   @default("disponible")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([clienteId, storageBucket, storagePath])
+  @@index([clienteId])
+  @@index([observacionId])
+  @@index([estado])
+  @@index([mimeType])
 }
 
 model EspecieApp {

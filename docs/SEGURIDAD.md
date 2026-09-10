@@ -64,8 +64,18 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 
 - La API acepta JSON hasta `API_JSON_LIMIT`, con valor sugerido `1mb` para desarrollo/MVP.
 - Este limite permite guardar planificaciones con cientos de lineas sin abrir la API a cargas arbitrariamente grandes.
-- Si una funcionalidad futura necesita adjuntos, fotos o archivos, no deben enviarse dentro del JSON general; deben usar un flujo especifico de almacenamiento y validacion.
+- Los adjuntos, fotos o archivos no deben enviarse dentro del JSON general; deben usar un flujo especifico de almacenamiento y validacion.
 - El error `entity.too.large` debe responder como HTTP 413 con un mensaje controlado.
+
+## Adjuntos y fotos
+
+- La base de datos guarda metadata de adjuntos, no el binario de la imagen.
+- Cada adjunto queda asociado a `clienteId` y `observacionId`.
+- El backend valida cantidad maxima, tamano, MIME type, estado, checksum opcional y ruta de storage antes de persistir metadata.
+- Los MIME permitidos inicialmente son `image/jpeg`, `image/png`, `image/webp`, `image/heic` e `image/heif`.
+- La ruta de storage no puede tener path traversal, barras invertidas ni comenzar con `/`.
+- Las URLs publicas no deben persistirse como fuente de verdad; para lectura segura se deben usar URLs firmadas y de corta duracion.
+- La subida real a Supabase Storage debe hacerse con un endpoint backend que genere rutas controladas y URLs firmadas, evitando que el cliente decida ubicaciones sensibles.
 
 ## Planificacion agricola
 

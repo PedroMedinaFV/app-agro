@@ -146,6 +146,7 @@ En modo demo, el backend guarda en memoria para validar UX y contratos. En persi
    - descripcion/comentario;
    - severidad;
    - ubicacion GPS opcional;
+   - adjuntos/fotos mediante metadata segura cuando el archivo ya fue subido al storage;
    - fecha/hora;
    - estado fenologico cuando aplique en una etapa posterior.
 6. Mobile envia la observacion al backend con origen `mobile`.
@@ -170,8 +171,17 @@ Validaciones iniciales:
 - el campo debe pertenecer al cliente de la sesion;
 - si se informa lote, debe pertenecer al campo seleccionado;
 - un operador de campo solo puede cargar o ver observaciones de campos asignados;
+- los adjuntos no viajan como binario en el JSON; se persiste solo metadata de storage;
+- los adjuntos se validan por cantidad, tamano, MIME, ruta segura, estado y checksum opcional;
 - toda alta registra auditoria;
 - `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos offline.
+
+Pendiente para completar captura real de fotos:
+
+- endpoint backend para generar ruta y URL firmada de subida a Supabase Storage;
+- picker/camara mobile para seleccionar o tomar la foto;
+- carga del binario contra storage antes de confirmar la observacion;
+- lectura mediante URL firmada de corta duracion en web y mobile.
 
 ## Precipitaciones por campo asignado
 

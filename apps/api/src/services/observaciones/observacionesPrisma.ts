@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type {
+  AdjuntoObservacion,
+  CrearAdjuntoObservacionInput,
   CrearObservacionRequest,
   CrearObservacionResponse,
+  EstadoAdjuntoObservacion,
   ObservacionCampo,
   ObservacionesResponse,
   OrigenObservacion,
@@ -36,6 +39,21 @@ type ObservacionRow = {
   updatedAt: Date;
 };
 
+type ObservacionAdjuntoRow = {
+  id: string;
+  clienteId: string;
+  observacionId: string;
+  storageBucket: string;
+  storagePath: string;
+  nombreArchivo: string;
+  mimeType: string;
+  tamanioBytes: number;
+  checksumSha256: string | null;
+  estado: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type CampoRow = {
   id: string;
   clienteId: string;
@@ -60,7 +78,31 @@ function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
 
-function mapearObservacion(row: ObservacionRow): ObservacionCampo {
+function obtenerConfiguracionAdjuntos() {
+  return {
+    bucketDefault: process.env.OBSERVACION_ADJUNTO_BUCKET || 'observaciones',
+    maxCantidad: Number(process.env.OBSERVACION_ADJUNTO_MAX_CANTIDAD || 5),
+    maxBytes: Number(process.env.OBSERVACION_ADJUNTO_MAX_BYTES || 10 * 1024 * 1024),
+  };
+}
+
+function mapearAdjunto(row: ObservacionAdjuntoRow): AdjuntoObservacion {
+  return {
+    id: row.id,
+    observacionId: row.observacionId,
+    storageBucket: row.storageBucket,
+    storagePath: row.storagePath,
+    nombreArchivo: row.nombreArchivo,
+    mimeType: row.mimeType,
+    tamanioBytes: row.tamanioBytes,
+    checksumSha256: row.checksumSha256 || undefined,
+    estado: row.estado as EstadoAdjuntoObservacion,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function mapearObservacion(row: ObservacionRow, adjuntos: AdjuntoObservacion[] = []): ObservacionCampo {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -77,6 +119,7 @@ function mapearObservacion(row: ObservacionRow): ObservacionCampo {
     longitud: row.longitud ?? undefined,
     fechaEvento: row.fechaEvento.toISOString(),
     origen: row.origen as OrigenObservacion,
+    adjuntos,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -110,6 +153,68 @@ function validarCoordenada(valor: number | undefined, minimo: number, maximo: nu
   if (!Number.isFinite(valor) || valor < minimo || valor > maximo) {
     throw crearErrorValidacion(`${nombre} no es valida.`);
   }
+}
+
+function validarAdjuntos(request: CrearAdjuntoObservacionInput[] | undefined) {
+  const { bucketDefault, maxCantidad, maxBytes } = obtenerConfiguracionAdjuntos();
+  const mimePermitidos = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+  const adjuntos = request || [];
+
+  if (adjuntos.length > maxCantidad) {
+    throw crearErrorValidacion(`Una observacion puede tener hasta ${maxCantidad} adjunto(s).`);
+  }
+
+  return adjuntos.map((adjunto) => {
+    const storageBucket = limpiarTextoVisible(adjunto.storageBucket || bucketDefault);
+    const storagePath = adjunto.storagePath.trim();
+    const nombreArchivo = limpiarTextoVisible(adjunto.nombreArchivo);
+    const mimeType = adjunto.mimeType.trim().toLowerCase();
+    const estado = adjunto.estado || 'disponible';
+
+    if (!storageBucket || storageBucket.includes('/') || storageBucket.includes('\\')) {
+      throw crearErrorValidacion('El bucket del adjunto no es valido.');
+    }
+
+    if (
+      !storagePath ||
+      storagePath.startsWith('/') ||
+      storagePath.includes('..') ||
+      storagePath.includes('\\') ||
+      !/^[a-zA-Z0-9/_\-.]+$/.test(storagePath)
+    ) {
+      throw crearErrorValidacion('La ruta de storage del adjunto no es valida.');
+    }
+
+    if (!nombreArchivo || nombreArchivo.length > 160) {
+      throw crearErrorValidacion('El nombre del adjunto no es valido.');
+    }
+
+    if (!mimePermitidos.has(mimeType)) {
+      throw crearErrorValidacion('El tipo de archivo del adjunto no esta permitido.');
+    }
+
+    if (!Number.isInteger(adjunto.tamanioBytes) || adjunto.tamanioBytes <= 0 || adjunto.tamanioBytes > maxBytes) {
+      throw crearErrorValidacion(`El adjunto supera el limite permitido de ${Math.round(maxBytes / 1024 / 1024)} MB.`);
+    }
+
+    if (adjunto.checksumSha256 && !/^[a-fA-F0-9]{64}$/.test(adjunto.checksumSha256)) {
+      throw crearErrorValidacion('El checksum del adjunto no es valido.');
+    }
+
+    if (!['pendiente_subida', 'disponible', 'rechazado'].includes(estado)) {
+      throw crearErrorValidacion('El estado del adjunto no es valido.');
+    }
+
+    return {
+      storageBucket,
+      storagePath,
+      nombreArchivo,
+      mimeType,
+      tamanioBytes: adjunto.tamanioBytes,
+      checksumSha256: adjunto.checksumSha256 || null,
+      estado,
+    };
+  });
 }
 
 async function validarRequestObservacion(clienteId: string, request: CrearObservacionRequest, usuario: UsuarioOperacion) {
@@ -175,6 +280,7 @@ async function validarRequestObservacion(clienteId: string, request: CrearObserv
     campo: campo[0],
     lote: lote[0],
     fechaEvento,
+    adjuntos: validarAdjuntos(request.adjuntos),
   };
 }
 
@@ -201,7 +307,26 @@ export async function obtenerObservacionesPersistidas(
     LIMIT 500
   `;
 
-  return { observaciones: registros.map(mapearObservacion) };
+  const ids = registros.map((registro) => registro.id);
+  const adjuntos = ids.length
+    ? await prisma.$queryRaw<ObservacionAdjuntoRow[]>`
+      SELECT *
+      FROM "ObservacionAdjunto"
+      WHERE "observacionId" IN (${Prisma.join(ids)})
+      ORDER BY "createdAt" ASC
+    `
+    : [];
+  const adjuntosPorObservacion = new Map<string, AdjuntoObservacion[]>();
+
+  for (const adjunto of adjuntos) {
+    const existentes = adjuntosPorObservacion.get(adjunto.observacionId) || [];
+    existentes.push(mapearAdjunto(adjunto));
+    adjuntosPorObservacion.set(adjunto.observacionId, existentes);
+  }
+
+  return {
+    observaciones: registros.map((registro) => mapearObservacion(registro, adjuntosPorObservacion.get(registro.id) || [])),
+  };
 }
 
 export async function crearObservacionPersistida(
@@ -231,8 +356,15 @@ export async function crearObservacionPersistida(
       `;
 
       if (existenteMovil[0]) {
+        const adjuntosExistentes = await tx.$queryRaw<ObservacionAdjuntoRow[]>`
+          SELECT *
+          FROM "ObservacionAdjunto"
+          WHERE "observacionId" = ${existenteMovil[0].id}
+          ORDER BY "createdAt" ASC
+        `;
+
         return {
-          observacion: mapearObservacion(existenteMovil[0]),
+          observacion: mapearObservacion(existenteMovil[0], adjuntosExistentes.map(mapearAdjunto)),
           auditado: true,
           mensaje: 'Observacion ya sincronizada previamente.',
         };
@@ -287,7 +419,38 @@ export async function crearObservacionPersistida(
       )
       RETURNING *
     `;
-    const observacion = mapearObservacion(creado[0]);
+    const adjuntosCreados = validacion.adjuntos.length
+      ? await tx.$queryRaw<ObservacionAdjuntoRow[]>`
+        INSERT INTO "ObservacionAdjunto" (
+          "id",
+          "clienteId",
+          "observacionId",
+          "storageBucket",
+          "storagePath",
+          "nombreArchivo",
+          "mimeType",
+          "tamanioBytes",
+          "checksumSha256",
+          "estado",
+          "updatedAt"
+        )
+        VALUES ${Prisma.join(validacion.adjuntos.map((adjunto) => Prisma.sql`(
+          ${randomUUID()},
+          ${clienteId},
+          ${id},
+          ${adjunto.storageBucket},
+          ${adjunto.storagePath},
+          ${adjunto.nombreArchivo},
+          ${adjunto.mimeType},
+          ${adjunto.tamanioBytes},
+          ${adjunto.checksumSha256},
+          ${adjunto.estado},
+          NOW()
+        )`))}
+        RETURNING *
+      `
+      : [];
+    const observacion = mapearObservacion(creado[0], adjuntosCreados.map(mapearAdjunto));
 
     await registrarAuditoria(tx, {
       clienteId,

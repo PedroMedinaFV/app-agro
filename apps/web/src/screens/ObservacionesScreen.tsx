@@ -23,6 +23,10 @@ type FormularioObservacion = {
   latitud: string;
   longitud: string;
   fechaEvento: string;
+  adjuntoNombreArchivo: string;
+  adjuntoMimeType: string;
+  adjuntoTamanioBytes: string;
+  adjuntoStoragePath: string;
 };
 
 function fechaActualInput() {
@@ -49,6 +53,10 @@ function crearFormularioInicial(campoAppId = ''): FormularioObservacion {
     latitud: '',
     longitud: '',
     fechaEvento: fechaActualInput(),
+    adjuntoNombreArchivo: '',
+    adjuntoMimeType: 'image/jpeg',
+    adjuntoTamanioBytes: '',
+    adjuntoStoragePath: '',
   };
 }
 
@@ -135,6 +143,8 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   async function guardar() {
     const latitud = formulario.latitud.trim() ? Number(formulario.latitud) : undefined;
     const longitud = formulario.longitud.trim() ? Number(formulario.longitud) : undefined;
+    const tamanioAdjunto = formulario.adjuntoTamanioBytes.trim() ? Number(formulario.adjuntoTamanioBytes) : undefined;
+    const tieneAdjunto = Boolean(formulario.adjuntoStoragePath.trim() || formulario.adjuntoNombreArchivo.trim() || formulario.adjuntoTamanioBytes.trim());
 
     if (!formulario.campoAppId || !formulario.titulo.trim() || !formulario.descripcion.trim()) {
       notificar?.({ tipo: 'error', titulo: 'Datos incompletos', mensaje: 'Selecciona campo, titulo y descripcion.' });
@@ -143,6 +153,11 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
 
     if ((latitud !== undefined && !Number.isFinite(latitud)) || (longitud !== undefined && !Number.isFinite(longitud))) {
       notificar?.({ tipo: 'error', titulo: 'Coordenadas invalidas', mensaje: 'Latitud y longitud deben ser numericas.' });
+      return;
+    }
+
+    if (tieneAdjunto && (!formulario.adjuntoStoragePath.trim() || !formulario.adjuntoNombreArchivo.trim() || !tamanioAdjunto || tamanioAdjunto <= 0)) {
+      notificar?.({ tipo: 'error', titulo: 'Adjunto incompleto', mensaje: 'Informa ruta, nombre y tamano del archivo.' });
       return;
     }
 
@@ -158,6 +173,15 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
         longitud,
         fechaEvento: new Date(formulario.fechaEvento).toISOString(),
         origen: 'web',
+        adjuntos: tieneAdjunto && tamanioAdjunto
+          ? [{
+            storagePath: formulario.adjuntoStoragePath.trim(),
+            nombreArchivo: formulario.adjuntoNombreArchivo.trim(),
+            mimeType: formulario.adjuntoMimeType,
+            tamanioBytes: tamanioAdjunto,
+            estado: 'disponible',
+          }]
+          : undefined,
       }, sesion.token);
 
       setObservaciones((actual) => [respuesta.observacion, ...actual]);
@@ -285,6 +309,54 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               onChange={(event) => actualizarFormulario({ longitud: event.target.value })}
             />
           </label>
+
+          <label>
+            Archivo
+            <input
+              value={formulario.adjuntoNombreArchivo}
+              disabled={!puedeCrear || guardando}
+              placeholder="foto-lote.jpg"
+              onChange={(event) => actualizarFormulario({ adjuntoNombreArchivo: event.target.value })}
+            />
+          </label>
+
+          <label>
+            Tipo archivo
+            <select
+              value={formulario.adjuntoMimeType}
+              disabled={!puedeCrear || guardando}
+              onChange={(event) => actualizarFormulario({ adjuntoMimeType: event.target.value })}
+            >
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WEBP</option>
+              <option value="image/heic">HEIC</option>
+              <option value="image/heif">HEIF</option>
+            </select>
+          </label>
+
+          <label>
+            Tamano bytes
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={formulario.adjuntoTamanioBytes}
+              disabled={!puedeCrear || guardando}
+              placeholder="524288"
+              onChange={(event) => actualizarFormulario({ adjuntoTamanioBytes: event.target.value })}
+            />
+          </label>
+
+          <label className="reference-wide">
+            Ruta storage
+            <input
+              value={formulario.adjuntoStoragePath}
+              disabled={!puedeCrear || guardando}
+              placeholder="cliente-demo/observaciones/foto-lote.jpg"
+              onChange={(event) => actualizarFormulario({ adjuntoStoragePath: event.target.value })}
+            />
+          </label>
         </div>
 
         <div className="modal-actions">
@@ -385,6 +457,18 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               label: 'Ubicacion',
               width: 'minmax(140px, 0.9fr)',
               render: describirCoordenadas,
+            },
+            {
+              key: 'adjuntos',
+              label: 'Adjuntos',
+              width: 'minmax(110px, 0.7fr)',
+              render: (observacion) => {
+                const adjuntos = observacion.adjuntos || [];
+
+                return adjuntos.length
+                  ? <><strong>{adjuntos.length}</strong><span>{adjuntos.map((adjunto) => adjunto.nombreArchivo).join(', ')}</span></>
+                  : 'Sin adjuntos';
+              },
             },
           ]}
         />

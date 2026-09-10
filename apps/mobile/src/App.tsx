@@ -116,6 +116,9 @@ export default function App() {
   const [severidadObservacion, setSeveridadObservacion] = useState<'baja' | 'media' | 'alta'>('media');
   const [latitudObservacion, setLatitudObservacion] = useState('');
   const [longitudObservacion, setLongitudObservacion] = useState('');
+  const [fotoNombreArchivo, setFotoNombreArchivo] = useState('');
+  const [fotoStoragePath, setFotoStoragePath] = useState('');
+  const [fotoTamanioBytes, setFotoTamanioBytes] = useState('');
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
   const [guardandoObservacion, setGuardandoObservacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
@@ -265,9 +268,16 @@ export default function App() {
 
       const latitud = latitudObservacion.trim() ? Number(latitudObservacion) : undefined;
       const longitud = longitudObservacion.trim() ? Number(longitudObservacion) : undefined;
+      const tamanioFoto = fotoTamanioBytes.trim() ? Number(fotoTamanioBytes) : undefined;
+      const tieneFoto = Boolean(fotoNombreArchivo.trim() || fotoStoragePath.trim() || fotoTamanioBytes.trim());
 
       if ((latitud !== undefined && !Number.isFinite(latitud)) || (longitud !== undefined && !Number.isFinite(longitud))) {
         Alert.alert('Observaciones', 'Las coordenadas deben ser numericas.');
+        return;
+      }
+
+      if (tieneFoto && (!fotoNombreArchivo.trim() || !fotoStoragePath.trim() || !tamanioFoto || tamanioFoto <= 0)) {
+        Alert.alert('Observaciones', 'Informa nombre, ruta de storage y tamano de la foto.');
         return;
       }
 
@@ -281,6 +291,15 @@ export default function App() {
         longitud,
         fechaEvento: new Date().toISOString(),
         origen: 'mobile' as const,
+        adjuntos: tieneFoto && tamanioFoto
+          ? [{
+            storagePath: fotoStoragePath.trim(),
+            nombreArchivo: fotoNombreArchivo.trim(),
+            mimeType: 'image/jpeg',
+            tamanioBytes: tamanioFoto,
+            estado: 'disponible' as const,
+          }]
+          : undefined,
       };
 
       setGuardandoObservacion(true);
@@ -304,6 +323,9 @@ export default function App() {
         setDescripcionObservacion('');
         setLatitudObservacion('');
         setLongitudObservacion('');
+        setFotoNombreArchivo('');
+        setFotoStoragePath('');
+        setFotoTamanioBytes('');
       } catch {
         await guardarRegistroLocal({
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -415,6 +437,25 @@ export default function App() {
                   placeholder="Longitud opcional"
                   value={longitudObservacion}
                   onChangeText={setLongitudObservacion}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nombre foto opcional"
+                  value={fotoNombreArchivo}
+                  onChangeText={setFotoNombreArchivo}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ruta storage opcional"
+                  value={fotoStoragePath}
+                  onChangeText={setFotoStoragePath}
+                />
+                <TextInput
+                  style={styles.input}
+                  keyboardType="number-pad"
+                  placeholder="Tamano foto en bytes"
+                  value={fotoTamanioBytes}
+                  onChangeText={setFotoTamanioBytes}
                 />
                 <View style={styles.buttonSpacing}>
                   <Button
