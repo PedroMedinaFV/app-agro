@@ -87,6 +87,20 @@ async function validarServicio(servicio: ServicioApp, usuario?: UsuarioAuditoria
     throw crearErrorValidacion('El costo sugerido no puede ser negativo.');
   }
 
+  if (servicio.idMoneda !== undefined) {
+    const monedasImportadas = await prisma.erpMoneda.count();
+    const monedaExiste = monedasImportadas === 0 || await prisma.erpMoneda.findFirst({
+      where: {
+        idMoneda: servicio.idMoneda,
+        activo: true,
+      },
+    });
+
+    if (!monedaExiste) {
+      throw crearErrorValidacion('La moneda seleccionada no existe en el padron importado.');
+    }
+  }
+
   if (servicio.servicioErpId) {
     const servicioErp = await prisma.erpServicio.findUnique({ where: { erpId: servicio.servicioErpId } });
 

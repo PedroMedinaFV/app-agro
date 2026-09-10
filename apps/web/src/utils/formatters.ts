@@ -8,6 +8,20 @@ export function formatearUsd(valor: number) {
   }).format(valor);
 }
 
+export function formatearMoneda(valor: number, moneda = 'USD') {
+  const codigo = moneda.trim().toUpperCase() || 'USD';
+
+  try {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: codigo,
+      maximumFractionDigits: 2,
+    }).format(valor);
+  } catch {
+    return `${codigo} ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(valor)}`;
+  }
+}
+
 export function leerNumero(valor: string) {
   const numero = Number(valor);
 

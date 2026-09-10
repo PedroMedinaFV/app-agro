@@ -81,6 +81,23 @@ async function validarInsumo(insumo: InsumoApp, usuario?: UsuarioAuditoria) {
     throw crearErrorValidacion('El precio estimado no puede ser negativo.');
   }
 
+  if (insumo.moneda) {
+    const monedasImportadas = await prisma.erpMoneda.count();
+    const monedaExiste = monedasImportadas === 0 || await prisma.erpMoneda.findFirst({
+      where: {
+        codigo: {
+          equals: insumo.moneda,
+          mode: 'insensitive',
+        },
+        activo: true,
+      },
+    });
+
+    if (!monedaExiste) {
+      throw crearErrorValidacion('La moneda seleccionada no existe en el padron importado.');
+    }
+  }
+
   if (insumo.insumoErpId) {
     const insumoErp = await prisma.erpInsumo.findUnique({ where: { erpId: insumo.insumoErpId } });
 

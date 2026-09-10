@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpMoneda, ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { obtenerServiciosErpImportados } from '../services/api';
+import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados } from '../services/api';
+import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -26,7 +27,6 @@ interface ServiciosAppScreenProps {
   guardandoLabores: boolean;
   guardarServicio: (servicio: ServicioApp) => Promise<boolean>;
   leerNumero: (valor: string) => number;
-  formatearUsd: (valor: number) => string;
   notificar?: Notificar;
 }
 
@@ -55,12 +55,12 @@ export function ServiciosAppScreen({
   guardandoLabores,
   guardarServicio,
   leerNumero,
-  formatearUsd,
   notificar,
 }: ServiciosAppScreenProps) {
   const [laborEnEdicion, setLaborEnEdicion] = useState<ServicioApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [serviciosErp, setServiciosErp] = useState<ErpServicio[]>([]);
+  const [monedasErp, setMonedasErp] = useState<ErpMoneda[]>(snapshot.monedas || []);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
   const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<ServicioApp | null>(null);
   const [servicioErpVincularId, setServicioErpVincularId] = useState('');
@@ -72,6 +72,16 @@ export function ServiciosAppScreen({
       .filter((unidad) => unidad.activo)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.unidadesMedida]);
+  const monedasDisponibles = useMemo(() => (
+    [...((snapshot.monedas || []).length ? snapshot.monedas : monedasErp)]
+      .filter((moneda) => moneda.activo)
+      .sort((a, b) => a.codigo.localeCompare(b.codigo, 'es'))
+  ), [monedasErp, snapshot.monedas]);
+  const monedaPorId = useMemo(() => (
+    new Map(monedasDisponibles.map((moneda) => [moneda.idMoneda, moneda]))
+  ), [monedasDisponibles]);
+  const monedaPorDefecto = monedasDisponibles.find((moneda) => moneda.codigo.toUpperCase() === 'USD')
+    || monedasDisponibles[0];
 
   useEffect(() => {
     async function cargarServiciosErp() {
@@ -89,6 +99,24 @@ export function ServiciosAppScreen({
     cargarServiciosErp();
   }, [sesion.token]);
 
+  useEffect(() => {
+    if ((snapshot.monedas || []).length) {
+      setMonedasErp(snapshot.monedas);
+      return;
+    }
+
+    async function cargarMonedasErp() {
+      try {
+        const respuesta = await obtenerMonedasErpImportadas(sesion.token);
+        setMonedasErp(respuesta.monedas);
+      } catch {
+        setMonedasErp([]);
+      }
+    }
+
+    cargarMonedasErp();
+  }, [sesion.token, snapshot.monedas]);
+
   function crearBorradorLabor(): ServicioApp {
     const ahora = new Date().toISOString();
 
@@ -97,6 +125,7 @@ export function ServiciosAppScreen({
       clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
       codigo: '',
       nombre: '',
+      idMoneda: monedaPorDefecto?.idMoneda,
       unidadSugerida: unidadesDisponibles.find((unidad) => unidad.codigo === 'Ha')?.codigo || unidadesDisponibles[0]?.codigo || 'Ha',
       costoUnitarioSugerido: 0,
       estadoVinculacion: 'provisorio',
@@ -191,7 +220,7 @@ export function ServiciosAppScreen({
       detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
       codigo: labor.codigo,
       unidad: labor.unidadSugerida,
-      costo: labor.costoUnitarioSugerido !== undefined ? formatearUsd(labor.costoUnitarioSugerido) : 'Sin costo',
+      costo: labor.costoUnitarioSugerido !== undefined ? formatearMoneda(labor.costoUnitarioSugerido, monedaPorId.get(labor.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD') : 'Sin costo',
       estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
       accion: 'editar' as const,
       laborPropia: labor,
@@ -200,6 +229,7 @@ export function ServiciosAppScreen({
       const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
       const laborPropia = laboresPorServicioErpId.get(servicio.erpId);
       const costo = laborPropia?.costoUnitarioSugerido ?? servicio.precioUnitario;
+      const moneda = monedaPorId.get(laborPropia?.idMoneda || servicio.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD';
 
       return {
         id: servicio.erpId,
@@ -207,7 +237,7 @@ export function ServiciosAppScreen({
         detalle: `${laborPropia ? 'Con costo Agro App' : 'Disponible'} ERP`,
         codigo: servicio.codigo,
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
-        costo: costo !== undefined ? formatearUsd(costo) : 'Sin costo',
+        costo: costo !== undefined ? formatearMoneda(costo, moneda) : 'Sin costo',
         estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
         accion: 'editar' as const,
         laborPropia,
@@ -440,6 +470,19 @@ export function ServiciosAppScreen({
                   placeholder="Descripcion visible para administradores"
                   onChange={(event) => actualizarBorrador({ descripcionAbreviada: event.target.value })}
                 />
+              </label>
+
+              <label>
+                Moneda
+                <select
+                  value={laborEnEdicion.idMoneda || ''}
+                  onChange={(event) => actualizarBorrador({ idMoneda: event.target.value ? Number(event.target.value) : undefined })}
+                >
+                  {!laborEnEdicion.idMoneda && <option value="">Seleccionar moneda</option>}
+                  {monedasDisponibles.map((moneda) => (
+                    <option key={moneda.erpId} value={moneda.idMoneda}>{moneda.codigo} - {moneda.nombre}</option>
+                  ))}
+                </select>
               </label>
 
               <label>

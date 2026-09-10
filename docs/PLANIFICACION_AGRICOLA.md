@@ -711,6 +711,8 @@ La administracion web del padron se realiza desde `Padrones > Insumos`. Un usuar
 
 La unidad del insumo se selecciona desde `Padrones/UnidadesMedida` y se guarda como codigo copiado, por ejemplo `Lts`, `Kgs`, `Bls` o `Unid`.
 
+La moneda del precio se selecciona desde el padron global importado `Contabilidad/Monedas`. Si el insumo viene del ERP, Agro App propone la moneda de `idMonedaPrecioUnitario`; si el usuario modifica el precio propio, conserva tambien la moneda seleccionada.
+
 Cuando un insumo se agrega a un protocolo, se selecciona desde el padron operativo `InsumoApp`. La linea del protocolo copia `insumoAppId`, `insumoErpId`, nombre, tipo, unidad y precio/costo estimado. El protocolo no debe depender dinamicamente del precio ERP porque una planificacion aprobada debe conservar sus supuestos economicos.
 
 La dosis y el precio unitario copiados quedan editables dentro del protocolo para representar condiciones puntuales sin modificar el padron maestro.
@@ -852,10 +854,13 @@ Los insumos y labores pueden venir desde ERP con precio/costo de referencia. Agr
 Reglas:
 
 - el precio/costo ERP se usa como valor inicial;
+- la moneda se toma del padron global `Contabilidad/Monedas` y no se carga como texto libre cuando hay monedas importadas;
 - al editarlo, se guarda un valor propio en `InsumoApp` o `ServicioApp`;
 - no se modifica la cache `ErpInsumo` ni `ErpServicio`;
 - los protocolos ya cerrados o planificaciones cerradas conservan los valores copiados originalmente;
 - cada cambio debe quedar auditado.
+
+Las pantallas que requieren campania deben usar el padron global sincronizado desde `Agricultura/Campanias`. La campania no se carga manualmente: se selecciona desde los registros importados, y el sistema puede sugerir la marcada como actual por el ERP.
 
 ## Relacion entre planificacion y protocolo
 

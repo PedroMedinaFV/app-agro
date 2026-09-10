@@ -323,7 +323,6 @@ export function App() {
           guardandoLabores={planificacionDemo.guardandoLabores}
           guardarServicio={planificacionDemo.guardarServicioAppDesdeModal}
           leerNumero={leerNumero}
-          formatearUsd={formatearUsd}
           notificar={toast.notify}
         />
       )}
@@ -337,7 +336,6 @@ export function App() {
           guardandoInsumos={planificacionDemo.guardandoInsumos}
           guardarInsumo={planificacionDemo.guardarInsumoAppDesdeModal}
           leerNumero={leerNumero}
-          formatearUsd={formatearUsd}
           notificar={toast.notify}
         />
       )}

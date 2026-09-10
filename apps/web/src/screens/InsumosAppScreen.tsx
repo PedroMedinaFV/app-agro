@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpInsumo, ErpSnapshot, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpInsumo, ErpMoneda, ErpSnapshot, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { obtenerInsumosErpImportados } from '../services/api';
+import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas } from '../services/api';
+import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -26,7 +27,6 @@ interface InsumosAppScreenProps {
   guardandoInsumos: boolean;
   guardarInsumo: (insumo: InsumoApp) => Promise<boolean>;
   leerNumero: (valor: string) => number;
-  formatearUsd: (valor: number) => string;
   notificar?: Notificar;
 }
 
@@ -55,12 +55,12 @@ export function InsumosAppScreen({
   guardandoInsumos,
   guardarInsumo,
   leerNumero,
-  formatearUsd,
   notificar,
 }: InsumosAppScreenProps) {
   const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [insumosErp, setInsumosErp] = useState<ErpInsumo[]>([]);
+  const [monedasErp, setMonedasErp] = useState<ErpMoneda[]>(snapshot.monedas || []);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
   const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoApp | null>(null);
   const [insumoErpVincularId, setInsumoErpVincularId] = useState('');
@@ -78,6 +78,17 @@ export function InsumosAppScreen({
       .filter((unidad) => unidad.activo)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.unidadesMedida]);
+  const monedasDisponibles = useMemo(() => (
+    [...((snapshot.monedas || []).length ? snapshot.monedas : monedasErp)]
+      .filter((moneda) => moneda.activo)
+      .sort((a, b) => a.codigo.localeCompare(b.codigo, 'es'))
+  ), [monedasErp, snapshot.monedas]);
+  const monedaPorId = useMemo(() => (
+    new Map(monedasDisponibles.map((moneda) => [moneda.idMoneda, moneda]))
+  ), [monedasDisponibles]);
+  const monedaPorDefecto = monedasDisponibles.find((moneda) => moneda.codigo.toUpperCase() === 'USD')?.codigo
+    || monedasDisponibles[0]?.codigo
+    || 'USD';
 
   useEffect(() => {
     async function cargarInsumosErp() {
@@ -95,6 +106,24 @@ export function InsumosAppScreen({
     cargarInsumosErp();
   }, [sesion.token]);
 
+  useEffect(() => {
+    if ((snapshot.monedas || []).length) {
+      setMonedasErp(snapshot.monedas);
+      return;
+    }
+
+    async function cargarMonedasErp() {
+      try {
+        const respuesta = await obtenerMonedasErpImportadas(sesion.token);
+        setMonedasErp(respuesta.monedas);
+      } catch {
+        setMonedasErp([]);
+      }
+    }
+
+    cargarMonedasErp();
+  }, [sesion.token, snapshot.monedas]);
+
   function crearBorradorInsumo(): InsumoApp {
     const ahora = new Date().toISOString();
 
@@ -107,7 +136,7 @@ export function InsumosAppScreen({
       tipo: '',
       unidad: unidadesDisponibles.find((unidad) => unidad.codigo === 'Lts')?.codigo || unidadesDisponibles[0]?.codigo || 'Unid',
       precioUnitarioEstimado: 0,
-      moneda: 'USD',
+      moneda: monedaPorDefecto,
       estadoVinculacion: 'provisorio',
       createdAt: ahora,
       updatedAt: ahora,
@@ -156,7 +185,7 @@ export function InsumosAppScreen({
       codigoInterno: normalizarCodigo(insumoEnEdicion.codigoInterno || nombre),
       tipo: insumoEnEdicion.tipo ? limpiarTextoVisible(insumoEnEdicion.tipo) : undefined,
       unidad: limpiarTextoVisible(insumoEnEdicion.unidad || 'Unid'),
-      moneda: limpiarTextoVisible(insumoEnEdicion.moneda || 'USD').toUpperCase(),
+      moneda: limpiarTextoVisible(insumoEnEdicion.moneda || monedaPorDefecto).toUpperCase(),
       precioUnitarioEstimado: insumoEnEdicion.precioUnitarioEstimado || 0,
       estadoVinculacion: insumoEnEdicion.insumoErpId ? 'vinculado_erp' : insumoEnEdicion.estadoVinculacion,
     };
@@ -199,7 +228,7 @@ export function InsumosAppScreen({
       codigo: insumo.codigoInterno || '-',
       tipo: insumo.tipo || '-',
       unidad: insumo.unidad,
-      precio: insumo.precioUnitarioEstimado !== undefined ? formatearUsd(insumo.precioUnitarioEstimado) : 'Sin precio',
+      precio: insumo.precioUnitarioEstimado !== undefined ? formatearMoneda(insumo.precioUnitarioEstimado, insumo.moneda || monedaPorDefecto) : 'Sin precio',
       accion: 'editar' as const,
       insumoPropio: insumo,
     })),
@@ -207,6 +236,7 @@ export function InsumosAppScreen({
       const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
       const insumoPropio = insumosPropiosPorErpId.get(insumo.erpId);
       const precio = insumoPropio?.precioUnitarioEstimado ?? insumo.precioUnitario;
+      const moneda = insumoPropio?.moneda || monedaPorId.get(insumo.idMonedaPrecioUnitario || 0)?.codigo || monedaPorDefecto;
 
       return {
         id: insumo.erpId,
@@ -215,7 +245,7 @@ export function InsumosAppScreen({
         codigo: insumo.codigo,
         tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
         unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
-        precio: precio !== undefined ? formatearUsd(precio) : 'Sin precio',
+        precio: precio !== undefined ? formatearMoneda(precio, moneda) : 'Sin precio',
         accion: 'editar' as const,
         insumoPropio,
         insumoErp: insumo,
@@ -226,6 +256,7 @@ export function InsumosAppScreen({
   function abrirEditarInsumoErp(insumoErp: ErpInsumo, insumoPropio?: InsumoApp) {
     const ahora = new Date().toISOString();
     const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumoErp.idUnidadMedida);
+    const moneda = monedaPorId.get(insumoErp.idMonedaPrecioUnitario || 0)?.codigo || monedaPorDefecto;
 
     setModoModal('editar');
     setInsumoEnEdicion(insumoPropio || {
@@ -238,7 +269,7 @@ export function InsumosAppScreen({
       tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : undefined,
       unidad: unidad?.codigo || String(insumoErp.idUnidadMedida || 'Unid'),
       precioUnitarioEstimado: insumoErp.precioUnitario ?? 0,
-      moneda: 'USD',
+      moneda,
       estadoVinculacion: 'vinculado_erp',
       createdAt: ahora,
       updatedAt: ahora,
@@ -274,6 +305,7 @@ export function InsumosAppScreen({
 
     const insumoErp = insumosErp.find((insumo) => insumo.erpId === insumoErpVincularId);
     const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumoErp?.idUnidadMedida);
+    const moneda = monedaPorId.get(insumoErp?.idMonedaPrecioUnitario || 0)?.codigo || insumoPropioParaVincular.moneda || monedaPorDefecto;
 
     if (!insumoErp) {
       notificar?.({ tipo: 'error', titulo: 'No se encontro el insumo ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
@@ -289,6 +321,7 @@ export function InsumosAppScreen({
       tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : insumoPropioParaVincular.tipo,
       unidad: unidad?.codigo || insumoPropioParaVincular.unidad,
       precioUnitarioEstimado: insumoErp.precioUnitario ?? insumoPropioParaVincular.precioUnitarioEstimado,
+      moneda,
       estadoVinculacion: 'vinculado_erp',
       updatedAt: new Date().toISOString(),
     });
@@ -446,11 +479,15 @@ export function InsumosAppScreen({
 
               <label>
                 Moneda
-                <input
-                  value={insumoEnEdicion.moneda || 'USD'}
-                  placeholder="USD"
+                <select
+                  value={insumoEnEdicion.moneda || monedaPorDefecto}
                   onChange={(event) => actualizarBorrador({ moneda: event.target.value })}
-                />
+                >
+                  {monedasDisponibles.length === 0 && <option value={insumoEnEdicion.moneda || monedaPorDefecto}>{insumoEnEdicion.moneda || monedaPorDefecto}</option>}
+                  {monedasDisponibles.map((moneda) => (
+                    <option key={moneda.erpId} value={moneda.codigo}>{moneda.codigo} - {moneda.nombre}</option>
+                  ))}
+                </select>
               </label>
 
               <label>
