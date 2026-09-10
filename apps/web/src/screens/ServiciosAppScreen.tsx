@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpServicio, ErpSnapshot, LaborReferencia, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerServiciosErpImportados } from '../services/api';
@@ -18,13 +18,13 @@ function normalizarCodigo(valor: string) {
     .toUpperCase();
 }
 
-interface LaboresReferenciaScreenProps {
+interface ServiciosAppScreenProps {
   sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   snapshot: ErpSnapshot;
   puedeConfigurarPlanificacion: boolean;
   guardandoLabores: boolean;
-  guardarLabor: (labor: LaborReferencia) => Promise<boolean>;
+  guardarServicio: (servicio: ServicioApp) => Promise<boolean>;
   leerNumero: (valor: string) => number;
   formatearUsd: (valor: number) => string;
   notificar?: Notificar;
@@ -38,30 +38,35 @@ type LaborTabla = {
   unidad: string;
   costo: string;
   estado: string;
-  accion: 'editar' | 'importada';
-  laborPropia?: LaborReferencia;
+  accion: 'editar';
+  laborPropia?: ServicioApp;
+  servicioErp?: ErpServicio;
 };
 
-export function LaboresReferenciaScreen({
+function crearIdLaborDesdeErp(servicio: ErpServicio) {
+  return `labor-ref-erp-${servicio.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+}
+
+export function ServiciosAppScreen({
   sesion,
   planificacion,
   snapshot,
   puedeConfigurarPlanificacion,
   guardandoLabores,
-  guardarLabor,
+  guardarServicio,
   leerNumero,
   formatearUsd,
   notificar,
-}: LaboresReferenciaScreenProps) {
-  const [laborEnEdicion, setLaborEnEdicion] = useState<LaborReferencia | null>(null);
+}: ServiciosAppScreenProps) {
+  const [laborEnEdicion, setLaborEnEdicion] = useState<ServicioApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [serviciosErp, setServiciosErp] = useState<ErpServicio[]>([]);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
-  const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<LaborReferencia | null>(null);
+  const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<ServicioApp | null>(null);
   const [servicioErpVincularId, setServicioErpVincularId] = useState('');
   const laboresOrdenadas = useMemo(() => (
-    [...planificacion.laboresReferencia].sort((a, b) => a.nombre.localeCompare(b.nombre))
-  ), [planificacion.laboresReferencia]);
+    [...planificacion.serviciosApp].sort((a, b) => a.nombre.localeCompare(b.nombre))
+  ), [planificacion.serviciosApp]);
   const unidadesDisponibles = useMemo(() => (
     [...snapshot.unidadesMedida]
       .filter((unidad) => unidad.activo)
@@ -84,12 +89,12 @@ export function LaboresReferenciaScreen({
     cargarServiciosErp();
   }, [sesion.token]);
 
-  function crearBorradorLabor(): LaborReferencia {
+  function crearBorradorLabor(): ServicioApp {
     const ahora = new Date().toISOString();
 
     return {
       id: `labor-ref-${Date.now()}`,
-      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.laboresReferencia[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
       codigo: '',
       nombre: '',
       unidadSugerida: unidadesDisponibles.find((unidad) => unidad.codigo === 'Ha')?.codigo || unidadesDisponibles[0]?.codigo || 'Ha',
@@ -107,12 +112,12 @@ export function LaboresReferenciaScreen({
     setLaborEnEdicion(crearBorradorLabor());
   }
 
-  function abrirEditarLabor(labor: LaborReferencia) {
+  function abrirEditarLabor(labor: ServicioApp) {
     setModoModal('editar');
     setLaborEnEdicion({ ...labor });
   }
 
-  function actualizarBorrador(cambios: Partial<LaborReferencia>) {
+  function actualizarBorrador(cambios: Partial<ServicioApp>) {
     setLaborEnEdicion((actual) => {
       if (!actual) {
         return actual;
@@ -138,7 +143,7 @@ export function LaboresReferenciaScreen({
     }
 
     const nombre = limpiarTextoVisible(laborEnEdicion.nombre);
-    const laborPreparada: LaborReferencia = {
+    const laborPreparada: ServicioApp = {
       ...laborEnEdicion,
       codigo: normalizarCodigo(laborEnEdicion.codigo || nombre),
       nombre,
@@ -148,7 +153,7 @@ export function LaboresReferenciaScreen({
       estadoVinculacion: laborEnEdicion.servicioErpId ? 'vinculado_erp' : laborEnEdicion.estadoVinculacion,
       origen: laborEnEdicion.servicioErpId ? 'erp' : laborEnEdicion.origen,
     };
-    const guardado = await guardarLabor(laborPreparada);
+    const guardado = await guardarServicio(laborPreparada);
 
     if (guardado) {
       setLaborEnEdicion(null);
@@ -163,6 +168,9 @@ export function LaboresReferenciaScreen({
     () => new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter((id): id is string => Boolean(id))),
     [laboresOrdenadas],
   );
+  const laboresPorServicioErpId = useMemo(() => (
+    new Map(laboresOrdenadas.filter((labor) => labor.servicioErpId).map((labor) => [labor.servicioErpId, labor]))
+  ), [laboresOrdenadas]);
   const serviciosErpDisponiblesParaVincular = useMemo(() => serviciosErp
     .filter((servicio) => !serviciosVinculados.has(servicio.erpId))
     .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es')), [serviciosErp, serviciosVinculados]);
@@ -190,21 +198,54 @@ export function LaboresReferenciaScreen({
     })),
     ...serviciosErp.map((servicio) => {
       const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
+      const laborPropia = laboresPorServicioErpId.get(servicio.erpId);
+      const costo = laborPropia?.costoUnitarioSugerido ?? servicio.precioUnitario;
 
       return {
         id: servicio.erpId,
         nombre: servicio.descripcion,
-        detalle: `${serviciosVinculados.has(servicio.erpId) ? 'Vinculada' : 'Disponible'} ERP`,
+        detalle: `${laborPropia ? 'Con costo Agro App' : 'Disponible'} ERP`,
         codigo: servicio.codigo,
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
-        costo: servicio.precioUnitario !== undefined ? formatearUsd(servicio.precioUnitario) : 'Sin costo',
+        costo: costo !== undefined ? formatearUsd(costo) : 'Sin costo',
         estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
-        accion: 'importada' as const,
+        accion: 'editar' as const,
+        laborPropia,
+        servicioErp: servicio,
       };
     }),
   ];
 
-  function abrirVinculacion(labor: LaborReferencia) {
+  function abrirEditarServicioErp(servicioErp: ErpServicio, laborPropia?: ServicioApp) {
+    const ahora = new Date().toISOString();
+    const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicioErp.idUnidadMedida);
+
+    setModoModal('editar');
+    setLaborEnEdicion(laborPropia || {
+      id: crearIdLaborDesdeErp(servicioErp),
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
+      empresaErpId: 'global',
+      servicioErpId: servicioErp.erpId,
+      idServicio: servicioErp.idServicio,
+      idTipoServicio: servicioErp.idTipoServicio,
+      codigo: normalizarCodigo(servicioErp.codigo || servicioErp.descripcion),
+      nombre: limpiarTextoVisible(servicioErp.descripcion),
+      descripcionAbreviada: servicioErp.descripcionAbreviada,
+      idUnidadMedida: servicioErp.idUnidadMedida,
+      idMoneda: servicioErp.idMoneda,
+      unidadSugerida: unidad?.codigo || String(servicioErp.idUnidadMedida || 'Ha'),
+      costoUnitarioSugerido: servicioErp.precioUnitario ?? 0,
+      imputaDosis: servicioErp.imputaDosis,
+      estadoVinculacion: 'vinculado_erp',
+      activo: servicioErp.activo,
+      origen: 'erp',
+      fechaUltimaActualizacionErp: servicioErp.actualizadoEn,
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
+  }
+
+  function abrirVinculacion(labor: ServicioApp) {
     if (labor.estadoVinculacion !== 'provisorio' || labor.servicioErpId) {
       notificar?.({ tipo: 'info', titulo: 'Labor no vinculable', mensaje: 'Solo se pueden vincular labores propias en estado provisorio.' });
       return;
@@ -239,7 +280,7 @@ export function LaboresReferenciaScreen({
       return;
     }
 
-    const guardado = await guardarLabor({
+    const guardado = await guardarServicio({
       ...laborPropiaParaVincular,
       empresaErpId: 'global',
       servicioErpId: servicioErp.erpId,
@@ -316,13 +357,19 @@ export function LaboresReferenciaScreen({
               render: (fila) => fila.accion === 'editar'
                 ? (
                   <div className="button-row table-actions">
-                    <button className="small" onClick={() => fila.laborPropia && abrirEditarLabor(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                    <button
+                      className="small"
+                      onClick={() => fila.servicioErp ? abrirEditarServicioErp(fila.servicioErp, fila.laborPropia) : fila.laborPropia && abrirEditarLabor(fila.laborPropia)}
+                      disabled={!puedeConfigurarPlanificacion}
+                    >
+                      {fila.servicioErp ? 'Editar costo' : 'Editar'}
+                    </button>
                     {fila.laborPropia?.estadoVinculacion === 'provisorio' && !fila.laborPropia.servicioErpId && (
                       <button className="small" type="button" onClick={() => fila.laborPropia && abrirVinculacion(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
                     )}
                   </div>
                 )
-                : <span className="hint">Importada</span>,
+                : null,
             },
           ]}
         />
@@ -344,6 +391,7 @@ export function LaboresReferenciaScreen({
                 Nombre
                 <input
                   value={laborEnEdicion.nombre}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
                   placeholder="Ej. Pulverizacion terrestre"
                   onChange={(event) => actualizarBorrador({ nombre: event.target.value })}
                 />
@@ -353,6 +401,7 @@ export function LaboresReferenciaScreen({
                 Codigo
                 <input
                   value={laborEnEdicion.codigo}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
                   placeholder="Ej. PULT"
                   onChange={(event) => actualizarBorrador({ codigo: event.target.value })}
                 />
@@ -362,6 +411,7 @@ export function LaboresReferenciaScreen({
                 Unidad
                 <select
                   value={laborEnEdicion.unidadSugerida}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
                   onChange={(event) => actualizarBorrador({ unidadSugerida: event.target.value })}
                 >
                   {unidadesDisponibles.length === 0 && <option value={laborEnEdicion.unidadSugerida}>{laborEnEdicion.unidadSugerida}</option>}
@@ -372,7 +422,7 @@ export function LaboresReferenciaScreen({
               </label>
 
               <label>
-                Costo sugerido
+                Costo propio
                 <input
                   type="number"
                   min="0"
@@ -386,6 +436,7 @@ export function LaboresReferenciaScreen({
                 Descripcion abreviada
                 <input
                   value={laborEnEdicion.descripcionAbreviada || ''}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
                   placeholder="Descripcion visible para administradores"
                   onChange={(event) => actualizarBorrador({ descripcionAbreviada: event.target.value })}
                 />
@@ -393,7 +444,7 @@ export function LaboresReferenciaScreen({
 
               <label>
                 Origen
-                <select value={laborEnEdicion.origen} onChange={(event) => actualizarBorrador({ origen: event.target.value as LaborReferencia['origen'] })}>
+                <select value={laborEnEdicion.origen} disabled={Boolean(laborEnEdicion.servicioErpId)} onChange={(event) => actualizarBorrador({ origen: event.target.value as ServicioApp['origen'] })}>
                   <option value="provisorio">Provisorio</option>
                   <option value="semilla">Semilla</option>
                   <option value="erp">ERP</option>
@@ -402,7 +453,7 @@ export function LaboresReferenciaScreen({
 
               <label>
                 Estado
-                <select value={laborEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as LaborReferencia['estadoVinculacion'] })}>
+                <select value={laborEnEdicion.estadoVinculacion} disabled={Boolean(laborEnEdicion.servicioErpId)} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ServicioApp['estadoVinculacion'] })}>
                   <option value="provisorio">Provisorio</option>
                   <option value="vinculado_erp">Vinculado ERP</option>
                   <option value="archivado">Archivado</option>
@@ -413,6 +464,7 @@ export function LaboresReferenciaScreen({
                 <input
                   type="checkbox"
                   checked={laborEnEdicion.activo}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
                   onChange={(event) => actualizarBorrador({ activo: event.target.checked })}
                 />
                 Activo

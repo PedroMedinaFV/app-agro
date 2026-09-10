@@ -5,7 +5,7 @@ import { guardarActividadAppPersistida } from '../actividades/actividadesAppPris
 import { guardarCampoAppPersistido } from '../campos/camposAppPrisma';
 import { guardarEspecieAppPersistida } from '../especies/especiesAppPrisma';
 import { guardarInsumoAppPersistido } from '../insumos/insumosAppPrisma';
-import { guardarLaborReferenciaPersistida } from '../labores/laboresReferenciaPrisma';
+import { guardarServicioAppPersistido } from '../servicios/serviciosAppPrisma';
 import { guardarLoteAppPersistido } from '../lotes/lotesAppPrisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 import { guardarZonaAppPersistida } from '../zonas/zonasAppPrisma';
@@ -231,7 +231,7 @@ export async function generarSugerenciasVinculacionErp(clienteId: string, usuari
     prisma.especieApp.findMany({ where: { clienteId, estadoVinculacion: 'provisorio', especieErpId: null } }),
     prisma.actividadApp.findMany({ where: { clienteId, estadoVinculacion: 'provisorio', actividadErpId: null }, include: { especieApp: true } }),
     prisma.insumoApp.findMany({ where: { clienteId, estadoVinculacion: 'provisorio', insumoErpId: null } }),
-    prisma.laborReferencia.findMany({ where: { clienteId, estadoVinculacion: 'provisorio', servicioErpId: null } }),
+    prisma.servicioApp.findMany({ where: { clienteId, estadoVinculacion: 'provisorio', servicioErpId: null } }),
     prisma.erpZona.findMany({ where: { empresaErpId: 'global' } }),
     prisma.erpCampo.findMany(),
     prisma.erpLote.findMany(),
@@ -248,7 +248,7 @@ export async function generarSugerenciasVinculacionErp(clienteId: string, usuari
     especies: new Set((await prisma.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } }, select: { especieErpId: true } })).map((item) => item.especieErpId).filter(Boolean) as string[]),
     actividades: new Set((await prisma.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } }, select: { actividadErpId: true } })).map((item) => item.actividadErpId).filter(Boolean) as string[]),
     insumos: new Set((await prisma.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } }, select: { insumoErpId: true } })).map((item) => item.insumoErpId).filter(Boolean) as string[]),
-    labores: new Set((await prisma.laborReferencia.findMany({ where: { clienteId, servicioErpId: { not: null } }, select: { servicioErpId: true } })).map((item) => item.servicioErpId).filter(Boolean) as string[]),
+    labores: new Set((await prisma.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } }, select: { servicioErpId: true } })).map((item) => item.servicioErpId).filter(Boolean) as string[]),
   };
 
   const sugerencias: SugerenciaDetectada[] = [];
@@ -543,14 +543,14 @@ async function aplicarVinculacionSugerida(sugerencia: Awaited<ReturnType<typeof 
 
   if (sugerencia.entidadTipo === 'labores') {
     const [labor, servicioErp] = await Promise.all([
-      prisma.laborReferencia.findUnique({ where: { id: sugerencia.entidadPlanificacionId } }),
+      prisma.servicioApp.findUnique({ where: { id: sugerencia.entidadPlanificacionId } }),
       prisma.erpServicio.findUnique({ where: { erpId: sugerencia.entidadErpId } }),
     ]);
     if (!labor) throw crearErrorValidacion('La labor provisoria ya no existe.', 404);
     if (!servicioErp) throw crearErrorValidacion('El servicio ERP sugerido ya no existe en cache.', 404);
 
-    await guardarLaborReferenciaPersistida(labor.id, {
-      labor: {
+    await guardarServicioAppPersistido(labor.id, {
+      servicio: {
         id: labor.id,
         clienteId: labor.clienteId,
         empresaErpId: servicioErp.empresaErpId,

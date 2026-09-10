@@ -19,7 +19,7 @@ interface ProtocolosScreenProps {
   actualizarProtocolos: (updater: (protocolo: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) => void;
   agregarEtapaProtocolo: () => void;
   actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
-  agregarLabor: (etapaId: string, laborReferenciaId?: string) => void;
+  agregarLabor: (etapaId: string, servicioAppId?: string) => void;
   agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
   formatearUsd: (valor: number) => string;
   leerNumero: (valor: string) => number;

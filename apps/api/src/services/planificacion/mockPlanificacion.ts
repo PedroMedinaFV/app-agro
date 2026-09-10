@@ -40,7 +40,7 @@ const estadiosReferenciaDemo = [
   { id: 'estadio-semilla-137', idEstadio: 137, codigo: 'LE2', nombre: 'Labores Especiales 2', ordenCronologico: 23, activo: true, origen: 'semilla' as const },
 ].sort((a, b) => a.ordenCronologico - b.ordenCronologico || a.idEstadio - b.idEstadio);
 
-function crearLaboresReferenciaDemo(clienteId: string, ahora: string) {
+function crearserviciosAppDemo(clienteId: string, ahora: string) {
   return [
     { id: 'labor-ref-pulverizacion', clienteId, codigo: 'PULV', nombre: 'Pulverizacion', unidadSugerida: 'ha', costoUnitarioSugerido: 18, estadoVinculacion: 'provisorio' as const, activo: true, origen: 'semilla' as const, createdAt: ahora, updatedAt: ahora },
     { id: 'labor-ref-siembra', clienteId, codigo: 'SIEM', nombre: 'Siembra contratista', unidadSugerida: 'ha', costoUnitarioSugerido: 62, estadoVinculacion: 'provisorio' as const, activo: true, origen: 'semilla' as const, createdAt: ahora, updatedAt: ahora },
@@ -182,7 +182,7 @@ export function obtenerProtocolosDemo(clienteId = 'cliente-demo'): ProtocolosSna
               {
                 id: 'labor-pulverizacion-barbecho',
                 etapaId: 'etapa-barbecho',
-                laborReferenciaId: 'labor-ref-pulverizacion',
+                servicioAppId: 'labor-ref-pulverizacion',
                 indiceAplicacion: 1,
                 nombre: 'Pulverizacion',
                 unidad: 'ha',
@@ -222,7 +222,7 @@ export function obtenerProtocolosDemo(clienteId = 'cliente-demo'): ProtocolosSna
               {
                 id: 'labor-siembra',
                 etapaId: 'etapa-siembra',
-                laborReferenciaId: 'labor-ref-siembra',
+                servicioAppId: 'labor-ref-siembra',
                 indiceAplicacion: 1,
                 nombre: 'Siembra contratista',
                 unidad: 'ha',
@@ -460,7 +460,7 @@ export function obtenerPlanificacionDemo(clienteId = 'cliente-demo'): Planificac
       },
     ],
     estadiosReferencia: estadiosReferenciaDemo,
-    laboresReferencia: crearLaboresReferenciaDemo(clienteId, ahora),
+    serviciosApp: crearserviciosAppDemo(clienteId, ahora),
     protocolos: [
       {
         id: 'protocolo-girasol-media',

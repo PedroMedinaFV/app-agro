@@ -35,8 +35,8 @@ import {
   GuardarGastosComercialesReferenciaResponse,
   GuardarInsumoAppRequest,
   GuardarInsumoAppResponse,
-  GuardarLaborReferenciaRequest,
-  GuardarLaborReferenciaResponse,
+  GuardarServicioAppRequest,
+  GuardarServicioAppResponse,
   GuardarPlanificacionRequest,
   GuardarPlanificacionResponse,
   GuardarPrecioReferenciaRequest,
@@ -45,7 +45,7 @@ import {
   GuardarProtocoloResponse,
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
-  LaborReferencia,
+  ServicioApp,
   ActividadApp,
   EspecieApp,
   InsumoApp,
@@ -328,20 +328,20 @@ export async function guardarDestinoVenta(
   }, token);
 }
 
-export type LaboresReferenciaResponse = {
-  labores: LaborReferencia[];
+export type ServiciosAppResponse = {
+  servicios: ServicioApp[];
 };
 
-export async function obtenerLaboresReferencia(token?: string): Promise<LaboresReferenciaResponse> {
-  return request<LaboresReferenciaResponse>('/labores-referencia', {}, token);
+export async function obtenerServiciosApp(token?: string): Promise<ServiciosAppResponse> {
+  return request<ServiciosAppResponse>('/servicios-app', {}, token);
 }
 
-export async function guardarLaborReferencia(
+export async function guardarServicioApp(
   id: string,
-  datos: GuardarLaborReferenciaRequest,
+  datos: GuardarServicioAppRequest,
   token?: string,
-): Promise<GuardarLaborReferenciaResponse> {
-  return request<GuardarLaborReferenciaResponse>(`/labores-referencia/${id}`, {
+): Promise<GuardarServicioAppResponse> {
+  return request<GuardarServicioAppResponse>(`/servicios-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);

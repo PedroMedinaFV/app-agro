@@ -41,7 +41,7 @@ const planificacionDemo: PlanificacionSnapshot = {
   estadiosReferencia: [
     { id: 'estadio-semilla-109', idEstadio: 109, codigo: 'Si', nombre: 'Siembra', ordenCronologico: 9, activo: true, origen: 'semilla' },
   ],
-  laboresReferencia: [
+  serviciosApp: [
     { id: 'labor-ref-siembra', clienteId: 'cliente-demo', codigo: 'SIEM', nombre: 'Siembra contratista', unidadSugerida: 'ha', costoUnitarioSugerido: 62, estadoVinculacion: 'provisorio', activo: true, origen: 'semilla', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ],
   protocolos: [

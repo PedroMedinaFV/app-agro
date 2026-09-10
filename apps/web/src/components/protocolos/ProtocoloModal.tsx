@@ -16,7 +16,7 @@ interface ProtocoloModalProps {
   actualizarProtocolos: (updater: (protocolo: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) => void;
   agregarEtapaProtocolo: () => void;
   actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
-  agregarLabor: (etapaId: string, laborReferenciaId?: string) => void;
+  agregarLabor: (etapaId: string, servicioAppId?: string) => void;
   agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
   formatearUsd: (valor: number) => string;
   leerNumero: (valor: string) => number;
@@ -39,7 +39,7 @@ export function ProtocoloModal({
   formatearUsd,
   leerNumero,
 }: ProtocoloModalProps) {
-  const laboresDisponibles = [...planificacion.laboresReferencia]
+  const laboresDisponibles = [...planificacion.serviciosApp]
     .filter((labor) => labor.activo)
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   const insumosDisponibles = [...(planificacion.insumosApp || [])]
@@ -262,21 +262,21 @@ export function ProtocoloModal({
                     {etapa.labores.map((labor) => (
                       <div className="protocol-item" key={labor.id}>
                         <select
-                          value={labor.laborReferenciaId || ''}
+                          value={labor.servicioAppId || ''}
                           onChange={(event) => {
-                            const laborReferencia = laboresDisponibles.find((item) => item.id === event.target.value);
-                            if (!laborReferencia) {
+                            const ServicioApp = laboresDisponibles.find((item) => item.id === event.target.value);
+                            if (!ServicioApp) {
                               return;
                             }
 
-                            const costoUnitario = laborReferencia.costoUnitarioSugerido || 0;
+                            const costoUnitario = ServicioApp.costoUnitarioSugerido || 0;
                             actualizarEtapa(etapa.id, {
                               labores: etapa.labores.map((item) => item.id === labor.id ? {
                                 ...item,
-                                laborReferenciaId: laborReferencia.id,
-                                nombre: laborReferencia.nombre,
-                                descripcion: laborReferencia.descripcionAbreviada,
-                                unidad: laborReferencia.unidadSugerida,
+                                servicioAppId: ServicioApp.id,
+                                nombre: ServicioApp.nombre,
+                                descripcion: ServicioApp.descripcionAbreviada,
+                                unidad: ServicioApp.unidadSugerida,
                                 costoUnitario,
                                 costoPorHa: calcularCostoLaborProtocolo({ ...item, costoUnitario }),
                               } : item),
@@ -286,8 +286,8 @@ export function ProtocoloModal({
                           title="Labor del padron maestro"
                         >
                           <option value="">{labor.nombre || 'Seleccionar labor'}</option>
-                          {laboresDisponibles.map((laborReferencia) => (
-                            <option key={laborReferencia.id} value={laborReferencia.id}>{laborReferencia.nombre}</option>
+                          {laboresDisponibles.map((ServicioApp) => (
+                            <option key={ServicioApp.id} value={ServicioApp.id}>{ServicioApp.nombre}</option>
                           ))}
                         </select>
                         <input

@@ -61,7 +61,7 @@ Las especies y actividades propias siguen el mismo criterio global. Una activida
 
 El padron operativo de actividades puede enriquecerse con atributos propios de Agro App que no forman parte obligatoria de la cache cruda del ERP: `tipoGrano` (`fina` o `gruesa`), `tipoCultivo` (`primera` o `segunda`) y `epocaSiembra` (`invierno` o `verano`). Estos datos ayudan a clasificar la actividad para planificacion agricola, filtros, reportes y reglas futuras, pero no modifican el dato importado desde ALBOR. La edicion debe hacerse sobre `ActividadApp`, pasar por backend, validar valores permitidos y quedar auditada.
 
-Los insumos y labores/servicios tambien se administran como padrones operativos propios comparados contra la cache ERP. En web se muestran los registros sincronizados de `Padrones/Insumos` y `Padrones/Servicios` junto con los registros creados en Agro App. La creacion y edicion de registros propios queda auditada; la vinculacion con ERP queda preparada como accion posterior confirmada por usuario autorizado.
+Los insumos y servicios tambien se administran como padrones operativos propios comparados contra la cache ERP. En web, los servicios se muestran al usuario como labores porque representan trabajos productivos. Tecnica y persistentemente se guardan como `ServicioApp`, vinculados a `ErpServicio` mediante `servicioErpId`. La creacion y edicion de registros propios queda auditada; la vinculacion con ERP queda preparada como accion posterior confirmada por usuario autorizado.
 
 Las pantallas de precios y gastos comerciales deben consumir actividades reales desde la base de datos, combinando actividades propias de Agro App y actividades sincronizadas desde ERP. Como precios y gastos guardan `actividadAppId`, si el usuario selecciona una actividad ERP que todavia no tiene registro operativo en Agro App, la web crea automaticamente una `ActividadApp` vinculada y luego guarda el precio o gasto. Esa creacion pasa por backend y queda auditada.
 
@@ -318,7 +318,7 @@ Estado UX actual:
 - web cuenta con pantalla `Gastos` para administrar gastos comerciales de referencia por campania;
 - web cuenta con pantalla `Padrones` para administrar el maestro de conceptos de gastos comerciales;
 - web cuenta con pantalla `Padrones > Destinos` para administrar el catalogo maestro de destinos de venta;
-- web cuenta con pantalla `Padrones > Labores` para administrar labores de referencia y altas provisorias;
+- web cuenta con pantalla `Padrones > Labores` para administrar `ServicioApp` visibles como labores y altas provisorias;
 - web cuenta con pantalla `Padrones > Insumos` para administrar insumos operativos propios y altas provisorias;
 - la pantalla muestra la tabla de gastos como vista principal;
 - la pantalla permite crear gastos desde un modal abierto por `Nuevo gasto`, con accion final `Guardar`;
@@ -651,7 +651,7 @@ La unidad sugerida de la labor se selecciona desde `Padrones/UnidadesMedida` y s
 
 Campos sugeridos:
 
-- `laborReferenciaId`
+- `servicioAppId`
 - `servicioErpId` opcional
 - `nombre`
 - `descripcion`
@@ -799,7 +799,7 @@ Tablas principales agregadas:
 - `ActividadApp`
 - `InsumoApp`
 - `EstadioFenologicoReferencia`
-- `LaborReferencia`
+- `ServicioApp`
 - `ProtocoloProductivo`
 - `ProtocoloEtapa`
 - `ProtocoloLabor`
@@ -844,6 +844,18 @@ Las actividades del ERP se pueden complementar desde Agro App con:
 - epoca de siembra: invierno o verano.
 
 Cuando una actividad viene del ERP, estos atributos se editan desde la pantalla de actividades y se guardan en `ActividadApp` vinculada a `ErpActividad`. La identidad del padron ERP no se edita desde Agro App; solo se cargan atributos propios para mejorar planificacion y filtros.
+
+## Precios propios de insumos y labores
+
+Los insumos y labores pueden venir desde ERP con precio/costo de referencia. Agro App permite que un usuario autorizado modifique ese valor para usarlo en protocolos y calculos de planificacion.
+
+Reglas:
+
+- el precio/costo ERP se usa como valor inicial;
+- al editarlo, se guarda un valor propio en `InsumoApp` o `ServicioApp`;
+- no se modifica la cache `ErpInsumo` ni `ErpServicio`;
+- los protocolos ya cerrados o planificaciones cerradas conservan los valores copiados originalmente;
+- cada cambio debe quedar auditado.
 
 ## Relacion entre planificacion y protocolo
 

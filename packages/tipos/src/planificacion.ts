@@ -185,7 +185,7 @@ export type EstadioFenologicoReferencia = {
   origen: 'semilla' | 'erp';
 };
 
-export type LaborReferencia = {
+export type ServicioApp = {
   id: string;
   clienteId: string;
   empresaErpId?: string;
@@ -231,7 +231,7 @@ export type ProtocoloProductivoResumen = {
 export type ProtocoloLabor = {
   id: string;
   etapaId: string;
-  laborReferenciaId?: string;
+  servicioAppId?: string;
   indiceAplicacion: number;
   nombre: string;
   descripcion?: string;
@@ -337,7 +337,7 @@ export type PlanificacionSnapshot = {
   conceptosGastosComerciales: ConceptoGastoComercial[];
   gastosComercialesReferencia: GastosComercialesReferencia[];
   estadiosReferencia: EstadioFenologicoReferencia[];
-  laboresReferencia: LaborReferencia[];
+  serviciosApp: ServicioApp[];
   protocolos: ProtocoloProductivoResumen[];
   planificaciones: PlanificacionAgricola[];
   sincronizadoEn: string;
@@ -403,14 +403,14 @@ export type GuardarConceptoGastoComercialResponse = {
   mensaje: string;
 };
 
-export type GuardarLaborReferenciaRequest = {
-  labor: LaborReferencia;
+export type GuardarServicioAppRequest = {
+  servicio: ServicioApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarLaborReferenciaResponse = {
-  labor: LaborReferencia;
+export type GuardarServicioAppResponse = {
+  servicio: ServicioApp;
   auditado: boolean;
   mensaje: string;
 };

@@ -26,7 +26,7 @@ async function main() {
     prisma.destinoVentaReferencia.deleteMany(),
     prisma.conceptoGastoComercial.deleteMany(),
 
-    prisma.laborReferencia.deleteMany(),
+    prisma.servicioApp.deleteMany(),
     prisma.insumoApp.deleteMany(),
     prisma.actividadApp.deleteMany(),
     prisma.especieApp.deleteMany(),

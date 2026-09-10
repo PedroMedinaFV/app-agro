@@ -131,7 +131,7 @@ function mapearLabor(labor: ProtocoloPrisma['etapas'][number]['labores'][number]
   return {
     id: labor.id,
     etapaId: labor.etapaId,
-    laborReferenciaId: labor.laborReferenciaId || undefined,
+    servicioAppId: labor.servicioAppId || undefined,
     indiceAplicacion: labor.indiceAplicacion,
     nombre: labor.nombre,
     descripcion: labor.descripcion || undefined,
@@ -218,7 +218,7 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
         labores: {
           create: etapa.labores.map((labor) => ({
             id: labor.id,
-            laborReferenciaId: labor.laborReferenciaId,
+            servicioAppId: labor.servicioAppId,
             indiceAplicacion: labor.indiceAplicacion,
             nombre: labor.nombre,
             descripcion: labor.descripcion,

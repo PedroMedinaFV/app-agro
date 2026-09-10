@@ -11,7 +11,7 @@ import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
 import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
-import { LaboresReferenciaScreen } from './screens/LaboresReferenciaScreen';
+import { ServiciosAppScreen } from './screens/ServiciosAppScreen';
 import { InsumosAppScreen } from './screens/InsumosAppScreen';
 import { ZonasScreen } from './screens/ZonasScreen';
 import { EspeciesAppScreen } from './screens/EspeciesAppScreen';
@@ -315,13 +315,13 @@ export function App() {
       )}
 
       {vista === 'padrones-labores' && (
-        <LaboresReferenciaScreen
+        <ServiciosAppScreen
           sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           guardandoLabores={planificacionDemo.guardandoLabores}
-          guardarLabor={planificacionDemo.guardarLaborReferenciaDesdeModal}
+          guardarServicio={planificacionDemo.guardarServicioAppDesdeModal}
           leerNumero={leerNumero}
           formatearUsd={formatearUsd}
           notificar={toast.notify}

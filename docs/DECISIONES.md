@@ -178,7 +178,7 @@ Los padrones operativos propios de Agro App se nombran con sufijo `App`: `ZonaAp
 
 Las tablas `Erp*` se mantienen como cache tecnica del ERP y no deben editarse desde la aplicacion. Toda personalizacion, dato provisorio o enriquecimiento funcional debe vivir en las entidades `*App` y vincularse al ERP mediante los campos `*ErpId`.
 
-El snapshot operativo de planificacion debe priorizar datos reales. Si existen padrones ERP sincronizados, el backend los materializa como registros propios vinculados en las tablas operativas de Agro App antes de responder. Asi la web no trabaja con mocks ni con IDs virtuales: trabaja con `CampoApp`, `LoteApp`, `ActividadApp`, `EspecieApp`, `InsumoApp`, `LaborReferencia` y `ZonaApp` persistidos, aptos para relaciones, validaciones y auditoria. El mock queda reservado para desarrollo cuando no hay base/cache disponible.
+El snapshot operativo de planificacion debe priorizar datos reales. Si existen padrones ERP sincronizados, el backend los materializa como registros propios vinculados en las tablas operativas de Agro App antes de responder. Asi la web no trabaja con mocks ni con IDs virtuales: trabaja con `CampoApp`, `LoteApp`, `ActividadApp`, `EspecieApp`, `InsumoApp`, `ServicioApp` y `ZonaApp` persistidos, aptos para relaciones, validaciones y auditoria. El mock queda reservado para desarrollo cuando no hay base/cache disponible.
 
 En lotes provisorios, la web permite copiar un lote propio existente para acelerar altas repetitivas. La copia conserva campo y superficies, pero se guarda como un registro nuevo con estado `provisorio` y sin `loteErpId`; la vinculacion ERP sigue siendo una accion posterior, propuesta y auditada.
 
@@ -227,16 +227,16 @@ Esto incluye, como minimo:
 - insumos App;
 - destinos de venta;
 - conceptos de gastos comerciales;
-- labores de referencia;
+- servicios App, visibles para el usuario como labores;
 - estadios fenologicos de referencia cuando se administren localmente.
 
 Cada pantalla debe permitir listar, crear, editar, activar/desactivar y vincular contra ERP cuando corresponda. Las altas y modificaciones deben persistirse desde backend, validar `clienteId`, aplicar permisos declarativos y registrar auditoria.
 
 Las pantallas no deben reemplazar la sincronizacion ERP: son herramientas para administrar datos propios, datos provisorios y reglas internas que permiten operar aunque el ERP todavia no tenga todo cargado.
 
-## Vinculacion de labores con ERP
+## Vinculacion de servicios/labores con ERP
 
-Las labores propias de Agro App se sincronizaran con servicios del ERP desde `Padrones/Servicios`.
+Las labores propias de Agro App se guardan tecnicamente como `ServicioApp`, porque el ERP expone esa informacion como servicios en `Padrones/Servicios`. En la interfaz se mantiene el termino "labores" cuando resulte mas natural para el usuario agricola.
 
 Proceso acordado:
 
@@ -246,7 +246,7 @@ Proceso acordado:
 - El sistema debe generar una sugerencia de vinculacion y una notificacion para usuarios autorizados.
 - La sugerencia debe mostrar labor Agro App, servicio ERP, empresa ERP, codigo, descripcion, unidad, precio y nivel de confianza.
 - La vinculacion se confirma o rechaza manualmente.
-- Al confirmar, se guarda `servicioErpId` y metadatos ERP en la labor, se cambia el estado a `vinculado_erp` y se audita el cambio.
+- Al confirmar, se guarda `servicioErpId` y metadatos ERP en `ServicioApp`, se cambia el estado a `vinculado_erp` y se audita el cambio.
 - Al rechazar, la sugerencia queda cerrada y la labor sigue como provisoria.
 - Protocolos y planificaciones ya cerradas conservan los valores copiados originalmente.
 
@@ -282,13 +282,13 @@ El padron maestro de destinos no expone prioridad. Si mas adelante se necesita r
 
 Tercer padron implementado:
 
-- labores de referencia;
+- servicios App, visibles como labores;
 - pantalla web `Padrones > Labores`;
 - alta/edicion en modal;
 - baja logica mediante campo `activo`;
 - estados `provisorio`, `vinculado_erp` y `archivado`;
 - origen `provisorio`, `semilla` o `erp`;
-- persistencia backend en `/labores-referencia/:id`;
+- persistencia backend en `/servicios-app/:id`;
 - auditoria obligatoria por backend;
 - mapper ERP preparado para `Padrones/Servicios`.
 
@@ -299,6 +299,19 @@ Las actividades sincronizadas desde ERP pueden tener atributos propios de Agro A
 Estos campos no modifican el ERP. Se guardan en `ActividadApp` vinculada por `actividadErpId`, con nombre, codigo y especie tomados del ERP, y atributos editables desde web. Esto permite enriquecer el padron importado para planificacion, protocolos, precios y gastos sin romper la cache `ErpActividad`.
 
 Toda edicion de estos atributos debe pasar por backend, validar permiso `planificacion:configurar` y registrar auditoria.
+
+## Precios propios en insumos y labores
+
+Los precios/costos que vienen desde ERP para insumos y servicios son una referencia inicial, no el valor definitivo de Agro App.
+
+Cuando el usuario autorizado edita el precio de un insumo ERP o el costo de una labor/servicio ERP, el sistema materializa o actualiza el registro propio vinculado:
+
+- `InsumoApp` vinculado por `insumoErpId`;
+- `ServicioApp` vinculada por `servicioErpId`.
+
+La cache `ErpInsumo` y `ErpServicio` no se modifica. El valor editable vive en Agro App para poder ajustar supuestos comerciales, costos estimados y protocolos sin alterar la informacion importada desde ALBOR.
+
+Toda edicion debe pasar por backend, validar permisos, cliente y vinculacion ERP, y registrar auditoria con valores anteriores y nuevos.
 
 ## Limpieza de modelo legacy
 

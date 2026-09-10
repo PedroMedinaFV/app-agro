@@ -616,7 +616,7 @@ Campos sugeridos:
 
 - `id`
 - `etapaId`
-- `laborReferenciaId` opcional
+- `servicioAppId` opcional
 - `indiceAplicacion`
 - `nombre`
 - `descripcion`
@@ -629,7 +629,7 @@ Campos sugeridos:
 Reglas:
 
 - La labor debe seleccionarse desde un padron cuando sea posible.
-- Al seleccionar una labor, el protocolo copia `laborReferenciaId`, `nombre`, `descripcion`, `unidad` y `costoUnitario` sugerido.
+- Al seleccionar una labor, el protocolo copia `servicioAppId`, `nombre`, `descripcion`, `unidad` y `costoUnitario` sugerido.
 - La copia queda editable dentro del protocolo para reflejar condiciones puntuales sin modificar el padron maestro.
 - Cambios posteriores en el padron de labores no deben modificar protocolos existentes sin accion explicita.
 - `indiceAplicacion` debe ser un numero decimal entre `0` y `1`.
@@ -671,7 +671,7 @@ Endpoint MVP de administracion:
 
 Toda alta o modificacion de `InsumoApp` debe auditarse con usuario, origen, motivo, valores previos y valores nuevos.
 
-## LaborReferencia
+## ServicioApp
 
 Padron de labores para seleccionar trabajos en protocolos.
 

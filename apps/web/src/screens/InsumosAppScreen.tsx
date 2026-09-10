@@ -38,9 +38,14 @@ type InsumoTabla = {
   tipo: string;
   unidad: string;
   precio: string;
-  accion: 'editar' | 'importado';
+  accion: 'editar';
   insumoPropio?: InsumoApp;
+  insumoErp?: ErpInsumo;
 };
+
+function crearIdInsumoAppDesdeErp(insumo: ErpInsumo) {
+  return `insumo-app-erp-${insumo.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+}
 
 export function InsumosAppScreen({
   sesion,
@@ -170,6 +175,9 @@ export function InsumosAppScreen({
     () => new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter((id): id is string => Boolean(id))),
     [insumosOrdenados],
   );
+  const insumosPropiosPorErpId = useMemo(() => (
+    new Map(insumosOrdenados.filter((insumo) => insumo.insumoErpId).map((insumo) => [insumo.insumoErpId, insumo]))
+  ), [insumosOrdenados]);
   const insumosErpDisponiblesParaVincular = useMemo(() => insumosErp
     .filter((insumo) => !filtroPropiosErp.has(insumo.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [filtroPropiosErp, insumosErp]);
@@ -197,19 +205,45 @@ export function InsumosAppScreen({
     })),
     ...insumosErp.map((insumo) => {
       const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
+      const insumoPropio = insumosPropiosPorErpId.get(insumo.erpId);
+      const precio = insumoPropio?.precioUnitarioEstimado ?? insumo.precioUnitario;
 
       return {
         id: insumo.erpId,
         nombre: insumo.nombre,
-        detalle: `${filtroPropiosErp.has(insumo.erpId) ? 'Vinculado' : 'Disponible'} ERP`,
+        detalle: `${insumoPropio ? 'Con precio Agro App' : 'Disponible'} ERP`,
         codigo: insumo.codigo,
         tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
         unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
-        precio: insumo.precioUnitario !== undefined ? formatearUsd(insumo.precioUnitario) : 'Sin precio',
-        accion: 'importado' as const,
+        precio: precio !== undefined ? formatearUsd(precio) : 'Sin precio',
+        accion: 'editar' as const,
+        insumoPropio,
+        insumoErp: insumo,
       };
     }),
   ];
+
+  function abrirEditarInsumoErp(insumoErp: ErpInsumo, insumoPropio?: InsumoApp) {
+    const ahora = new Date().toISOString();
+    const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumoErp.idUnidadMedida);
+
+    setModoModal('editar');
+    setInsumoEnEdicion(insumoPropio || {
+      id: crearIdInsumoAppDesdeErp(insumoErp),
+      clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || 'cliente-demo',
+      empresaErpId: 'global',
+      insumoErpId: insumoErp.erpId,
+      nombre: limpiarTextoVisible(insumoErp.nombre),
+      codigoInterno: normalizarCodigo(insumoErp.codigo || insumoErp.nombre),
+      tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : undefined,
+      unidad: unidad?.codigo || String(insumoErp.idUnidadMedida || 'Unid'),
+      precioUnitarioEstimado: insumoErp.precioUnitario ?? 0,
+      moneda: 'USD',
+      estadoVinculacion: 'vinculado_erp',
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
+  }
 
   function abrirVinculacion(insumo: InsumoApp) {
     if (insumo.estadoVinculacion !== 'provisorio' || insumo.insumoErpId) {
@@ -315,13 +349,19 @@ export function InsumosAppScreen({
               render: (fila) => fila.accion === 'editar'
                 ? (
                   <div className="button-row table-actions">
-                    <button className="small" onClick={() => fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
+                    <button
+                      className="small"
+                      onClick={() => fila.insumoErp ? abrirEditarInsumoErp(fila.insumoErp, fila.insumoPropio) : fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)}
+                      disabled={!puedeConfigurarPlanificacion}
+                    >
+                      {fila.insumoErp ? 'Editar precio' : 'Editar'}
+                    </button>
                     {fila.insumoPropio?.estadoVinculacion === 'provisorio' && !fila.insumoPropio.insumoErpId && (
                       <button className="small" type="button" onClick={() => fila.insumoPropio && abrirVinculacion(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
                     )}
                   </div>
                 )
-                : <span className="hint">Importado</span>,
+                : null,
             },
           ]}
         />
@@ -343,6 +383,7 @@ export function InsumosAppScreen({
                 Nombre
                 <input
                   value={insumoEnEdicion.nombre}
+                  disabled={Boolean(insumoEnEdicion.insumoErpId)}
                   placeholder="Ej. Glifosato 66%"
                   onChange={(event) => actualizarBorrador({ nombre: event.target.value })}
                 />
@@ -352,6 +393,7 @@ export function InsumosAppScreen({
                 Codigo
                 <input
                   value={insumoEnEdicion.codigoInterno || ''}
+                  disabled={Boolean(insumoEnEdicion.insumoErpId)}
                   placeholder="Ej. GLI66"
                   onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })}
                 />
@@ -359,7 +401,7 @@ export function InsumosAppScreen({
 
               <label>
                 Empresa
-                <select value={insumoEnEdicion.empresaErpId} onChange={(event) => actualizarBorrador({ empresaErpId: event.target.value })}>
+                <select value={insumoEnEdicion.empresaErpId} disabled={Boolean(insumoEnEdicion.insumoErpId)} onChange={(event) => actualizarBorrador({ empresaErpId: event.target.value })}>
                   {empresasDisponibles.length === 0 && <option value="empresa:mock">empresa:mock</option>}
                   {empresasDisponibles.map((empresaErpId) => (
                     <option key={empresaErpId} value={empresaErpId}>{empresaErpId}</option>
@@ -371,6 +413,7 @@ export function InsumosAppScreen({
                 Tipo
                 <input
                   value={insumoEnEdicion.tipo || ''}
+                  disabled={Boolean(insumoEnEdicion.insumoErpId)}
                   placeholder="Ej. Herbicida"
                   onChange={(event) => actualizarBorrador({ tipo: event.target.value })}
                 />
@@ -380,6 +423,7 @@ export function InsumosAppScreen({
                 Unidad
                 <select
                   value={insumoEnEdicion.unidad}
+                  disabled={Boolean(insumoEnEdicion.insumoErpId)}
                   onChange={(event) => actualizarBorrador({ unidad: event.target.value })}
                 >
                   {unidadesDisponibles.length === 0 && <option value={insumoEnEdicion.unidad}>{insumoEnEdicion.unidad}</option>}
@@ -390,7 +434,7 @@ export function InsumosAppScreen({
               </label>
 
               <label>
-                Precio estimado
+                Precio propio
                 <input
                   type="number"
                   min="0"
@@ -411,7 +455,7 @@ export function InsumosAppScreen({
 
               <label>
                 Estado
-                <select value={insumoEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as InsumoApp['estadoVinculacion'] })}>
+                <select value={insumoEnEdicion.estadoVinculacion} disabled={Boolean(insumoEnEdicion.insumoErpId)} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as InsumoApp['estadoVinculacion'] })}>
                   <option value="provisorio">Provisorio</option>
                   <option value="vinculado_erp">Vinculado ERP</option>
                   <option value="archivado">Archivado</option>

@@ -271,7 +271,7 @@ export const planificacionFallback: PlanificacionSnapshot = {
     },
   ],
   estadiosReferencia: [],
-  laboresReferencia: [],
+  serviciosApp: [],
   protocolos: [
     {
       id: 'protocolo-girasol-media',

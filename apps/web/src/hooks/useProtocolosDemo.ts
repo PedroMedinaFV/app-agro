@@ -113,11 +113,11 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     }));
   }
 
-  function agregarLabor(etapaId: string, laborReferenciaId?: string) {
-    const laborReferencia = planificacion.laboresReferencia.find((labor) => labor.id === laborReferenciaId)
-      || planificacion.laboresReferencia.find((labor) => labor.activo);
+  function agregarLabor(etapaId: string, servicioAppId?: string) {
+    const ServicioApp = planificacion.serviciosApp.find((labor) => labor.id === servicioAppId)
+      || planificacion.serviciosApp.find((labor) => labor.activo);
 
-    if (!laborReferencia) {
+    if (!ServicioApp) {
       notificar?.({
         tipo: 'error',
         titulo: 'No hay labores disponibles',
@@ -127,7 +127,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     }
 
     const cantidadPorHa = 1;
-    const costoUnitario = laborReferencia.costoUnitarioSugerido || 0;
+    const costoUnitario = ServicioApp.costoUnitarioSugerido || 0;
     const indiceAplicacion = 1;
 
     actualizarProtocolos((protocolo) => ({
@@ -140,10 +140,10 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
             id: `labor-${Date.now()}`,
             etapaId,
             indiceAplicacion,
-            laborReferenciaId: laborReferencia.id,
-            nombre: laborReferencia.nombre,
-            descripcion: laborReferencia.descripcionAbreviada,
-            unidad: laborReferencia.unidadSugerida,
+            servicioAppId: ServicioApp.id,
+            nombre: ServicioApp.nombre,
+            descripcion: ServicioApp.descripcionAbreviada,
+            unidad: ServicioApp.unidadSugerida,
             cantidadPorHa,
             costoUnitario,
             costoPorHa: calcularCostoLaborProtocolo({ cantidadPorHa, costoUnitario, indiceAplicacion } as Parameters<typeof calcularCostoLaborProtocolo>[0]),

@@ -5,7 +5,7 @@ import {
   ErpSnapshot,
   GastosComercialesReferencia,
   InsumoApp,
-  LaborReferencia,
+  ServicioApp,
   LoteApp,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
@@ -19,7 +19,7 @@ import {
   guardarDestinoVenta,
   guardarGastoComercialReferencia,
   guardarInsumoApp,
-  guardarLaborReferencia,
+  guardarServicioApp,
   guardarPlanificacion,
   guardarPrecioReferencia,
   obtenerPlanificacionSnapshot,
@@ -990,7 +990,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
   }
 
-  async function guardarLaborReferenciaDesdeModal(labor: LaborReferencia) {
+  async function guardarServicioAppDesdeModal(labor: ServicioApp) {
     if (!puedeConfigurarPlanificacion) {
       return false;
     }
@@ -1002,20 +1002,20 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         throw new Error('No hay sesion activa para auditar labores.');
       }
 
-      const respuesta = await guardarLaborReferencia(labor.id, {
-        labor,
+      const respuesta = await guardarServicioApp(labor.id, {
+        servicio: labor,
         origen: 'web',
         motivo: 'Alta o edicion de labor desde padron maestro web',
       }, sesion.token);
 
       setPlanificacion((actual) => {
-        const existe = actual.laboresReferencia.some((item) => item.id === respuesta.labor.id);
+        const existe = actual.serviciosApp.some((item) => item.id === respuesta.servicio.id);
 
         return {
           ...actual,
-          laboresReferencia: existe
-            ? actual.laboresReferencia.map((item) => (item.id === respuesta.labor.id ? respuesta.labor : item))
-            : [respuesta.labor, ...actual.laboresReferencia],
+          serviciosApp: existe
+            ? actual.serviciosApp.map((item) => (item.id === respuesta.servicio.id ? respuesta.servicio : item))
+            : [respuesta.servicio, ...actual.serviciosApp],
         };
       });
       setPlanificacionEstado('Labor guardada con auditoria.');
@@ -1028,7 +1028,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return true;
     } catch (error) {
       const nombre = limpiarTextoVisible(labor.nombre);
-      const laborDemo: LaborReferencia = {
+      const laborDemo: ServicioApp = {
         ...labor,
         codigo: normalizarTexto(labor.codigo || nombre),
         nombre,
@@ -1040,13 +1040,13 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       };
 
       setPlanificacion((actual) => {
-        const existe = actual.laboresReferencia.some((item) => item.id === laborDemo.id);
+        const existe = actual.serviciosApp.some((item) => item.id === laborDemo.id);
 
         return {
           ...actual,
-          laboresReferencia: existe
-            ? actual.laboresReferencia.map((item) => (item.id === laborDemo.id ? laborDemo : item))
-            : [laborDemo, ...actual.laboresReferencia],
+          serviciosApp: existe
+            ? actual.serviciosApp.map((item) => (item.id === laborDemo.id ? laborDemo : item))
+            : [laborDemo, ...actual.serviciosApp],
         };
       });
       setPlanificacionEstado('API de labores no disponible. Labor guardada en memoria demo.');
@@ -1296,7 +1296,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     guardarGastoComercialDesdeModal,
     guardarConceptoGastoComercialDesdeModal,
     guardarDestinoVentaDesdeModal,
-    guardarLaborReferenciaDesdeModal,
+    guardarServicioAppDesdeModal,
     guardarInsumoAppDesdeModal,
     obtenerProtocolosCompatibles,
     refrescarPlanificacion,

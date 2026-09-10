@@ -11,7 +11,7 @@ import type {
   ErpZona,
   EspecieApp,
   InsumoApp,
-  LaborReferencia,
+  ServicioApp,
   LoteApp,
   SesionUsuario,
   ZonaApp,
@@ -23,7 +23,7 @@ import {
   guardarCampoApp,
   guardarEspecieApp,
   guardarInsumoApp,
-  guardarLaborReferencia,
+  guardarServicioApp,
   guardarLoteApp,
   guardarZonaApp,
   obtenerActividadesErpImportadas,
@@ -34,7 +34,7 @@ import {
   obtenerEspeciesApp,
   obtenerInsumosErpImportados,
   obtenerInsumosApp,
-  obtenerLaboresReferencia,
+  obtenerServiciosApp,
   obtenerLotesErpImportados,
   obtenerLotesApp,
   obtenerServiciosErpImportados,
@@ -85,7 +85,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   const [especies, setEspecies] = useState<EspecieApp[]>([]);
   const [actividades, setActividades] = useState<ActividadApp[]>([]);
   const [insumos, setInsumos] = useState<InsumoApp[]>([]);
-  const [labores, setLabores] = useState<LaborReferencia[]>([]);
+  const [labores, setLabores] = useState<ServicioApp[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [lotesErp, setLotesErp] = useState<ErpLote[]>([]);
@@ -123,7 +123,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
           obtenerEspeciesApp(sesion.token),
           obtenerActividadesApp(sesion.token),
           obtenerInsumosApp(sesion.token),
-          obtenerLaboresReferencia(sesion.token),
+          obtenerServiciosApp(sesion.token),
           obtenerZonasErpImportadas(sesion.token),
           obtenerCamposErpImportados(sesion.token),
           obtenerLotesErpImportados(sesion.token),
@@ -139,7 +139,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
         setEspecies(especiesPropias.especies);
         setActividades(actividadesPropias.actividades);
         setInsumos(insumosPropios.insumos);
-        setLabores(laboresPropias.labores);
+        setLabores(laboresPropias.servicios);
         setZonasErp(zonasImportadas.zonas);
         setCamposErp(camposImportados.campos);
         setLotesErp(lotesImportados.lotes);
@@ -428,8 +428,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       } else {
         const labor = labores.find((item) => item.id === fila.id);
         if (!labor) throw new Error('No se encontro la labor propia.');
-        const respuesta = await guardarLaborReferencia(labor.id, { labor: { ...labor, servicioErpId: erpId, idServicio: erpId ? labor.idServicio : undefined, idTipoServicio: erpId ? labor.idTipoServicio : undefined, idUnidadMedida: erpId ? labor.idUnidadMedida : undefined, idMoneda: erpId ? labor.idMoneda : undefined, imputaDosis: erpId ? labor.imputaDosis : undefined, fechaUltimaActualizacionErp: erpId ? labor.fechaUltimaActualizacionErp : undefined, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', origen: erpId ? 'erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con servicio ERP ${erpId}` : 'Desvinculacion manual de servicio ERP' }, sesion.token);
-        setLabores((actuales) => actuales.map((item) => (item.id === respuesta.labor.id ? respuesta.labor : item)));
+        const respuesta = await guardarServicioApp(labor.id, { servicio: { ...labor, servicioErpId: erpId, idServicio: erpId ? labor.idServicio : undefined, idTipoServicio: erpId ? labor.idTipoServicio : undefined, idUnidadMedida: erpId ? labor.idUnidadMedida : undefined, idMoneda: erpId ? labor.idMoneda : undefined, imputaDosis: erpId ? labor.imputaDosis : undefined, fechaUltimaActualizacionErp: erpId ? labor.fechaUltimaActualizacionErp : undefined, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', origen: erpId ? 'erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con servicio ERP ${erpId}` : 'Desvinculacion manual de servicio ERP' }, sesion.token);
+        setLabores((actuales) => actuales.map((item) => (item.id === respuesta.servicio.id ? respuesta.servicio : item)));
       }
 
       await onVinculacionesActualizadas?.();

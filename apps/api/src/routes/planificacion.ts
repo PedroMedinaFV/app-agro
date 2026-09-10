@@ -49,7 +49,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
       conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),
       gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
-      laboresReferencia: padronesPersistidos.laboresReferencia.length ? padronesPersistidos.laboresReferencia : demo.laboresReferencia,
+      serviciosApp: padronesPersistidos.serviciosApp.length ? padronesPersistidos.serviciosApp : demo.serviciosApp,
       sincronizadoEn: new Date().toISOString(),
     });
   } catch (error) {

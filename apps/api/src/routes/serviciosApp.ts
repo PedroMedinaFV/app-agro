@@ -1,7 +1,7 @@
 import { Request, Router } from 'express';
-import type { GuardarLaborReferenciaRequest } from '@agro/tipos';
+import type { GuardarServicioAppRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { guardarLaborReferenciaPersistida, obtenerLaboresReferenciaPersistidas } from '../services/labores/laboresReferenciaPrisma';
+import { guardarServicioAppPersistido, obtenerServiciosAppPersistidos } from '../services/servicios/serviciosAppPrisma';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', requierePermiso('planificacion:configurar'), async (req, res, ne
       return res.status(401).json({ error: 'Sesion sin cliente asociado.' });
     }
 
-    res.json({ labores: await obtenerLaboresReferenciaPersistidas(clienteId) });
+    res.json({ servicios: await obtenerServiciosAppPersistidos(clienteId) });
   } catch (error) {
     next(error);
   }
@@ -28,7 +28,7 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
   try {
     const request = req as RequestConUsuario;
 
-    res.json(await guardarLaborReferenciaPersistida(req.params.id, req.body as GuardarLaborReferenciaRequest, {
+    res.json(await guardarServicioAppPersistido(req.params.id, req.body as GuardarServicioAppRequest, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

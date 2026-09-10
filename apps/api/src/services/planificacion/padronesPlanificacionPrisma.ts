@@ -3,7 +3,7 @@ import type {
   CampoApp,
   EspecieApp,
   InsumoApp,
-  LaborReferencia,
+  ServicioApp,
   LoteApp,
   ZonaApp,
 } from '@agro/tipos';
@@ -17,7 +17,7 @@ type PadronesPlanificacionPersistidos = {
   especiesApp: EspecieApp[];
   actividadesApp: ActividadApp[];
   insumosApp: InsumoApp[];
-  laboresReferencia: LaborReferencia[];
+  serviciosApp: ServicioApp[];
 };
 
 function idDesdeErp(prefijo: string, erpId: string) {
@@ -74,7 +74,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   const especiesExistentes = await prisma.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } } });
   const actividadesExistentes = await prisma.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } } });
   const insumosExistentes = await prisma.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } } });
-  const laboresExistentes = await prisma.laborReferencia.findMany({ where: { clienteId, servicioErpId: { not: null } } });
+  const laboresExistentes = await prisma.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } } });
   const zonaPorErpId = new Map(zonasExistentes.map((zona) => [zona.zonaErpId, zona.id]));
   const campoPorErpId = new Map(camposExistentes.map((campo) => [campo.campoErpId, campo.id]));
   const lotePorErpId = new Map(lotesExistentes.map((lote) => [lote.loteErpId, lote.id]));
@@ -212,12 +212,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       })),
   });
 
-  await prisma.laborReferencia.createMany({
+  await prisma.servicioApp.createMany({
     skipDuplicates: true,
     data: serviciosErp
       .filter((servicio) => !laborPorErpId.has(servicio.erpId))
       .map((servicio) => ({
-        id: idDesdeErp('labor-referencia', servicio.erpId),
+        id: idDesdeErp('servicio-app', servicio.erpId),
         clienteId,
         empresaErpId: 'global',
         servicioErpId: servicio.erpId,
@@ -266,7 +266,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     prisma.especieApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
     prisma.actividadApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
     prisma.insumoApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
-    prisma.laborReferencia.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
+    prisma.servicioApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
   ]);
 
   const camposPermitidosIds = new Set(campos.map((campo) => campo.id));
@@ -348,7 +348,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
       createdAt: insumo.createdAt.toISOString(),
       updatedAt: insumo.updatedAt.toISOString(),
     })),
-    laboresReferencia: labores.map((labor) => ({
+    serviciosApp: labores.map((labor) => ({
       id: labor.id,
       clienteId: labor.clienteId,
       empresaErpId: labor.empresaErpId || undefined,
@@ -363,9 +363,9 @@ export async function obtenerPadronesPlanificacionPersistidos(
       unidadSugerida: labor.unidadSugerida,
       costoUnitarioSugerido: labor.costoUnitarioSugerido ?? undefined,
       imputaDosis: labor.imputaDosis ?? undefined,
-      estadoVinculacion: labor.estadoVinculacion as LaborReferencia['estadoVinculacion'],
+      estadoVinculacion: labor.estadoVinculacion as ServicioApp['estadoVinculacion'],
       activo: labor.activo,
-      origen: labor.origen as LaborReferencia['origen'],
+      origen: labor.origen as ServicioApp['origen'],
       fechaUltimaActualizacionErp: labor.fechaUltimaActualizacionErp?.toISOString(),
       createdAt: labor.createdAt.toISOString(),
       updatedAt: labor.updatedAt.toISOString(),
