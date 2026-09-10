@@ -53,6 +53,9 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
   const [estado, setEstado] = useState('Cargando precipitaciones.');
   const [guardando, setGuardando] = useState(false);
   const [formulario, setFormulario] = useState<FormularioPrecipitacion>(crearFormularioInicial());
+  const [filtroCampoId, setFiltroCampoId] = useState('');
+  const [filtroLoteId, setFiltroLoteId] = useState('');
+  const [filtroTexto, setFiltroTexto] = useState('');
 
   async function cargarDatos() {
     try {
@@ -84,7 +87,24 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
   const camposPorId = useMemo(() => new Map(campos.map((campo) => [campo.id, campo])), [campos]);
   const lotesPorId = useMemo(() => new Map(lotes.map((lote) => [lote.id, lote])), [lotes]);
   const lotesDelCampo = lotes.filter((lote) => lote.campoAppId === formulario.campoAppId);
-  const totalPeriodo = precipitaciones.reduce((total, item) => total + item.milimetros, 0);
+  const lotesFiltro = filtroCampoId ? lotes.filter((lote) => lote.campoAppId === filtroCampoId) : lotes;
+  const precipitacionesFiltradas = useMemo(() => {
+    const texto = filtroTexto.trim().toLocaleLowerCase('es');
+
+    return precipitaciones.filter((precipitacion) => {
+      const campo = camposPorId.get(precipitacion.campoAppId);
+      const lote = precipitacion.loteAppId ? lotesPorId.get(precipitacion.loteAppId) : undefined;
+      const coincideCampo = !filtroCampoId || precipitacion.campoAppId === filtroCampoId;
+      const coincideLote = !filtroLoteId || precipitacion.loteAppId === filtroLoteId;
+      const coincideTexto = !texto
+        || precipitacion.observaciones?.toLocaleLowerCase('es').includes(texto)
+        || campo?.nombre.toLocaleLowerCase('es').includes(texto)
+        || lote?.nombre.toLocaleLowerCase('es').includes(texto);
+
+      return coincideCampo && coincideLote && coincideTexto;
+    });
+  }, [camposPorId, filtroCampoId, filtroLoteId, filtroTexto, lotesPorId, precipitaciones]);
+  const totalPeriodo = precipitacionesFiltradas.reduce((total, item) => total + item.milimetros, 0);
   const puedeCrear = sesion.permisos.includes('precipitaciones:crear');
 
   function actualizarFormulario(cambios: Partial<FormularioPrecipitacion>) {
@@ -218,12 +238,45 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
         <div className="panel-header">
           <div>
             <h2>Registros</h2>
-            <p className="hint">Ultimas precipitaciones registradas dentro del alcance de la sesion.</p>
+            <p className="hint">Ultimas precipitaciones registradas dentro del alcance de la sesion. Mostrando {precipitacionesFiltradas.length} de {precipitaciones.length}.</p>
           </div>
         </div>
 
+        <div className="reference-modal-grid">
+          <label>
+            Campo
+            <select
+              value={filtroCampoId}
+              onChange={(event) => {
+                setFiltroCampoId(event.target.value);
+                setFiltroLoteId('');
+              }}
+            >
+              <option value="">Todos</option>
+              {campos.map((campo) => (
+                <option key={campo.id} value={campo.id}>{campo.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Lote
+            <select value={filtroLoteId} onChange={(event) => setFiltroLoteId(event.target.value)}>
+              <option value="">Todos</option>
+              {lotesFiltro.map((lote) => (
+                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="reference-wide">
+            Buscar
+            <input value={filtroTexto} onChange={(event) => setFiltroTexto(event.target.value)} placeholder="Campo, lote u observaciones" />
+          </label>
+        </div>
+
         <DataTable
-          rows={precipitaciones}
+          rows={precipitacionesFiltradas}
           getRowKey={(precipitacion) => precipitacion.id}
           emptyMessage="Todavia no hay precipitaciones registradas."
           columns={[

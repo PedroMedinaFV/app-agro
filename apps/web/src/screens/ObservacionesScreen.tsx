@@ -67,6 +67,10 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   const [estado, setEstado] = useState('Cargando observaciones.');
   const [guardando, setGuardando] = useState(false);
   const [formulario, setFormulario] = useState<FormularioObservacion>(crearFormularioInicial());
+  const [filtroCampoId, setFiltroCampoId] = useState('');
+  const [filtroLoteId, setFiltroLoteId] = useState('');
+  const [filtroSeveridad, setFiltroSeveridad] = useState<SeveridadObservacion | 'todas'>('todas');
+  const [filtroTexto, setFiltroTexto] = useState('');
 
   async function cargarDatos() {
     try {
@@ -98,8 +102,27 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
   const camposPorId = useMemo(() => new Map(campos.map((campo) => [campo.id, campo])), [campos]);
   const lotesPorId = useMemo(() => new Map(lotes.map((lote) => [lote.id, lote])), [lotes]);
   const lotesDelCampo = lotes.filter((lote) => lote.campoAppId === formulario.campoAppId);
+  const lotesFiltro = filtroCampoId ? lotes.filter((lote) => lote.campoAppId === filtroCampoId) : lotes;
   const puedeCrear = sesion.permisos.includes('observaciones:crear');
   const observacionesAltas = observaciones.filter((observacion) => observacion.severidad === 'alta').length;
+  const observacionesFiltradas = useMemo(() => {
+    const texto = filtroTexto.trim().toLocaleLowerCase('es');
+
+    return observaciones.filter((observacion) => {
+      const campo = camposPorId.get(observacion.campoAppId);
+      const lote = observacion.loteAppId ? lotesPorId.get(observacion.loteAppId) : undefined;
+      const coincideCampo = !filtroCampoId || observacion.campoAppId === filtroCampoId;
+      const coincideLote = !filtroLoteId || observacion.loteAppId === filtroLoteId;
+      const coincideSeveridad = filtroSeveridad === 'todas' || observacion.severidad === filtroSeveridad;
+      const coincideTexto = !texto
+        || observacion.titulo.toLocaleLowerCase('es').includes(texto)
+        || observacion.descripcion.toLocaleLowerCase('es').includes(texto)
+        || campo?.nombre.toLocaleLowerCase('es').includes(texto)
+        || lote?.nombre.toLocaleLowerCase('es').includes(texto);
+
+      return coincideCampo && coincideLote && coincideSeveridad && coincideTexto;
+    });
+  }, [camposPorId, filtroCampoId, filtroLoteId, filtroSeveridad, filtroTexto, lotesPorId, observaciones]);
 
   function actualizarFormulario(cambios: Partial<FormularioObservacion>) {
     setFormulario((actual) => ({
@@ -275,12 +298,55 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
         <div className="panel-header">
           <div>
             <h2>Registros</h2>
-            <p className="hint">Ultimas observaciones registradas dentro del alcance de la sesion.</p>
+            <p className="hint">Ultimas observaciones registradas dentro del alcance de la sesion. Mostrando {observacionesFiltradas.length} de {observaciones.length}.</p>
           </div>
         </div>
 
+        <div className="reference-modal-grid">
+          <label>
+            Campo
+            <select
+              value={filtroCampoId}
+              onChange={(event) => {
+                setFiltroCampoId(event.target.value);
+                setFiltroLoteId('');
+              }}
+            >
+              <option value="">Todos</option>
+              {campos.map((campo) => (
+                <option key={campo.id} value={campo.id}>{campo.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Lote
+            <select value={filtroLoteId} onChange={(event) => setFiltroLoteId(event.target.value)}>
+              <option value="">Todos</option>
+              {lotesFiltro.map((lote) => (
+                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Severidad
+            <select value={filtroSeveridad} onChange={(event) => setFiltroSeveridad(event.target.value as SeveridadObservacion | 'todas')}>
+              <option value="todas">Todas</option>
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+            </select>
+          </label>
+
+          <label className="reference-wide">
+            Buscar
+            <input value={filtroTexto} onChange={(event) => setFiltroTexto(event.target.value)} placeholder="Titulo, descripcion, campo o lote" />
+          </label>
+        </div>
+
         <DataTable
-          rows={observaciones}
+          rows={observacionesFiltradas}
           getRowKey={(observacion) => observacion.id}
           emptyMessage="Todavia no hay observaciones registradas."
           columns={[

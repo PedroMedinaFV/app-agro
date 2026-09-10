@@ -444,6 +444,8 @@ Avance realizado:
 - [x] pantalla web inicial `Observaciones`;
 - [x] listado web de observaciones dentro del alcance de la sesion;
 - [x] carga web basica para casos de oficina o correccion;
+- [x] filtros web iniciales por campo, lote, severidad y texto para observaciones;
+- [x] filtros web iniciales por campo, lote y texto para precipitaciones;
 - [x] permisos especificos `observaciones:crear` y `observaciones:leer`;
 - [x] auditoria de creacion de observaciones.
 
