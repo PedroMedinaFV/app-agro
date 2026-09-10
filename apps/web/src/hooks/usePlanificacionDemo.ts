@@ -183,9 +183,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }, 0);
   }
 
-  function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId' | 'actividadAppId'>) {
+  function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId'>) {
     return planificacion.destinosReferencia
-      .filter((item) => item.activo && (!item.actividadAppId || item.actividadAppId === linea.actividadAppId))
+      .filter((item) => item.activo)
       .sort((a, b) => {
         const pesoA = (a.campoAppId === linea.campoAppId ? 3 : 0) + (a.campoErpId === linea.campoErpId ? 2 : 0);
         const pesoB = (b.campoAppId === linea.campoAppId ? 3 : 0) + (b.campoErpId === linea.campoErpId ? 2 : 0);
@@ -649,7 +649,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const lote = planificacion.lotesApp.find((item) => item.campoAppId === campoPorDefectoId) || planificacion.lotesApp[0];
     const campo = lote ? camposAppPorId.get(lote.campoAppId) : undefined;
     const actividad = planificacion.actividadesApp?.[0];
-    const destino = actividad ? planificacion.destinosReferencia.find((item) => !item.actividadAppId || item.actividadAppId === actividad.id) : undefined;
+    const destino = actividad ? planificacion.destinosReferencia.find((item) => item.activo) : undefined;
     const precio = actividad ? planificacion.preciosReferencia.find((item) => item.actividadAppId === actividad.id && (!destino || item.destinoVenta === destino.destinoVenta)) : undefined;
     const ahora = new Date().toISOString();
 

@@ -18,9 +18,10 @@ interface UseProtocolosDemoParams {
   planificacion: PlanificacionSnapshot;
   planificacionActiva: PlanificacionAgricola | undefined;
   notificar?: (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
+  onProtocolosPersistidos?: () => Promise<void> | void;
 }
 
-export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar }: UseProtocolosDemoParams) {
+export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos }: UseProtocolosDemoParams) {
   const [protocolos, setProtocolos] = useState<ProtocolosSnapshot>(protocolosFallback);
   const [protocoloSeleccionadoId, setProtocoloSeleccionadoId] = useState(protocolosFallback.protocolos[0]?.id || '');
   const [protocolosEstado, setProtocolosEstado] = useState('Protocolos demo locales');
@@ -304,6 +305,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
       }));
       setProtocoloSeleccionadoId(respuesta.protocolo.id);
       setProtocolosEstado(respuesta.mensaje);
+      await onProtocolosPersistidos?.();
       notificar?.({
         tipo: 'success',
         titulo: 'Protocolo guardado',

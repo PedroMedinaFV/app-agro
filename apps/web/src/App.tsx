@@ -66,6 +66,7 @@ export function App() {
     planificacion: planificacionDemo.planificacion,
     planificacionActiva: planificacionDemo.planificacionActiva,
     notificar: toast.notify,
+    onProtocolosPersistidos: planificacionDemo.refrescarPlanificacion,
   });
 
   useEffect(() => {
@@ -82,14 +83,6 @@ export function App() {
       .then((respuesta) => setCampaniasImportadas(respuesta.campanias))
       .catch(() => setCampaniasImportadas([]));
   }, [sesion]);
-
-  useEffect(() => {
-    if (!sesion || !protocolosDemo.protocolos.protocolos.length) {
-      return;
-    }
-
-    planificacionDemo.refrescarPlanificacion();
-  }, [sesion, protocolosDemo.protocolos.sincronizadoEn]);
 
   const lotes = erp.snapshot.lotes.map((lote) => ({
     ...lote,

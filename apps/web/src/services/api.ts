@@ -307,8 +307,39 @@ export async function guardarEmpresasErpAdmin(clienteId: string, empresasErpIds:
   }, token);
 }
 
-export async function obtenerPlanificacionSnapshot(token?: string): Promise<PlanificacionSnapshot> {
-  return request<PlanificacionSnapshot>('/planificacion/snapshot', {}, token);
+let planificacionSnapshotCache: { token?: string; respuesta: PlanificacionSnapshot } | null = null;
+let planificacionSnapshotEnVuelo: { token?: string; promesa: Promise<PlanificacionSnapshot> } | null = null;
+
+export function invalidarPlanificacionSnapshotCache() {
+  planificacionSnapshotCache = null;
+}
+
+export async function obtenerPlanificacionSnapshot(token?: string, opciones: { forzar?: boolean } = {}): Promise<PlanificacionSnapshot> {
+  const cache = planificacionSnapshotCache;
+  const enVuelo = planificacionSnapshotEnVuelo;
+
+  if (!opciones.forzar && cache && cache.token === token) {
+    return cache.respuesta;
+  }
+
+  if (!opciones.forzar && enVuelo && enVuelo.token === token) {
+    return enVuelo.promesa;
+  }
+
+  const promesa = request<PlanificacionSnapshot>('/planificacion/snapshot', {}, token)
+    .then((respuesta) => {
+      planificacionSnapshotCache = { token, respuesta };
+      return respuesta;
+    })
+    .finally(() => {
+      if (planificacionSnapshotEnVuelo?.promesa === promesa) {
+        planificacionSnapshotEnVuelo = null;
+      }
+    });
+
+  planificacionSnapshotEnVuelo = { token, promesa };
+
+  return promesa;
 }
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {
@@ -316,17 +347,23 @@ export async function obtenerFichaLoteOperativo(loteAppId: string, token?: strin
 }
 
 export async function guardarPlanificacion(id: string, datos: GuardarPlanificacionRequest, token?: string): Promise<GuardarPlanificacionResponse> {
-  return request<GuardarPlanificacionResponse>(`/planificacion/${id}`, {
+  const respuesta = await request<GuardarPlanificacionResponse>(`/planificacion/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+
+  return respuesta;
 }
 
 export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacionRequest, token?: string): Promise<CerrarPlanificacionResponse> {
-  return request<CerrarPlanificacionResponse>(`/planificacion/${id}/cerrar`, {
+  const respuesta = await request<CerrarPlanificacionResponse>(`/planificacion/${id}/cerrar`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+
+  return respuesta;
 }
 
 export async function guardarPrecioReferencia(id: string, datos: GuardarPrecioReferenciaRequest, token?: string): Promise<GuardarPrecioReferenciaResponse> {
@@ -379,10 +416,13 @@ export async function guardarDestinoVenta(
   datos: GuardarDestinoVentaReferenciaRequest,
   token?: string,
 ): Promise<GuardarDestinoVentaReferenciaResponse> {
-  return request<GuardarDestinoVentaReferenciaResponse>(`/destinos-venta/${id}`, {
+  const respuesta = await request<GuardarDestinoVentaReferenciaResponse>(`/destinos-venta/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+
+  return respuesta;
 }
 
 export type ServiciosAppResponse = {
@@ -523,10 +563,13 @@ export async function obtenerProtocolosSnapshot(token?: string): Promise<Protoco
 }
 
 export async function guardarProtocolo(id: string, datos: GuardarProtocoloRequest, token?: string): Promise<GuardarProtocoloResponse> {
-  return request<GuardarProtocoloResponse>(`/planificacion/protocolos/${id}`, {
+  const respuesta = await request<GuardarProtocoloResponse>(`/planificacion/protocolos/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+
+  return respuesta;
 }
 
 export type NotificacionesResponse = {

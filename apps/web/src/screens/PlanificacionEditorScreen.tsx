@@ -183,7 +183,7 @@ export function PlanificacionEditorScreen({
 
     for (const linea of lineasFiltradas) {
       for (const destino of planificacion.destinosReferencia) {
-        if (destino.activo && (!destino.actividadAppId || destino.actividadAppId === linea.actividadAppId)) {
+        if (destino.activo) {
           destinos.set(normalizarTexto(destino.destinoVenta), destino.destinoVenta);
         }
       }
@@ -334,7 +334,6 @@ export function PlanificacionEditorScreen({
       const destinoCompatible = planificacion.destinosReferencia.some((destino) => (
         destino.activo
         && destino.destinoVenta === destinoMasivo
-        && (!destino.actividadAppId || destino.actividadAppId === linea.actividadAppId)
       ));
 
       if (destinoCompatible) {
@@ -419,7 +418,7 @@ export function PlanificacionEditorScreen({
     const costoProduccionPorHa = protocolo?.costoEstimadoPorHa || 0;
     const lotesDelCampo = planificacion.lotesApp.filter((item) => item.campoAppId === linea.campoAppId);
     const destinosDisponibles = planificacion.destinosReferencia
-      .filter((item) => item.activo && (!item.actividadAppId || item.actividadAppId === linea.actividadAppId))
+      .filter((item) => item.activo)
       .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta));
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
     const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
