@@ -142,19 +142,36 @@ En modo demo, el backend guarda en memoria para validar UX y contratos. En persi
 3. Mobile muestra los lotes en listado y, cuando exista georreferenciacion, en mapa.
 4. El usuario selecciona un lote/cultivo.
 5. Mobile permite cargar una observacion con:
-   - tipo de observacion;
-   - comentario;
-   - fotos;
-   - ubicacion GPS;
+   - titulo;
+   - descripcion/comentario;
+   - severidad;
+   - ubicacion GPS opcional;
    - fecha/hora;
-   - estado fenologico cuando aplique.
+   - estado fenologico cuando aplique en una etapa posterior.
 6. Mobile envia la observacion al backend con origen `mobile`.
 7. Backend valida autenticacion, permisos y alcance sobre el lote.
-8. Backend persiste la observacion, adjuntos y auditoria.
+8. Backend persiste la observacion y auditoria.
 9. Web permite consultar la informacion generada en mobile por campo, lote, cultivo, campania, usuario, fecha y tipo.
 10. Web puede permitir correccion, clasificacion, revision o informes si el usuario tiene permisos.
 
 La captura nace naturalmente en mobile, pero la consulta, analisis y revision pueden realizarse desde web.
+
+Endpoints iniciales:
+
+- `GET /observaciones`: lista las ultimas observaciones del cliente, filtradas por alcance de campos para operador de campo.
+- `POST /observaciones`: crea una observacion con campo obligatorio, lote opcional, titulo, descripcion, severidad, coordenadas opcionales, fecha/hora del evento y origen.
+- `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion` y `tipo = observacion`.
+
+Validaciones iniciales:
+
+- titulo y descripcion son obligatorios;
+- severidad debe ser `baja`, `media` o `alta`;
+- si se informa ubicacion, latitud y longitud deben venir juntas y dentro de rango valido;
+- el campo debe pertenecer al cliente de la sesion;
+- si se informa lote, debe pertenecer al campo seleccionado;
+- un operador de campo solo puede cargar o ver observaciones de campos asignados;
+- toda alta registra auditoria;
+- `registroMovilId` es unico por cliente cuando existe, para evitar duplicados por reintentos offline.
 
 ## Precipitaciones por campo asignado
 
@@ -178,7 +195,7 @@ Endpoints iniciales:
 
 - `GET /precipitaciones`: lista las ultimas precipitaciones del cliente, filtradas por alcance de campos para operador de campo.
 - `POST /precipitaciones`: crea una precipitacion con campo obligatorio, lote opcional, milimetros, fecha/hora del evento, observaciones y origen.
-- `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion`; otros tipos quedan pendientes con error controlado.
+- `POST /sincronizacion`: procesa pendientes offline. En MVP acepta `tipo = precipitacion` y `tipo = observacion`; otros tipos quedan pendientes con error controlado.
 
 Validaciones iniciales:
 

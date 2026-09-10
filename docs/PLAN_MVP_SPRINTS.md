@@ -411,6 +411,10 @@ Avance realizado:
 - [x] idempotencia por `registroMovilId` para no duplicar precipitaciones ante reintentos;
 - [x] mobile marca como sincronizados solo los pendientes aceptados por backend.
 - [x] mobile consume `GET /planificacion/snapshot` con sesion real para mostrar campos/lotes asignados.
+- [x] contrato y endpoint backend para crear observaciones operativas por campo/lote;
+- [x] mobile puede cargar observaciones con titulo, descripcion, severidad y ubicacion opcional;
+- [x] observaciones mobile quedan pendientes offline cuando no se pueden enviar;
+- [x] `POST /sincronizacion` procesa pendientes mobile de observaciones con idempotencia por `registroMovilId`.
 
 ## Sprint 7 - Web de seguimiento operativo
 
@@ -434,6 +438,14 @@ Criterio de aceptacion:
 - puede filtrarse y revisarse;
 - conserva usuario, fecha, campo/lote y adjuntos;
 - no expone datos fuera del cliente/campos permitidos.
+
+Avance realizado:
+
+- [x] pantalla web inicial `Observaciones`;
+- [x] listado web de observaciones dentro del alcance de la sesion;
+- [x] carga web basica para casos de oficina o correccion;
+- [x] permisos especificos `observaciones:crear` y `observaciones:leer`;
+- [x] auditoria de creacion de observaciones.
 
 ## Sprint 8 - Ordenes de trabajo e integracion ALBOR futura
 

@@ -20,7 +20,9 @@ export type Permiso =
   | 'registros:crear'
   | 'registros:sincronizar'
   | 'precipitaciones:crear'
-  | 'precipitaciones:leer';
+  | 'precipitaciones:leer'
+  | 'observaciones:crear'
+  | 'observaciones:leer';
 
 export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
   admin: [
@@ -42,6 +44,8 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'registros:sincronizar',
     'precipitaciones:crear',
     'precipitaciones:leer',
+    'observaciones:crear',
+    'observaciones:leer',
   ],
   planificador: [
     'erp:leer',
@@ -55,6 +59,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'planificacion:configurar',
     'padrones-base:gestionar',
     'precipitaciones:leer',
+    'observaciones:leer',
   ],
   operador_campo: [
     'erp:leer',
@@ -66,6 +71,8 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'registros:sincronizar',
     'precipitaciones:crear',
     'precipitaciones:leer',
+    'observaciones:crear',
+    'observaciones:leer',
   ],
 };
 

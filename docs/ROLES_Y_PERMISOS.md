@@ -17,7 +17,7 @@ La autorizacion no queda atada solamente al nombre del rol: el backend valida pe
 
 - `admin`: administra configuracion, integraciones ERP, usuarios, empresas AGRO, sincronizacion, padrones, seguridad y auditoria.
 - `planificador`: gestiona planificacion agricola, escenarios, protocolos, precios, gastos comerciales y padrones propios de Agro App.
-- `operador_campo`: trabaja en campo, principalmente desde mobile, sobre campos/lotes asignados. Puede cargar datos operativos como precipitaciones y, mas adelante, recorridas, observaciones e imagenes.
+- `operador_campo`: trabaja en campo, principalmente desde mobile, sobre campos/lotes asignados. Puede cargar datos operativos como precipitaciones, observaciones y, mas adelante, recorridas e imagenes.
 
 ## Permisos
 
@@ -43,6 +43,8 @@ Los permisos son declarativos y viven en `packages/tipos/src/auth.ts`.
 | `registros:sincronizar` | Si | No | Si | Sincronizar pendientes mobile/offline |
 | `precipitaciones:crear` | Si | No | Si | Cargar precipitaciones sobre campos asignados |
 | `precipitaciones:leer` | Si | Si | Si | Consultar precipitaciones dentro del alcance permitido |
+| `observaciones:crear` | Si | No | Si | Cargar observaciones sobre campos/lotes asignados |
+| `observaciones:leer` | Si | Si | Si | Consultar observaciones dentro del alcance permitido |
 
 ## Backend
 
@@ -60,6 +62,7 @@ Ejemplos:
 - `/admin/planificacion/configuracion`: requiere `planificacion:configurar`.
 - `/admin/padrones-base`: requiere `padrones-base:gestionar`.
 - `/precipitaciones`: requiere `precipitaciones:leer` o `precipitaciones:crear` segun operacion.
+- `/observaciones`: requiere `observaciones:leer` o `observaciones:crear` segun operacion.
 
 ## Frontend
 
@@ -100,6 +103,7 @@ Endpoints preparados:
 - lotes disponibles;
 - acciones de carga permitidas;
 - carga rapida de precipitaciones;
+- carga de observaciones;
 - pendientes de sincronizacion;
 - estado de conectividad cuando exista offline-first.
 

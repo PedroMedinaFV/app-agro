@@ -17,6 +17,8 @@ import {
   ConceptoGastoComercial,
   CrearPrecipitacionRequest,
   CrearPrecipitacionResponse,
+  CrearObservacionRequest,
+  CrearObservacionResponse,
   DestinoVentaReferencia,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
@@ -53,6 +55,7 @@ import {
   LoteApp,
   LoginDemoRequest,
   NotificacionUsuarioResumen,
+  ObservacionesResponse,
   PadronErpSincronizable,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
@@ -518,6 +521,17 @@ export async function obtenerPrecipitaciones(token?: string): Promise<Precipitac
 
 export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token?: string): Promise<CrearPrecipitacionResponse> {
   return request<CrearPrecipitacionResponse>('/precipitaciones', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function obtenerObservaciones(token?: string): Promise<ObservacionesResponse> {
+  return request<ObservacionesResponse>('/observaciones', {}, token);
+}
+
+export async function crearObservacion(datos: CrearObservacionRequest, token?: string): Promise<CrearObservacionResponse> {
+  return request<CrearObservacionResponse>('/observaciones', {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);

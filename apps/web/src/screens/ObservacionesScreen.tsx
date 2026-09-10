@@ -1,0 +1,328 @@
+import { useEffect, useMemo, useState } from 'react';
+import type { CampoApp, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
+import { DataTable } from '../components/DataTable';
+import {
+  crearObservacion,
+  obtenerObservaciones,
+  obtenerPlanificacionSnapshot,
+} from '../services/api';
+
+type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
+
+type ObservacionesScreenProps = {
+  sesion: SesionUsuario;
+  notificar?: Notificar;
+};
+
+type FormularioObservacion = {
+  campoAppId: string;
+  loteAppId: string;
+  titulo: string;
+  descripcion: string;
+  severidad: SeveridadObservacion;
+  latitud: string;
+  longitud: string;
+  fechaEvento: string;
+};
+
+function fechaActualInput() {
+  const ahora = new Date();
+  ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+
+  return ahora.toISOString().slice(0, 16);
+}
+
+function formatearFecha(valor: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(valor));
+}
+
+function crearFormularioInicial(campoAppId = ''): FormularioObservacion {
+  return {
+    campoAppId,
+    loteAppId: '',
+    titulo: '',
+    descripcion: '',
+    severidad: 'media',
+    latitud: '',
+    longitud: '',
+    fechaEvento: fechaActualInput(),
+  };
+}
+
+function describirCoordenadas(observacion: ObservacionCampo) {
+  if (observacion.latitud === undefined || observacion.longitud === undefined) {
+    return 'Sin ubicacion';
+  }
+
+  return `${observacion.latitud.toFixed(5)}, ${observacion.longitud.toFixed(5)}`;
+}
+
+export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenProps) {
+  const [observaciones, setObservaciones] = useState<ObservacionCampo[]>([]);
+  const [campos, setCampos] = useState<CampoApp[]>([]);
+  const [lotes, setLotes] = useState<LoteApp[]>([]);
+  const [estado, setEstado] = useState('Cargando observaciones.');
+  const [guardando, setGuardando] = useState(false);
+  const [formulario, setFormulario] = useState<FormularioObservacion>(crearFormularioInicial());
+
+  async function cargarDatos() {
+    try {
+      const [respuestaObservaciones, respuestaPlanificacion] = await Promise.all([
+        obtenerObservaciones(sesion.token),
+        obtenerPlanificacionSnapshot(sesion.token),
+      ]);
+
+      setObservaciones(respuestaObservaciones.observaciones);
+      setCampos(respuestaPlanificacion.camposApp);
+      setLotes(respuestaPlanificacion.lotesApp);
+      setFormulario((actual) => (
+        actual.campoAppId
+          ? actual
+          : crearFormularioInicial(respuestaPlanificacion.camposApp[0]?.id || '')
+      ));
+      setEstado('Observaciones cargadas desde backend.');
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar las observaciones.';
+      setEstado(mensaje);
+      notificar?.({ tipo: 'error', titulo: 'No se cargaron observaciones', mensaje });
+    }
+  }
+
+  useEffect(() => {
+    cargarDatos();
+  }, [sesion.token]);
+
+  const camposPorId = useMemo(() => new Map(campos.map((campo) => [campo.id, campo])), [campos]);
+  const lotesPorId = useMemo(() => new Map(lotes.map((lote) => [lote.id, lote])), [lotes]);
+  const lotesDelCampo = lotes.filter((lote) => lote.campoAppId === formulario.campoAppId);
+  const puedeCrear = sesion.permisos.includes('observaciones:crear');
+  const observacionesAltas = observaciones.filter((observacion) => observacion.severidad === 'alta').length;
+
+  function actualizarFormulario(cambios: Partial<FormularioObservacion>) {
+    setFormulario((actual) => ({
+      ...actual,
+      ...cambios,
+      loteAppId: Object.prototype.hasOwnProperty.call(cambios, 'campoAppId') ? '' : cambios.loteAppId ?? actual.loteAppId,
+    }));
+  }
+
+  async function guardar() {
+    const latitud = formulario.latitud.trim() ? Number(formulario.latitud) : undefined;
+    const longitud = formulario.longitud.trim() ? Number(formulario.longitud) : undefined;
+
+    if (!formulario.campoAppId || !formulario.titulo.trim() || !formulario.descripcion.trim()) {
+      notificar?.({ tipo: 'error', titulo: 'Datos incompletos', mensaje: 'Selecciona campo, titulo y descripcion.' });
+      return;
+    }
+
+    if ((latitud !== undefined && !Number.isFinite(latitud)) || (longitud !== undefined && !Number.isFinite(longitud))) {
+      notificar?.({ tipo: 'error', titulo: 'Coordenadas invalidas', mensaje: 'Latitud y longitud deben ser numericas.' });
+      return;
+    }
+
+    setGuardando(true);
+    try {
+      const respuesta = await crearObservacion({
+        campoAppId: formulario.campoAppId,
+        loteAppId: formulario.loteAppId || undefined,
+        titulo: formulario.titulo,
+        descripcion: formulario.descripcion,
+        severidad: formulario.severidad,
+        latitud,
+        longitud,
+        fechaEvento: new Date(formulario.fechaEvento).toISOString(),
+        origen: 'web',
+      }, sesion.token);
+
+      setObservaciones((actual) => [respuesta.observacion, ...actual]);
+      setFormulario(crearFormularioInicial(formulario.campoAppId));
+      notificar?.({ tipo: 'success', titulo: 'Observacion registrada', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo guardar la observacion.';
+      notificar?.({ tipo: 'error', titulo: 'No se guardo', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <section className="planning-stack">
+      <section className="planning-hero">
+        <div>
+          <p className="eyebrow">Operacion de campo</p>
+          <h2>Observaciones</h2>
+          <p className="hint">Carga y consulta de observaciones operativas por campo y lote, con severidad y ubicacion opcional.</p>
+        </div>
+        <div className="status-pill">{observacionesAltas} alta(s)</div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Nueva observacion</h2>
+            <p className="hint">{estado}</p>
+          </div>
+        </div>
+
+        <div className="reference-modal-grid">
+          <label>
+            Campo
+            <select
+              value={formulario.campoAppId}
+              disabled={!puedeCrear || guardando}
+              onChange={(event) => actualizarFormulario({ campoAppId: event.target.value })}
+            >
+              <option value="">Seleccionar campo</option>
+              {campos.map((campo) => (
+                <option key={campo.id} value={campo.id}>{campo.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Lote
+            <select
+              value={formulario.loteAppId}
+              disabled={!puedeCrear || guardando || !formulario.campoAppId}
+              onChange={(event) => actualizarFormulario({ loteAppId: event.target.value })}
+            >
+              <option value="">Sin lote especifico</option>
+              {lotesDelCampo.map((lote) => (
+                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Severidad
+            <select
+              value={formulario.severidad}
+              disabled={!puedeCrear || guardando}
+              onChange={(event) => actualizarFormulario({ severidad: event.target.value as SeveridadObservacion })}
+            >
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+            </select>
+          </label>
+
+          <label>
+            Fecha y hora
+            <input
+              type="datetime-local"
+              value={formulario.fechaEvento}
+              disabled={!puedeCrear || guardando}
+              onChange={(event) => actualizarFormulario({ fechaEvento: event.target.value })}
+            />
+          </label>
+
+          <label className="reference-wide">
+            Titulo
+            <input
+              value={formulario.titulo}
+              disabled={!puedeCrear || guardando}
+              placeholder="Ej. Mancha foliar detectada"
+              onChange={(event) => actualizarFormulario({ titulo: event.target.value })}
+            />
+          </label>
+
+          <label className="reference-wide">
+            Descripcion
+            <textarea
+              value={formulario.descripcion}
+              disabled={!puedeCrear || guardando}
+              placeholder="Detalle de lo observado"
+              onChange={(event) => actualizarFormulario({ descripcion: event.target.value })}
+            />
+          </label>
+
+          <label>
+            Latitud
+            <input
+              type="number"
+              step="0.000001"
+              value={formulario.latitud}
+              disabled={!puedeCrear || guardando}
+              placeholder="-37.12345"
+              onChange={(event) => actualizarFormulario({ latitud: event.target.value })}
+            />
+          </label>
+
+          <label>
+            Longitud
+            <input
+              type="number"
+              step="0.000001"
+              value={formulario.longitud}
+              disabled={!puedeCrear || guardando}
+              placeholder="-58.12345"
+              onChange={(event) => actualizarFormulario({ longitud: event.target.value })}
+            />
+          </label>
+        </div>
+
+        <div className="modal-actions">
+          <button className="primary" type="button" disabled={!puedeCrear || guardando} onClick={guardar}>
+            {guardando ? 'Guardando...' : 'Guardar observacion'}
+          </button>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <h2>Registros</h2>
+            <p className="hint">Ultimas observaciones registradas dentro del alcance de la sesion.</p>
+          </div>
+        </div>
+
+        <DataTable
+          rows={observaciones}
+          getRowKey={(observacion) => observacion.id}
+          emptyMessage="Todavia no hay observaciones registradas."
+          columns={[
+            {
+              key: 'fecha',
+              label: 'Fecha',
+              width: 'minmax(130px, 0.8fr)',
+              render: (observacion) => formatearFecha(observacion.fechaEvento),
+            },
+            {
+              key: 'campo',
+              label: 'Campo',
+              width: 'minmax(170px, 1.1fr)',
+              render: (observacion) => <strong>{camposPorId.get(observacion.campoAppId)?.nombre || observacion.campoAppId}</strong>,
+            },
+            {
+              key: 'lote',
+              label: 'Lote',
+              width: 'minmax(130px, 0.8fr)',
+              render: (observacion) => observacion.loteAppId ? lotesPorId.get(observacion.loteAppId)?.nombre || observacion.loteAppId : 'Campo completo',
+            },
+            {
+              key: 'severidad',
+              label: 'Severidad',
+              width: 'minmax(92px, 0.6fr)',
+              render: (observacion) => <em>{observacion.severidad}</em>,
+            },
+            {
+              key: 'titulo',
+              label: 'Titulo',
+              width: 'minmax(170px, 1.1fr)',
+              render: (observacion) => <><strong>{observacion.titulo}</strong><span>{observacion.descripcion}</span></>,
+            },
+            {
+              key: 'ubicacion',
+              label: 'Ubicacion',
+              width: 'minmax(140px, 0.9fr)',
+              render: describirCoordenadas,
+            },
+          ]}
+        />
+      </section>
+    </section>
+  );
+}

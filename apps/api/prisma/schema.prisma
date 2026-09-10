@@ -19,6 +19,7 @@ model Usuario {
   camposErpAsignados UsuarioCampoErp[]
   notificaciones NotificacionUsuario[]
   precipitaciones PrecipitacionCampo[]
+  observaciones ObservacionCampo[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -48,6 +49,7 @@ model Cliente {
   vinculacionesErpSugeridas VinculacionErpSugerida[]
   notificaciones NotificacionUsuario[]
   precipitaciones PrecipitacionCampo[]
+  observaciones ObservacionCampo[]
   auditoriaEventos AuditoriaEvento[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -485,6 +487,7 @@ model CampoApp {
   lotes             LoteApp[]
   protocolos        ProtocoloProductivo[]
   precipitaciones   PrecipitacionCampo[]
+  observaciones     ObservacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
@@ -511,6 +514,7 @@ model LoteApp {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   precipitaciones   PrecipitacionCampo[]
+  observaciones     ObservacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
@@ -544,6 +548,40 @@ model PrecipitacionCampo {
   @@index([campoAppId])
   @@index([loteAppId])
   @@index([registroMovilId])
+  @@index([fechaEvento])
+  @@index([origen])
+  @@unique([clienteId, registroMovilId])
+}
+
+model ObservacionCampo {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  usuario               Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId             String?
+  campoApp              CampoApp @relation(fields: [campoAppId], references: [id])
+  campoAppId            String
+  campoErpId            String?
+  loteApp               LoteApp? @relation(fields: [loteAppId], references: [id])
+  loteAppId             String?
+  loteErpId             String?
+  registroMovilId       String?
+  titulo                String
+  descripcion           String
+  severidad             String   @default("media")
+  latitud               Float?
+  longitud              Float?
+  fechaEvento           DateTime
+  origen                String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([campoAppId])
+  @@index([loteAppId])
+  @@index([registroMovilId])
+  @@index([severidad])
   @@index([fechaEvento])
   @@index([origen])
   @@unique([clienteId, registroMovilId])

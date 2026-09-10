@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
-import { crearPrecipitacion, obtenerPlanificacionSnapshot } from './services/api';
+import { crearObservacion, crearPrecipitacion, obtenerPlanificacionSnapshot } from './services/api';
 import { guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
 
 const planificacionDemo: PlanificacionSnapshot = {
@@ -111,7 +111,13 @@ export default function App() {
   const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesApp[0]?.id || '');
   const [milimetros, setMilimetros] = useState('');
   const [observaciones, setObservaciones] = useState('');
+  const [tituloObservacion, setTituloObservacion] = useState('');
+  const [descripcionObservacion, setDescripcionObservacion] = useState('');
+  const [severidadObservacion, setSeveridadObservacion] = useState<'baja' | 'media' | 'alta'>('media');
+  const [latitudObservacion, setLatitudObservacion] = useState('');
+  const [longitudObservacion, setLongitudObservacion] = useState('');
   const [guardandoPrecipitacion, setGuardandoPrecipitacion] = useState(false);
+  const [guardandoObservacion, setGuardandoObservacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
   const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionDemo);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
@@ -251,6 +257,68 @@ export default function App() {
       }
     }
 
+    async function guardarObservacionMobile() {
+      if (!campoSeleccionado || !tituloObservacion.trim() || !descripcionObservacion.trim()) {
+        Alert.alert('Observaciones', 'Selecciona campo, titulo y descripcion.');
+        return;
+      }
+
+      const latitud = latitudObservacion.trim() ? Number(latitudObservacion) : undefined;
+      const longitud = longitudObservacion.trim() ? Number(longitudObservacion) : undefined;
+
+      if ((latitud !== undefined && !Number.isFinite(latitud)) || (longitud !== undefined && !Number.isFinite(longitud))) {
+        Alert.alert('Observaciones', 'Las coordenadas deben ser numericas.');
+        return;
+      }
+
+      const payload = {
+        campoAppId: campoSeleccionado.id,
+        loteAppId: loteSeleccionado?.id,
+        titulo: tituloObservacion.trim(),
+        descripcion: descripcionObservacion.trim(),
+        severidad: severidadObservacion,
+        latitud,
+        longitud,
+        fechaEvento: new Date().toISOString(),
+        origen: 'mobile' as const,
+      };
+
+      setGuardandoObservacion(true);
+      try {
+        if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
+          await guardarRegistroLocal({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tipo: 'observacion',
+            payload,
+            creadoEn: new Date().toISOString(),
+            sincronizado: false,
+          });
+          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+          Alert.alert('Observaciones', 'Observacion guardada como pendiente mobile.');
+        } else {
+          await crearObservacion(payload, sesionActiva.token);
+          Alert.alert('Observaciones', 'Observacion enviada al backend.');
+        }
+
+        setTituloObservacion('');
+        setDescripcionObservacion('');
+        setLatitudObservacion('');
+        setLongitudObservacion('');
+      } catch {
+        await guardarRegistroLocal({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          tipo: 'observacion',
+          payload,
+          creadoEn: new Date().toISOString(),
+          sincronizado: false,
+        });
+        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+        Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
+      } finally {
+        setGuardandoObservacion(false);
+      }
+    }
+
     return (
       <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.card}>
@@ -309,6 +377,52 @@ export default function App() {
                 ) : (
                   <Text style={styles.note}>No hay una linea de planificacion asociada al lote seleccionado.</Text>
                 )}
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Observaciones</Text>
+                <Text style={styles.note}>Campo: {campoSeleccionado?.nombre || 'Sin campo'}</Text>
+                <Text style={styles.note}>Lote: {loteSeleccionado?.nombre || 'Campo completo'}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Titulo"
+                  value={tituloObservacion}
+                  onChangeText={setTituloObservacion}
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  placeholder="Descripcion de lo observado"
+                  value={descripcionObservacion}
+                  onChangeText={setDescripcionObservacion}
+                />
+                <View style={styles.buttonSpacing}>
+                  <Button
+                    title={`Severidad: ${severidadObservacion}`}
+                    onPress={() => setSeveridadObservacion(severidadObservacion === 'baja' ? 'media' : severidadObservacion === 'media' ? 'alta' : 'baja')}
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="decimal-pad"
+                  placeholder="Latitud opcional"
+                  value={latitudObservacion}
+                  onChangeText={setLatitudObservacion}
+                />
+                <TextInput
+                  style={styles.input}
+                  keyboardType="decimal-pad"
+                  placeholder="Longitud opcional"
+                  value={longitudObservacion}
+                  onChangeText={setLongitudObservacion}
+                />
+                <View style={styles.buttonSpacing}>
+                  <Button
+                    title={guardandoObservacion ? 'Guardando...' : 'Guardar observacion'}
+                    disabled={guardandoObservacion}
+                    onPress={guardarObservacionMobile}
+                  />
+                </View>
               </View>
 
               <View style={styles.section}>
@@ -439,5 +553,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
+  },
+  textArea: {
+    minHeight: 92,
+    textAlignVertical: 'top',
   },
 });

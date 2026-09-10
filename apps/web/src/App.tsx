@@ -8,6 +8,7 @@ import { ProtocolosScreen } from './screens/ProtocolosScreen';
 import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
 import { GastosComercialesScreen } from './screens/GastosComercialesScreen';
 import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
+import { ObservacionesScreen } from './screens/ObservacionesScreen';
 import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
@@ -30,7 +31,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
@@ -96,6 +97,8 @@ export function App() {
       ? 'Gastos comerciales'
     : vista === 'precipitaciones'
       ? 'Precipitaciones'
+    : vista === 'observaciones'
+      ? 'Observaciones'
     : vista === 'planificacion'
       ? 'Planificacion agricola'
       : vista === 'protocolos'
@@ -123,6 +126,8 @@ export function App() {
       ? 'Referencias comerciales para estimar fletes, acondicionamiento y otros gastos'
     : vista === 'precipitaciones'
       ? 'Carga y consulta de lluvias por campo asignado'
+    : vista === 'observaciones'
+      ? 'Observaciones operativas generadas desde web y mobile'
     : vista === 'planificacion'
       ? planificacionDemo.planificacionEstado
       : vista === 'protocolos'
@@ -290,6 +295,10 @@ export function App() {
 
       {vista === 'precipitaciones' && (
         <PrecipitacionesScreen sesion={sesion} notificar={toast.notify} />
+      )}
+
+      {vista === 'observaciones' && (
+        <ObservacionesScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'usuarios' && (

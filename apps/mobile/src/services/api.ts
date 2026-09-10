@@ -1,6 +1,9 @@
 import type {
+  CrearObservacionRequest,
+  CrearObservacionResponse,
   CrearPrecipitacionRequest,
   CrearPrecipitacionResponse,
+  ObservacionesResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
 } from '@agro/tipos';
@@ -70,6 +73,12 @@ export async function obtenerPrecipitaciones(token: string) {
   }, token);
 }
 
+export async function obtenerObservaciones(token: string) {
+  return request<ObservacionesResponse>('/observaciones', {
+    method: 'GET',
+  }, token);
+}
+
 export async function obtenerPlanificacionSnapshot(token: string) {
   return request<PlanificacionSnapshot>('/planificacion/snapshot', {
     method: 'GET',
@@ -78,6 +87,13 @@ export async function obtenerPlanificacionSnapshot(token: string) {
 
 export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token: string) {
   return request<CrearPrecipitacionResponse>('/precipitaciones', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function crearObservacion(datos: CrearObservacionRequest, token: string) {
+  return request<CrearObservacionResponse>('/observaciones', {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);

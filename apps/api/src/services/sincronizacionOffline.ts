@@ -1,4 +1,5 @@
-import type { CrearPrecipitacionRequest } from '@agro/tipos';
+import type { CrearObservacionRequest, CrearPrecipitacionRequest } from '@agro/tipos';
+import { crearObservacionPersistida } from './observaciones/observacionesPrisma';
 import { crearPrecipitacionPersistida } from './precipitaciones/precipitacionesPrisma';
 
 export type RegistroParaSincronizar = {
@@ -36,12 +37,49 @@ function esPayloadPrecipitacion(payload: unknown): payload is CrearPrecipitacion
   );
 }
 
+function esPayloadObservacion(payload: unknown): payload is CrearObservacionRequest {
+  if (!esObjeto(payload)) {
+    return false;
+  }
+
+  return (
+    typeof payload.campoAppId === 'string' &&
+    typeof payload.titulo === 'string' &&
+    typeof payload.descripcion === 'string' &&
+    typeof payload.fechaEvento === 'string'
+  );
+}
+
 async function procesarRegistro(registro: RegistroParaSincronizar, usuario: UsuarioSincronizacion): Promise<RegistroSincronizado> {
-  if (registro.tipo !== 'precipitacion') {
+  if (registro.tipo !== 'precipitacion' && registro.tipo !== 'observacion') {
     return {
       ...registro,
       sincronizado: false,
       error: `Tipo de registro no soportado: ${registro.tipo}`,
+    };
+  }
+
+  if (registro.tipo === 'observacion') {
+    if (!esPayloadObservacion(registro.payload)) {
+      return {
+        ...registro,
+        sincronizado: false,
+        error: 'Payload de observacion invalido.',
+      };
+    }
+
+    await crearObservacionPersistida(
+      {
+        ...registro.payload,
+        origen: 'mobile',
+        registroMovilId: registro.id,
+      },
+      usuario,
+    );
+
+    return {
+      ...registro,
+      sincronizado: true,
     };
   }
 

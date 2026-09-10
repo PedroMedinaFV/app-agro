@@ -13,3 +13,4 @@ export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
 export * from './erp';
 export * from './planificacion';
 export * from './precipitacion';
+export * from './observacion';

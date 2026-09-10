@@ -23,6 +23,7 @@ import camposAppRuta from './routes/camposApp';
 import lotesAppRuta from './routes/lotesApp';
 import notificacionesRuta from './routes/notificaciones';
 import precipitacionesRuta from './routes/precipitaciones';
+import observacionesRuta from './routes/observaciones';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -56,6 +57,7 @@ app.use('/campos-app', autenticacionBasica, camposAppRuta);
 app.use('/lotes-app', autenticacionBasica, lotesAppRuta);
 app.use('/notificaciones', autenticacionBasica, notificacionesRuta);
 app.use('/precipitaciones', autenticacionBasica, precipitacionesRuta);
+app.use('/observaciones', autenticacionBasica, observacionesRuta);
 
 app.use(manejadorErrores);
 
