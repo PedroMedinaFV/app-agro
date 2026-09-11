@@ -351,3 +351,18 @@ Criterio acordado para el MVP:
 - pantallas con formularios pesados deben cargar padrones auxiliares al abrir el modal de alta/edicion, no al ingresar a la pantalla de listado.
 
 Motivo: mantener el inicio de sesion y la navegacion principal rapidos, evitar solicitudes repetidas y reducir bloqueos del overlay global de carga.
+
+## Edicion performante en pantallas pesadas
+
+Los editores con muchas filas, etapas, selects o calculos derivados no deben escribir en estado global en cada tecla.
+
+Patron acordado:
+
+- el listado mantiene estado global liviano;
+- el modal o pantalla de edicion abre un borrador local;
+- cada input modifica ese borrador local;
+- los calculos necesarios para la vista se recalculan dentro del borrador;
+- al guardar, el borrador se envia al backend y recien ahi se refresca o reemplaza el estado global;
+- cancelar cierra el editor sin ensuciar el estado compartido.
+
+Este criterio se aplica primero al editor de protocolos para evitar renders globales por cada cambio en etapas, labores e insumos.

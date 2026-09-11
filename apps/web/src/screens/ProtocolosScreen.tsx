@@ -21,15 +21,9 @@ interface ProtocolosScreenProps {
   setProtocoloSeleccionadoId: (id: string) => void;
   crearProtocoloVacio: () => void;
   copiarProtocoloSeleccionado: (protocolo?: ProtocoloProductivoDetalle) => void;
-  guardarProtocoloSeleccionado: () => void;
+  guardarProtocoloSeleccionado: (protocolo?: ProtocoloProductivoDetalle) => void;
   asegurarPlanificacion: () => Promise<void>;
-  actualizarProtocolos: (updater: (protocolo: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) => void;
-  agregarEtapaProtocolo: () => void;
-  actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
-  agregarLabor: (etapaId: string, servicioAppId?: string) => void;
-  agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
   formatearUsd: (valor: number) => string;
-  leerNumero: (valor: string) => number;
 }
 
 export function ProtocolosScreen({
@@ -45,13 +39,7 @@ export function ProtocolosScreen({
   copiarProtocoloSeleccionado,
   guardarProtocoloSeleccionado,
   asegurarPlanificacion,
-  actualizarProtocolos,
-  agregarEtapaProtocolo,
-  actualizarEtapa,
-  agregarLabor,
-  agregarInsumo,
   formatearUsd,
-  leerNumero,
   setProtocoloSeleccionadoId,
 }: ProtocolosScreenProps) {
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -125,8 +113,8 @@ export function ProtocolosScreen({
     setAccionPendiente({ tipo: 'copiar', protocolo });
   }
 
-  async function guardarYContinuar() {
-    await guardarProtocoloSeleccionado();
+  async function guardarYContinuar(protocoloEditado: ProtocoloProductivoDetalle) {
+    await guardarProtocoloSeleccionado(protocoloEditado);
   }
 
   return (
@@ -223,13 +211,7 @@ export function ProtocolosScreen({
           guardandoProtocolo={guardandoProtocolo}
           onClose={() => setModalAbierto(false)}
           onGuardar={guardarYContinuar}
-          actualizarProtocolos={actualizarProtocolos}
-          agregarEtapaProtocolo={agregarEtapaProtocolo}
-          actualizarEtapa={actualizarEtapa}
-          agregarLabor={agregarLabor}
-          agregarInsumo={agregarInsumo}
           formatearUsd={formatearUsd}
-          leerNumero={leerNumero}
         />
       )}
     </section>

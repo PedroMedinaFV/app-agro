@@ -310,8 +310,8 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     });
   }
 
-  async function guardarProtocoloSeleccionado() {
-    if (!sesion || !protocoloSeleccionado) {
+  async function guardarProtocoloSeleccionado(protocoloEditado = protocoloSeleccionado) {
+    if (!sesion || !protocoloEditado) {
       return;
     }
 
@@ -319,16 +319,16 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
 
     try {
       const protocoloParaGuardar: ProtocoloProductivoDetalle = {
-        ...protocoloSeleccionado,
-        etapas: protocoloSeleccionado.etapas.map((etapa) => ({
+        ...protocoloEditado,
+        etapas: protocoloEditado.etapas.map((etapa) => ({
           ...etapa,
-          diasDesdeSiembra: protocoloSeleccionado.tipoFecha === 'relativa_siembra'
+          diasDesdeSiembra: protocoloEditado.tipoFecha === 'relativa_siembra'
             ? Math.trunc(Number.isFinite(etapa.diasDesdeSiembra) ? etapa.diasDesdeSiembra as number : 0)
             : undefined,
-          fechaObjetivo: protocoloSeleccionado.tipoFecha === 'absoluta' ? etapa.fechaObjetivo : undefined,
+          fechaObjetivo: protocoloEditado.tipoFecha === 'absoluta' ? etapa.fechaObjetivo : undefined,
         })),
       };
-      const respuesta = await guardarProtocolo(protocoloSeleccionado.id, {
+      const respuesta = await guardarProtocolo(protocoloEditado.id, {
         protocolo: protocoloParaGuardar,
         origen: 'web',
         motivo: 'Guardado de protocolo desde demo web',

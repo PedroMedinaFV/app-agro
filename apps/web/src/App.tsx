@@ -296,13 +296,7 @@ export function App() {
           copiarProtocoloSeleccionado={protocolosDemo.copiarProtocoloSeleccionado}
           guardarProtocoloSeleccionado={protocolosDemo.guardarProtocoloSeleccionado}
           asegurarPlanificacion={planificacionDemo.asegurarPlanificacion}
-          actualizarProtocolos={protocolosDemo.actualizarProtocolos}
-          agregarEtapaProtocolo={protocolosDemo.agregarEtapaProtocolo}
-          actualizarEtapa={protocolosDemo.actualizarEtapa}
-          agregarLabor={protocolosDemo.agregarLabor}
-          agregarInsumo={protocolosDemo.agregarInsumo}
           formatearUsd={formatearUsd}
-          leerNumero={leerNumero}
           setProtocoloSeleccionadoId={protocolosDemo.setProtocoloSeleccionadoId}
         />
       )}

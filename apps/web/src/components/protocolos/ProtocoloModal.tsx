@@ -1,8 +1,9 @@
+import { useEffect, useMemo, useState } from 'react';
 import { ErpCampania, PlanificacionSnapshot, ProtocoloProductivoDetalle } from '@agro/tipos';
 import { DecimalInput } from '../DecimalInput';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { SignedIntegerInput } from '../SignedIntegerInput';
-import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo } from '../../utils/formatters';
+import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo, calcularCostoProtocoloWeb } from '../../utils/formatters';
 
 type ModoProtocoloModal = 'crear' | 'editar' | 'copiar';
 
@@ -14,44 +15,138 @@ interface ProtocoloModalProps {
   puedeConfigurarPlanificacion: boolean;
   guardandoProtocolo: boolean;
   onClose: () => void;
-  onGuardar: () => void;
-  actualizarProtocolos: (updater: (protocolo: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) => void;
-  agregarEtapaProtocolo: () => void;
-  actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
-  agregarLabor: (etapaId: string, servicioAppId?: string) => void;
-  agregarInsumo: (etapaId: string, insumoAppId?: string) => void;
+  onGuardar: (protocolo: ProtocoloProductivoDetalle) => void;
   formatearUsd: (valor: number) => string;
-  leerNumero: (valor: string) => number;
 }
 
 export function ProtocoloModal({
   modo,
-  protocolo,
+  protocolo: protocoloInicial,
   planificacion,
   campanias,
   puedeConfigurarPlanificacion,
   guardandoProtocolo,
   onClose,
   onGuardar,
-  actualizarProtocolos,
-  agregarEtapaProtocolo,
-  actualizarEtapa,
-  agregarLabor,
-  agregarInsumo,
   formatearUsd,
-  leerNumero,
 }: ProtocoloModalProps) {
-  const laboresDisponibles = [...planificacion.serviciosApp]
+  const [protocolo, setProtocolo] = useState(protocoloInicial);
+  const laboresDisponibles = useMemo(() => [...planificacion.serviciosApp]
     .filter((labor) => labor.activo)
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  const insumosDisponibles = [...(planificacion.insumosApp || [])]
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  const estadiosCompatibles = [...planificacion.estadiosReferencia]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [planificacion.serviciosApp]);
+  const insumosDisponibles = useMemo(() => [...(planificacion.insumosApp || [])]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [planificacion.insumosApp]);
+  const actividadesPorId = useMemo(() => new Map((planificacion.actividadesApp || []).map((actividad) => [actividad.id, actividad])), [planificacion.actividadesApp]);
+  const laboresPorId = useMemo(() => new Map(laboresDisponibles.map((labor) => [labor.id, labor])), [laboresDisponibles]);
+  const insumosPorId = useMemo(() => new Map(insumosDisponibles.map((insumo) => [insumo.id, insumo])), [insumosDisponibles]);
+  const estadiosCompatibles = useMemo(() => [...planificacion.estadiosReferencia]
     .filter((estadio) => estadio.activo && (!estadio.actividadErpId || estadio.actividadErpId === protocolo.actividadErpId))
-    .sort((a, b) => a.ordenCronologico - b.ordenCronologico || a.nombre.localeCompare(b.nombre, 'es'));
-  const zonasDisponibles = [...(planificacion.zonasApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    .sort((a, b) => a.ordenCronologico - b.ordenCronologico || a.nombre.localeCompare(b.nombre, 'es')), [planificacion.estadiosReferencia, protocolo.actividadErpId]);
+  const zonasDisponibles = useMemo(() => [...(planificacion.zonasApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [planificacion.zonasApp]);
   const titulo = modo === 'crear' ? 'Nuevo protocolo' : modo === 'copiar' ? 'Guardar copia' : 'Editar protocolo';
   const textoAccion = guardandoProtocolo ? 'Guardando...' : modo === 'editar' ? 'Editar' : 'Guardar';
+
+  useEffect(() => {
+    setProtocolo(protocoloInicial);
+  }, [protocoloInicial]);
+
+  function actualizarProtocolos(updater: (actual: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) {
+    setProtocolo((actual) => {
+      const actualizado = updater(actual);
+
+      return { ...actualizado, costoEstimadoPorHa: calcularCostoProtocoloWeb(actualizado) };
+    });
+  }
+
+  function actualizarEtapa(etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) {
+    actualizarProtocolos((actual) => ({
+      ...actual,
+      etapas: actual.etapas.map((etapa) => (etapa.id === etapaId ? { ...etapa, ...updates } : etapa)),
+    }));
+  }
+
+  function agregarEtapaProtocolo() {
+    const estadiosUsados = new Set(protocolo.etapas.map((etapa) => etapa.estadioReferenciaId).filter(Boolean));
+    const estadio = estadiosCompatibles.find((item) => !estadiosUsados.has(item.id)) || estadiosCompatibles[0];
+
+    if (!estadio) {
+      return;
+    }
+
+    const etapaId = `etapa-${Date.now()}`;
+    actualizarProtocolos((actual) => ({
+      ...actual,
+      etapas: [
+        ...actual.etapas,
+        {
+          id: etapaId,
+          protocoloId: actual.id,
+          estadioReferenciaId: estadio.id,
+          estadioCodigo: estadio.codigo,
+          orden: estadio.ordenCronologico,
+          nombre: estadio.nombre,
+          diasDesdeSiembra: actual.tipoFecha === 'relativa_siembra' ? 0 : undefined,
+          labores: [],
+          insumos: [],
+        },
+      ],
+    }));
+  }
+
+  function agregarLabor(etapaId: string, servicioAppId?: string) {
+    const servicioApp = (servicioAppId ? laboresPorId.get(servicioAppId) : undefined) || laboresDisponibles[0];
+
+    if (!servicioApp) {
+      return;
+    }
+
+    const cantidadPorHa = 1;
+    const costoUnitario = servicioApp.costoUnitarioSugerido || 0;
+    const indiceAplicacion = 1;
+
+    actualizarEtapa(etapaId, {
+      labores: protocolo.etapas.find((etapa) => etapa.id === etapaId)?.labores.concat({
+        id: `labor-${Date.now()}`,
+        etapaId,
+        indiceAplicacion,
+        servicioAppId: servicioApp.id,
+        nombre: servicioApp.nombre,
+        descripcion: servicioApp.descripcionAbreviada,
+        unidad: servicioApp.unidadSugerida,
+        cantidadPorHa,
+        costoUnitario,
+        costoPorHa: calcularCostoLaborProtocolo({ cantidadPorHa, costoUnitario, indiceAplicacion } as Parameters<typeof calcularCostoLaborProtocolo>[0]),
+      }) || [],
+    });
+  }
+
+  function agregarInsumo(etapaId: string, insumoAppId?: string) {
+    const insumoApp = (insumoAppId ? insumosPorId.get(insumoAppId) : undefined) || insumosDisponibles[0];
+
+    if (!insumoApp) {
+      return;
+    }
+
+    const dosisPorHa = 1;
+    const precioUnitarioEstimado = insumoApp.precioUnitarioEstimado || 0;
+    const indiceAplicacion = 1;
+
+    actualizarEtapa(etapaId, {
+      insumos: protocolo.etapas.find((etapa) => etapa.id === etapaId)?.insumos.concat({
+        id: `insumo-${Date.now()}`,
+        etapaId,
+        indiceAplicacion,
+        insumoAppId: insumoApp.id,
+        insumoErpId: insumoApp.insumoErpId,
+        nombre: insumoApp.nombre,
+        tipo: insumoApp.tipo,
+        unidad: insumoApp.unidad,
+        dosisPorHa,
+        precioUnitarioEstimado,
+        costoPorHa: calcularCostoInsumoProtocolo({ dosisPorHa, precioUnitarioEstimado, indiceAplicacion } as Parameters<typeof calcularCostoInsumoProtocolo>[0]),
+      }) || [],
+    });
+  }
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -101,7 +196,7 @@ export function ProtocoloModal({
               <select
                 value={protocolo.actividadAppId}
                 onChange={(event) => {
-                  const actividad = planificacion.actividadesApp?.find((item) => item.id === event.target.value);
+                  const actividad = actividadesPorId.get(event.target.value);
                   actualizarProtocolos((actual) => ({ ...actual, actividadAppId: event.target.value, actividadErpId: actividad?.actividadErpId }));
                 }}
                 disabled={!puedeConfigurarPlanificacion}
@@ -264,7 +359,7 @@ export function ProtocoloModal({
                         <select
                           value={labor.servicioAppId || ''}
                           onChange={(event) => {
-                            const ServicioApp = laboresDisponibles.find((item) => item.id === event.target.value);
+                            const ServicioApp = laboresPorId.get(event.target.value);
                             if (!ServicioApp) {
                               return;
                             }
@@ -367,7 +462,7 @@ export function ProtocoloModal({
                         <select
                           value={insumo.insumoAppId || ''}
                           onChange={(event) => {
-                            const insumoApp = insumosDisponibles.find((item) => item.id === event.target.value);
+                            const insumoApp = insumosPorId.get(event.target.value);
                             if (!insumoApp) {
                               return;
                             }
@@ -461,7 +556,7 @@ export function ProtocoloModal({
 
         <div className="modal-actions">
           <button className="small" onClick={onClose}>Cancelar</button>
-          <button className="primary" onClick={onGuardar} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim() || !protocolo.campaniaErpId || !protocolo.actividadAppId}>
+          <button className="primary" onClick={() => onGuardar(protocolo)} disabled={!puedeConfigurarPlanificacion || guardandoProtocolo || !protocolo.nombre.trim() || !protocolo.campaniaErpId || !protocolo.actividadAppId}>
             <span className="button-content">
               {guardandoProtocolo && <LoadingSpinner label="Guardando protocolo" />}
               {textoAccion}
