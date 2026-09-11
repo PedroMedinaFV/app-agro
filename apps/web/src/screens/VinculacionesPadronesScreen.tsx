@@ -16,8 +16,11 @@ import type {
   SesionUsuario,
   ZonaApp,
 } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Panel } from '../components/Panel';
 import {
   guardarActividadApp,
   guardarCampoApp,
@@ -452,12 +455,10 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
         <article><span>Lotes</span><strong>{lotes.filter((item) => item.loteErpId).length}</strong></article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Vinculaciones ERP</h2>
-            <p className="hint">{estado}</p>
-          </div>
+      <Panel
+        title="Vinculaciones ERP"
+        description={estado}
+        actions={(
           <label className="compact-field">
             Padron
             <select value={tipoFiltro} onChange={(event) => setTipoFiltro(event.target.value as TipoPadron | 'todos')}>
@@ -471,8 +472,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               <option value="labores">Labores</option>
             </select>
           </label>
-        </div>
-
+        )}
+      >
         <DataTable
           rows={filasFiltradas}
           getRowKey={(fila) => `${fila.tipo}:${fila.id}`}
@@ -488,15 +489,15 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               label: 'Acciones',
               width: 'minmax(170px, 0.8fr)',
               render: (fila) => (
-                <div className="button-row table-actions">
-                  <button className="small" type="button" disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)}>Editar</button>
-                  <button className="small" type="button" disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => desvincular(fila)}>Desvincular</button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar vinculacion ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)} />
+                  <IconButton icon="unlink" label={`Desvincular ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => desvincular(fila)} />
                 </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {vinculacionEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -506,7 +507,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
                 <h2 id="editar-vinculacion-title">Editar vinculacion</h2>
                 <p className="hint">El cambio reemplaza la referencia ERP asociada y queda registrado en auditoria.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => setVinculacionEnEdicion(null)}>Cerrar</button>
+              <Button variant="ghost" onClick={() => setVinculacionEnEdicion(null)}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -523,9 +524,9 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
             </div>
             <div className="modal-actions">
               <span className="hint">Si el registro correcto no aparece, revisa que este sincronizado desde ALBOR y no este vinculado a otro registro.</span>
-              <button className="primary" type="button" disabled={guardando || !vinculacionEnEdicion.destinoErpId} onClick={guardarEdicion}>
+              <Button variant="primary" disabled={guardando || !vinculacionEnEdicion.destinoErpId} onClick={guardarEdicion}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando vinculacion" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

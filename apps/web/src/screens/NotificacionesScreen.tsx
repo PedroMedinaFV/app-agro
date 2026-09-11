@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { NotificacionUsuarioResumen, SesionUsuario } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { Panel } from '../components/Panel';
 import { generarSugerenciasVinculacion, obtenerNotificaciones, resolverNotificacionVinculacion } from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -118,17 +121,15 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
         </article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Notificaciones internas</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <button className="secondary" type="button" onClick={buscarSugerencias} disabled={generando}>
+      <Panel
+        title="Notificaciones internas"
+        description={estado}
+        actions={(
+          <Button variant="secondary" onClick={buscarSugerencias} disabled={generando}>
             {generando ? 'Buscando...' : 'Buscar sugerencias'}
-          </button>
-        </div>
-
+          </Button>
+        )}
+      >
         <DataTable
           rows={notificaciones}
           getRowKey={(notificacion) => notificacion.id}
@@ -144,29 +145,26 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
               label: 'Acciones',
               width: 'minmax(170px, 0.8fr)',
               render: (notificacion) => (
-                <div className="button-row table-actions">
-                  <button
-                    className="small"
-                    type="button"
+                <div className="table-icon-actions">
+                  <IconButton
+                    icon="check"
+                    label={resolviendoId === notificacion.id ? 'Resolviendo' : 'Aceptar sugerencia'}
                     disabled={resolviendoId !== null || !notificacion.vinculacionSugerida}
                     onClick={() => resolverSugerencia(notificacion, 'aceptar')}
-                  >
-                    {resolviendoId === notificacion.id ? 'Resolviendo...' : 'Aceptar'}
-                  </button>
-                  <button
-                    className="danger"
-                    type="button"
+                  />
+                  <IconButton
+                    icon="close"
+                    className="danger-icon"
+                    label="Descartar sugerencia"
                     disabled={resolviendoId !== null || !notificacion.vinculacionSugerida}
                     onClick={() => resolverSugerencia(notificacion, 'descartar')}
-                  >
-                    Descartar
-                  </button>
+                  />
                 </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
     </section>
   );
 }

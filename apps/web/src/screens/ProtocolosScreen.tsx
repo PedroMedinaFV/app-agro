@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ErpCampania, ErpSnapshot, PlanificacionSnapshot, ProtocoloProductivoDetalle, ProtocolosSnapshot, SesionUsuario } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { ProtocoloModal } from '../components/protocolos/ProtocoloModal';
 import { obtenerCampaniasErpImportadas } from '../services/api';
 
@@ -86,27 +90,19 @@ export function ProtocolosScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Protocolos productivos</p>
-          <h2>Catalogo de protocolos</h2>
-          <p className="hint">Plantillas reutilizables de labores e insumos para calcular costos productivos por hectarea.</p>
-        </div>
-        <div className="button-row">
-          <button className="secondary" onClick={abrirNuevoProtocolo} disabled={!puedeConfigurarPlanificacion}>Nuevo protocolo</button>
-        </div>
-        <div className="status-pill">{protocolos.protocolos.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Protocolos productivos"
+        title="Catalogo de protocolos"
+        description="Plantillas reutilizables de labores e insumos para calcular costos productivos por hectarea."
+        aside={<div className="status-pill">{protocolos.protocolos.length}</div>}
+        actions={<Button variant="secondary" onClick={abrirNuevoProtocolo} disabled={!puedeConfigurarPlanificacion}>Nuevo protocolo</Button>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Protocolos registrados</h2>
-            <p className="hint">Listado para comparar, editar y copiar protocolos productivos.</p>
-          </div>
-          <span className="status-pill">{protocolos.protocolos.length}</span>
-        </div>
-
+      <Panel
+        title="Protocolos registrados"
+        description="Listado para comparar, editar y copiar protocolos productivos."
+        actions={<span className="status-pill">{protocolos.protocolos.length}</span>}
+      >
         <DataTable
           rows={protocolos.protocolos}
           getRowKey={(protocolo) => protocolo.id}
@@ -166,15 +162,15 @@ export function ProtocolosScreen({
               label: 'Acciones',
               width: 'minmax(132px, 0.75fr)',
               render: (protocolo) => (
-                <div className="button-row compact">
-                  <button className="small" onClick={() => abrirEditarProtocolo(protocolo.id)} disabled={!puedeConfigurarPlanificacion}>Editar</button>
-                  <button className="small" onClick={() => abrirCopiarProtocolo(protocolo)} disabled={!puedeConfigurarPlanificacion}>Copiar</button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar protocolo ${protocolo.nombre}`} onClick={() => abrirEditarProtocolo(protocolo.id)} disabled={!puedeConfigurarPlanificacion} />
+                  <IconButton icon="copy" label={`Copiar protocolo ${protocolo.nombre}`} onClick={() => abrirCopiarProtocolo(protocolo)} disabled={!puedeConfigurarPlanificacion} />
                 </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {modalAbierto && protocoloSeleccionado && (
         <ProtocoloModal

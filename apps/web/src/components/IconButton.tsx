@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type IconName = 'edit' | 'copy' | 'plus' | 'close' | 'lock' | 'link';
+type IconName = 'edit' | 'copy' | 'plus' | 'close' | 'lock' | 'link' | 'check' | 'unlink';
 
 type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon: IconName;
@@ -50,6 +50,24 @@ function Icon({ icon }: { icon: IconName }) {
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1" />
         <path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1" />
+      </svg>
+    );
+  }
+
+  if (icon === 'unlink') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 7h1a5 5 0 0 1 3.5 8.5l-2 2A5 5 0 0 1 10 17" />
+        <path d="M9 17H8a5 5 0 0 1-3.5-8.5l2-2A5 5 0 0 1 14 7" />
+        <path d="M4 4l16 16" />
+      </svg>
+    );
+  }
+
+  if (icon === 'check') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m5 12 4 4L19 6" />
       </svg>
     );
   }

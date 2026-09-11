@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { PadronErpSincronizable, padronesErpSincronizables, SincronizacionErpHistorialItem } from '@agro/tipos';
 import type { SincronizacionErpResultado } from '../services/api';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { Panel } from '../components/Panel';
 
 type SincronizacionItem = {
   id: PadronErpSincronizable;
@@ -87,22 +91,20 @@ export function SincronizacionErpScreen({
 
   return (
     <section className="planning-stack">
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Sincronizacion ERP</h2>
-            <p className="hint">Selecciona que informacion queres traer desde ALBOR. El backend agregara dependencias necesarias para mantener relaciones consistentes.</p>
-          </div>
-          <div className="button-row">
-            <button className="secondary" type="button" onClick={alternarTodos}>
+      <Panel
+        title="Sincronizacion ERP"
+        description="Selecciona que informacion queres traer desde ALBOR. El backend agregara dependencias necesarias para mantener relaciones consistentes."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="secondary" onClick={alternarTodos}>
               {todosSeleccionados ? 'Quitar todo' : 'Seleccionar todo'}
-            </button>
-            <button className="primary" type="button" disabled={!puedeSincronizar} onClick={() => sincronizarPadrones(seleccionados)}>
+            </Button>
+            <Button variant="primary" disabled={!puedeSincronizar} onClick={() => sincronizarPadrones(seleccionados)}>
               {sincronizandoPadrones ? 'Sincronizando...' : 'Sincronizar seleccion'}
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         {empresasSeleccionadas.length === 0 && (
           <div className="status-error">Primero selecciona y guarda al menos una empresa AGRO en Empresas ERP.</div>
         )}
@@ -123,16 +125,10 @@ export function SincronizacionErpScreen({
             </label>
           ))}
         </div>
-      </section>
+      </Panel>
 
       {ultimoResultadoSync && (
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Ultimo resultado</h2>
-              <p className="hint">Sincronizado: {formatearFecha(ultimoResultadoSync.sincronizadoEn)}</p>
-            </div>
-          </div>
+        <Panel title="Ultimo resultado" description={`Sincronizado: ${formatearFecha(ultimoResultadoSync.sincronizadoEn)}`}>
           <div className="company-summary">
             {resumen.map(([label, valor]) => (
               <article key={label}>
@@ -141,17 +137,10 @@ export function SincronizacionErpScreen({
               </article>
             ))}
           </div>
-        </section>
+        </Panel>
       )}
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Historial de sincronizaciones</h2>
-            <p className="hint">Ultimas corridas persistidas, con estado y detalle por empresa/padron.</p>
-          </div>
-        </div>
-
+      <Panel title="Historial de sincronizaciones" description="Ultimas corridas persistidas, con estado y detalle por empresa/padron.">
         <DataTable
           rows={historialSincronizaciones}
           getRowKey={(sync) => sync.id}
@@ -187,24 +176,17 @@ export function SincronizacionErpScreen({
               label: '',
               width: '56px',
               render: (sync) => (
-                <button className="small" type="button" title="Ver detalle" onClick={() => setSyncSeleccionadaId(sync.id)}>
-                  Ver
-                </button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label="Ver detalle" onClick={() => setSyncSeleccionadaId(sync.id)} />
+                </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {syncSeleccionada && (
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Detalle por empresa y padron</h2>
-              <p className="hint">Corrida iniciada: {formatearFecha(syncSeleccionada.iniciadoEn)}</p>
-            </div>
-          </div>
-
+        <Panel title="Detalle por empresa y padron" description={`Corrida iniciada: ${formatearFecha(syncSeleccionada.iniciadoEn)}`}>
           <DataTable
             rows={syncSeleccionada.detalles}
             getRowKey={(detalle) => detalle.id}
@@ -243,7 +225,7 @@ export function SincronizacionErpScreen({
               },
             ]}
           />
-        </section>
+        </Panel>
       )}
     </section>
   );

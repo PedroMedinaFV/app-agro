@@ -1,5 +1,8 @@
 import { ErpEmpresa } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Panel } from '../components/Panel';
 
 interface EmpresasErpScreenProps {
   puedeConfigurarErp: boolean;
@@ -25,22 +28,20 @@ export function EmpresasErpScreen({
   }
 
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Empresas asociadas a AGRO</h2>
-          <p className="hint">La seleccion define con que valores de x-company trabajara la sincronizacion ERP.</p>
-        </div>
-        <div className="button-row">
-          <button className="primary" onClick={guardarSeleccionEmpresas} disabled={guardandoEmpresas}>
+    <Panel
+      title="Empresas asociadas a AGRO"
+      description="La seleccion define con que valores de x-company trabajara la sincronizacion ERP."
+      actions={(
+        <ActionBar align="end">
+          <Button variant="primary" onClick={guardarSeleccionEmpresas} disabled={guardandoEmpresas}>
             <span className="button-content">
               {guardandoEmpresas && <LoadingSpinner label="Guardando empresas" />}
               {guardandoEmpresas ? 'Guardando...' : 'Guardar seleccion'}
             </span>
-          </button>
-        </div>
-      </div>
-
+          </Button>
+        </ActionBar>
+      )}
+    >
       <div className="company-summary">
         <article>
           <span>Disponibles</span>
@@ -69,6 +70,6 @@ export function EmpresasErpScreen({
           </label>
         ))}
       </div>
-    </section>
+    </Panel>
   );
 }
