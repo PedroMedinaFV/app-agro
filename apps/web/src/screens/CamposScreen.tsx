@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { Panel } from '../components/Panel';
 import { guardarCampoApp, obtenerCamposErpImportados, obtenerCamposApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -421,13 +425,11 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
         </article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Campos</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <div className="button-row">
+      <Panel
+        title="Campos"
+        description={estado}
+        actions={(
+          <ActionBar align="end">
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, nombre o empresa" />
@@ -443,12 +445,12 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 ))}
               </select>
             </label>
-            <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoCampo}>
+            <Button variant="primary" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoCampo}>
               Nuevo campo
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasCampo}
           getRowKey={(fila) => fila.id}
@@ -466,10 +468,10 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && setCampoEnEdicion(fila.campoPropio)}>Editar</button>
+                  <div className="table-icon-actions">
+                    <IconButton icon="edit" label={`Editar campo ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && setCampoEnEdicion(fila.campoPropio)} />
                     {fila.campoPropio?.estadoVinculacion === 'provisorio' && !fila.campoPropio.campoErpId && (
-                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && abrirVinculacion(fila.campoPropio)}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular campo ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.campoPropio && abrirVinculacion(fila.campoPropio)} />
                     )}
                   </div>
                 )
@@ -477,7 +479,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {campoEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -487,7 +489,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 <h2>{camposPropios.some((campo) => campo.id === campoEnEdicion.id) ? 'Editar campo' : 'Nuevo campo'}</h2>
                 <p className="hint">Los campos creados aca son propios de Agro App hasta vincularlos con ALBOR.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => setCampoEnEdicion(null)}>Cerrar</button>
+              <Button variant="ghost" onClick={() => setCampoEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -559,12 +561,12 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
             <div className="modal-actions">
               <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
-              <button className="primary" type="button" disabled={guardando} onClick={guardarCampo}>
+              <Button variant="primary" disabled={guardando} onClick={guardarCampo}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Guardar
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -578,7 +580,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 <h2 id="vincular-campo-title">Vincular campo provisorio</h2>
                 <p className="hint">La vinculacion enlaza el campo propio con el identificador ERP y deja visible el campo sincronizado como referencia operativa.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setCampoPropioParaVincular(null); setCampoErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setCampoPropioParaVincular(null); setCampoErpVincularId(''); }}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -601,12 +603,12 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
             <div className="modal-actions">
               <span className="hint">El backend valida que el campo ERP exista, respete la zona vinculada y no este asociado a otro campo del cliente.</span>
-              <button className="primary" type="button" disabled={guardando || !campoErpVincularId} onClick={confirmarVinculacionCampo}>
+              <Button variant="primary" disabled={guardando || !campoErpVincularId} onClick={confirmarVinculacionCampo}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Vincular
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

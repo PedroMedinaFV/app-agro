@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErpInsumo, ErpMoneda, ErpSnapshot, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas } from '../services/api';
 import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -342,28 +347,24 @@ export function InsumosAppScreen({
         <article><span>Vinculados</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'vinculado_erp').length}</strong></article>
       </section>
 
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Padrones maestros</p>
-          <h2>Insumos</h2>
-          <p className="hint">Catalogo operativo para seleccionar insumos en protocolos. {estadoCargaErp}</p>
-        </div>
-        <div className="status-pill">{insumosOrdenados.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Padrones maestros"
+        title="Insumos"
+        description={`Catalogo operativo para seleccionar insumos en protocolos. ${estadoCargaErp}`}
+        aside={<div className="status-pill">{insumosOrdenados.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Insumos registrados</h2>
-            <p className="hint">El precio estimado se copia al protocolo al seleccionar el insumo; cambios posteriores no alteran historicos cerrados.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevoInsumo} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Insumos registrados"
+        description="El precio estimado se copia al protocolo al seleccionar el insumo; cambios posteriores no alteran historicos cerrados."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevoInsumo} disabled={!puedeConfigurarPlanificacion}>
               Nuevo insumo
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasInsumo}
           getRowKey={(fila) => fila.id}
@@ -381,16 +382,15 @@ export function InsumosAppScreen({
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button
-                      className="small"
+                  <div className="table-icon-actions">
+                    <IconButton
+                      icon="edit"
+                      label={fila.insumoErp ? `Editar precio ${fila.nombre}` : `Editar insumo ${fila.nombre}`}
                       onClick={() => fila.insumoErp ? abrirEditarInsumoErp(fila.insumoErp, fila.insumoPropio) : fila.insumoPropio && abrirEditarInsumo(fila.insumoPropio)}
                       disabled={!puedeConfigurarPlanificacion}
-                    >
-                      {fila.insumoErp ? 'Editar precio' : 'Editar'}
-                    </button>
+                    />
                     {fila.insumoPropio?.estadoVinculacion === 'provisorio' && !fila.insumoPropio.insumoErpId && (
-                      <button className="small" type="button" onClick={() => fila.insumoPropio && abrirVinculacion(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular insumo ${fila.nombre}`} onClick={() => fila.insumoPropio && abrirVinculacion(fila.insumoPropio)} disabled={!puedeConfigurarPlanificacion} />
                     )}
                   </div>
                 )
@@ -398,7 +398,7 @@ export function InsumosAppScreen({
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {insumoEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -408,7 +408,7 @@ export function InsumosAppScreen({
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="insumo-modal-title">{modoModal === 'crear' ? 'Nuevo insumo' : 'Editar insumo'}</h2>
               </div>
-              <button className="small" onClick={() => setInsumoEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setInsumoEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -508,9 +508,9 @@ export function InsumosAppScreen({
             )}
 
             <div className="modal-actions">
-              <button className="small" onClick={() => setInsumoEnEdicion(null)}>Cancelar</button>
-              <button
-                className="primary"
+              <Button variant="small" onClick={() => setInsumoEnEdicion(null)}>Cancelar</Button>
+              <Button
+                variant="primary"
                 onClick={aplicarModal}
                 disabled={guardandoInsumos || !insumoEnEdicion.nombre.trim() || !insumoEnEdicion.unidad.trim() || !insumoEnEdicion.empresaErpId.trim() || existeCodigoDuplicado}
               >
@@ -518,7 +518,7 @@ export function InsumosAppScreen({
                   {guardandoInsumos && <LoadingSpinner label="Guardando insumo" />}
                   {guardandoInsumos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -532,7 +532,7 @@ export function InsumosAppScreen({
                 <h2 id="vincular-insumo-title">Vincular insumo provisorio</h2>
                 <p className="hint">El insumo propio copiara datos base de ALBOR y dejara de mostrarse como fila independiente.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setInsumoPropioParaVincular(null); setInsumoErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setInsumoPropioParaVincular(null); setInsumoErpVincularId(''); }}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -551,9 +551,9 @@ export function InsumosAppScreen({
             </div>
             <div className="modal-actions">
               <span className="hint">El backend valida que el insumo ERP exista y no este vinculado a otro insumo del cliente.</span>
-              <button className="primary" type="button" disabled={guardandoInsumos || !insumoErpVincularId} onClick={confirmarVinculacionInsumo}>
+              <Button variant="primary" disabled={guardandoInsumos || !insumoErpVincularId} onClick={confirmarVinculacionInsumo}>
                 <span className="button-content">{guardandoInsumos && <span className="loading-spinner" />}Vincular</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

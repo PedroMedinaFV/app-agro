@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { Panel } from '../components/Panel';
 import {
   guardarCampoApp,
   guardarLoteApp,
@@ -546,13 +550,11 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
         </article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Lotes</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <div className="button-row">
+      <Panel
+        title="Lotes"
+        description={estado}
+        actions={(
+          <ActionBar align="end">
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, lote, campo o empresa" />
@@ -568,12 +570,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 ))}
               </select>
             </label>
-            <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoLote}>
+            <Button variant="primary" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoLote}>
               Nuevo lote
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasLote}
           getRowKey={(fila) => fila.id}
@@ -591,23 +593,23 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
               width: 'minmax(150px, 0.75fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)}>Editar</button>
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)}>Copiar</button>
+                  <div className="table-icon-actions">
+                    <IconButton icon="edit" label={`Editar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)} />
+                    <IconButton icon="copy" label={`Copiar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)} />
                     {fila.lotePropio?.estadoVinculacion === 'provisorio' && (
-                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirVinculacion(fila.lotePropio)}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirVinculacion(fila.lotePropio)} />
                     )}
                   </div>
                 )
                 : (
-                  <div className="button-row table-actions">
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion || !fila.loteErp} onClick={() => fila.loteErp && copiarLoteErp(fila.loteErp)}>Copiar</button>
+                  <div className="table-icon-actions">
+                    <IconButton icon="copy" label={`Copiar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion || !fila.loteErp} onClick={() => fila.loteErp && copiarLoteErp(fila.loteErp)} />
                   </div>
                 ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {loteEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -617,7 +619,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 <h2>{modoFormulario === 'editar' ? 'Editar lote' : modoFormulario === 'copiar' ? 'Copiar lote' : 'Nuevo lote'}</h2>
                 <p className="hint">Los lotes propios permiten planificar aunque todavia no existan en ALBOR.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => setLoteEnEdicion(null)}>Cerrar</button>
+              <Button variant="ghost" onClick={() => setLoteEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -684,12 +686,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
             <div className="modal-actions">
               <span className="hint">{modoFormulario === 'copiar' ? 'La copia se guarda como lote provisorio nuevo y queda lista para ajustar nombre o codigo.' : 'La vinculacion con ERP quedara como accion separada, propuesta y auditada.'}</span>
-              <button className="primary" type="button" disabled={guardando} onClick={guardarLote}>
+              <Button variant="primary" disabled={guardando} onClick={guardarLote}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Guardar
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -703,7 +705,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 <h2 id="vincular-lote-title">Vincular lote provisorio</h2>
                 <p className="hint">La vinculacion no modifica los datos historicos de planificacion; solo enlaza el lote propio con el identificador ERP.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setLotePropioParaVincular(null); setLoteErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setLotePropioParaVincular(null); setLoteErpVincularId(''); }}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -730,12 +732,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
             <div className="modal-actions">
               <span className="hint">El backend valida que el lote ERP exista y que no este vinculado a otro lote del cliente.</span>
-              <button className="primary" type="button" disabled={guardando || !loteErpVincularId} onClick={confirmarVinculacionLote}>
+              <Button variant="primary" disabled={guardando || !loteErpVincularId} onClick={confirmarVinculacionLote}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Vincular
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

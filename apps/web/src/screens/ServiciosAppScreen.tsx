@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErpMoneda, ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados } from '../services/api';
 import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -347,28 +352,24 @@ export function ServiciosAppScreen({
         <article><span>Vinculadas</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'vinculado_erp').length}</strong></article>
       </section>
 
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Padrones maestros</p>
-          <h2>Labores</h2>
-          <p className="hint">Catalogo propio para seleccionar trabajos en protocolos. {estadoCargaErp}</p>
-        </div>
-        <div className="status-pill">{laboresOrdenadas.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Padrones maestros"
+        title="Labores"
+        description={`Catalogo propio para seleccionar trabajos en protocolos. ${estadoCargaErp}`}
+        aside={<div className="status-pill">{laboresOrdenadas.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Labores registradas</h2>
-            <p className="hint">El costo sugerido se copia al protocolo al seleccionar la labor; cambios posteriores no alteran historicos cerrados.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevaLabor} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Labores registradas"
+        description="El costo sugerido se copia al protocolo al seleccionar la labor; cambios posteriores no alteran historicos cerrados."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevaLabor} disabled={!puedeConfigurarPlanificacion}>
               Nueva labor
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasLabor}
           getRowKey={(fila) => fila.id}
@@ -386,16 +387,15 @@ export function ServiciosAppScreen({
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button
-                      className="small"
+                  <div className="table-icon-actions">
+                    <IconButton
+                      icon="edit"
+                      label={fila.servicioErp ? `Editar costo ${fila.nombre}` : `Editar labor ${fila.nombre}`}
                       onClick={() => fila.servicioErp ? abrirEditarServicioErp(fila.servicioErp, fila.laborPropia) : fila.laborPropia && abrirEditarLabor(fila.laborPropia)}
                       disabled={!puedeConfigurarPlanificacion}
-                    >
-                      {fila.servicioErp ? 'Editar costo' : 'Editar'}
-                    </button>
+                    />
                     {fila.laborPropia?.estadoVinculacion === 'provisorio' && !fila.laborPropia.servicioErpId && (
-                      <button className="small" type="button" onClick={() => fila.laborPropia && abrirVinculacion(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular labor ${fila.nombre}`} onClick={() => fila.laborPropia && abrirVinculacion(fila.laborPropia)} disabled={!puedeConfigurarPlanificacion} />
                     )}
                   </div>
                 )
@@ -403,7 +403,7 @@ export function ServiciosAppScreen({
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {laborEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -413,7 +413,7 @@ export function ServiciosAppScreen({
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="labor-modal-title">{modoModal === 'crear' ? 'Nueva labor' : 'Editar labor'}</h2>
               </div>
-              <button className="small" onClick={() => setLaborEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setLaborEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -522,9 +522,9 @@ export function ServiciosAppScreen({
             )}
 
             <div className="modal-actions">
-              <button className="small" onClick={() => setLaborEnEdicion(null)}>Cancelar</button>
-              <button
-                className="primary"
+              <Button variant="small" onClick={() => setLaborEnEdicion(null)}>Cancelar</Button>
+              <Button
+                variant="primary"
                 onClick={aplicarModal}
                 disabled={guardandoLabores || !laborEnEdicion.nombre.trim() || !laborEnEdicion.unidadSugerida.trim() || existeCodigoDuplicado}
               >
@@ -532,7 +532,7 @@ export function ServiciosAppScreen({
                   {guardandoLabores && <LoadingSpinner label="Guardando labor" />}
                   {guardandoLabores ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -546,7 +546,7 @@ export function ServiciosAppScreen({
                 <h2 id="vincular-labor-title">Vincular labor provisoria</h2>
                 <p className="hint">La labor propia copiara datos base del servicio ALBOR y dejara de mostrarse como fila independiente.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setLaborPropiaParaVincular(null); setServicioErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setLaborPropiaParaVincular(null); setServicioErpVincularId(''); }}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -565,9 +565,9 @@ export function ServiciosAppScreen({
             </div>
             <div className="modal-actions">
               <span className="hint">El backend valida que el servicio ERP exista y no este vinculado a otra labor del cliente.</span>
-              <button className="primary" type="button" disabled={guardandoLabores || !servicioErpVincularId} onClick={confirmarVinculacionLabor}>
+              <Button variant="primary" disabled={guardandoLabores || !servicioErpVincularId} onClick={confirmarVinculacionLabor}>
                 <span className="button-content">{guardandoLabores && <span className="loading-spinner" />}Vincular</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
