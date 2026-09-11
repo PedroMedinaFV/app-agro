@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { DestinoVentaReferencia, PlanificacionSnapshot } from '@agro/tipos';
+import { useEffect, useMemo, useState } from 'react';
+import { DestinoVentaReferencia, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { obtenerDestinosVenta } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -15,6 +16,7 @@ function normalizarTexto(valor: string) {
 }
 
 interface DestinosVentaScreenProps {
+  sesion: SesionUsuario;
   planificacion: PlanificacionSnapshot;
   puedeConfigurarPlanificacion: boolean;
   guardandoDestinos: boolean;
@@ -22,16 +24,28 @@ interface DestinosVentaScreenProps {
 }
 
 export function DestinosVentaScreen({
+  sesion,
   planificacion,
   puedeConfigurarPlanificacion,
   guardandoDestinos,
   guardarDestino,
 }: DestinosVentaScreenProps) {
+  const [destinosDb, setDestinosDb] = useState<DestinoVentaReferencia[]>([]);
   const [destinoEnEdicion, setDestinoEnEdicion] = useState<DestinoVentaReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const destinosBase = destinosDb.length ? destinosDb : planificacion.destinosReferencia;
   const destinosOrdenados = useMemo(() => (
-    [...planificacion.destinosReferencia].sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta))
-  ), [planificacion.destinosReferencia]);
+    [...destinosBase].sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta))
+  ), [destinosBase]);
+
+  async function cargarDestinosDb() {
+    const respuesta = await obtenerDestinosVenta(sesion.token);
+    setDestinosDb(respuesta.destinos);
+  }
+
+  useEffect(() => {
+    cargarDestinosDb().catch(() => undefined);
+  }, [sesion.token]);
 
   function crearBorradorDestino(): DestinoVentaReferencia {
     const ahora = new Date().toISOString();
@@ -89,6 +103,7 @@ export function DestinosVentaScreen({
     const guardado = await guardarDestino(destinoPreparado);
 
     if (guardado) {
+      await cargarDestinosDb().catch(() => undefined);
       setDestinoEnEdicion(null);
     }
   }

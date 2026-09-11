@@ -342,6 +342,7 @@ export function App() {
 
       {vista === 'padrones-destinos' && (
         <DestinosVentaScreen
+          sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           guardandoDestinos={planificacionDemo.guardandoDestinos}
