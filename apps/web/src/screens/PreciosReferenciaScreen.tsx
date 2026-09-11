@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActividadApp, ErpActividad, ErpEspecie, ErpPuerto, PlanificacionSnapshot, PrecioReferencia, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
+import { DecimalInput } from '../components/DecimalInput';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { guardarActividadApp, obtenerActividadesErpImportadas, obtenerActividadesApp, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
 
@@ -22,7 +23,6 @@ interface PreciosReferenciaScreenProps {
   guardandoPrecios: boolean;
   guardarPrecioReferencia: (precio: PrecioReferencia) => Promise<boolean>;
   formatearUsd: (valor: number) => string;
-  leerNumero: (valor: string) => number;
 }
 
 type ActividadSeleccionable = {
@@ -45,7 +45,6 @@ export function PreciosReferenciaScreen({
   guardandoPrecios,
   guardarPrecioReferencia,
   formatearUsd,
-  leerNumero,
 }: PreciosReferenciaScreenProps) {
   const [precioEnEdicion, setPrecioEnEdicion] = useState<PrecioReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
@@ -371,12 +370,9 @@ export function PreciosReferenciaScreen({
 
               <label>
                 Valor por tn
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                <DecimalInput
                   value={precioEnEdicion.valor}
-                  onChange={(event) => actualizarBorrador({ valor: leerNumero(event.target.value) })}
+                  onValueChange={(value) => actualizarBorrador({ valor: value })}
                 />
               </label>
 

@@ -298,7 +298,6 @@ export function App() {
           guardandoPrecios={planificacionDemo.guardandoPrecios}
           guardarPrecioReferencia={planificacionDemo.guardarPrecioReferenciaDesdeModal}
           formatearUsd={formatearUsd}
-          leerNumero={leerNumero}
         />
       )}
 
