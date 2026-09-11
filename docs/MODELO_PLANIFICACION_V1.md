@@ -398,7 +398,7 @@ Reglas:
 - Para una misma planificacion, `campoAppId`, `loteAppId` y `actividadAppId` no puede existir mas de una linea.
 - Toda modificacion debe auditarse.
 
-## DestinoVentaReferencia
+## DestinoApp
 
 Catalogo propio de destinos de venta.
 

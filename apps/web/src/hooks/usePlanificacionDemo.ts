@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ConceptoGastoComercial,
-  DestinoVentaReferencia,
+  DestinoApp,
   ErpSnapshot,
   GastosComercialesReferencia,
   InsumoApp,
@@ -122,7 +122,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const puedeConfigurarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:configurar'));
   const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && !planificacionActivaBloqueada);
 
-  function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoVentaReferencia {
+  function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoApp {
     const ahora = new Date().toISOString();
     const destinoVenta = limpiarTextoVisible(precio.destinoVenta);
 
@@ -134,6 +134,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       destinoVentaNormalizado: normalizarTexto(destinoVenta),
       descripcion: `Destino creado desde precio ${destinoVenta}`,
       activo: true,
+      origen: 'app',
       createdAt: ahora,
       updatedAt: ahora,
     };
@@ -933,7 +934,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
   }
 
-  async function guardarDestinoVentaDesdeModal(destino: DestinoVentaReferencia) {
+  async function guardarDestinoVentaDesdeModal(destino: DestinoApp) {
     if (!puedeConfigurarPlanificacion) {
       return false;
     }
@@ -971,11 +972,12 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return true;
     } catch (error) {
       const destinoVenta = limpiarTextoVisible(destino.destinoVenta);
-      const destinoDemo: DestinoVentaReferencia = {
+      const destinoDemo: DestinoApp = {
         ...destino,
         destinoVenta,
         destinoVentaNormalizado: normalizarTexto(destinoVenta),
         descripcion: destino.descripcion ? limpiarTextoVisible(destino.descripcion) : undefined,
+        origen: 'app',
         updatedAt: new Date().toISOString(),
       };
 

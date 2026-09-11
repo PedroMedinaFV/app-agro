@@ -43,7 +43,7 @@ model Cliente {
   protocolosProductivos ProtocoloProductivo[]
   planificacionesAgricolas PlanificacionAgricola[]
   preciosApp PrecioApp[]
-  destinosVentaReferencia DestinoVentaReferencia[]
+  destinosApp DestinoApp[]
   conceptosGastosComerciales ConceptoGastoComercialApp[]
   gastosComercialesReferencia GastoComercialApp[]
   vinculacionesErpSugeridas VinculacionErpSugerida[]
@@ -655,7 +655,7 @@ model ActividadApp {
   updatedAt             DateTime @updatedAt
   protocolos            ProtocoloProductivo[]
   lineasPlanificacion   PlanificacionAgricolaLinea[]
-  destinosReferencia    DestinoVentaReferencia[]
+  destinosApp           DestinoApp[]
   preciosApp            PrecioApp[]
   gastosReferencia      GastoComercialApp[]
 
@@ -928,7 +928,7 @@ model PlanificacionAgricolaLinea {
   @@index([protocoloId])
 }
 
-model DestinoVentaReferencia {
+model DestinoApp {
   id                    String   @id @default(uuid())
   cliente               Cliente  @relation(fields: [clienteId], references: [id])
   clienteId             String

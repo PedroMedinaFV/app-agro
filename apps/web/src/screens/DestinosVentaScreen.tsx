@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { DestinoVentaReferencia, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { DestinoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { obtenerDestinosVenta } from '../services/api';
@@ -20,7 +20,7 @@ interface DestinosVentaScreenProps {
   planificacion: PlanificacionSnapshot;
   puedeConfigurarPlanificacion: boolean;
   guardandoDestinos: boolean;
-  guardarDestino: (destino: DestinoVentaReferencia) => Promise<boolean>;
+  guardarDestino: (destino: DestinoApp) => Promise<boolean>;
 }
 
 export function DestinosVentaScreen({
@@ -30,8 +30,8 @@ export function DestinosVentaScreen({
   guardandoDestinos,
   guardarDestino,
 }: DestinosVentaScreenProps) {
-  const [destinosDb, setDestinosDb] = useState<DestinoVentaReferencia[]>([]);
-  const [destinoEnEdicion, setDestinoEnEdicion] = useState<DestinoVentaReferencia | null>(null);
+  const [destinosDb, setDestinosDb] = useState<DestinoApp[]>([]);
+  const [destinoEnEdicion, setDestinoEnEdicion] = useState<DestinoApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const destinosBase = destinosDb.length ? destinosDb : planificacion.destinosReferencia;
   const destinosOrdenados = useMemo(() => (
@@ -47,7 +47,7 @@ export function DestinosVentaScreen({
     cargarDestinosDb().catch(() => undefined);
   }, [sesion.token]);
 
-  function crearBorradorDestino(): DestinoVentaReferencia {
+  function crearBorradorDestino(): DestinoApp {
     const ahora = new Date().toISOString();
 
     return {
@@ -57,6 +57,7 @@ export function DestinosVentaScreen({
       destinoVentaNormalizado: '',
       descripcion: '',
       activo: true,
+      origen: 'app',
       createdAt: ahora,
       updatedAt: ahora,
     };
@@ -67,12 +68,20 @@ export function DestinosVentaScreen({
     setDestinoEnEdicion(crearBorradorDestino());
   }
 
-  function abrirEditarDestino(destino: DestinoVentaReferencia) {
+  function esDestinoEditable(destino: DestinoApp) {
+    return destino.origen === 'app' && !destino.id.startsWith('puerto-');
+  }
+
+  function abrirEditarDestino(destino: DestinoApp) {
+    if (!esDestinoEditable(destino)) {
+      return;
+    }
+
     setModoModal('editar');
     setDestinoEnEdicion({ ...destino });
   }
 
-  function actualizarBorrador(cambios: Partial<DestinoVentaReferencia>) {
+  function actualizarBorrador(cambios: Partial<DestinoApp>) {
     setDestinoEnEdicion((actual) => {
       if (!actual) {
         return actual;
@@ -94,7 +103,7 @@ export function DestinosVentaScreen({
     }
 
     const destinoVenta = limpiarTextoVisible(destinoEnEdicion.destinoVenta);
-    const destinoPreparado: DestinoVentaReferencia = {
+    const destinoPreparado: DestinoApp = {
       ...destinoEnEdicion,
       destinoVenta,
       destinoVentaNormalizado: normalizarTexto(destinoVenta),
@@ -144,13 +153,23 @@ export function DestinosVentaScreen({
           columns={[
             { key: 'destino', label: 'Destino', width: 'minmax(170px, 1.2fr)', render: (destino) => <strong>{destino.destinoVenta}</strong> },
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(190px, 1.4fr)', render: (destino) => destino.descripcion || 'Sin descripcion' },
+            { key: 'origen', label: 'Origen', width: 'minmax(80px, 0.45fr)', render: (destino) => <em>{destino.origen === 'erp' ? 'ERP' : 'App'}</em> },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (destino) => <em>{destino.activo ? 'Activo' : 'Inactivo'}</em> },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (destino) => new Intl.DateTimeFormat('es-AR').format(new Date(destino.updatedAt || destino.createdAt)) },
             {
               key: 'acciones',
               label: 'Acciones',
               width: 'minmax(86px, 0.5fr)',
-              render: (destino) => <button className="small" onClick={() => abrirEditarDestino(destino)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+              render: (destino) => (
+                <button
+                  className="small"
+                  onClick={() => abrirEditarDestino(destino)}
+                  disabled={!puedeConfigurarPlanificacion || !esDestinoEditable(destino)}
+                  title={esDestinoEditable(destino) ? 'Editar destino' : 'Destino importado desde ERP'}
+                >
+                  Editar
+                </button>
+              ),
             },
           ]}
         />

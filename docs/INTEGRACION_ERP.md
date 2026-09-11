@@ -308,7 +308,7 @@ Uso en Agro App:
 - se expone en `ErpSnapshot.puertos`;
 - se guarda en `ErpPuerto` como cache importada;
 - alimenta los selects de destino en `Precios` y `Gastos comerciales`;
-- convive con `DestinoVentaReferencia`, que permite crear destinos propios cuando no existan en el ERP.
+- convive con `DestinoApp`, que permite crear destinos propios cuando no existan en el ERP.
 
 Para puertos, `erpId` se deriva como `puerto:${idPuerto}`.
 

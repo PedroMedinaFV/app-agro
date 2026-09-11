@@ -1,5 +1,5 @@
 import { Request, Router } from 'express';
-import type { GuardarDestinoVentaReferenciaRequest } from '@agro/tipos';
+import type { GuardarDestinoAppRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
 import {
   guardarDestinoReferenciaPersistido,
@@ -31,7 +31,7 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
   try {
     const request = req as RequestConUsuario;
 
-    res.json(await guardarDestinoReferenciaPersistido(req.params.id, req.body as GuardarDestinoVentaReferenciaRequest, {
+    res.json(await guardarDestinoReferenciaPersistido(req.params.id, req.body as GuardarDestinoAppRequest, {
       id: request.user?.sub,
       clienteId: request.user?.clienteId,
       email: request.user?.email,

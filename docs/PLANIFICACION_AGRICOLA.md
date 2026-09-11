@@ -360,7 +360,7 @@ Las reglas de sugerencia pueden usar zona, campo, actividad o cultivo para propo
 
 Esta tabla la configura un usuario autorizado y permite que, al crear una linea de planificacion, el sistema proponga automaticamente el destino de venta mas probable.
 
-El padron ERP `Padrones/Puertos` tambien alimenta los selects de destino para reducir escritura manual. Si el destino no existe en ERP, se puede crear en `DestinoVentaReferencia`.
+El padron ERP `Padrones/Puertos` tambien alimenta los selects y la pantalla `Padrones > Destinos` para reducir escritura manual. La API expone destinos propios de Agro App junto con puertos ERP activos, deduplicados por `destinoVentaNormalizado`. Si el destino no existe en ERP, se puede crear en `DestinoApp`.
 
 El objetivo principal es mejorar la experiencia de usuario: evitar que quien planifica tenga que cargar el destino del cereal en cada cultivo/lote de forma repetitiva. Esto reduce fatiga operativa, acelera la carga de la planilla y disminuye errores por seleccion manual.
 
@@ -447,7 +447,7 @@ Estado UX actual:
 - la pantalla permite crear precios desde un modal abierto por `Nuevo precio`, con accion final `Guardar`;
 - la pantalla permite editar precios desde un boton de accion por fila, con accion final `Editar`;
 - el destino se selecciona desde un catalogo y permite crear uno nuevo si no existe;
-- si se crea un destino nuevo desde el modal de precios, debe guardarse tambien como `DestinoVentaReferencia` unico por cliente y nombre de destino;
+- si se crea un destino nuevo desde el modal de precios, debe guardarse tambien como `DestinoApp` unico por cliente y nombre de destino;
 - el backend normaliza el destino con trim, espacios simples, sin tildes y uppercase para evitar duplicados por escritura del usuario;
 - la creacion automatica del destino debe auditarse igual que la creacion o edicion del precio;
 - esos precios quedan disponibles para proponer valores al crear lineas de planificacion;
@@ -813,7 +813,7 @@ Tablas principales agregadas:
 - `ProtocoloInsumo`
 - `PlanificacionAgricola`
 - `PlanificacionAgricolaLinea`
-- `DestinoVentaReferencia`
+- `DestinoApp`
 - `PrecioApp`
 - `GastosComercialesReferencia`
 - `VinculacionErpSugerida`

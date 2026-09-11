@@ -1,7 +1,7 @@
 import type {
-  DestinoVentaReferencia,
-  GuardarDestinoVentaReferenciaRequest,
-  GuardarDestinoVentaReferenciaResponse,
+  DestinoApp,
+  GuardarDestinoAppRequest,
+  GuardarDestinoAppResponse,
   GuardarPrecioReferenciaRequest,
   GuardarPrecioReferenciaResponse,
   PrecioApp,
@@ -30,7 +30,7 @@ function normalizarTexto(valor: string) {
 }
 
 type PrecioPrisma = Prisma.PrecioAppGetPayload<Record<string, never>>;
-type DestinoPrisma = Prisma.DestinoVentaReferenciaGetPayload<Record<string, never>>;
+type DestinoPrisma = Prisma.DestinoAppGetPayload<Record<string, never>>;
 
 function mapearPrecio(precio: PrecioPrisma): PrecioReferencia {
   return {
@@ -84,7 +84,11 @@ function obtenerClienteAutorizado(precio: PrecioReferencia, usuario?: UsuarioAud
   return precio.clienteId;
 }
 
-function validarDestino(destino: DestinoVentaReferencia, usuario?: UsuarioAuditoria) {
+function validarDestino(destino: DestinoApp, usuario?: UsuarioAuditoria) {
+  if (destino.origen === 'erp' || destino.id.startsWith('puerto-')) {
+    throw crearErrorValidacion('Los destinos importados desde ERP no se pueden editar desde Agro App.', 403);
+  }
+
   if (!destino.clienteId) {
     throw crearErrorValidacion('El destino debe tener clienteId.');
   }
@@ -99,7 +103,7 @@ function validarDestino(destino: DestinoVentaReferencia, usuario?: UsuarioAudito
 
 }
 
-function mapearDestino(destino: DestinoPrisma): DestinoVentaReferencia {
+function mapearDestino(destino: DestinoPrisma): DestinoApp {
   return {
     id: destino.id,
     clienteId: destino.clienteId,
@@ -115,6 +119,7 @@ function mapearDestino(destino: DestinoPrisma): DestinoVentaReferencia {
     destinoVentaNormalizado: destino.destinoVentaNormalizado,
     descripcion: destino.descripcion || undefined,
     activo: destino.activo,
+    origen: 'app',
     createdAt: destino.createdAt.toISOString(),
     updatedAt: destino.updatedAt.toISOString(),
   };
@@ -128,7 +133,7 @@ async function asegurarDestinoReferencia(
 ) {
   const destinoVenta = limpiarTextoVisible(precio.destinoVenta);
   const destinoVentaNormalizado = normalizarTexto(destinoVenta);
-  const destinoExistente = await tx.destinoVentaReferencia.findFirst({
+  const destinoExistente = await tx.destinoApp.findFirst({
     where: {
       clienteId: precio.clienteId,
       destinoVentaNormalizado,
@@ -139,7 +144,7 @@ async function asegurarDestinoReferencia(
     return destinoExistente;
   }
 
-  const destinoCreado = await tx.destinoVentaReferencia.create({
+  const destinoCreado = await tx.destinoApp.create({
     data: {
       clienteId: precio.clienteId,
       empresaErpId: precio.empresaErpId,
@@ -155,7 +160,7 @@ async function asegurarDestinoReferencia(
   await registrarAuditoria(tx, {
     clienteId: precio.clienteId,
     usuario,
-    entidad: 'DestinoVentaReferencia',
+    entidad: 'DestinoApp',
     entidadId: destinoCreado.id,
     accion: 'crear',
     origen: request.origen,
@@ -176,16 +181,47 @@ export async function obtenerPreciosReferenciaPersistidos(clienteId: string): Pr
   return precios.map(mapearPrecio);
 }
 
-export async function obtenerDestinosReferenciaPersistidos(clienteId: string): Promise<DestinoVentaReferencia[]> {
-  const destinos = await prisma.destinoVentaReferencia.findMany({
+export async function obtenerDestinosReferenciaPersistidos(clienteId: string): Promise<DestinoApp[]> {
+  const destinos = await prisma.destinoApp.findMany({
     where: { clienteId },
     orderBy: [{ destinoVenta: 'asc' }],
   });
+  const destinosMapeados = destinos.map(mapearDestino);
+  const destinosExistentes = new Set(destinosMapeados.map((destino) => destino.destinoVentaNormalizado));
+  const puertos = await prisma.erpPuerto.findMany({
+    where: { empresaErpId: 'global', activo: true },
+    orderBy: [{ nombre: 'asc' }],
+  });
+  const destinosDesdePuertos: DestinoApp[] = [];
 
-  return destinos.map(mapearDestino);
+  for (const puerto of puertos) {
+    const destinoVenta = limpiarTextoVisible(puerto.nombre);
+    const destinoVentaNormalizado = normalizarTexto(destinoVenta);
+
+    if (destinosExistentes.has(destinoVentaNormalizado)) {
+      continue;
+    }
+
+    destinosExistentes.add(destinoVentaNormalizado);
+    destinosDesdePuertos.push({
+      id: `puerto-${puerto.erpId}`,
+      clienteId,
+      empresaErpId: puerto.empresaErpId,
+      destinoVenta,
+      destinoVentaNormalizado,
+      descripcion: `Puerto ERP ${puerto.codigo}`,
+      activo: puerto.activo,
+      origen: 'erp',
+      createdAt: puerto.importadoEn.toISOString(),
+      updatedAt: puerto.importadoEn.toISOString(),
+    });
+  }
+
+  return [...destinosMapeados, ...destinosDesdePuertos]
+    .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta));
 }
 
-function prepararDestino(destino: DestinoVentaReferencia): DestinoVentaReferencia {
+function prepararDestino(destino: DestinoApp): DestinoApp {
   const destinoVenta = limpiarTextoVisible(destino.destinoVenta);
 
   return {
@@ -198,15 +234,15 @@ function prepararDestino(destino: DestinoVentaReferencia): DestinoVentaReferenci
 
 export async function guardarDestinoReferenciaPersistido(
   id: string,
-  request: GuardarDestinoVentaReferenciaRequest,
+  request: GuardarDestinoAppRequest,
   usuario?: UsuarioAuditoria,
-): Promise<GuardarDestinoVentaReferenciaResponse> {
+): Promise<GuardarDestinoAppResponse> {
   const destino = prepararDestino({ ...request.destino, id });
   validarDestino(destino, usuario);
 
   return prisma.$transaction(async (tx) => {
-    const existente = await tx.destinoVentaReferencia.findUnique({ where: { id } });
-    const existenteMismoNombre = await tx.destinoVentaReferencia.findUnique({
+    const existente = await tx.destinoApp.findUnique({ where: { id } });
+    const existenteMismoNombre = await tx.destinoApp.findUnique({
       where: {
         clienteId_destinoVentaNormalizado: {
           clienteId: destino.clienteId,
@@ -219,7 +255,7 @@ export async function guardarDestinoReferenciaPersistido(
       throw crearErrorValidacion('Ya existe un destino con ese nombre.');
     }
 
-    const guardado = await tx.destinoVentaReferencia.upsert({
+    const guardado = await tx.destinoApp.upsert({
       where: { id },
       update: {
         empresaErpId: destino.empresaErpId,
@@ -260,7 +296,7 @@ export async function guardarDestinoReferenciaPersistido(
     await registrarAuditoria(tx, {
       clienteId: destino.clienteId,
       usuario,
-      entidad: 'DestinoVentaReferencia',
+      entidad: 'DestinoApp',
       entidadId: id,
       accion: existente ? 'actualizar' : 'crear',
       origen: request.origen,

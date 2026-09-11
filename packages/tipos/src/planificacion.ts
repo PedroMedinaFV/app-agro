@@ -95,7 +95,7 @@ export type InsumoApp = {
   updatedAt: string;
 };
 
-export type DestinoVentaReferencia = {
+export type DestinoApp = {
   id: string;
   clienteId: string;
   empresaErpId?: string;
@@ -110,9 +110,12 @@ export type DestinoVentaReferencia = {
   destinoVentaNormalizado: string;
   descripcion?: string;
   activo: boolean;
+  origen: 'app' | 'erp';
   createdAt: string;
   updatedAt: string;
 };
+
+export type DestinoVentaReferencia = DestinoApp;
 
 export type PrecioApp = {
   id: string;
@@ -340,7 +343,7 @@ export type PlanificacionSnapshot = {
   especiesApp?: EspecieApp[];
   actividadesApp?: ActividadApp[];
   insumosApp?: InsumoApp[];
-  destinosReferencia: DestinoVentaReferencia[];
+  destinosReferencia: DestinoApp[];
   preciosReferencia: PrecioReferencia[];
   conceptosGastosComerciales: ConceptoGastoComercial[];
   gastosComercialesReferencia: GastosComercialesReferencia[];
@@ -375,17 +378,20 @@ export type GuardarPrecioReferenciaResponse = {
   mensaje: string;
 };
 
-export type GuardarDestinoVentaReferenciaRequest = {
-  destino: DestinoVentaReferencia;
+export type GuardarDestinoAppRequest = {
+  destino: DestinoApp;
   motivo?: string;
   origen: 'web' | 'mobile' | 'api';
 };
 
-export type GuardarDestinoVentaReferenciaResponse = {
-  destino: DestinoVentaReferencia;
+export type GuardarDestinoAppResponse = {
+  destino: DestinoApp;
   auditado: boolean;
   mensaje: string;
 };
+
+export type GuardarDestinoVentaReferenciaRequest = GuardarDestinoAppRequest;
+export type GuardarDestinoVentaReferenciaResponse = GuardarDestinoAppResponse;
 
 export type GuardarGastosComercialesReferenciaRequest = {
   gasto: GastosComercialesReferencia;

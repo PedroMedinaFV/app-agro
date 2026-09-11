@@ -24,7 +24,7 @@ import {
   CrearUrlLecturaAdjuntoResponse,
   CrearUrlSubidaAdjuntoRequest,
   CrearUrlSubidaAdjuntoResponse,
-  DestinoVentaReferencia,
+  DestinoApp,
   GuardarConceptoGastoComercialRequest,
   GuardarConceptoGastoComercialResponse,
   GuardarCampoAppRequest,
@@ -33,8 +33,8 @@ import {
   GuardarLoteAppResponse,
   GuardarZonaAppRequest,
   GuardarZonaAppResponse,
-  GuardarDestinoVentaReferenciaRequest,
-  GuardarDestinoVentaReferenciaResponse,
+  GuardarDestinoAppRequest,
+  GuardarDestinoAppResponse,
   GuardarActividadAppRequest,
   GuardarActividadAppResponse,
   GuardarEspecieAppRequest,
@@ -404,22 +404,54 @@ export async function guardarConceptoGastoComercial(
 }
 
 export type DestinosVentaResponse = {
-  destinos: DestinoVentaReferencia[];
+  destinos: DestinoApp[];
 };
 
-export async function obtenerDestinosVenta(token?: string): Promise<DestinosVentaResponse> {
-  return request<DestinosVentaResponse>('/destinos-venta', {}, token);
+let destinosVentaCache: { token?: string; respuesta: DestinosVentaResponse } | null = null;
+let destinosVentaEnVuelo: { token?: string; promesa: Promise<DestinosVentaResponse> } | null = null;
+
+export function invalidarDestinosVentaCache() {
+  destinosVentaCache = null;
+}
+
+export async function obtenerDestinosVenta(token?: string, opciones: { forzar?: boolean } = {}): Promise<DestinosVentaResponse> {
+  const cache = destinosVentaCache;
+  const enVuelo = destinosVentaEnVuelo;
+
+  if (!opciones.forzar && cache && cache.token === token) {
+    return cache.respuesta;
+  }
+
+  if (!opciones.forzar && enVuelo && enVuelo.token === token) {
+    return enVuelo.promesa;
+  }
+
+  const promesa = request<DestinosVentaResponse>('/destinos-venta', {}, token)
+    .then((respuesta) => {
+      destinosVentaCache = { token, respuesta };
+      return respuesta;
+    })
+    .finally(() => {
+      if (destinosVentaEnVuelo?.promesa === promesa) {
+        destinosVentaEnVuelo = null;
+      }
+    });
+
+  destinosVentaEnVuelo = { token, promesa };
+
+  return promesa;
 }
 
 export async function guardarDestinoVenta(
   id: string,
-  datos: GuardarDestinoVentaReferenciaRequest,
+  datos: GuardarDestinoAppRequest,
   token?: string,
-): Promise<GuardarDestinoVentaReferenciaResponse> {
-  const respuesta = await request<GuardarDestinoVentaReferenciaResponse>(`/destinos-venta/${id}`, {
+): Promise<GuardarDestinoAppResponse> {
+  const respuesta = await request<GuardarDestinoAppResponse>(`/destinos-venta/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarDestinosVentaCache();
   invalidarPlanificacionSnapshotCache();
 
   return respuesta;

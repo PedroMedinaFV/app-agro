@@ -280,6 +280,8 @@ Segundo padron implementado:
 - persistencia backend en `/destinos-venta/:id`;
 - auditoria obligatoria por backend.
 
+La pantalla y el endpoint `/destinos-venta` muestran destinos propios de Agro App mas puertos importados desde `Padrones/Puertos`. Los puertos se exponen como candidatos ERP globales, sin crear automaticamente registros propios, y se deduplican contra destinos propios por nombre normalizado. Si el usuario crea o edita un destino propio, queda materializado en `DestinoApp` con auditoria. Los destinos de origen ERP no se pueden editar desde Agro App en el MVP.
+
 Las reglas para sugerir destino por zona, campo, actividad o cultivo se implementaran como una capa posterior que referencie el destino maestro, sin duplicar nombres de destino.
 
 El padron maestro de destinos no expone prioridad. Si mas adelante se necesita resolver empates o reglas multiples, ese orden pertenecera a la regla de sugerencia y no al destino.
