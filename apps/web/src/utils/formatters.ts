@@ -1,10 +1,10 @@
 import type { ProtocoloProductivoDetalle } from '@agro/tipos';
 
-export function formatearUsd(valor: number) {
+export function formatearUsd(valor: number, decimales = 0) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
+    maximumFractionDigits: decimales,
   }).format(valor);
 }
 

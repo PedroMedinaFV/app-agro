@@ -22,7 +22,7 @@ interface PreciosReferenciaScreenProps {
   puedeConfigurarPlanificacion: boolean;
   guardandoPrecios: boolean;
   guardarPrecioReferencia: (precio: PrecioReferencia) => Promise<boolean>;
-  formatearUsd: (valor: number) => string;
+  formatearUsd: (valor: number, decimales?: number) => string;
 }
 
 type ActividadSeleccionable = {
@@ -293,7 +293,7 @@ export function PreciosReferenciaScreen({
           columns={[
             { key: 'actividad', label: 'Actividad', width: 'minmax(140px, 1.1fr)', render: (precio) => <strong>{actividadesPropiasPorId.get(precio.actividadAppId)?.nombre || precio.actividadErpId || 'Sin actividad'}</strong> },
             { key: 'destino', label: 'Destino', width: 'minmax(130px, 1fr)', render: (precio) => precio.destinoVenta || 'Sin destino' },
-            { key: 'precio', label: 'Precio', width: 'minmax(100px, 0.75fr)', render: (precio) => `${precio.moneda === 'USD' ? formatearUsd(precio.valor) : `${precio.moneda} ${precio.valor}`} / ${precio.unidad}` },
+            { key: 'precio', label: 'Precio', width: 'minmax(100px, 0.75fr)', render: (precio) => `${precio.moneda === 'USD' ? formatearUsd(precio.valor, 2) : `${precio.moneda} ${precio.valor}`} / ${precio.unidad}` },
             { key: 'fuente', label: 'Fuente', width: 'minmax(90px, 0.6fr)', render: (precio) => precio.fuente },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (precio) => formatearFecha(precio.updatedAt || precio.createdAt) },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (precio) => <em>{precio.activo ? 'Activo' : 'Inactivo'}</em> },
