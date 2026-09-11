@@ -55,6 +55,7 @@ import {
   GuardarUsuarioAdminResponse,
   ServicioApp,
   ActividadApp,
+  AuditoriaEventosResponse,
   EspecieApp,
   InsumoApp,
   LoteApp,
@@ -800,4 +801,23 @@ export async function guardarCamposUsuarioAdmin(clienteId: string, usuarioId: st
     method: 'PUT',
     body: JSON.stringify({ camposErpIds }),
   }, token);
+}
+
+export type AuditoriaFiltros = {
+  entidad?: string;
+  accion?: string;
+  usuarioId?: string;
+  limite?: number;
+};
+
+export async function obtenerAuditoriaEventos(token?: string, filtros: AuditoriaFiltros = {}): Promise<AuditoriaEventosResponse> {
+  const params = new URLSearchParams();
+
+  if (filtros.entidad) params.set('entidad', filtros.entidad);
+  if (filtros.accion) params.set('accion', filtros.accion);
+  if (filtros.usuarioId) params.set('usuarioId', filtros.usuarioId);
+  if (filtros.limite) params.set('limite', String(filtros.limite));
+
+  const query = params.toString();
+  return request<AuditoriaEventosResponse>(`/auditoria${query ? `?${query}` : ''}`, {}, token);
 }

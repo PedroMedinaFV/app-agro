@@ -12,6 +12,7 @@ import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
 import { ObservacionesScreen } from './screens/ObservacionesScreen';
 import { SeguimientoOperativoScreen } from './screens/SeguimientoOperativoScreen';
 import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
+import { AuditoriaScreen } from './screens/AuditoriaScreen';
 import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
 import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
 import { ServiciosAppScreen } from './screens/ServiciosAppScreen';
@@ -33,7 +34,7 @@ import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'auditoria' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 const vistasConSnapshotPlanificacion = new Set<Vista>([
   'campos',
@@ -58,6 +59,7 @@ export function App() {
   const [campaniasImportadas, setCampaniasImportadas] = useState<ErpCampania[]>([]);
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
   const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
+  const puedeLeerAuditoria = sesion?.permisos.includes('auditoria:leer') || false;
   const debeCargarSnapshotPlanificacion = vistasConSnapshotPlanificacion.has(vista);
   const debeCargarProtocolos = vista === 'protocolos';
   const refrescarNotificaciones = useCallback(async () => {
@@ -116,6 +118,8 @@ export function App() {
       ? 'Usuarios'
     : vista === 'notificaciones'
       ? 'Notificaciones'
+    : vista === 'auditoria'
+      ? 'Auditoria'
     : vista === 'campos'
       ? 'Campos'
     : vista === 'lotes'
@@ -147,6 +151,8 @@ export function App() {
       ? 'Alta de usuarios, roles y campos asignados'
     : vista === 'notificaciones'
       ? 'Avisos internos generados por el sistema'
+    : vista === 'auditoria'
+      ? 'Consulta de cambios registrados por usuario, entidad y accion'
     : vista === 'campos'
       ? 'Padron de campos ERP y campos propios de Agro App'
     : vista === 'lotes'
@@ -195,6 +201,7 @@ export function App() {
         puedeConfigurarErp={puedeConfigurarErp}
         puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
         puedeGestionarUsuarios={puedeGestionarUsuarios}
+        puedeLeerAuditoria={puedeLeerAuditoria}
         notificacionesPendientes={notificacionesPendientes}
       >
         {vista === 'inicio' && (
@@ -339,6 +346,10 @@ export function App() {
 
       {vista === 'usuarios' && (
         <UsuariosAdminScreen sesion={sesion} notificar={toast.notify} />
+      )}
+
+      {vista === 'auditoria' && (
+        <AuditoriaScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'padrones-conceptos-gastos' && (

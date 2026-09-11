@@ -14,6 +14,8 @@ type DataTableProps<T> = {
   emptyMessage: string;
   initialPageSize?: number;
   pageSizeOptions?: number[];
+  selectedRowKey?: string;
+  onRowClick?: (row: T) => void;
 };
 
 export function DataTable<T>({
@@ -23,6 +25,8 @@ export function DataTable<T>({
   emptyMessage,
   initialPageSize = 10,
   pageSizeOptions = [10, 25, 50],
+  selectedRowKey,
+  onRowClick,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
@@ -56,7 +60,24 @@ export function DataTable<T>({
       )}
 
       {visibleRows.map((row) => (
-        <div className="data-table-row" key={getRowKey(row)} style={{ gridTemplateColumns }}>
+        <div
+          className={`data-table-row ${onRowClick ? 'clickable' : ''} ${selectedRowKey === getRowKey(row) ? 'selected' : ''}`.trim()}
+          key={getRowKey(row)}
+          style={{ gridTemplateColumns }}
+          onClick={() => onRowClick?.(row)}
+          role={onRowClick ? 'button' : undefined}
+          tabIndex={onRowClick ? 0 : undefined}
+          onKeyDown={(event) => {
+            if (!onRowClick) {
+              return;
+            }
+
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onRowClick(row);
+            }
+          }}
+        >
           {columns.map((column) => (
             <div className={`data-table-cell ${column.key === 'acciones' ? 'data-table-actions' : ''}`} key={column.key} data-label={column.label}>
               {column.render(row)}

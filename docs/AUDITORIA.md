@@ -114,11 +114,13 @@ Segunda etapa:
 - Planificaciones agricolas registran auditoria al crear, actualizar, cerrar y bloquear intentos de edicion sobre planificaciones cerradas.
 - La escritura de auditoria se hace desde backend y dentro de la misma transaccion cuando acompania una operacion critica.
 - Existe helper backend compartido para registrar eventos de planificacion.
+- Existe permiso `auditoria:leer`, asignado al rol `admin`.
+- Existe endpoint backend `GET /auditoria`, protegido por autenticacion y permiso `auditoria:leer`.
+- Existe pantalla web `Auditoria` para rol admin, con listado de eventos, filtros simples por entidad/accion/limite y detalle de valores antes/despues/metadata.
 
 ## Pendientes de implementacion
 
 - Incorporar middleware o wrapper transaccional para rutas criticas.
 - Definir retencion de logs.
-- Definir pantalla admin de consulta de auditoria.
 - Capturar `ip`, `userAgent` y `requestId` desde middleware HTTP.
 - Extender el helper a integracion ERP, asignaciones y configuracion.

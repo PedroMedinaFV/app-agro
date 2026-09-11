@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { SesionUsuario } from '@agro/tipos';
 
-type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type VistaApp = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'auditoria' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 interface LayoutProps {
   sesion: SesionUsuario;
@@ -15,6 +15,7 @@ interface LayoutProps {
   puedeConfigurarErp: boolean;
   puedeConfigurarPlanificacion: boolean;
   puedeGestionarUsuarios: boolean;
+  puedeLeerAuditoria: boolean;
   notificacionesPendientes: number;
   children: ReactNode;
 }
@@ -35,6 +36,7 @@ export function Layout({
   puedeConfigurarErp,
   puedeConfigurarPlanificacion,
   puedeGestionarUsuarios,
+  puedeLeerAuditoria,
   notificacionesPendientes,
   children,
 }: LayoutProps) {
@@ -149,6 +151,16 @@ export function Layout({
               >
                 <span className="nav-icon">US</span>
                 <span className="nav-label">Usuarios</span>
+              </a>
+            )}
+            {puedeLeerAuditoria && (
+              <a
+                className={vista === 'auditoria' ? 'active' : ''}
+                onClick={() => onVistaChange('auditoria')}
+                title="Auditoria"
+              >
+                <span className="nav-icon">AU</span>
+                <span className="nav-label">Auditoria</span>
               </a>
             )}
             {puedeConfigurarErp && (

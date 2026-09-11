@@ -323,6 +323,111 @@ textarea:focus {
   color: #47584f;
 }
 
+.audit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.audit-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.audit-detail article {
+  padding: 12px;
+  border: 1px solid #e0e8e2;
+  border-radius: 8px;
+  background: #f8fbf8;
+}
+
+.audit-detail article span {
+  color: #64736a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-detail article strong {
+  display: block;
+  margin-top: 4px;
+}
+
+.audit-detail article p {
+  margin: 6px 0 0;
+  color: #516258;
+}
+
+.audit-detail pre {
+  max-height: 260px;
+  margin: 6px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid #dce5de;
+  border-radius: 8px;
+  background: #0f1f18;
+  color: #e9f5ed;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.audit-change-list {
+  display: grid;
+  gap: 8px;
+}
+
+.audit-change-list h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.audit-change-list article {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #e0e8e2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.audit-change-list article strong {
+  color: #0b1f3a;
+  font-size: 13px;
+}
+
+.audit-change-list article span {
+  color: #516258;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.audit-change-cell {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.audit-change-cell strong {
+  color: #15241d;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.audit-action-pill {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eaf1eb;
+  color: #234235;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
 .button-row,
 .action-bar {
   display: flex;
@@ -1794,6 +1899,16 @@ nav a.active .nav-icon,
   background: #ffffff;
 }
 
+.data-table-row.clickable {
+  cursor: pointer;
+}
+
+.data-table-row.clickable:hover,
+.data-table-row.selected {
+  border-color: #9fc6ae;
+  background: #f3f8f4;
+}
+
 .data-table-head {
   color: #64736a;
   font-size: 12px;
@@ -2097,6 +2212,7 @@ nav a.active .nav-icon,
   .metrics,
   .content-grid,
   .company-summary,
+  .audit-layout,
   .operative-detail-grid {
     grid-template-columns: 1fr;
   }

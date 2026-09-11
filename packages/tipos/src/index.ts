@@ -15,3 +15,4 @@ export * from './planificacion';
 export * from './precipitacion';
 export * from './observacion';
 export * from './operativo';
+export * from './auditoria';

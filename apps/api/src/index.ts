@@ -25,6 +25,7 @@ import notificacionesRuta from './routes/notificaciones';
 import precipitacionesRuta from './routes/precipitaciones';
 import observacionesRuta from './routes/observaciones';
 import operativoRuta from './routes/operativo';
+import auditoriaRuta from './routes/auditoria';
 import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
@@ -63,6 +64,7 @@ app.use('/notificaciones', autenticacionBasica, notificacionesRuta);
 app.use('/precipitaciones', autenticacionBasica, precipitacionesRuta);
 app.use('/observaciones', autenticacionBasica, observacionesRuta);
 app.use('/operativo', autenticacionBasica, operativoRuta);
+app.use('/auditoria', autenticacionBasica, requierePermiso('auditoria:leer'), auditoriaRuta);
 
 app.use(manejadorErrores);
 

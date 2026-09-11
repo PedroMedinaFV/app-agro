@@ -22,7 +22,8 @@ export type Permiso =
   | 'precipitaciones:crear'
   | 'precipitaciones:leer'
   | 'observaciones:crear'
-  | 'observaciones:leer';
+  | 'observaciones:leer'
+  | 'auditoria:leer';
 
 export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
   admin: [
@@ -46,6 +47,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'precipitaciones:leer',
     'observaciones:crear',
     'observaciones:leer',
+    'auditoria:leer',
   ],
   planificador: [
     'erp:leer',
