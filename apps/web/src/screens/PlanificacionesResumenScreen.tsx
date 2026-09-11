@@ -51,6 +51,11 @@ export function PlanificacionesResumenScreen({
     descripcion: '',
   });
   const campaniasPorId = useMemo(() => new Map(campaniasDisponibles.map((campania) => [campania.erpId, campania])), [campaniasDisponibles]);
+  const resumenPorPlanificacion = useMemo(() => new Map(
+    planificacion.planificaciones.map((item) => [item.id, calcularResumen(item)]),
+  ), [planificacion.planificaciones]);
+  const preciosVisibles = useMemo(() => planificacion.preciosReferencia.slice(0, 6), [planificacion.preciosReferencia]);
+  const protocolosVisibles = useMemo(() => planificacion.protocolos.slice(0, 6), [planificacion.protocolos]);
   const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
     item.campaniaErpId === nuevoEscenario.campaniaErpId
     && item.estado === 'cerrada'
@@ -150,25 +155,25 @@ export function PlanificacionesResumenScreen({
               key: 'hectareas',
               label: 'Hectareas',
               width: 'minmax(74px, 0.48fr)',
-              render: (item) => calcularResumen(item).hectareas.toFixed(2),
+              render: (item) => (resumenPorPlanificacion.get(item.id)?.hectareas || 0).toFixed(2),
             },
             {
               key: 'ingreso',
               label: 'Ingreso neto',
               width: 'minmax(92px, 0.68fr)',
-              render: (item) => formatearUsd(calcularResumen(item).ingresoNeto),
+              render: (item) => formatearUsd(resumenPorPlanificacion.get(item.id)?.ingresoNeto || 0),
             },
             {
               key: 'costo',
               label: 'Costo',
               width: 'minmax(86px, 0.62fr)',
-              render: (item) => formatearUsd(calcularResumen(item).costo),
+              render: (item) => formatearUsd(resumenPorPlanificacion.get(item.id)?.costo || 0),
             },
             {
               key: 'margen',
               label: 'Margen',
               width: 'minmax(92px, 0.68fr)',
-              render: (item) => <strong>{formatearUsd(calcularResumen(item).margen)}</strong>,
+              render: (item) => <strong>{formatearUsd(resumenPorPlanificacion.get(item.id)?.margen || 0)}</strong>,
             },
             {
               key: 'acciones',
@@ -188,25 +193,39 @@ export function PlanificacionesResumenScreen({
       <section className="content-grid">
         <Panel title="Precios de referencia">
           <div className="activity-list">
-            {planificacion.preciosReferencia.map((precio) => (
+            {preciosVisibles.map((precio) => (
               <article key={precio.id}>
                 <span>{precio.fuente}</span>
                 <strong>{precio.destinoVenta} - {formatearUsd(precio.valor)} {precio.unidad}</strong>
                 <p>Se propone al crear la linea, pero el valor se copia para conservar el supuesto.</p>
               </article>
             ))}
+            {planificacion.preciosReferencia.length > preciosVisibles.length && (
+              <article>
+                <span>Resumen</span>
+                <strong>{planificacion.preciosReferencia.length - preciosVisibles.length} precios mas</strong>
+                <p>El listado completo se administra desde la pantalla Precios.</p>
+              </article>
+            )}
           </div>
         </Panel>
 
         <Panel title="Protocolos">
           <div className="activity-list">
-            {planificacion.protocolos.map((protocolo) => (
+            {protocolosVisibles.map((protocolo) => (
               <article key={protocolo.id}>
                 <span>{protocolo.activo ? 'Activo' : 'Inactivo'}</span>
                 <strong>{protocolo.nombre}</strong>
                 <p>{protocolo.descripcion}. Costo: {formatearUsd(protocolo.costoEstimadoPorHa)} / ha.</p>
               </article>
             ))}
+            {planificacion.protocolos.length > protocolosVisibles.length && (
+              <article>
+                <span>Resumen</span>
+                <strong>{planificacion.protocolos.length - protocolosVisibles.length} protocolos mas</strong>
+                <p>El listado completo se administra desde la pantalla Protocolos.</p>
+              </article>
+            )}
           </div>
         </Panel>
       </section>

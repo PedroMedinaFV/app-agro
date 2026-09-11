@@ -8,7 +8,7 @@ import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistid
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
 import { obtenerConceptosGastosComercialesPersistidos, obtenerConceptosGastosComercialesSemilla } from '../services/gastosComerciales/conceptosGastosComerciales';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
-import { asegurarPadronesPlanificacionDesdeErp, obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
+import { obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
 import { asegurarEstadiosReferenciaSemilla } from '../services/planificacion/estadiosReferenciaPrisma';
 
 const router = Router();
@@ -34,8 +34,6 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       clienteId: request.user.clienteId,
     } : undefined;
     const camposAsignados = usuarioAutorizado ? await obtenerCamposAsignados(usuarioAutorizado) : null;
-
-    await asegurarPadronesPlanificacionDesdeErp(clienteId, camposAsignados);
 
     const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados);
 

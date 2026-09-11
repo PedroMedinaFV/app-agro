@@ -352,6 +352,8 @@ Criterio acordado para el MVP:
 
 Motivo: mantener el inicio de sesion y la navegacion principal rapidos, evitar solicitudes repetidas y reducir bloqueos del overlay global de carga.
 
+La materializacion de padrones propios desde la cache ERP no debe ejecutarse al abrir `planificacion/snapshot`. Ese trabajo se realiza despues de una sincronizacion ERP, porque navegar a Planificacion debe ser una lectura rapida y no una operacion de escritura/preparacion masiva.
+
 ## Edicion performante en pantallas pesadas
 
 Los editores con muchas filas, etapas, selects o calculos derivados no deben escribir en estado global en cada tecla.

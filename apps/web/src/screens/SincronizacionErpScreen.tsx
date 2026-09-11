@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { PadronErpSincronizable, padronesErpSincronizables, SincronizacionErpHistorialItem } from '@agro/tipos';
+import { PadronErpSincronizable, SincronizacionErpHistorialItem } from '@agro/tipos';
 import type { SincronizacionErpResultado } from '../services/api';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
@@ -37,6 +37,7 @@ const itemsDisponibles: SincronizacionItem[] = [
   { id: 'monedas', label: 'Monedas', descripcion: 'Padron contable global para precios y costos.' },
   { id: 'puertos', label: 'Puertos', descripcion: 'Puertos/destinos comerciales del ERP.' },
 ];
+const padronesErpSincronizables = itemsDisponibles.map((item) => item.id);
 
 function formatearFecha(fecha?: string) {
   return fecha ? new Date(fecha).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';

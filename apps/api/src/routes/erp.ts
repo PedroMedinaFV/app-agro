@@ -14,6 +14,7 @@ import {
   listarHistorialSincronizacionesErp,
 } from '../services/erp/historialSincronizacionErp';
 import { prisma } from '../prisma';
+import { asegurarPadronesPlanificacionDesdeErp } from '../services/planificacion/padronesPlanificacionPrisma';
 
 const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
@@ -492,6 +493,7 @@ router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res,
         id: user.sub,
         clienteId,
       }, body.items);
+      await asegurarPadronesPlanificacionDesdeErp(clienteId, null);
 
       await finalizarSincronizacionErpHistorial(historial.id, clienteId, historial.itemsEjecutados, resultado);
 
