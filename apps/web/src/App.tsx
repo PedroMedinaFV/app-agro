@@ -35,6 +35,20 @@ import { formatearUsd, leerNumero } from './utils/formatters';
 
 type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
+const vistasConSnapshotPlanificacion = new Set<Vista>([
+  'campos',
+  'lotes',
+  'planificacion',
+  'protocolos',
+  'precios',
+  'gastos',
+  'padrones-conceptos-gastos',
+  'padrones-destinos',
+  'padrones-labores',
+  'padrones-insumos',
+  'padrones-vinculaciones',
+]);
+
 export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
@@ -45,6 +59,8 @@ export function App() {
   const [campaniasImportadas, setCampaniasImportadas] = useState<ErpCampania[]>([]);
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
   const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
+  const debeCargarSnapshotPlanificacion = vistasConSnapshotPlanificacion.has(vista);
+  const debeCargarProtocolos = vista === 'protocolos';
   const refrescarNotificaciones = useCallback(async () => {
     if (!sesion || !sesion.permisos.includes('planificacion:configurar')) {
       setNotificacionesPendientes(0);
@@ -59,7 +75,7 @@ export function App() {
     }
   }, [sesion]);
   const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
-  const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify);
+  const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify, debeCargarSnapshotPlanificacion);
   const protocolosDemo = useProtocolosDemo({
     sesion,
     snapshot: erp.snapshot,
@@ -67,6 +83,7 @@ export function App() {
     planificacionActiva: planificacionDemo.planificacionActiva,
     notificar: toast.notify,
     onProtocolosPersistidos: planificacionDemo.refrescarPlanificacion,
+    cargarAutomaticamente: debeCargarProtocolos,
   });
 
   useEffect(() => {
@@ -74,7 +91,7 @@ export function App() {
   }, [refrescarNotificaciones]);
 
   useEffect(() => {
-    if (!sesion) {
+    if (!sesion || vista !== 'planificacion') {
       setCampaniasImportadas([]);
       return;
     }
@@ -82,7 +99,7 @@ export function App() {
     obtenerCampaniasErpImportadas(sesion.token)
       .then((respuesta) => setCampaniasImportadas(respuesta.campanias))
       .catch(() => setCampaniasImportadas([]));
-  }, [sesion]);
+  }, [sesion, vista]);
 
   const lotes = erp.snapshot.lotes.map((lote) => ({
     ...lote,

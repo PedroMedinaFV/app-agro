@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ErpSnapshot,
   PlanificacionAgricola,
@@ -19,34 +19,60 @@ interface UseProtocolosDemoParams {
   planificacionActiva: PlanificacionAgricola | undefined;
   notificar?: (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
   onProtocolosPersistidos?: () => Promise<void> | void;
+  cargarAutomaticamente?: boolean;
 }
 
-export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos }: UseProtocolosDemoParams) {
+export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos, cargarAutomaticamente = true }: UseProtocolosDemoParams) {
   const [protocolos, setProtocolos] = useState<ProtocolosSnapshot>(protocolosFallback);
   const [protocoloSeleccionadoId, setProtocoloSeleccionadoId] = useState(protocolosFallback.protocolos[0]?.id || '');
   const [protocolosEstado, setProtocolosEstado] = useState('Protocolos demo locales');
+  const [protocolosCargados, setProtocolosCargados] = useState(false);
+  const [cargandoProtocolos, setCargandoProtocolos] = useState(false);
   const [guardandoProtocolo, setGuardandoProtocolo] = useState(false);
 
-  useEffect(() => {
-    async function cargarProtocolos() {
-      if (!sesion) {
-        return;
-      }
-
-      try {
-        const datos = await obtenerProtocolosSnapshot(sesion.token);
-        setProtocolos(datos);
-        setProtocoloSeleccionadoId((actual) => actual || datos.protocolos[0]?.id || '');
-        setProtocolosEstado('Protocolos cargados desde API.');
-      } catch (error) {
-        setProtocolos(protocolosFallback);
-        setProtocoloSeleccionadoId((actual) => actual || protocolosFallback.protocolos[0]?.id || '');
-        setProtocolosEstado('API de protocolos no disponible. Usando mock local.');
-      }
+  const cargarProtocolos = useCallback(async () => {
+    if (!sesion) {
+      return;
     }
 
-    cargarProtocolos();
+    setCargandoProtocolos(true);
+
+    try {
+      const datos = await obtenerProtocolosSnapshot(sesion.token);
+      setProtocolos(datos);
+      setProtocolosCargados(true);
+      setProtocoloSeleccionadoId((actual) => actual || datos.protocolos[0]?.id || '');
+      setProtocolosEstado('Protocolos cargados desde API.');
+    } catch (error) {
+      setProtocolos(protocolosFallback);
+      setProtocolosCargados(true);
+      setProtocoloSeleccionadoId((actual) => actual || protocolosFallback.protocolos[0]?.id || '');
+      setProtocolosEstado('API de protocolos no disponible. Usando mock local.');
+    } finally {
+      setCargandoProtocolos(false);
+    }
   }, [sesion]);
+
+  useEffect(() => {
+    if (!sesion) {
+      setProtocolos(protocolosFallback);
+      setProtocolosCargados(false);
+      setProtocolosEstado('Protocolos demo locales');
+      return;
+    }
+
+    if (!cargarAutomaticamente || protocolosCargados || cargandoProtocolos) {
+      return;
+    }
+
+    void cargarProtocolos();
+  }, [cargarAutomaticamente, cargarProtocolos, cargandoProtocolos, protocolosCargados, sesion]);
+
+  const asegurarProtocolos = useCallback(async () => {
+    if (!protocolosCargados && !cargandoProtocolos) {
+      await cargarProtocolos();
+    }
+  }, [cargarProtocolos, cargandoProtocolos, protocolosCargados]);
 
   const protocoloSeleccionado = protocolos.protocolos.find((protocolo) => protocolo.id === protocoloSeleccionadoId) || protocolos.protocolos[0];
 
@@ -339,6 +365,8 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
   return {
     protocolos,
     protocolosEstado,
+    protocolosCargados,
+    cargandoProtocolos,
     guardandoProtocolo,
     protocoloSeleccionadoId,
     protocoloSeleccionado,
@@ -351,5 +379,6 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     crearProtocoloVacio,
     copiarProtocoloSeleccionado,
     guardarProtocoloSeleccionado,
+    asegurarProtocolos,
   };
 }

@@ -337,3 +337,17 @@ Motivo:
 - las futuras funcionalidades operativas, como precipitaciones, recorridas, monitoreos y adjuntos mobile, deben vincularse a `CampoApp` y `LoteApp`.
 
 Las rutas CRUD antiguas asociadas a esas tablas se retiran del backend. Si en el futuro se implementan monitoreos o avances reales, se crearán modelos nuevos alineados al alcance por cliente, usuario, campo/lote asignado, auditoria y seguridad.
+## Carga diferida y cache frontend
+
+La web no debe cargar snapshots pesados al iniciar sesion si la primera pantalla no los necesita.
+
+Criterio acordado para el MVP:
+
+- el login solo debe resolver autenticacion, permisos y datos livianos de navegacion;
+- `planificacion/snapshot` se carga bajo demanda al entrar en pantallas que usan planificacion, precios, gastos, protocolos o padrones propios;
+- protocolos se cargan bajo demanda al entrar en la pantalla de protocolos;
+- padrones ERP importados consultados desde frontend usan cache por token y deduplicacion de requests en vuelo;
+- al sincronizar padrones ERP se invalida la cache de importados para no mostrar datos viejos;
+- pantallas con formularios pesados deben cargar padrones auxiliares al abrir el modal de alta/edicion, no al ingresar a la pantalla de listado.
+
+Motivo: mantener el inicio de sesion y la navegacion principal rapidos, evitar solicitudes repetidas y reducir bloqueos del overlay global de carga.

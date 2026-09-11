@@ -102,6 +102,44 @@ async function request<T>(ruta: string, options: RequestInit = {}, token?: strin
   }
 }
 
+type CachedGet<T> = {
+  token?: string;
+  respuesta?: T;
+  promesa?: Promise<T>;
+};
+
+function obtenerConCache<T>(
+  cache: CachedGet<T>,
+  ruta: string,
+  token?: string,
+  opciones: { forzar?: boolean } = {},
+) {
+  if (!opciones.forzar && cache.respuesta && cache.token === token) {
+    return Promise.resolve(cache.respuesta);
+  }
+
+  if (!opciones.forzar && cache.promesa && cache.token === token) {
+    return cache.promesa;
+  }
+
+  const promesa = request<T>(ruta, {}, token)
+    .then((respuesta) => {
+      cache.respuesta = respuesta;
+      cache.token = token;
+      return respuesta;
+    })
+    .finally(() => {
+      if (cache.promesa === promesa) {
+        cache.promesa = undefined;
+      }
+    });
+
+  cache.token = token;
+  cache.promesa = promesa;
+
+  return promesa;
+}
+
 function getBackendActivityLabel(ruta: string, method: string) {
   const metodo = method.toUpperCase();
 
@@ -174,10 +212,32 @@ export type SincronizacionErpResultado = {
 };
 
 export async function sincronizarPadronesErp(token?: string, items?: PadronErpSincronizable[]): Promise<SincronizacionErpResultado> {
-  return request<SincronizacionErpResultado>('/erp/sincronizar', {
+  const respuesta = await request<SincronizacionErpResultado>('/erp/sincronizar', {
     method: 'POST',
     body: JSON.stringify({ items }),
   }, token);
+  invalidarCachesErpImportados();
+
+  return respuesta;
+}
+
+function invalidarCache<T>(cache: CachedGet<T>) {
+  cache.respuesta = undefined;
+  cache.promesa = undefined;
+}
+
+function invalidarCachesErpImportados() {
+  invalidarCache(camposErpImportadosCache);
+  invalidarCache(lotesErpImportadosCache);
+  invalidarCache(zonasErpImportadasCache);
+  invalidarCache(especiesErpImportadasCache);
+  invalidarCache(actividadesErpImportadasCache);
+  invalidarCache(insumosErpImportadosCache);
+  invalidarCache(serviciosErpImportadosCache);
+  invalidarCache(monedasErpImportadasCache);
+  invalidarCache(puertosErpImportadosCache);
+  campaniasErpCache = null;
+  campaniasErpEnVuelo = null;
 }
 
 export async function obtenerHistorialSincronizacionesErp(token?: string): Promise<SincronizacionesErpHistorialResponse> {
@@ -188,40 +248,50 @@ export type CamposErpImportadosResponse = {
   campos: ErpCampo[];
 };
 
-export async function obtenerCamposErpImportados(token?: string): Promise<CamposErpImportadosResponse> {
-  return request<CamposErpImportadosResponse>('/erp/campos-importados', {}, token);
+const camposErpImportadosCache: CachedGet<CamposErpImportadosResponse> = {};
+
+export async function obtenerCamposErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<CamposErpImportadosResponse> {
+  return obtenerConCache(camposErpImportadosCache, '/erp/campos-importados', token, opciones);
 }
 
 export type LotesErpImportadosResponse = {
   lotes: ErpLote[];
 };
 
-export async function obtenerLotesErpImportados(token?: string): Promise<LotesErpImportadosResponse> {
-  return request<LotesErpImportadosResponse>('/erp/lotes-importados', {}, token);
+const lotesErpImportadosCache: CachedGet<LotesErpImportadosResponse> = {};
+
+export async function obtenerLotesErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<LotesErpImportadosResponse> {
+  return obtenerConCache(lotesErpImportadosCache, '/erp/lotes-importados', token, opciones);
 }
 
 export type ZonasErpImportadasResponse = {
   zonas: ErpZona[];
 };
 
-export async function obtenerZonasErpImportadas(token?: string): Promise<ZonasErpImportadasResponse> {
-  return request<ZonasErpImportadasResponse>('/erp/zonas-importadas', {}, token);
+const zonasErpImportadasCache: CachedGet<ZonasErpImportadasResponse> = {};
+
+export async function obtenerZonasErpImportadas(token?: string, opciones: { forzar?: boolean } = {}): Promise<ZonasErpImportadasResponse> {
+  return obtenerConCache(zonasErpImportadasCache, '/erp/zonas-importadas', token, opciones);
 }
 
 export type EspeciesErpImportadasResponse = {
   especies: ErpEspecie[];
 };
 
-export async function obtenerEspeciesErpImportadas(token?: string): Promise<EspeciesErpImportadasResponse> {
-  return request<EspeciesErpImportadasResponse>('/erp/especies-importadas', {}, token);
+const especiesErpImportadasCache: CachedGet<EspeciesErpImportadasResponse> = {};
+
+export async function obtenerEspeciesErpImportadas(token?: string, opciones: { forzar?: boolean } = {}): Promise<EspeciesErpImportadasResponse> {
+  return obtenerConCache(especiesErpImportadasCache, '/erp/especies-importadas', token, opciones);
 }
 
 export type ActividadesErpImportadasResponse = {
   actividades: ErpActividad[];
 };
 
-export async function obtenerActividadesErpImportadas(token?: string): Promise<ActividadesErpImportadasResponse> {
-  return request<ActividadesErpImportadasResponse>('/erp/actividades-importadas', {}, token);
+const actividadesErpImportadasCache: CachedGet<ActividadesErpImportadasResponse> = {};
+
+export async function obtenerActividadesErpImportadas(token?: string, opciones: { forzar?: boolean } = {}): Promise<ActividadesErpImportadasResponse> {
+  return obtenerConCache(actividadesErpImportadasCache, '/erp/actividades-importadas', token, opciones);
 }
 
 export type CampaniasErpImportadasResponse = {
@@ -263,16 +333,20 @@ export type InsumosErpImportadosResponse = {
   insumos: ErpInsumo[];
 };
 
-export async function obtenerInsumosErpImportados(token?: string): Promise<InsumosErpImportadosResponse> {
-  return request<InsumosErpImportadosResponse>('/erp/insumos-importados', {}, token);
+const insumosErpImportadosCache: CachedGet<InsumosErpImportadosResponse> = {};
+
+export async function obtenerInsumosErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<InsumosErpImportadosResponse> {
+  return obtenerConCache(insumosErpImportadosCache, '/erp/insumos-importados', token, opciones);
 }
 
 export type ServiciosErpImportadosResponse = {
   servicios: ErpServicio[];
 };
 
-export async function obtenerServiciosErpImportados(token?: string): Promise<ServiciosErpImportadosResponse> {
-  return request<ServiciosErpImportadosResponse>('/erp/servicios-importados', {}, token);
+const serviciosErpImportadosCache: CachedGet<ServiciosErpImportadosResponse> = {};
+
+export async function obtenerServiciosErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<ServiciosErpImportadosResponse> {
+  return obtenerConCache(serviciosErpImportadosCache, '/erp/servicios-importados', token, opciones);
 }
 
 export type PuertosErpImportadosResponse = {
@@ -283,12 +357,16 @@ export type MonedasErpImportadasResponse = {
   monedas: ErpMoneda[];
 };
 
-export async function obtenerMonedasErpImportadas(token?: string): Promise<MonedasErpImportadasResponse> {
-  return request<MonedasErpImportadasResponse>('/erp/monedas-importadas', {}, token);
+const monedasErpImportadasCache: CachedGet<MonedasErpImportadasResponse> = {};
+
+export async function obtenerMonedasErpImportadas(token?: string, opciones: { forzar?: boolean } = {}): Promise<MonedasErpImportadasResponse> {
+  return obtenerConCache(monedasErpImportadasCache, '/erp/monedas-importadas', token, opciones);
 }
 
-export async function obtenerPuertosErpImportados(token?: string): Promise<PuertosErpImportadosResponse> {
-  return request<PuertosErpImportadosResponse>('/erp/puertos-importados', {}, token);
+const puertosErpImportadosCache: CachedGet<PuertosErpImportadosResponse> = {};
+
+export async function obtenerPuertosErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<PuertosErpImportadosResponse> {
+  return obtenerConCache(puertosErpImportadosCache, '/erp/puertos-importados', token, opciones);
 }
 
 export type EmpresasErpAdminResponse = {

@@ -22,7 +22,6 @@ import { Panel } from '../components/Panel';
 import {
   guardarActividadApp,
   obtenerActividadesErpImportadas,
-  obtenerActividadesApp,
   obtenerCampaniasErpImportadas,
   obtenerCamposErpImportados,
   obtenerEspeciesErpImportadas,
@@ -107,21 +106,33 @@ export function GastosComercialesScreen({
   const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
   const [zonaSeleccionadaClave, setZonaSeleccionadaClave] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
-  const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadApp[]>([]);
+  const [actividadesPropiasCreadas, setActividadesPropiasCreadas] = useState<ActividadApp[]>([]);
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
   const [campaniasErp, setCampaniasErp] = useState<ErpCampania[]>([]);
   const [especiesErp, setEspeciesErp] = useState<ErpEspecie[]>([]);
   const [zonasErp, setZonasErp] = useState<ErpZona[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [puertosErp, setPuertosErp] = useState<ErpPuerto[]>([]);
-  const actividadesPropias = actividadesPropiasDb.length ? actividadesPropiasDb : planificacion.actividadesApp || [];
+  const modalAbierto = Boolean(gastoEnEdicion);
+  const actividadesPropias = useMemo(() => {
+    const porId = new Map((planificacion.actividadesApp || []).map((actividad) => [actividad.id, actividad]));
+
+    for (const actividad of actividadesPropiasCreadas) {
+      porId.set(actividad.id, actividad);
+    }
+
+    return Array.from(porId.values());
+  }, [actividadesPropiasCreadas, planificacion.actividadesApp]);
   const zonas = planificacion.zonasApp || [];
   const campos = planificacion.camposApp;
-  const conceptosGastos = planificacion.conceptosGastosComerciales.filter((concepto) => concepto.activo);
+  const conceptosGastos = useMemo(
+    () => planificacion.conceptosGastosComerciales.filter((concepto) => concepto.activo),
+    [planificacion.conceptosGastosComerciales],
+  );
   const campaniasDisponibles = campaniasErp.length ? campaniasErp : campanias;
   const planificacionActiva = planificacion.planificaciones[0];
   const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
-  const actividadesPropiasErpIds = new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean));
+  const actividadesPropiasErpIds = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean)), [actividadesPropias]);
   const actividades = useMemo<ActividadSeleccionable[]>(() => {
     const propias = actividadesPropias.map((actividad) => ({
       clave: `agro:${actividad.id}`,
@@ -212,8 +223,11 @@ export function GastosComercialesScreen({
 
   useEffect(() => {
     async function cargarPadronesReales() {
-      const [actividadesPropiasRespuesta, actividadesErpRespuesta, campaniasErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
-        obtenerActividadesApp(sesion.token),
+      if (!modalAbierto) {
+        return;
+      }
+
+      const [actividadesErpRespuesta, campaniasErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
         obtenerActividadesErpImportadas(sesion.token),
         obtenerCampaniasErpImportadas(sesion.token),
         obtenerEspeciesErpImportadas(sesion.token),
@@ -222,7 +236,6 @@ export function GastosComercialesScreen({
         obtenerPuertosErpImportados(sesion.token),
       ]);
 
-      setActividadesPropiasDb(actividadesPropiasRespuesta.actividades);
       setActividadesErp(actividadesErpRespuesta.actividades);
       setCampaniasErp(campaniasErpRespuesta.campanias);
       setEspeciesErp(especiesErpRespuesta.especies);
@@ -232,7 +245,7 @@ export function GastosComercialesScreen({
     }
 
     cargarPadronesReales().catch(() => undefined);
-  }, [sesion.token]);
+  }, [modalAbierto, sesion.token]);
   const destinosDisponibles = useMemo(() => {
     const destinos = new Map<string, string>();
 
@@ -396,7 +409,7 @@ export function GastosComercialesScreen({
       motivo: 'Creacion automatica de actividad operativa vinculada desde gastos comerciales',
     }, sesion.token);
 
-    setActividadesPropiasDb((actuales) => [respuesta.actividad, ...actuales]);
+    setActividadesPropiasCreadas((actuales) => [respuesta.actividad, ...actuales]);
     setActividadSeleccionadaClave(`agro:${respuesta.actividad.id}`);
 
     return {

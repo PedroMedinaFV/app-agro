@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ConceptoGastoComercial,
   DestinoApp,
@@ -51,9 +51,11 @@ function obtenerSuperficieInicialLote(lote: LoteApp) {
   return 0;
 }
 
-export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar) {
+export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente = true) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionFallback);
   const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion demo local');
+  const [planificacionCargada, setPlanificacionCargada] = useState(false);
+  const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
   const [guardandoPlanificacion, setGuardandoPlanificacion] = useState(false);
   const [cerrandoPlanificacion, setCerrandoPlanificacion] = useState(false);
   const [guardandoPrecios, setGuardandoPrecios] = useState(false);
@@ -64,36 +66,46 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const [guardandoInsumos, setGuardandoInsumos] = useState(false);
   const [planificacionSeleccionadaId, setPlanificacionSeleccionadaId] = useState<string>();
 
-  async function refrescarPlanificacion() {
+  const refrescarPlanificacion = useCallback(async (opciones: { forzar?: boolean } = {}) => {
     if (!sesion) {
       return;
     }
 
+    setCargandoPlanificacion(true);
+
     try {
-      setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token));
+      setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token, opciones));
+      setPlanificacionCargada(true);
       setPlanificacionEstado('Planificacion actualizada desde API.');
     } catch (error) {
+      setPlanificacion(planificacionFallback);
+      setPlanificacionCargada(true);
       setPlanificacionEstado('No se pudo refrescar la planificacion desde API.');
+    } finally {
+      setCargandoPlanificacion(false);
     }
-  }
+  }, [sesion]);
 
   useEffect(() => {
-    async function cargarPlanificacion() {
-      if (!sesion) {
-        return;
-      }
-
-      try {
-        setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token));
-        setPlanificacionEstado('Planificacion cargada desde API.');
-      } catch (error) {
-        setPlanificacion(planificacionFallback);
-        setPlanificacionEstado('API de planificacion no disponible. Usando mock local.');
-      }
+    if (!sesion) {
+      setPlanificacion(planificacionFallback);
+      setPlanificacionCargada(false);
+      setPlanificacionEstado('Planificacion demo local');
+      return;
     }
 
-    cargarPlanificacion();
-  }, [sesion]);
+    if (!cargarAutomaticamente || planificacionCargada || cargandoPlanificacion) {
+      return;
+    }
+
+    void refrescarPlanificacion();
+  }, [cargarAutomaticamente, cargandoPlanificacion, planificacionCargada, refrescarPlanificacion, sesion]);
+
+  const asegurarPlanificacion = useCallback(async () => {
+    if (!planificacionCargada && !cargandoPlanificacion) {
+      await refrescarPlanificacion();
+    }
+  }, [cargandoPlanificacion, planificacionCargada, refrescarPlanificacion]);
 
   const planificacionActiva = planificacion.planificaciones.find((item) => item.id === planificacionSeleccionadaId) || planificacion.planificaciones[0];
   const lineasPlanificacion = planificacionActiva?.lineas || [];
@@ -1259,6 +1271,8 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   return {
     planificacion,
     planificacionEstado,
+    planificacionCargada,
+    cargandoPlanificacion,
     guardandoPlanificacion,
     cerrandoPlanificacion,
     guardandoPrecios,
@@ -1283,6 +1297,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     puedeCerrarPlanificacion,
     clavesDuplicadas,
     tieneLineasDuplicadas,
+    asegurarPlanificacion,
     seleccionarPlanificacion,
     crearEscenarioPlanificacion,
     copiarEscenarioPlanificacion,
