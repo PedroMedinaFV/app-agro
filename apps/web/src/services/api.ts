@@ -672,8 +672,10 @@ export async function guardarLoteApp(
   }, token);
 }
 
-export async function obtenerProtocolosSnapshot(token?: string): Promise<ProtocolosSnapshot> {
-  return request<ProtocolosSnapshot>('/planificacion/protocolos/snapshot', {}, token);
+const protocolosSnapshotCache: CachedGet<ProtocolosSnapshot> = {};
+
+export async function obtenerProtocolosSnapshot(token?: string, opciones: { forzar?: boolean } = {}): Promise<ProtocolosSnapshot> {
+  return obtenerConCache(protocolosSnapshotCache, '/planificacion/protocolos/snapshot', token, opciones);
 }
 
 export async function guardarProtocolo(id: string, datos: GuardarProtocoloRequest, token?: string): Promise<GuardarProtocoloResponse> {
@@ -681,6 +683,7 @@ export async function guardarProtocolo(id: string, datos: GuardarProtocoloReques
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarCache(protocolosSnapshotCache);
   invalidarPlanificacionSnapshotCache();
 
   return respuesta;

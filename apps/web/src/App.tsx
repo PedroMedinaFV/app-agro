@@ -39,7 +39,6 @@ const vistasConSnapshotPlanificacion = new Set<Vista>([
   'campos',
   'lotes',
   'planificacion',
-  'protocolos',
   'precios',
   'gastos',
   'padrones-conceptos-gastos',
@@ -296,6 +295,7 @@ export function App() {
           crearProtocoloVacio={protocolosDemo.crearProtocoloVacio}
           copiarProtocoloSeleccionado={protocolosDemo.copiarProtocoloSeleccionado}
           guardarProtocoloSeleccionado={protocolosDemo.guardarProtocoloSeleccionado}
+          asegurarPlanificacion={planificacionDemo.asegurarPlanificacion}
           actualizarProtocolos={protocolosDemo.actualizarProtocolos}
           agregarEtapaProtocolo={protocolosDemo.agregarEtapaProtocolo}
           actualizarEtapa={protocolosDemo.actualizarEtapa}

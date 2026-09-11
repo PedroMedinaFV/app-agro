@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ErpCampania, ErpSnapshot, PlanificacionSnapshot, ProtocoloProductivoDetalle, ProtocolosSnapshot, SesionUsuario } from '@agro/tipos';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
@@ -22,6 +22,7 @@ interface ProtocolosScreenProps {
   crearProtocoloVacio: () => void;
   copiarProtocoloSeleccionado: (protocolo?: ProtocoloProductivoDetalle) => void;
   guardarProtocoloSeleccionado: () => void;
+  asegurarPlanificacion: () => Promise<void>;
   actualizarProtocolos: (updater: (protocolo: ProtocoloProductivoDetalle) => ProtocoloProductivoDetalle) => void;
   agregarEtapaProtocolo: () => void;
   actualizarEtapa: (etapaId: string, updates: Partial<ProtocoloProductivoDetalle['etapas'][number]>) => void;
@@ -43,6 +44,7 @@ export function ProtocolosScreen({
   crearProtocoloVacio,
   copiarProtocoloSeleccionado,
   guardarProtocoloSeleccionado,
+  asegurarPlanificacion,
   actualizarProtocolos,
   agregarEtapaProtocolo,
   actualizarEtapa,
@@ -55,33 +57,72 @@ export function ProtocolosScreen({
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoModal, setModoModal] = useState<'crear' | 'editar' | 'copiar'>('editar');
   const [campaniasErp, setCampaniasErp] = useState<ErpCampania[]>([]);
+  const [accionPendiente, setAccionPendiente] = useState<
+    | { tipo: 'crear' }
+    | { tipo: 'editar'; protocoloId: string }
+    | { tipo: 'copiar'; protocolo: ProtocoloProductivoDetalle }
+    | null
+  >(null);
   const campaniasDisponibles = campaniasErp.length ? campaniasErp : snapshot.campanias;
+  const actividadesPorId = useMemo(
+    () => new Map((planificacion.actividadesApp || []).map((actividad) => [actividad.id, actividad])),
+    [planificacion.actividadesApp],
+  );
+  const zonasPorId = useMemo(
+    () => new Map((planificacion.zonasApp || []).map((zona) => [zona.id, zona])),
+    [planificacion.zonasApp],
+  );
+  const camposPorId = useMemo(
+    () => new Map(planificacion.camposApp.map((campo) => [campo.id, campo])),
+    [planificacion.camposApp],
+  );
 
-  useEffect(() => {
-    async function cargarCampaniasReales() {
+  async function prepararEdicionProtocolo() {
+    await asegurarPlanificacion();
+
+    if (!campaniasErp.length) {
       const respuesta = await obtenerCampaniasErpImportadas(sesion.token);
       setCampaniasErp(respuesta.campanias);
     }
-
-    cargarCampaniasReales().catch(() => undefined);
-  }, [sesion.token]);
-
-  function abrirNuevoProtocolo() {
-    crearProtocoloVacio();
-    setModoModal('crear');
-    setModalAbierto(true);
   }
 
-  function abrirEditarProtocolo(id: string) {
-    setProtocoloSeleccionadoId(id);
-    setModoModal('editar');
+  useEffect(() => {
+    if (!accionPendiente) {
+      return;
+    }
+
+    if (accionPendiente.tipo === 'crear') {
+      crearProtocoloVacio();
+      setModoModal('crear');
+    }
+
+    if (accionPendiente.tipo === 'editar') {
+      setProtocoloSeleccionadoId(accionPendiente.protocoloId);
+      setModoModal('editar');
+    }
+
+    if (accionPendiente.tipo === 'copiar') {
+      copiarProtocoloSeleccionado(accionPendiente.protocolo);
+      setModoModal('copiar');
+    }
+
     setModalAbierto(true);
+    setAccionPendiente(null);
+  }, [accionPendiente, copiarProtocoloSeleccionado, crearProtocoloVacio, setProtocoloSeleccionadoId]);
+
+  async function abrirNuevoProtocolo() {
+    await prepararEdicionProtocolo();
+    setAccionPendiente({ tipo: 'crear' });
   }
 
-  function abrirCopiarProtocolo(protocolo: ProtocoloProductivoDetalle) {
-    copiarProtocoloSeleccionado(protocolo);
-    setModoModal('copiar');
-    setModalAbierto(true);
+  async function abrirEditarProtocolo(id: string) {
+    await prepararEdicionProtocolo();
+    setAccionPendiente({ tipo: 'editar', protocoloId: id });
+  }
+
+  async function abrirCopiarProtocolo(protocolo: ProtocoloProductivoDetalle) {
+    await prepararEdicionProtocolo();
+    setAccionPendiente({ tipo: 'copiar', protocolo });
   }
 
   async function guardarYContinuar() {
@@ -125,7 +166,7 @@ export function ProtocolosScreen({
               label: 'Actividad',
               width: 'minmax(130px, 0.9fr)',
               render: (protocolo) => {
-                const actividad = planificacion.actividadesApp?.find((item) => item.id === protocolo.actividadAppId);
+                const actividad = actividadesPorId.get(protocolo.actividadAppId);
                 return actividad?.nombre || protocolo.actividadErpId || protocolo.actividadAppId;
               },
             },
@@ -134,8 +175,8 @@ export function ProtocolosScreen({
               label: 'Alcance',
               width: 'minmax(120px, 0.8fr)',
               render: (protocolo) => {
-                const zona = planificacion.zonasApp?.find((item) => item.id === protocolo.zonaAppId);
-                const campo = planificacion.camposApp.find((item) => item.id === protocolo.campoAppId);
+                const zona = protocolo.zonaAppId ? zonasPorId.get(protocolo.zonaAppId) : undefined;
+                const campo = protocolo.campoAppId ? camposPorId.get(protocolo.campoAppId) : undefined;
                 return campo?.nombre || zona?.nombre || 'General';
               },
             },

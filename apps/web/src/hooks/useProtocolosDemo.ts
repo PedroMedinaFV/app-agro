@@ -333,7 +333,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
         origen: 'web',
         motivo: 'Guardado de protocolo desde demo web',
       }, sesion.token);
-      const protocolosPersistidos = await obtenerProtocolosSnapshot(sesion.token);
+      const protocolosPersistidos = await obtenerProtocolosSnapshot(sesion.token, { forzar: true });
 
       setProtocolos((actual) => ({
         ...protocolosPersistidos,
