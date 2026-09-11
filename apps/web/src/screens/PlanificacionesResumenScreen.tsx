@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
 
@@ -135,7 +136,7 @@ export function PlanificacionesResumenScreen({
             {
               key: 'nombre',
               label: 'Nombre',
-              width: 'minmax(180px, 1.35fr)',
+              width: 'minmax(150px, 1.45fr)',
               render: (item) => (
                 <div>
                   <strong>{item.nombre}</strong>
@@ -146,51 +147,47 @@ export function PlanificacionesResumenScreen({
             {
               key: 'campania',
               label: 'Campania',
-              width: 'minmax(84px, 0.55fr)',
+              width: 'minmax(72px, 0.48fr)',
               render: (item) => campaniasPorId.get(item.campaniaErpId)?.codigo || item.campaniaErpId,
             },
             {
               key: 'estado',
               label: 'Estado',
-              width: 'minmax(86px, 0.55fr)',
+              width: 'minmax(78px, 0.5fr)',
               render: (item) => <em className={item.estado === 'cerrada' || item.estado === 'deshabilitada' ? 'locked' : ''}>{item.estado}</em>,
             },
             {
               key: 'hectareas',
               label: 'Hectareas',
-              width: 'minmax(86px, 0.55fr)',
+              width: 'minmax(74px, 0.48fr)',
               render: (item) => calcularResumen(item).hectareas.toFixed(2),
             },
             {
               key: 'ingreso',
               label: 'Ingreso neto',
-              width: 'minmax(110px, 0.75fr)',
+              width: 'minmax(92px, 0.68fr)',
               render: (item) => formatearUsd(calcularResumen(item).ingresoNeto),
             },
             {
               key: 'costo',
               label: 'Costo',
-              width: 'minmax(100px, 0.7fr)',
+              width: 'minmax(86px, 0.62fr)',
               render: (item) => formatearUsd(calcularResumen(item).costo),
             },
             {
               key: 'margen',
               label: 'Margen',
-              width: 'minmax(110px, 0.75fr)',
+              width: 'minmax(92px, 0.68fr)',
               render: (item) => <strong>{formatearUsd(calcularResumen(item).margen)}</strong>,
             },
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(150px, 0.8fr)',
+              width: 'minmax(76px, 0.36fr)',
               render: (item) => (
-                <div className="button-row table-actions">
-                  <button className="small" onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
-                    Editar
-                  </button>
-                  <button className="small" onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'}>
-                    Copiar
-                  </button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar ${item.nombre}`} onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
+                  <IconButton icon="copy" label={`Copiar ${item.nombre}`} onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
                 </div>
               ),
             },
