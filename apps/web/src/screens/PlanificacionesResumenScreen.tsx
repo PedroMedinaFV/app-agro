@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
@@ -9,6 +13,15 @@ type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => Promise<boolean>;
   onCopiarEscenario: (planificacionId: string) => Promise<boolean>;
 };
+
+function calcularResumen(item: PlanificacionActiva) {
+  return {
+    hectareas: item.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
+    ingresoNeto: item.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
+    costo: item.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
+    margen: item.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
+  };
+}
 
 export function PlanificacionesResumenScreen({
   planificacion,
@@ -19,11 +32,6 @@ export function PlanificacionesResumenScreen({
   guardandoPlanificacion,
   cerrandoPlanificacion,
   planificacionActiva,
-  lineasPlanificacion,
-  hectareasPlanificadas,
-  ingresoNetoTotal,
-  costoTotal,
-  margenBrutoTotal,
   camposProvisorios,
   tieneLineasDuplicadas,
   cerrarPlanificacionActiva,
@@ -32,7 +40,10 @@ export function PlanificacionesResumenScreen({
   onNuevoEscenario,
   onCopiarEscenario,
 }: PlanificacionesResumenScreenProps) {
-  const campaniaInicial = planificacionActiva?.campaniaErpId || campaniasDisponibles.find((campania) => campania.esActual)?.erpId || campaniasDisponibles[0]?.erpId || '';
+  const campaniaInicial = planificacionActiva?.campaniaErpId
+    || campaniasDisponibles.find((campania) => campania.esActual)?.erpId
+    || campaniasDisponibles[0]?.erpId
+    || '';
   const [modalEscenarioAbierto, setModalEscenarioAbierto] = useState(false);
   const [nuevoEscenario, setNuevoEscenario] = useState({
     nombre: '',
@@ -40,21 +51,11 @@ export function PlanificacionesResumenScreen({
     descripcion: '',
   });
   const campaniasPorId = useMemo(() => new Map(campaniasDisponibles.map((campania) => [campania.erpId, campania])), [campaniasDisponibles]);
-  const campaniaActiva = campaniasPorId.get(planificacionActiva?.campaniaErpId || '');
   const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
     item.campaniaErpId === nuevoEscenario.campaniaErpId
     && item.estado === 'cerrada'
     && item.escenarioOriginal
   ));
-
-  function calcularResumen(item: PlanificacionActiva) {
-    return {
-      hectareas: item.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
-      ingresoNeto: item.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
-      costo: item.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
-      margen: item.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
-    };
-  }
 
   function abrirNuevoEscenario() {
     setNuevoEscenario({
@@ -79,20 +80,11 @@ export function PlanificacionesResumenScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Planificación</p>
-          <h2>Planificaciones agricolas</h2>
-          <p className="hint">Resumen de campaña, estado y margen. La carga detallada se edita en una pantalla aparte.</p>
-        </div>
-        {/* <div className="planning-hero-summary">
-          <span>{campaniaActiva?.codigo || 'Sin campania'}</span>
-          <strong>{planificacionActiva ? `${lineasPlanificacion.length} lineas` : 'Sin planificacion'}</strong>
-        </div>
-        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
-          {planificacionActiva?.estado || 'sin_estado'}
-        </div> */}
-      </section>
+      <PageHeader
+        eyebrow="Planificacion"
+        title="Planificaciones agricolas"
+        description="Resumen de campania, estado y margen. La carga detallada se edita en una pantalla aparte."
+      />
 
       {camposProvisorios > 0 && (
         <div className="status-warning">
@@ -106,28 +98,26 @@ export function PlanificacionesResumenScreen({
         </div>
       )}
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Planificaciones</h2>
-            <p className="hint">Vista principal de nombre, campania, estado y resultado economico.</p>
-          </div>
-          <div className="button-row">
-            <button className="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || campaniasDisponibles.length === 0}>
+      <Panel
+        title="Planificaciones"
+        description="Vista principal de nombre, campania, estado y resultado economico."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || campaniasDisponibles.length === 0}>
               Nuevo escenario
-            </button>
-            <button className="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
+            </Button>
+            <Button variant="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
               Editar
-            </button>
-            <button className="secondary" onClick={cerrarPlanificacionActiva} disabled={!puedeCerrarPlanificacion || cerrandoPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas}>
+            </Button>
+            <Button variant="secondary" onClick={cerrarPlanificacionActiva} disabled={!puedeCerrarPlanificacion || cerrandoPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas}>
               <span className="button-content">
                 {cerrandoPlanificacion && <LoadingSpinner label="Cerrando planificacion" />}
                 {cerrandoPlanificacion ? 'Cerrando...' : 'Cerrar planificacion'}
               </span>
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={planificacion.planificaciones}
           getRowKey={(item) => item.id}
@@ -193,13 +183,10 @@ export function PlanificacionesResumenScreen({
             },
           ]}
         />
-      </section>
+      </Panel>
 
       <section className="content-grid">
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Precios de referencia</h2>
-          </div>
+        <Panel title="Precios de referencia">
           <div className="activity-list">
             {planificacion.preciosReferencia.map((precio) => (
               <article key={precio.id}>
@@ -209,12 +196,9 @@ export function PlanificacionesResumenScreen({
               </article>
             ))}
           </div>
-        </div>
+        </Panel>
 
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Protocolos</h2>
-          </div>
+        <Panel title="Protocolos">
           <div className="activity-list">
             {planificacion.protocolos.map((protocolo) => (
               <article key={protocolo.id}>
@@ -224,7 +208,7 @@ export function PlanificacionesResumenScreen({
               </article>
             ))}
           </div>
-        </div>
+        </Panel>
       </section>
 
       {modalEscenarioAbierto && (
@@ -235,7 +219,7 @@ export function PlanificacionesResumenScreen({
                 <p className="eyebrow">Planificacion</p>
                 <h2 id="nuevo-escenario-title">Nuevo escenario</h2>
               </div>
-              <button className="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cerrar</button>
+              <Button variant="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cerrar</Button>
             </div>
 
             <div className="form-grid">
@@ -264,13 +248,13 @@ export function PlanificacionesResumenScreen({
             )}
 
             <div className="modal-actions">
-              <button className="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cancelar</button>
-              <button className="primary" onClick={confirmarNuevoEscenario} disabled={guardandoPlanificacion || !nuevoEscenario.nombre.trim() || !nuevoEscenario.campaniaErpId || campaniaTieneOriginal}>
+              <Button variant="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cancelar</Button>
+              <Button variant="primary" onClick={confirmarNuevoEscenario} disabled={guardandoPlanificacion || !nuevoEscenario.nombre.trim() || !nuevoEscenario.campaniaErpId || campaniaTieneOriginal}>
                 <span className="button-content">
                   {guardandoPlanificacion && <LoadingSpinner label="Creando escenario" />}
                   {guardandoPlanificacion ? 'Creando...' : 'Crear escenario'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
