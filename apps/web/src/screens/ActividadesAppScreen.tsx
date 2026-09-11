@@ -208,7 +208,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
         tipoCultivo: formatearAtributoActividad(actividadPropia?.tipoCultivo),
         epocaSiembra: formatearAtributoActividad(actividadPropia?.epocaSiembra),
         origen: 'ERP',
-        estado: actividadPropia ? 'Con atributos Agro App' : 'Pendiente atributos',
+        estado: actividadPropia ? 'Configurada' : 'A completar',
         accion: 'editar' as const,
         actividadPropia,
         actividadErp: actividad,
@@ -423,40 +423,42 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
           <p className="form-error">Para crear actividades primero debe existir al menos una especie ERP o una especie propia de Agro App.</p>
         )}
 
-        <DataTable
-          rows={filasActividad}
-          getRowKey={(fila) => fila.id}
-          emptyMessage="Todavia no hay actividades para el filtro seleccionado."
-          columns={[
-            { key: 'actividad', label: 'Actividad', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
-            { key: 'especie', label: 'Especie', width: 'minmax(130px, 1fr)', render: (fila) => fila.especie },
-            { key: 'tipoGrano', label: 'Grano', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.tipoGrano },
-            { key: 'tipoCultivo', label: 'Cultivo', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.tipoCultivo },
-            { key: 'epocaSiembra', label: 'Epoca', width: 'minmax(92px, 0.55fr)', render: (fila) => fila.epocaSiembra },
-            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.origen },
-            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.75fr)', render: (fila) => <em>{fila.estado}</em> },
-            {
-              key: 'accion',
-              label: 'Accion',
-              width: 'minmax(150px, 0.7fr)',
-              render: (fila) => fila.accion === 'editar'
-                ? (
-                  <div className="table-icon-actions">
-                    <IconButton
-                      icon="edit"
-                      label={fila.actividadErp ? `Editar atributos ${fila.nombre}` : `Editar actividad ${fila.nombre}`}
-                      disabled={!puedeConfigurarPlanificacion}
-                      onClick={() => fila.actividadErp ? abrirEdicionActividadErp(fila.actividadErp, fila.actividadPropia) : fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}
-                    />
-                    {fila.actividadPropia?.estadoVinculacion === 'provisorio' && !fila.actividadPropia.actividadErpId && (
-                      <IconButton icon="link" label={`Vincular actividad ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && abrirVinculacion(fila.actividadPropia)} />
-                    )}
-                  </div>
-                )
-                : null,
-            },
-          ]}
-        />
+        <div className="dense-data-table">
+          <DataTable
+            rows={filasActividad}
+            getRowKey={(fila) => fila.id}
+            emptyMessage="Todavia no hay actividades para el filtro seleccionado."
+            columns={[
+              { key: 'actividad', label: 'Actividad', width: 'minmax(150px, 1.35fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
+              { key: 'especie', label: 'Especie', width: 'minmax(110px, 0.9fr)', render: (fila) => fila.especie },
+              { key: 'tipoGrano', label: 'Grano', width: 'minmax(72px, 0.5fr)', render: (fila) => fila.tipoGrano },
+              { key: 'tipoCultivo', label: 'Cultivo', width: 'minmax(74px, 0.5fr)', render: (fila) => fila.tipoCultivo },
+              { key: 'epocaSiembra', label: 'Epoca', width: 'minmax(74px, 0.5fr)', render: (fila) => fila.epocaSiembra },
+              { key: 'origen', label: 'Origen', width: 'minmax(58px, 0.35fr)', render: (fila) => fila.origen },
+              { key: 'estado', label: 'Estado', width: 'minmax(94px, 0.55fr)', render: (fila) => <em>{fila.estado}</em> },
+              {
+                key: 'accion',
+                label: '',
+                width: 'minmax(58px, 0.35fr)',
+                render: (fila) => fila.accion === 'editar'
+                  ? (
+                    <div className="table-icon-actions">
+                      <IconButton
+                        icon="edit"
+                        label={fila.actividadErp ? `Editar atributos ${fila.nombre}` : `Editar actividad ${fila.nombre}`}
+                        disabled={!puedeConfigurarPlanificacion}
+                        onClick={() => fila.actividadErp ? abrirEdicionActividadErp(fila.actividadErp, fila.actividadPropia) : fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}
+                      />
+                      {fila.actividadPropia?.estadoVinculacion === 'provisorio' && !fila.actividadPropia.actividadErpId && (
+                        <IconButton icon="link" label={`Vincular actividad ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && abrirVinculacion(fila.actividadPropia)} />
+                      )}
+                    </div>
+                  )
+                  : null,
+              },
+            ]}
+          />
+        </div>
       </Panel>
 
       {actividadEnEdicion && (

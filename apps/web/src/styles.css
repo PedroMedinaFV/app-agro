@@ -1982,6 +1982,36 @@ nav a.active .nav-icon,
   padding: 7px 9px;
 }
 
+.dense-data-table {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dense-data-table .data-table-row {
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.dense-data-table .data-table-cell,
+.dense-data-table .data-table-cell span,
+.dense-data-table .data-table-cell em {
+  font-size: 11px;
+}
+
+.dense-data-table .data-table-cell strong {
+  font-size: 12px;
+}
+
+.dense-data-table .data-table-cell em {
+  max-width: 100%;
+  padding: 4px 8px;
+  white-space: normal;
+}
+
+.dense-data-table .table-icon-actions {
+  gap: 6px;
+}
+
 @container (max-width: 820px) {
   .data-table-row {
     grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
