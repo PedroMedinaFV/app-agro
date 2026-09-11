@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, LoteApp, PrecipitacionCampo, SesionUsuario } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import {
   crearPrecipitacion,
   obtenerPlanificacionSnapshot,
@@ -147,23 +150,14 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Operacion de campo</p>
-          <h2>Precipitaciones</h2>
-          <p className="hint">Carga y consulta de lluvias por campo asignado, con lote opcional para mejorar el analisis posterior.</p>
-        </div>
-        <div className="status-pill">{totalPeriodo.toFixed(1)} mm</div>
-      </section>
+      <PageHeader
+        eyebrow="Operacion de campo"
+        title="Precipitaciones"
+        description="Carga y consulta de lluvias por campo asignado, con lote opcional para mejorar el analisis posterior."
+        aside={<div className="status-pill">{totalPeriodo.toFixed(1)} mm</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Nueva precipitacion</h2>
-            <p className="hint">{estado}</p>
-          </div>
-        </div>
-
+      <Panel title="Nueva precipitacion" description={estado}>
         <div className="reference-modal-grid">
           <label>
             Campo
@@ -228,20 +222,13 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
         </div>
 
         <div className="modal-actions">
-          <button className="primary" type="button" disabled={!puedeCrear || guardando} onClick={guardar}>
+          <Button variant="primary" disabled={!puedeCrear || guardando} onClick={guardar}>
             {guardando ? 'Guardando...' : 'Guardar precipitacion'}
-          </button>
+          </Button>
         </div>
-      </section>
+      </Panel>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Registros</h2>
-            <p className="hint">Ultimas precipitaciones registradas dentro del alcance de la sesion. Mostrando {precipitacionesFiltradas.length} de {precipitaciones.length}.</p>
-          </div>
-        </div>
-
+      <Panel title="Registros" description={`Ultimas precipitaciones registradas dentro del alcance de la sesion. Mostrando ${precipitacionesFiltradas.length} de ${precipitaciones.length}.`}>
         <div className="reference-modal-grid">
           <label>
             Campo
@@ -312,7 +299,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
             },
           ]}
         />
-      </section>
+      </Panel>
     </section>
   );
 }

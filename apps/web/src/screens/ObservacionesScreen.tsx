@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, FichaLoteOperativoResponse, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import {
   crearObservacion,
   crearUrlLecturaAdjuntoObservacion,
@@ -230,23 +234,14 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Operacion de campo</p>
-          <h2>Observaciones</h2>
-          <p className="hint">Carga y consulta de observaciones operativas por campo y lote, con severidad y ubicacion opcional.</p>
-        </div>
-        <div className="status-pill">{observacionesAltas} alta(s)</div>
-      </section>
+      <PageHeader
+        eyebrow="Operacion de campo"
+        title="Observaciones"
+        description="Carga y consulta de observaciones operativas por campo y lote, con severidad y ubicacion opcional."
+        aside={<div className="status-pill">{observacionesAltas} alta(s)</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Nueva observacion</h2>
-            <p className="hint">{estado}</p>
-          </div>
-        </div>
-
+      <Panel title="Nueva observacion" description={estado}>
         <div className="reference-modal-grid">
           <label>
             Campo
@@ -356,20 +351,13 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
         </div>
 
         <div className="modal-actions">
-          <button className="primary" type="button" disabled={!puedeCrear || guardando} onClick={guardar}>
+          <Button variant="primary" disabled={!puedeCrear || guardando} onClick={guardar}>
             {guardando ? 'Guardando...' : 'Guardar observacion'}
-          </button>
+          </Button>
         </div>
-      </section>
+      </Panel>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Registros</h2>
-            <p className="hint">Ultimas observaciones registradas dentro del alcance de la sesion. Mostrando {observacionesFiltradas.length} de {observaciones.length}.</p>
-          </div>
-        </div>
-
+      <Panel title="Registros" description={`Ultimas observaciones registradas dentro del alcance de la sesion. Mostrando ${observacionesFiltradas.length} de ${observaciones.length}.`}>
         <div className="reference-modal-grid">
           <label>
             Campo
@@ -480,30 +468,27 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               label: '',
               width: 'minmax(54px, 0.35fr)',
               render: (observacion) => (
-                <button
-                  className="icon-button"
-                  type="button"
-                  title="Ver ficha del lote"
+                <div className="table-icon-actions">
+                  <IconButton
+                  icon="edit"
+                  label="Ver ficha del lote"
                   disabled={!observacion.loteAppId || cargandoFicha}
                   onClick={() => verFichaLote(observacion.loteAppId)}
-                >
-                  FI
-                </button>
+                  />
+                </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {fichaLote && (
-        <section className="panel operative-detail-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Ficha del lote</h2>
-              <p className="hint">{fichaLote.campo.nombre} / {fichaLote.lote.nombre}</p>
-            </div>
-            <button className="ghost" type="button" onClick={() => setFichaLote(null)}>Cerrar</button>
-          </div>
+        <Panel
+          className="operative-detail-panel"
+          title="Ficha del lote"
+          description={`${fichaLote.campo.nombre} / ${fichaLote.lote.nombre}`}
+          actions={<Button variant="ghost" onClick={() => setFichaLote(null)}>Cerrar</Button>}
+        >
 
           <section className="metrics operative-metrics">
             <article><span>Superficie total</span><strong>{fichaLote.lote.superficieTotal.toFixed(1)} ha</strong></article>
@@ -541,7 +526,7 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               )) : <p>Sin observaciones registradas.</p>}
             </article>
           </div>
-        </section>
+        </Panel>
       )}
     </section>
   );

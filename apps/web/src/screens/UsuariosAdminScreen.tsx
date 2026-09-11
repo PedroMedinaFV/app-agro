@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpCampo, ErpZona, RolUsuario, SesionUsuario, UsuarioAdminResumen } from '@agro/tipos';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import {
   guardarCamposUsuarioAdmin,
   guardarUsuarioAdmin,
@@ -200,26 +204,22 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Administracion</p>
-          <h2>Usuarios</h2>
-          <p className="hint">Alta de usuarios, rol operativo y campos permitidos. El login Microsoft se enlaza por email.</p>
-        </div>
-        <div className="status-pill">{usuarios.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Administracion"
+        title="Usuarios"
+        description="Alta de usuarios, rol operativo y campos permitidos. El login Microsoft se enlaza por email."
+        aside={<div className="status-pill">{usuarios.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Usuarios del cliente</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <button className="small" type="button" disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearUsuarioFormulario())}>
+      <Panel
+        title="Usuarios del cliente"
+        description={estado}
+        actions={(
+          <Button variant="small" disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearUsuarioFormulario())}>
             Nuevo usuario
-          </button>
-        </div>
-
+          </Button>
+        )}
+      >
         <DataTable
           rows={usuarios}
           getRowKey={(usuario) => usuario.id}
@@ -245,14 +245,14 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
               label: 'Acciones',
               width: 'minmax(90px, 0.5fr)',
               render: (usuario) => (
-                <button className="small" type="button" disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearFormularioDesdeUsuario(usuario))}>
-                  Editar
-                </button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar usuario ${usuario.email}`} disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearFormularioDesdeUsuario(usuario))} />
+                </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {usuarioEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -262,7 +262,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                 <p className="eyebrow">Administracion</p>
                 <h2 id="usuario-modal-title">Usuario</h2>
               </div>
-              <button className="small" type="button" onClick={() => setUsuarioEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setUsuarioEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -357,10 +357,10 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
             )}
 
             <div className="modal-actions">
-              <button className="small" type="button" onClick={() => setUsuarioEnEdicion(null)}>Cancelar</button>
-              <button className="primary" type="button" disabled={guardando} onClick={guardar}>
+              <Button variant="small" onClick={() => setUsuarioEnEdicion(null)}>Cancelar</Button>
+              <Button variant="primary" disabled={guardando} onClick={guardar}>
                 {guardando ? 'Guardando...' : 'Guardar usuario'}
-              </button>
+              </Button>
             </div>
           </section>
         </div>

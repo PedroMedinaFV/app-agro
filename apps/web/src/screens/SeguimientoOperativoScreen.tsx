@@ -9,6 +9,8 @@ import type {
   SeveridadObservacion,
 } from '@agro/tipos';
 import { DataTable } from '../components/DataTable';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import {
   crearUrlLecturaAdjuntoObservacion,
   obtenerFichaLoteOperativo,
@@ -149,16 +151,14 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Seguimiento operativo</p>
-          <h2>Campo y lote</h2>
-          <p className="hint">{estado}</p>
-        </div>
-        <div className="status-pill">{observacionesFiltradas.length} obs.</div>
-      </section>
+      <PageHeader
+        eyebrow="Seguimiento operativo"
+        title="Campo y lote"
+        description={estado}
+        aside={<div className="status-pill">{observacionesFiltradas.length} obs.</div>}
+      />
 
-      <section className="panel">
+      <Panel>
         <div className="reference-modal-grid">
           <label>
             Campo
@@ -211,7 +211,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
             <input value={filtroTexto} onChange={(event) => setFiltroTexto(event.target.value)} placeholder="Campo, lote, titulo u observaciones" />
           </label>
         </div>
-      </section>
+      </Panel>
 
       <section className="metrics operative-metrics">
         <article><span>Observaciones</span><strong>{observacionesFiltradas.length}</strong></article>
@@ -221,14 +221,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
       </section>
 
       {fichaLote && (
-        <section className="panel operative-detail-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Ficha del lote</h2>
-              <p className="hint">{fichaLote.campo.nombre} / {fichaLote.lote.nombre}</p>
-            </div>
-          </div>
-
+        <Panel className="operative-detail-panel" title="Ficha del lote" description={`${fichaLote.campo.nombre} / ${fichaLote.lote.nombre}`}>
           <div className="operative-detail-grid">
             <article>
               <h3>Base</h3>
@@ -258,16 +251,10 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
               <p><strong>Observaciones altas:</strong> {fichaLote.observaciones.cantidadAlta}</p>
             </article>
           </div>
-        </section>
+        </Panel>
       )}
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Observaciones</h2>
-            <p className="hint">Registros operativos generados desde web y mobile.</p>
-          </div>
-        </div>
+      <Panel title="Observaciones" description="Registros operativos generados desde web y mobile.">
         <DataTable
           rows={observacionesFiltradas}
           getRowKey={(observacion) => observacion.id}
@@ -292,15 +279,9 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
             },
           ]}
         />
-      </section>
+      </Panel>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Precipitaciones</h2>
-            <p className="hint">Lluvias registradas para el mismo alcance operativo.</p>
-          </div>
-        </div>
+      <Panel title="Precipitaciones" description="Lluvias registradas para el mismo alcance operativo.">
         <DataTable
           rows={precipitacionesFiltradas}
           getRowKey={(precipitacion) => precipitacion.id}
@@ -313,7 +294,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
             { key: 'observaciones', label: 'Observaciones', width: 'minmax(190px, 1.4fr)', render: (precipitacion) => precipitacion.observaciones || 'Sin observaciones' },
           ]}
         />
-      </section>
+      </Panel>
     </section>
   );
 }

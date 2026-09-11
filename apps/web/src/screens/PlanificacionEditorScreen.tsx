@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { PlanificacionAgricolaLinea } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DecimalInput } from '../components/DecimalInput';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
@@ -525,26 +530,19 @@ export function PlanificacionEditorScreen({
         </div>
 
         <div className="row-actions planning-cell-actions">
-          <button
-            className="icon-button"
-            type="button"
+          <IconButton
+            icon="copy"
+            label="Copiar linea"
             onClick={() => copiarLineaPlanificacion(linea.id)}
             disabled={!puedeEditarPlanificacion}
-            aria-label="Copiar linea"
-            title="Copiar linea"
-          >
-            <span aria-hidden="true">Cop.</span>
-          </button>
-          <button
-            className="icon-button danger-icon"
-            type="button"
+          />
+          <IconButton
+            icon="close"
+            className="danger-icon"
+            label="Quitar linea"
             onClick={() => eliminarLineaPlanificacion(linea.id)}
             disabled={!puedeEditarPlanificacion || lineasPlanificacion.length === 1}
-            aria-label="Quitar linea"
-            title="Quitar linea"
-          >
-            <span aria-hidden="true">X</span>
-          </button>
+          />
         </div>
       </div>
     );
@@ -552,19 +550,13 @@ export function PlanificacionEditorScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Edicion de planificacion</p>
-          <h2>{planificacionActiva?.nombre || 'Planificacion sin nombre'}</h2>
-          <p className="hint">Carga por zona, campo y lote. Al elegir protocolo se define la actividad de la linea.</p>
-        </div>
-        <button className="secondary" onClick={onVolverResumen}>
-          Volver al resumen
-        </button>
-        <div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>
-          {planificacionActiva?.estado || 'sin_estado'}
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Edicion de planificacion"
+        title={planificacionActiva?.nombre || 'Planificacion sin nombre'}
+        description="Carga por zona, campo y lote. Al elegir protocolo se define la actividad de la linea."
+        aside={<div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>{planificacionActiva?.estado || 'sin_estado'}</div>}
+        actions={<Button variant="secondary" onClick={onVolverResumen}>Volver al resumen</Button>}
+      />
 
       {tieneLineasDuplicadas && (
         <div className="status-error">
@@ -572,24 +564,24 @@ export function PlanificacionEditorScreen({
         </div>
       )}
 
-      <section className="panel planning-editor-page">
-        <div className="panel-header">
-          <div>
-            <h2>Datos de cabecera</h2>
-            <p className="hint">Estos datos identifican la planificacion y se guardan junto con el borrador.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={agregarLineaPlanificacion} disabled={!puedeEditarPlanificacion}>
+      <Panel
+        className="planning-editor-page"
+        title="Datos de cabecera"
+        description="Estos datos identifican la planificacion y se guardan junto con el borrador."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={agregarLineaPlanificacion} disabled={!puedeEditarPlanificacion}>
               Nueva linea
-            </button>
-            <button className="primary" onClick={guardarBorradorPlanificacion} disabled={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas}>
+            </Button>
+            <Button variant="primary" onClick={guardarBorradorPlanificacion} disabled={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas}>
               <span className="button-content">
                 {guardandoPlanificacion && <LoadingSpinner label="Guardando planificacion" />}
                 {guardandoPlanificacion ? 'Guardando...' : 'Guardar borrador'}
               </span>
-            </button>
-          </div>
-        </div>
+            </Button>
+          </ActionBar>
+        )}
+      >
 
         <div className="planning-editor-header">
           <label>
@@ -676,9 +668,9 @@ export function PlanificacionEditorScreen({
           <div className="planning-filter-summary">
             <strong>{lineasFiltradas.length}</strong>
             <span>de {lineasPlanificacion.length} lineas</span>
-            <button className="small" type="button" onClick={limpiarFiltros} disabled={!busqueda && !filtroZonaId && !filtroCampoId && filtroEstadoCarga === 'todos'}>
+            <Button variant="small" onClick={limpiarFiltros} disabled={!busqueda && !filtroZonaId && !filtroCampoId && filtroEstadoCarga === 'todos'}>
               Limpiar
-            </button>
+            </Button>
           </div>
         </section>
 
@@ -696,9 +688,9 @@ export function PlanificacionEditorScreen({
               ))}
             </select>
           </label>
-          <button className="small" type="button" onClick={aplicarProtocoloAFiltradas} disabled={!puedeEditarPlanificacion || !protocoloMasivoId || lineasFiltradas.length === 0}>
+          <Button variant="small" onClick={aplicarProtocoloAFiltradas} disabled={!puedeEditarPlanificacion || !protocoloMasivoId || lineasFiltradas.length === 0}>
             Aplicar protocolo
-          </button>
+          </Button>
           <label>
             Destino
             <select value={destinoMasivo} onChange={(event) => setDestinoMasivo(event.target.value)}>
@@ -708,16 +700,16 @@ export function PlanificacionEditorScreen({
               ))}
             </select>
           </label>
-          <button className="small" type="button" onClick={aplicarDestinoAFiltradas} disabled={!puedeEditarPlanificacion || !destinoMasivo || lineasFiltradas.length === 0}>
+          <Button variant="small" onClick={aplicarDestinoAFiltradas} disabled={!puedeEditarPlanificacion || !destinoMasivo || lineasFiltradas.length === 0}>
             Aplicar destino
-          </button>
+          </Button>
           <label>
             Rinde tn/ha
             <input type="text" inputMode="decimal" value={rindeMasivo} onChange={(event) => setRindeMasivo(event.target.value)} placeholder="Ej. 3.20" />
           </label>
-          <button className="small" type="button" onClick={aplicarRindeAFiltradas} disabled={!puedeEditarPlanificacion || !rindeMasivo || lineasFiltradas.length === 0}>
+          <Button variant="small" onClick={aplicarRindeAFiltradas} disabled={!puedeEditarPlanificacion || !rindeMasivo || lineasFiltradas.length === 0}>
             Aplicar rinde
-          </button>
+          </Button>
           {resultadoAccionMasiva && <span className="bulk-action-result">{resultadoAccionMasiva}</span>}
         </section>
 
@@ -728,15 +720,15 @@ export function PlanificacionEditorScreen({
           {lineasAgrupadas.length > 0 && (
             <div className="planning-tree-toolbar">
               <span>Vista por zona y campo</span>
-              <div className="button-row">
-                <button className="small tree-toggle-button" type="button" onClick={alternarTodoArbol}>
+              <ActionBar compact>
+                <Button variant="small" className="tree-toggle-button" onClick={alternarTodoArbol}>
                   {lineasAgrupadas.length > 0
                     && lineasAgrupadas.every((zona) => zonasAbiertas.has(zona.id))
                     && lineasAgrupadas.flatMap((zona) => zona.campos).every((campo) => camposAbiertos.has(campo.id))
                     ? 'Contraer todo'
                     : 'Expandir todo'}
-                </button>
-              </div>
+                </Button>
+              </ActionBar>
             </div>
           )}
           {lineasAgrupadas.map((zona) => (
@@ -760,9 +752,9 @@ export function PlanificacionEditorScreen({
                     {resumenZona.pendientes > 0 && <em>{resumenZona.pendientes} pendiente(s)</em>}
                     {resumenZona.duplicadas > 0 && <em className="summary-danger">{resumenZona.duplicadas} duplicada(s)</em>}
                     <div className="planning-tree-summary-actions">
-                      <button className="small tree-toggle-button" type="button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
+                      <Button variant="small" className="tree-toggle-button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
                         {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
-                      </button>
+                      </Button>
                     </div>
                   </summary>
                   {zonaAbierta && zona.campos.map((campo) => {
@@ -797,7 +789,7 @@ export function PlanificacionEditorScreen({
             })()
           ))}
         </div>
-      </section>
+      </Panel>
     </section>
   );
 }
