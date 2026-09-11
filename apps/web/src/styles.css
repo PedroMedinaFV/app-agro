@@ -189,6 +189,28 @@ h1 {
   background: #fee2e2;
 }
 
+.origin-badge {
+  display: inline-flex;
+  min-height: 24px;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.origin-badge.erp {
+  color: #083c2f;
+  background: #eaf1eb;
+}
+
+.origin-badge.app {
+  color: #1f3d6d;
+  background: #e8f0ff;
+}
+
 label {
   display: grid;
   gap: 7px;

@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import { guardarEspecieApp, obtenerEspeciesErpImportadas, obtenerEspeciesApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -267,7 +268,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
           emptyMessage="Todavia no hay especies para el filtro seleccionado."
           columns={[
             { key: 'especie', label: 'Especie', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
-            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.origen },
+            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.8fr)', render: (fila) => fila.actualizado },
             {

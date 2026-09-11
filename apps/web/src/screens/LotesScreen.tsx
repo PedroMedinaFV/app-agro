@@ -4,6 +4,7 @@ import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
+import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import {
   guardarCampoApp,
@@ -585,7 +586,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
             { key: 'lote', label: 'Lote', width: 'minmax(190px, 1.35fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
             { key: 'campo', label: 'Campo', width: 'minmax(150px, 1fr)', render: (fila) => fila.campo },
             { key: 'superficie', label: 'Superficie', width: 'minmax(110px, 0.75fr)', render: (fila) => fila.superficie },
-            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => fila.origen },
+            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.7fr)', render: (fila) => <em>{fila.estado}</em> },
             {
               key: 'accion',

@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas } from '../services/api';
@@ -43,6 +44,7 @@ type InsumoTabla = {
   tipo: string;
   unidad: string;
   precio: string;
+  origen: string;
   accion: 'editar';
   insumoPropio?: InsumoApp;
   insumoErp?: ErpInsumo;
@@ -234,6 +236,7 @@ export function InsumosAppScreen({
       tipo: insumo.tipo || '-',
       unidad: insumo.unidad,
       precio: insumo.precioUnitarioEstimado !== undefined ? formatearMoneda(insumo.precioUnitarioEstimado, insumo.moneda || monedaPorDefecto) : 'Sin precio',
+      origen: 'Agro App',
       accion: 'editar' as const,
       insumoPropio: insumo,
     })),
@@ -251,6 +254,7 @@ export function InsumosAppScreen({
         tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
         unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
         precio: precio !== undefined ? formatearMoneda(precio, moneda) : 'Sin precio',
+        origen: 'ERP',
         accion: 'editar' as const,
         insumoPropio,
         insumoErp: insumo,
@@ -376,6 +380,7 @@ export function InsumosAppScreen({
             { key: 'tipo', label: 'Tipo', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.tipo },
             { key: 'unidad', label: 'Unidad', width: 'minmax(76px, 0.5fr)', render: (fila) => fila.unidad },
             { key: 'precio', label: 'Precio', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.precio },
+            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
             {
               key: 'acciones',
               label: 'Acciones',

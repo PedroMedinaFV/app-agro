@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados } from '../services/api';
@@ -42,6 +43,7 @@ type LaborTabla = {
   codigo: string;
   unidad: string;
   costo: string;
+  origen: string;
   estado: string;
   accion: 'editar';
   laborPropia?: ServicioApp;
@@ -226,6 +228,7 @@ export function ServiciosAppScreen({
       codigo: labor.codigo,
       unidad: labor.unidadSugerida,
       costo: labor.costoUnitarioSugerido !== undefined ? formatearMoneda(labor.costoUnitarioSugerido, monedaPorId.get(labor.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD') : 'Sin costo',
+      origen: 'Agro App',
       estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
       accion: 'editar' as const,
       laborPropia: labor,
@@ -243,6 +246,7 @@ export function ServiciosAppScreen({
         codigo: servicio.codigo,
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
         costo: costo !== undefined ? formatearMoneda(costo, moneda) : 'Sin costo',
+        origen: 'ERP',
         estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
         accion: 'editar' as const,
         laborPropia,
@@ -380,6 +384,7 @@ export function ServiciosAppScreen({
             { key: 'codigo', label: 'Codigo', width: 'minmax(92px, 0.65fr)', render: (fila) => fila.codigo },
             { key: 'unidad', label: 'Unidad', width: 'minmax(76px, 0.5fr)', render: (fila) => fila.unidad },
             { key: 'costo', label: 'Costo', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.costo },
+            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(116px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
             {
               key: 'acciones',

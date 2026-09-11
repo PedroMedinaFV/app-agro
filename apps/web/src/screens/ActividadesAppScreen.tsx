@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import {
   guardarActividadApp,
@@ -434,7 +435,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
               { key: 'tipoGrano', label: 'Grano', width: 'minmax(72px, 0.5fr)', render: (fila) => fila.tipoGrano },
               { key: 'tipoCultivo', label: 'Cultivo', width: 'minmax(74px, 0.5fr)', render: (fila) => fila.tipoCultivo },
               { key: 'epocaSiembra', label: 'Epoca', width: 'minmax(74px, 0.5fr)', render: (fila) => fila.epocaSiembra },
-              { key: 'origen', label: 'Origen', width: 'minmax(58px, 0.35fr)', render: (fila) => fila.origen },
+              { key: 'origen', label: 'Origen', width: 'minmax(76px, 0.45fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
               { key: 'estado', label: 'Estado', width: 'minmax(94px, 0.55fr)', render: (fila) => <em>{fila.estado}</em> },
               {
                 key: 'accion',

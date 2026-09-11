@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import { guardarZonaApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -288,7 +289,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
           emptyMessage="Todavia no hay zonas para el filtro seleccionado."
           columns={[
             { key: 'zona', label: 'Zona', width: 'minmax(180px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
-            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => fila.origen },
+            { key: 'origen', label: 'Origen', width: 'minmax(96px, 0.7fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.8fr)', render: (fila) => <em>{fila.estado}</em> },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.8fr)', render: (fila) => fila.actualizado },
             {

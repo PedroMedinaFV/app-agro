@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerDestinosVenta } from '../services/api';
@@ -154,7 +155,7 @@ export function DestinosVentaScreen({
           columns={[
             { key: 'destino', label: 'Destino', width: 'minmax(170px, 1.2fr)', render: (destino) => <strong>{destino.destinoVenta}</strong> },
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(190px, 1.4fr)', render: (destino) => destino.descripcion || 'Sin descripcion' },
-            { key: 'origen', label: 'Origen', width: 'minmax(80px, 0.45fr)', render: (destino) => <em>{destino.origen === 'erp' ? 'ERP' : 'App'}</em> },
+            { key: 'origen', label: 'Origen', width: 'minmax(88px, 0.5fr)', render: (destino) => <OriginBadge origen={destino.origen === 'erp' ? 'ERP' : 'Agro App'} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (destino) => <em>{destino.activo ? 'Activo' : 'Inactivo'}</em> },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (destino) => new Intl.DateTimeFormat('es-AR').format(new Date(destino.updatedAt || destino.createdAt)) },
             {
