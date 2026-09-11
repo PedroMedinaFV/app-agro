@@ -7,6 +7,10 @@ import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo, calcularCost
 
 type ModoProtocoloModal = 'crear' | 'editar' | 'copiar';
 
+function fechaParaInput(fecha?: string) {
+  return fecha ? fecha.slice(0, 10) : '';
+}
+
 interface ProtocoloModalProps {
   modo: ModoProtocoloModal;
   protocolo: ProtocoloProductivoDetalle;
@@ -253,7 +257,7 @@ export function ProtocoloModal({
                 Fecha de siembra
                 <input
                   type="date"
-                  value={protocolo.fechaSiembra || ''}
+                  value={fechaParaInput(protocolo.fechaSiembra)}
                   onChange={(event) => actualizarProtocolos((actual) => ({ ...actual, fechaSiembra: event.target.value }))}
                   disabled={!puedeConfigurarPlanificacion}
                 />
@@ -325,7 +329,7 @@ export function ProtocoloModal({
                       Fecha objetivo
                       <input
                         type="date"
-                        value={etapa.fechaObjetivo || ''}
+                        value={fechaParaInput(etapa.fechaObjetivo)}
                         onChange={(event) => actualizarEtapa(etapa.id, { fechaObjetivo: event.target.value, diasDesdeSiembra: undefined })}
                         disabled={!puedeConfigurarPlanificacion}
                       />

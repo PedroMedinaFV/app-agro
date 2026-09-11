@@ -366,3 +366,5 @@ Patron acordado:
 - cancelar cierra el editor sin ensuciar el estado compartido.
 
 Este criterio se aplica primero al editor de protocolos para evitar renders globales por cada cambio en etapas, labores e insumos.
+
+El patron queda establecido como base para todo el frontend en `docs/PATRONES_FRONTEND.md`.
