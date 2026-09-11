@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Panel } from '../components/Panel';
 import { guardarZonaApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -263,23 +267,21 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
         </article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Zonas</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <div className="button-row">
+      <Panel
+        title="Zonas"
+        description={estado}
+        actions={(
+          <ActionBar align="end">
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo o nombre" />
             </label>
-            <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevaZona}>
+            <Button variant="primary" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevaZona}>
               Nueva zona
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasZona}
           getRowKey={(fila) => fila.id}
@@ -295,10 +297,10 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && setZonaEnEdicion(fila.zonaPropia)}>Editar</button>
+                  <div className="table-icon-actions">
+                    <IconButton icon="edit" label={`Editar zona ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && setZonaEnEdicion(fila.zonaPropia)} />
                     {fila.zonaPropia?.estadoVinculacion === 'provisorio' && !fila.zonaPropia.zonaErpId && (
-                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && abrirVinculacion(fila.zonaPropia)}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular zona ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.zonaPropia && abrirVinculacion(fila.zonaPropia)} />
                     )}
                   </div>
                 )
@@ -306,7 +308,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {zonaEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -317,7 +319,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                 <h2 id="zona-modal-title">{zonasPropias.some((zona) => zona.id === zonaEnEdicion.id) ? 'Editar zona' : 'Nueva zona'}</h2>
                 <p className="hint">Las zonas propias son globales para el cliente y quedan disponibles para crear campos.</p>
               </div>
-              <button className="small" type="button" onClick={() => setZonaEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setZonaEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -355,9 +357,8 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
 
             <div className="modal-actions">
               <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
-              <button
-                className="primary"
-                type="button"
+              <Button
+                variant="primary"
                 disabled={guardando || !zonaEnEdicion.nombre.trim() || existeCodigoDuplicado}
                 onClick={guardarZona}
               >
@@ -365,7 +366,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                   {guardando && <LoadingSpinner label="Guardando zona" />}
                   {guardando ? 'Guardando...' : 'Guardar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -379,7 +380,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                 <h2 id="vincular-zona-title">Vincular zona provisoria</h2>
                 <p className="hint">La zona propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setZonaPropiaParaVincular(null); setZonaErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setZonaPropiaParaVincular(null); setZonaErpVincularId(''); }}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -398,9 +399,9 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
             </div>
             <div className="modal-actions">
               <span className="hint">El backend valida que la zona ERP exista y no este vinculada a otra zona del cliente.</span>
-              <button className="primary" type="button" disabled={guardando || !zonaErpVincularId} onClick={confirmarVinculacionZona}>
+              <Button variant="primary" disabled={guardando || !zonaErpVincularId} onClick={confirmarVinculacionZona}>
                 <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

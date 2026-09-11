@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ActividadApp, ErpActividad, ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Panel } from '../components/Panel';
 import {
   guardarActividadApp,
   obtenerActividadesErpImportadas,
@@ -399,22 +403,21 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
         <article><span>Vinculadas</span><strong>{actividadesPropias.filter((actividad) => actividad.estadoVinculacion === 'vinculado_erp').length}</strong></article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Actividades</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <div className="button-row">
+      <Panel
+        title="Actividades"
+        description={estado}
+        actions={(
+          <ActionBar align="end">
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, nombre o especie" />
             </label>
-            <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion || !especiesDisponibles.length} onClick={abrirNuevaActividad}>
+            <Button variant="primary" disabled={!puedeConfigurarPlanificacion || !especiesDisponibles.length} onClick={abrirNuevaActividad}>
               Nueva actividad
-            </button>
-          </div>
-        </div>
+            </Button>
+          </ActionBar>
+        )}
+      >
 
         {!especiesDisponibles.length && (
           <p className="form-error">Para crear actividades primero debe existir al menos una especie ERP o una especie propia de Agro App.</p>
@@ -438,17 +441,15 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button
-                      className="small"
-                      type="button"
+                  <div className="table-icon-actions">
+                    <IconButton
+                      icon="edit"
+                      label={fila.actividadErp ? `Editar atributos ${fila.nombre}` : `Editar actividad ${fila.nombre}`}
                       disabled={!puedeConfigurarPlanificacion}
                       onClick={() => fila.actividadErp ? abrirEdicionActividadErp(fila.actividadErp, fila.actividadPropia) : fila.actividadPropia && setActividadEnEdicion(fila.actividadPropia)}
-                    >
-                      {fila.actividadErp ? 'Editar atributos' : 'Editar'}
-                    </button>
+                    />
                     {fila.actividadPropia?.estadoVinculacion === 'provisorio' && !fila.actividadPropia.actividadErpId && (
-                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && abrirVinculacion(fila.actividadPropia)}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular actividad ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.actividadPropia && abrirVinculacion(fila.actividadPropia)} />
                     )}
                   </div>
                 )
@@ -456,7 +457,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {actividadEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -466,7 +467,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="actividad-modal-title">{actividadesPropias.some((actividad) => actividad.id === actividadEnEdicion.id) ? 'Editar actividad' : 'Nueva actividad'}</h2>
               </div>
-              <button className="small" type="button" onClick={() => setActividadEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setActividadEnEdicion(null)}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={actividadEnEdicion.codigoInterno || ''} disabled={Boolean(actividadEnEdicion.actividadErpId)} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
@@ -480,9 +481,9 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
             {existeCodigoDuplicado && <p className="form-error">Ya existe una actividad propia con ese codigo interno.</p>}
             <div className="modal-actions">
               <span className="hint">{actividadEnEdicion.actividadErpId ? 'Solo se editan atributos propios de Agro App; el nombre y la especie vienen del ERP.' : 'La actividad queda asociada a una especie y disponible para planificacion, precios, gastos y protocolos.'}</span>
-              <button className="primary" type="button" disabled={guardando || !actividadEnEdicion.nombre.trim() || !obtenerClaveEspecie(actividadEnEdicion) || existeCodigoDuplicado} onClick={guardarActividad}>
+              <Button variant="primary" disabled={guardando || !actividadEnEdicion.nombre.trim() || !obtenerClaveEspecie(actividadEnEdicion) || existeCodigoDuplicado} onClick={guardarActividad}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando actividad" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -496,7 +497,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
                 <h2 id="vincular-actividad-title">Vincular actividad provisoria</h2>
                 <p className="hint">La actividad propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setActividadPropiaParaVincular(null); setActividadErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setActividadPropiaParaVincular(null); setActividadErpVincularId(''); }}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -517,9 +518,9 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
             </div>
             <div className="modal-actions">
               <span className="hint">El backend valida que la actividad ERP exista, respete la especie y no este vinculada a otra actividad del cliente.</span>
-              <button className="primary" type="button" disabled={guardando || !actividadErpVincularId} onClick={confirmarVinculacionActividad}>
+              <Button variant="primary" disabled={guardando || !actividadErpVincularId} onClick={confirmarVinculacionActividad}>
                 <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

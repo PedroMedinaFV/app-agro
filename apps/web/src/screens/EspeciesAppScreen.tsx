@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { Panel } from '../components/Panel';
 import { guardarEspecieApp, obtenerEspeciesErpImportadas, obtenerEspeciesApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -242,23 +246,21 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
         <article><span>Vinculadas</span><strong>{especiesPropias.filter((especie) => especie.estadoVinculacion === 'vinculado_erp').length}</strong></article>
       </section>
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Especies</h2>
-            <p className="hint">{estado}</p>
-          </div>
-          <div className="button-row">
+      <Panel
+        title="Especies"
+        description={estado}
+        actions={(
+          <ActionBar align="end">
             <label className="compact-field">
               Buscar
               <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo o nombre" />
             </label>
-            <button className="primary" type="button" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevaEspecie}>
+            <Button variant="primary" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevaEspecie}>
               Nueva especie
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={filasEspecie}
           getRowKey={(fila) => fila.id}
@@ -274,10 +276,10 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
               width: 'minmax(150px, 0.7fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
-                  <div className="button-row table-actions">
-                    <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && setEspecieEnEdicion(fila.especiePropia)}>Editar</button>
+                  <div className="table-icon-actions">
+                    <IconButton icon="edit" label={`Editar especie ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && setEspecieEnEdicion(fila.especiePropia)} />
                     {fila.especiePropia?.estadoVinculacion === 'provisorio' && !fila.especiePropia.especieErpId && (
-                      <button className="small" type="button" disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && abrirVinculacion(fila.especiePropia)}>Vincular</button>
+                      <IconButton icon="link" label={`Vincular especie ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.especiePropia && abrirVinculacion(fila.especiePropia)} />
                     )}
                   </div>
                 )
@@ -285,7 +287,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
             },
           ]} 
         />
-      </section>
+      </Panel>
 
       {especieEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -295,7 +297,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="especie-modal-title">{especiesPropias.some((especie) => especie.id === especieEnEdicion.id) ? 'Editar especie' : 'Nueva especie'}</h2>
               </div>
-              <button className="small" type="button" onClick={() => setEspecieEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setEspecieEnEdicion(null)}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={especieEnEdicion.codigoInterno || ''} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
@@ -305,9 +307,9 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
             {existeCodigoDuplicado && <p className="form-error">Ya existe una especie propia con ese codigo interno.</p>}
             <div className="modal-actions">
               <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
-              <button className="primary" type="button" disabled={guardando || !especieEnEdicion.nombre.trim() || existeCodigoDuplicado} onClick={guardarEspecie}>
+              <Button variant="primary" disabled={guardando || !especieEnEdicion.nombre.trim() || existeCodigoDuplicado} onClick={guardarEspecie}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando especie" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
@@ -321,7 +323,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
                 <h2 id="vincular-especie-title">Vincular especie provisoria</h2>
                 <p className="hint">La especie propia quedara enlazada a ALBOR y dejara de mostrarse como fila independiente.</p>
               </div>
-              <button className="ghost" type="button" onClick={() => { setEspeciePropiaParaVincular(null); setEspecieErpVincularId(''); }}>Cerrar</button>
+              <Button variant="ghost" onClick={() => { setEspeciePropiaParaVincular(null); setEspecieErpVincularId(''); }}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
               <div className="reference-total">
@@ -340,9 +342,9 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
             </div>
             <div className="modal-actions">
               <span className="hint">El backend valida que la especie ERP exista y no este vinculada a otra especie del cliente.</span>
-              <button className="primary" type="button" disabled={guardando || !especieErpVincularId} onClick={confirmarVinculacionEspecie}>
+              <Button variant="primary" disabled={guardando || !especieErpVincularId} onClick={confirmarVinculacionEspecie}>
                 <span className="button-content">{guardando && <span className="loading-spinner" />}Vincular</span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
