@@ -1,5 +1,7 @@
 import { ErpCampania, PlanificacionSnapshot, ProtocoloProductivoDetalle } from '@agro/tipos';
+import { DecimalInput } from '../DecimalInput';
 import { LoadingSpinner } from '../LoadingSpinner';
+import { SignedIntegerInput } from '../SignedIntegerInput';
 import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo } from '../../utils/formatters';
 
 type ModoProtocoloModal = 'crear' | 'editar' | 'copiar';
@@ -216,11 +218,9 @@ export function ProtocoloModal({
                   {protocolo.tipoFecha === 'relativa_siembra' ? (
                     <label>
                       Dias desde siembra
-                      <input
-                        type="number"
-                        step="1"
+                      <SignedIntegerInput
                         value={etapa.diasDesdeSiembra ?? 0}
-                        onChange={(event) => actualizarEtapa(etapa.id, { diasDesdeSiembra: Number.parseInt(event.target.value || '0', 10), fechaObjetivo: undefined })}
+                        onValueChange={(value) => actualizarEtapa(etapa.id, { diasDesdeSiembra: value, fechaObjetivo: undefined })}
                         disabled={!puedeConfigurarPlanificacion}
                         title="Puede ser negativo para labores anteriores a la siembra"
                       />
@@ -290,63 +290,60 @@ export function ProtocoloModal({
                             <option key={ServicioApp.id} value={ServicioApp.id}>{ServicioApp.nombre}</option>
                           ))}
                         </select>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
+                        <DecimalInput
+                          min={0}
+                          max={1}
                           step="0.01"
                           value={labor.indiceAplicacion}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             labores: etapa.labores.map((item) => {
                               if (item.id !== labor.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, indiceAplicacion: leerNumero(event.target.value) };
+                              const actualizado = { ...item, indiceAplicacion: value };
                               return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title="Indice de aplicacion entre 0 y 1"
-                          aria-label={`Indice de aplicacion de ${labor.nombre}`}
+                          ariaLabel={`Indice de aplicacion de ${labor.nombre}`}
                         />
-                        <input
-                          type="number"
-                          min="0"
+                        <DecimalInput
+                          min={0}
                           step="0.01"
                           value={labor.cantidadPorHa}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             labores: etapa.labores.map((item) => {
                               if (item.id !== labor.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, cantidadPorHa: leerNumero(event.target.value) };
+                              const actualizado = { ...item, cantidadPorHa: value };
                               return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title={`Cantidad por hectarea en ${labor.unidad}`}
-                          aria-label={`Cantidad por hectarea de ${labor.nombre}`}
+                          ariaLabel={`Cantidad por hectarea de ${labor.nombre}`}
                         />
-                        <input
-                          type="number"
-                          min="0"
+                        <DecimalInput
+                          min={0}
                           step="0.01"
                           value={labor.costoUnitario}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             labores: etapa.labores.map((item) => {
                               if (item.id !== labor.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, costoUnitario: leerNumero(event.target.value) };
+                              const actualizado = { ...item, costoUnitario: value };
                               return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title="Costo unitario editable copiado desde el padron"
-                          aria-label={`Costo unitario de ${labor.nombre}`}
+                          ariaLabel={`Costo unitario de ${labor.nombre}`}
                         />
                         <span title={`${labor.cantidadPorHa} ${labor.unidad} por hectarea`}>{formatearUsd(labor.costoPorHa)} / ha</span>
                       </div>
@@ -397,63 +394,60 @@ export function ProtocoloModal({
                             <option key={insumoDisponible.id} value={insumoDisponible.id}>{insumoDisponible.nombre}</option>
                           ))}
                         </select>
-                        <input
-                          type="number"
-                          min="0"
-                          max="1"
+                        <DecimalInput
+                          min={0}
+                          max={1}
                           step="0.01"
                           value={insumo.indiceAplicacion}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             insumos: etapa.insumos.map((item) => {
                               if (item.id !== insumo.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, indiceAplicacion: leerNumero(event.target.value) };
+                              const actualizado = { ...item, indiceAplicacion: value };
                               return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title="Indice de aplicacion entre 0 y 1"
-                          aria-label={`Indice de aplicacion de ${insumo.nombre}`}
+                          ariaLabel={`Indice de aplicacion de ${insumo.nombre}`}
                         />
-                        <input
-                          type="number"
-                          min="0"
+                        <DecimalInput
+                          min={0}
                           step="0.01"
                           value={insumo.dosisPorHa}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             insumos: etapa.insumos.map((item) => {
                               if (item.id !== insumo.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, dosisPorHa: leerNumero(event.target.value) };
+                              const actualizado = { ...item, dosisPorHa: value };
                               return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title={`Dosis por hectarea en ${insumo.unidad}`}
-                          aria-label={`Dosis por hectarea de ${insumo.nombre}`}
+                          ariaLabel={`Dosis por hectarea de ${insumo.nombre}`}
                         />
-                        <input
-                          type="number"
-                          min="0"
+                        <DecimalInput
+                          min={0}
                           step="0.01"
                           value={insumo.precioUnitarioEstimado}
-                          onChange={(event) => actualizarEtapa(etapa.id, {
+                          onValueChange={(value) => actualizarEtapa(etapa.id, {
                             insumos: etapa.insumos.map((item) => {
                               if (item.id !== insumo.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, precioUnitarioEstimado: leerNumero(event.target.value) };
+                              const actualizado = { ...item, precioUnitarioEstimado: value };
                               return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
                           title="Precio unitario editable copiado desde el padron"
-                          aria-label={`Precio unitario de ${insumo.nombre}`}
+                          ariaLabel={`Precio unitario de ${insumo.nombre}`}
                         />
                         <span title={`${insumo.dosisPorHa} ${insumo.unidad} por hectarea`}>{formatearUsd(insumo.costoPorHa)} / ha</span>
                       </div>

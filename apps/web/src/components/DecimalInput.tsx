@@ -5,8 +5,11 @@ type DecimalInputProps = {
   onValueChange: (value: number) => void;
   disabled?: boolean;
   min?: number;
+  max?: number;
   step?: string;
   placeholder?: string;
+  title?: string;
+  ariaLabel?: string;
 };
 
 function textoDesdeNumero(value: number) {
@@ -24,7 +27,7 @@ function numeroDesdeTexto(value: string) {
  * Input decimal controlado para tablas densas. Usa texto para permitir punto o
  * coma decimal del teclado numerico sin que el navegador bloquee la entrada.
  */
-export function DecimalInput({ value, onValueChange, disabled, min = 0, step = '0.01', placeholder }: DecimalInputProps) {
+export function DecimalInput({ value, onValueChange, disabled, min = 0, max, step = '0.01', placeholder, title, ariaLabel }: DecimalInputProps) {
   const [texto, setTexto] = useState(textoDesdeNumero(value));
 
   useEffect(() => {
@@ -59,12 +62,15 @@ export function DecimalInput({ value, onValueChange, disabled, min = 0, step = '
       type="text"
       inputMode="decimal"
       min={min}
+      max={max}
       step={step}
       value={texto}
       onChange={(event) => actualizarTexto(event.target.value)}
       onBlur={normalizarAlSalir}
       disabled={disabled}
       placeholder={placeholder}
+      title={title}
+      aria-label={ariaLabel}
     />
   );
 }

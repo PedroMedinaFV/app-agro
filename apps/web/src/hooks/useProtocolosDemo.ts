@@ -96,6 +96,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     }
 
     const etapaId = `etapa-${Date.now()}`;
+    const etapaRelativa = protocoloSeleccionado.tipoFecha === 'relativa_siembra';
     actualizarProtocolos((protocolo) => ({
       ...protocolo,
       etapas: [
@@ -107,6 +108,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
           estadioCodigo: estadio.codigo,
           orden: estadio.ordenCronologico,
           nombre: estadio.nombre,
+          diasDesdeSiembra: etapaRelativa ? 0 : undefined,
           labores: [],
           insumos: [],
         },
@@ -290,8 +292,18 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     setGuardandoProtocolo(true);
 
     try {
+      const protocoloParaGuardar: ProtocoloProductivoDetalle = {
+        ...protocoloSeleccionado,
+        etapas: protocoloSeleccionado.etapas.map((etapa) => ({
+          ...etapa,
+          diasDesdeSiembra: protocoloSeleccionado.tipoFecha === 'relativa_siembra'
+            ? Math.trunc(Number.isFinite(etapa.diasDesdeSiembra) ? etapa.diasDesdeSiembra as number : 0)
+            : undefined,
+          fechaObjetivo: protocoloSeleccionado.tipoFecha === 'absoluta' ? etapa.fechaObjetivo : undefined,
+        })),
+      };
       const respuesta = await guardarProtocolo(protocoloSeleccionado.id, {
-        protocolo: protocoloSeleccionado,
+        protocolo: protocoloParaGuardar,
         origen: 'web',
         motivo: 'Guardado de protocolo desde demo web',
       }, sesion.token);
