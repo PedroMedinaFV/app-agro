@@ -42,10 +42,10 @@ function prepararEspecie(especie: EspecieApp): EspecieApp {
 
   return {
     ...especie,
-    empresaErpId: especie.empresaErpId || 'global',
+    empresaErpId: 'global',
     nombre,
     codigoInterno: especie.codigoInterno ? normalizarCodigo(especie.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: especie.especieErpId ? 'vinculado_erp' : especie.estadoVinculacion || 'provisorio',
+    estadoVinculacion: especie.especieErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 

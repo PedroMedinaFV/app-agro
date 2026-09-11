@@ -111,7 +111,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       nombre: zona.nombre,
       detalle: zona.codigoInterno || 'Sin codigo interno',
       origen: 'Agro App',
-      estado: zona.estadoVinculacion === 'provisorio' ? 'Provisorio' : zona.estadoVinculacion === 'archivado' ? 'Archivado' : 'Vinculado ERP',
+      estado: zona.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP',
       actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(zona.updatedAt || zona.createdAt)),
       accion: 'editar' as const,
       zonaPropia: zona,
@@ -331,16 +331,6 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                   onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })}
                   placeholder="Se normaliza en mayusculas"
                 />
-              </label>
-              <label>
-                Estado
-                <select
-                  value={zonaEnEdicion.estadoVinculacion}
-                  onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ZonaApp['estadoVinculacion'] })}
-                >
-                  <option value="provisorio">Provisorio</option>
-                  <option value="archivado">Archivado</option>
-                </select>
               </label>
               <label className="reference-wide">
                 Nombre

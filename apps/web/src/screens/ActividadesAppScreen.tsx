@@ -193,7 +193,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
       tipoCultivo: formatearAtributoActividad(actividad.tipoCultivo),
       epocaSiembra: formatearAtributoActividad(actividad.epocaSiembra),
       origen: 'Agro App',
-      estado: actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : actividad.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP',
+      estado: actividad.estadoVinculacion === 'provisorio' ? 'Provisoria' : 'Vinculada ERP',
       accion: 'editar' as const,
       actividadPropia: actividad,
     })),
@@ -474,7 +474,6 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={actividadEnEdicion.codigoInterno || ''} disabled={Boolean(actividadEnEdicion.actividadErpId)} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
-              <label>Estado<select value={actividadEnEdicion.estadoVinculacion} disabled={Boolean(actividadEnEdicion.actividadErpId)} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ActividadApp['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="vinculado_erp">Vinculada ERP</option><option value="archivado">Archivada</option></select></label>
               <label className="reference-wide">Nombre<input value={actividadEnEdicion.nombre} disabled={Boolean(actividadEnEdicion.actividadErpId)} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la actividad" /></label>
               <label className="reference-wide">Especie<select value={obtenerClaveEspecie(actividadEnEdicion)} disabled={Boolean(actividadEnEdicion.actividadErpId)} onChange={(event) => seleccionarEspecie(event.target.value)}><option value="">Seleccionar especie</option>{especiesDisponibles.map((especie) => <option key={especie.clave} value={especie.clave}>{especie.codigo ? `${especie.codigo} - ` : ''}{especie.nombre} ({especie.origen === 'erp' ? 'ERP' : 'Agro App'})</option>)}</select></label>
               <label>Tipo de grano<select value={actividadEnEdicion.tipoGrano || ''} onChange={(event) => actualizarBorrador({ tipoGrano: event.target.value as ActividadApp['tipoGrano'] || undefined })}><option value="">Sin definir</option><option value="fina">Fina</option><option value="gruesa">Gruesa</option></select></label>

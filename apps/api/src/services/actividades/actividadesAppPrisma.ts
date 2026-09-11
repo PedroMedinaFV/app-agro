@@ -62,13 +62,13 @@ function prepararActividad(actividad: ActividadApp): ActividadApp {
 
   return {
     ...actividad,
-    empresaErpId: actividad.empresaErpId || 'global',
+    empresaErpId: 'global',
     nombre,
     codigoInterno: actividad.codigoInterno ? normalizarCodigo(actividad.codigoInterno) : normalizarCodigo(nombre),
     tipoGrano: normalizarOmitirVacio(actividad.tipoGrano),
     tipoCultivo: normalizarOmitirVacio(actividad.tipoCultivo),
     epocaSiembra: normalizarOmitirVacio(actividad.epocaSiembra),
-    estadoVinculacion: actividad.actividadErpId ? 'vinculado_erp' : actividad.estadoVinculacion || 'provisorio',
+    estadoVinculacion: actividad.actividadErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 

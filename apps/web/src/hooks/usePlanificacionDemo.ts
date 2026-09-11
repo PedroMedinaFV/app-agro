@@ -382,7 +382,6 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       estado: 'borrador',
       escenarioOriginal: false,
       lineas: planificacion.lotesApp
-        .filter((lote) => lote.estadoVinculacion !== 'archivado')
         .map((lote, indice) => crearLineaDesdeLote(lote, id, indice, datos.campaniaErpId))
         .filter((linea): linea is PlanificacionAgricolaLinea => Boolean(linea)),
       createdAt: ahora,

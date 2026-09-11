@@ -548,16 +548,6 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                     ))}
                 </select>
               </label>
-              <label>
-                Estado
-                <select
-                  value={campoEnEdicion.estadoVinculacion}
-                  onChange={(event) => setCampoEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as CampoApp['estadoVinculacion'] })}
-                >
-                  <option value="provisorio">Provisorio</option>
-                  <option value="archivado">Archivado</option>
-                </select>
-              </label>
             </div>
 
             <div className="modal-actions">

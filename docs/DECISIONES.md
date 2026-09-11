@@ -156,6 +156,8 @@ Los gastos comerciales pertenecen a una campania agricola porque los costos come
 
 Los conceptos de gastos comerciales se administran como maestro propio por cliente. En la carga normal se seleccionan desde un listado, no como texto libre, para evitar variantes de escritura y facilitar reportes consistentes. Cada concepto define unidad de calculo `Tn` o `Ha`; al armar un gasto, cada item copia concepto, unidad, moneda y valor para conservar el supuesto aplicado.
 
+El backend no debe completar conceptos comerciales con datos demo si la tabla esta vacia. Si se necesitan conceptos iniciales, deben existir como seed real en `ConceptoGastoComercialApp`; si no hay filas persistidas, la pantalla debe mostrarse vacia y el usuario con permisos carga lo necesario.
+
 La administracion web se realiza desde una tabla con alta/edicion en modal. Toda alta o modificacion debe persistirse desde backend y auditarse.
 
 ## Destino de venta sugerido
@@ -292,7 +294,7 @@ Tercer padron implementado:
 - pantalla web `Padrones > Labores`;
 - alta/edicion en modal;
 - baja logica mediante campo `activo`;
-- estados `provisorio`, `vinculado_erp` y `archivado`;
+- estados `provisorio` y `vinculado_erp`;
 - origen `provisorio`, `semilla` o `erp`;
 - persistencia backend en `/servicios-app/:id`;
 - auditoria obligatoria por backend;
@@ -318,6 +320,22 @@ Cuando el usuario autorizado edita el precio de un insumo ERP o el costo de una 
 La cache `ErpInsumo` y `ErpServicio` no se modifica. El valor editable vive en Agro App para poder ajustar supuestos comerciales, costos estimados y protocolos sin alterar la informacion importada desde ALBOR.
 
 Toda edicion debe pasar por backend, validar permisos, cliente y vinculacion ERP, y registrar auditoria con valores anteriores y nuevos.
+
+## Insumos como padron global
+
+Los insumos se consideran un padron global del cliente, igual que zonas, actividades, especies, campanias, servicios/labores, unidades de medida, monedas y puertos.
+
+Aunque `Padrones/Insumos` requiera `x-company`, ALBOR devuelve un catalogo comun para las empresas AGRO seleccionadas. Por eso Agro App guarda los insumos propios y vinculados con `empresaErpId = global`.
+
+La pantalla `Padrones > Insumos` no debe pedir empresa al crear un insumo. El backend fuerza este criterio para evitar registros duplicados por empresa y mantener una unica fuente operativa para protocolos y planificacion.
+
+## Estados de vinculacion en padrones propios
+
+Todo registro de padron creado manualmente desde Agro App nace en estado `provisorio`.
+
+El usuario no elige el estado en el formulario. El estado cambia a `vinculado_erp` solamente cuando se ejecuta una accion explicita de vinculacion contra un registro ERP valido y auditada por backend.
+
+El estado `archivado` no forma parte del contrato del MVP. Si mas adelante se necesita baja logica o desuso operativo, se definira como un flujo separado con permisos, impacto funcional y auditoria propios.
 
 ## Estadios fenologicos semilla
 

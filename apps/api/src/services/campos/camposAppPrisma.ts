@@ -46,7 +46,7 @@ function prepararCampo(campo: CampoApp): CampoApp {
     ...campo,
     nombre,
     codigoInterno: campo.codigoInterno ? normalizarCodigo(campo.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: campo.campoErpId ? 'vinculado_erp' : campo.estadoVinculacion || 'provisorio',
+    estadoVinculacion: campo.campoErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 

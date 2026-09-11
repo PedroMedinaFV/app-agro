@@ -1,6 +1,6 @@
 export type EstadoPlanificacionAgricola = 'borrador' | 'en_revision' | 'aprobada' | 'cerrada' | 'deshabilitada';
 
-export type EstadoVinculacionPlanificacion = 'provisorio' | 'vinculado_erp' | 'archivado';
+export type EstadoVinculacionPlanificacion = 'provisorio' | 'vinculado_erp';
 
 export type TipoFechaProtocolo = 'absoluta' | 'relativa_siembra';
 

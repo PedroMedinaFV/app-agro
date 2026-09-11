@@ -3,6 +3,7 @@ import { ErpMoneda, ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { DecimalInput } from '../components/DecimalInput';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
@@ -186,8 +187,8 @@ export function ServiciosAppScreen({
       descripcionAbreviada: laborEnEdicion.descripcionAbreviada ? limpiarTextoVisible(laborEnEdicion.descripcionAbreviada) : undefined,
       unidadSugerida: limpiarTextoVisible(laborEnEdicion.unidadSugerida || 'Ha'),
       costoUnitarioSugerido: laborEnEdicion.costoUnitarioSugerido || 0,
-      estadoVinculacion: laborEnEdicion.servicioErpId ? 'vinculado_erp' : laborEnEdicion.estadoVinculacion,
-      origen: laborEnEdicion.servicioErpId ? 'erp' : laborEnEdicion.origen,
+      estadoVinculacion: laborEnEdicion.servicioErpId ? 'vinculado_erp' : 'provisorio',
+      origen: laborEnEdicion.servicioErpId ? 'erp' : 'provisorio',
     };
     const guardado = await guardarServicio(laborPreparada);
 
@@ -224,12 +225,12 @@ export function ServiciosAppScreen({
     ...laboresOrdenadas.filter((labor) => !labor.servicioErpId).map((labor) => ({
       id: labor.id,
       nombre: labor.nombre,
-      detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
+      detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : 'Provisoria',
       codigo: labor.codigo,
       unidad: labor.unidadSugerida,
       costo: labor.costoUnitarioSugerido !== undefined ? formatearMoneda(labor.costoUnitarioSugerido, monedaPorId.get(labor.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD') : 'Sin costo',
       origen: 'Agro App',
-      estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : labor.origen,
+      estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : 'Provisoria',
       accion: 'editar' as const,
       laborPropia: labor,
     })),
@@ -247,7 +248,7 @@ export function ServiciosAppScreen({
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
         costo: costo !== undefined ? formatearMoneda(costo, moneda) : 'Sin costo',
         origen: 'ERP',
-        estado: servicio.imputaDosis ? 'Imputa dosis' : 'No imputa dosis',
+        estado: servicio.activo ? 'Activo' : 'Inactivo',
         accion: 'editar' as const,
         laborPropia,
         servicioErp: servicio,
@@ -458,12 +459,9 @@ export function ServiciosAppScreen({
 
               <label>
                 Costo propio
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                <DecimalInput
                   value={laborEnEdicion.costoUnitarioSugerido || 0}
-                  onChange={(event) => actualizarBorrador({ costoUnitarioSugerido: leerNumero(event.target.value) })}
+                  onValueChange={(value) => actualizarBorrador({ costoUnitarioSugerido: value })}
                 />
               </label>
 
@@ -487,24 +485,6 @@ export function ServiciosAppScreen({
                   {monedasDisponibles.map((moneda) => (
                     <option key={moneda.erpId} value={moneda.idMoneda}>{moneda.codigo} - {moneda.nombre}</option>
                   ))}
-                </select>
-              </label>
-
-              <label>
-                Origen
-                <select value={laborEnEdicion.origen} disabled={Boolean(laborEnEdicion.servicioErpId)} onChange={(event) => actualizarBorrador({ origen: event.target.value as ServicioApp['origen'] })}>
-                  <option value="provisorio">Provisorio</option>
-                  <option value="semilla">Semilla</option>
-                  <option value="erp">ERP</option>
-                </select>
-              </label>
-
-              <label>
-                Estado
-                <select value={laborEnEdicion.estadoVinculacion} disabled={Boolean(laborEnEdicion.servicioErpId)} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as ServicioApp['estadoVinculacion'] })}>
-                  <option value="provisorio">Provisorio</option>
-                  <option value="vinculado_erp">Vinculado ERP</option>
-                  <option value="archivado">Archivado</option>
                 </select>
               </label>
 

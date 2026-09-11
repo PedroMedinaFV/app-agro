@@ -3,6 +3,7 @@ import { ErpInsumo, ErpMoneda, ErpSnapshot, InsumoApp, PlanificacionSnapshot, Se
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { DecimalInput } from '../components/DecimalInput';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
@@ -32,7 +33,6 @@ interface InsumosAppScreenProps {
   puedeConfigurarPlanificacion: boolean;
   guardandoInsumos: boolean;
   guardarInsumo: (insumo: InsumoApp) => Promise<boolean>;
-  leerNumero: (valor: string) => number;
   notificar?: Notificar;
 }
 
@@ -61,7 +61,6 @@ export function InsumosAppScreen({
   puedeConfigurarPlanificacion,
   guardandoInsumos,
   guardarInsumo,
-  leerNumero,
   notificar,
 }: InsumosAppScreenProps) {
   const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoApp | null>(null);
@@ -74,12 +73,6 @@ export function InsumosAppScreen({
   const insumosOrdenados = useMemo(() => (
     [...(planificacion.insumosApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   ), [planificacion.insumosApp]);
-  const empresasDisponibles = useMemo(() => (
-    Array.from(new Set([
-      ...planificacion.camposApp.map((campo) => campo.empresaErpId),
-      ...insumosOrdenados.map((insumo) => insumo.empresaErpId),
-    ].filter(Boolean))).sort()
-  ), [insumosOrdenados, planificacion.camposApp]);
   const unidadesDisponibles = useMemo(() => (
     [...snapshot.unidadesMedida]
       .filter((unidad) => unidad.activo)
@@ -137,7 +130,7 @@ export function InsumosAppScreen({
     return {
       id: `insumo-app-${Date.now()}`,
       clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || 'cliente-demo',
-      empresaErpId: empresasDisponibles[0] || 'empresa:mock',
+      empresaErpId: 'global',
       nombre: '',
       codigoInterno: '',
       tipo: '',
@@ -188,13 +181,14 @@ export function InsumosAppScreen({
     const nombre = limpiarTextoVisible(insumoEnEdicion.nombre);
     const insumoPreparado: InsumoApp = {
       ...insumoEnEdicion,
+      empresaErpId: 'global',
       nombre,
       codigoInterno: normalizarCodigo(insumoEnEdicion.codigoInterno || nombre),
       tipo: insumoEnEdicion.tipo ? limpiarTextoVisible(insumoEnEdicion.tipo) : undefined,
       unidad: limpiarTextoVisible(insumoEnEdicion.unidad || 'Unid'),
       moneda: limpiarTextoVisible(insumoEnEdicion.moneda || monedaPorDefecto).toUpperCase(),
       precioUnitarioEstimado: insumoEnEdicion.precioUnitarioEstimado || 0,
-      estadoVinculacion: insumoEnEdicion.insumoErpId ? 'vinculado_erp' : insumoEnEdicion.estadoVinculacion,
+      estadoVinculacion: insumoEnEdicion.insumoErpId ? 'vinculado_erp' : 'provisorio',
     };
     const guardado = await guardarInsumo(insumoPreparado);
 
@@ -231,7 +225,7 @@ export function InsumosAppScreen({
     ...insumosOrdenados.filter((insumo) => !insumo.insumoErpId).map((insumo) => ({
       id: insumo.id,
       nombre: insumo.nombre,
-      detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : insumo.estadoVinculacion,
+      detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : 'Provisorio',
       codigo: insumo.codigoInterno || '-',
       tipo: insumo.tipo || '-',
       unidad: insumo.unidad,
@@ -438,16 +432,6 @@ export function InsumosAppScreen({
               </label>
 
               <label>
-                Empresa
-                <select value={insumoEnEdicion.empresaErpId} disabled={Boolean(insumoEnEdicion.insumoErpId)} onChange={(event) => actualizarBorrador({ empresaErpId: event.target.value })}>
-                  {empresasDisponibles.length === 0 && <option value="empresa:mock">empresa:mock</option>}
-                  {empresasDisponibles.map((empresaErpId) => (
-                    <option key={empresaErpId} value={empresaErpId}>{empresaErpId}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
                 Tipo
                 <input
                   value={insumoEnEdicion.tipo || ''}
@@ -473,12 +457,10 @@ export function InsumosAppScreen({
 
               <label>
                 Precio propio
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
+                <DecimalInput
                   value={insumoEnEdicion.precioUnitarioEstimado || 0}
-                  onChange={(event) => actualizarBorrador({ precioUnitarioEstimado: leerNumero(event.target.value) })}
+                  min={0}
+                  onValueChange={(value) => actualizarBorrador({ precioUnitarioEstimado: value })}
                 />
               </label>
 
@@ -495,14 +477,6 @@ export function InsumosAppScreen({
                 </select>
               </label>
 
-              <label>
-                Estado
-                <select value={insumoEnEdicion.estadoVinculacion} disabled={Boolean(insumoEnEdicion.insumoErpId)} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as InsumoApp['estadoVinculacion'] })}>
-                  <option value="provisorio">Provisorio</option>
-                  <option value="vinculado_erp">Vinculado ERP</option>
-                  <option value="archivado">Archivado</option>
-                </select>
-              </label>
             </div>
 
             {insumoEnEdicion.insumoErpId && (
@@ -517,7 +491,7 @@ export function InsumosAppScreen({
               <Button
                 variant="primary"
                 onClick={aplicarModal}
-                disabled={guardandoInsumos || !insumoEnEdicion.nombre.trim() || !insumoEnEdicion.unidad.trim() || !insumoEnEdicion.empresaErpId.trim() || existeCodigoDuplicado}
+                disabled={guardandoInsumos || !insumoEnEdicion.nombre.trim() || !insumoEnEdicion.unidad.trim() || existeCodigoDuplicado}
               >
                 <span className="button-content">
                   {guardandoInsumos && <LoadingSpinner label="Guardando insumo" />}

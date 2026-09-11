@@ -47,12 +47,13 @@ function prepararInsumo(insumo: InsumoApp): InsumoApp {
 
   return {
     ...insumo,
+    empresaErpId: 'global',
     nombre,
     codigoInterno,
     tipo: insumo.tipo ? limpiarTextoVisible(insumo.tipo) : undefined,
     unidad: limpiarTextoVisible(insumo.unidad || 'Unid'),
     moneda: limpiarTextoVisible(insumo.moneda || 'USD').toUpperCase(),
-    estadoVinculacion: insumo.insumoErpId ? 'vinculado_erp' : insumo.estadoVinculacion || 'provisorio',
+    estadoVinculacion: insumo.insumoErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 

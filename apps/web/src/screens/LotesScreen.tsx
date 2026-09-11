@@ -673,16 +673,6 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                   onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, superficieProductiva: leerNumeroPositivo(event.target.value) })}
                 />
               </label>
-              <label>
-                Estado
-                <select
-                  value={loteEnEdicion.estadoVinculacion}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, estadoVinculacion: event.target.value as LoteApp['estadoVinculacion'] })}
-                >
-                  <option value="provisorio">Provisorio</option>
-                  <option value="archivado">Archivado</option>
-                </select>
-              </label>
             </div>
 
             <div className="modal-actions">

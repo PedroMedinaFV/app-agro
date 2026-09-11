@@ -108,7 +108,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
       nombre: especie.nombre,
       detalle: especie.codigoInterno || 'Sin codigo interno',
       origen: 'Agro App',
-      estado: especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : especie.estadoVinculacion === 'archivado' ? 'Archivada' : 'Vinculada ERP',
+      estado: especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : 'Vinculada ERP',
       actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.updatedAt || especie.createdAt)),
       accion: 'editar' as const,
       especiePropia: especie,
@@ -302,7 +302,6 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
             </div>
             <div className="reference-modal-grid">
               <label>Codigo interno<input value={especieEnEdicion.codigoInterno || ''} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
-              <label>Estado<select value={especieEnEdicion.estadoVinculacion} onChange={(event) => actualizarBorrador({ estadoVinculacion: event.target.value as EspecieApp['estadoVinculacion'] })}><option value="provisorio">Provisoria</option><option value="archivado">Archivada</option></select></label>
               <label className="reference-wide">Nombre<input value={especieEnEdicion.nombre} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la especie" /></label>
             </div>
             {existeCodigoDuplicado && <p className="form-error">Ya existe una especie propia con ese codigo interno.</p>}

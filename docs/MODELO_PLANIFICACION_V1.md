@@ -35,7 +35,7 @@ No aplica a datos operativos devueltos por endpoints como `Agricultura/Cultivos`
 Regla general:
 
 - Cada padron base operativo de Agro App tiene un registro propio.
-- Ese registro puede estar `provisorio`, `vinculado_erp` o `archivado`.
+- Ese registro puede estar `provisorio` o `vinculado_erp`.
 - Si esta vinculado, guarda el `erpId` correspondiente.
 - Si no esta vinculado, puede usarse igual en planificacion.
 - Cuando el ERP devuelva el registro real, un usuario autorizado puede vincularlo.
@@ -91,7 +91,6 @@ Estados de vinculacion:
 
 - `provisorio`
 - `vinculado_erp`
-- `archivado`
 
 Reglas:
 

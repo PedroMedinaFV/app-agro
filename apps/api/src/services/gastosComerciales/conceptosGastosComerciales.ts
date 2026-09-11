@@ -43,27 +43,6 @@ function mapearConcepto(concepto: ConceptoPrisma): ConceptoGastoComercial {
   };
 }
 
-export function obtenerConceptosGastosComercialesSemilla(clienteId: string): ConceptoGastoComercial[] {
-  const ahora = new Date().toISOString();
-  const conceptos = [
-    { id: 'concepto-gasto-flete', codigo: 'FLETE', nombre: 'Flete', unidadCalculo: 'Tn' as const, descripcion: 'Transporte de cereal' },
-    { id: 'concepto-gasto-acondicionamiento', codigo: 'ACOND', nombre: 'Acondicionamiento', unidadCalculo: 'Tn' as const, descripcion: 'Secado, zarandeo o acondicionamiento comercial' },
-    { id: 'concepto-gasto-comision', codigo: 'COM', nombre: 'Comision comercial', unidadCalculo: 'Tn' as const, descripcion: 'Comision o intermediacion comercial' },
-    { id: 'concepto-gasto-secada', codigo: 'SEC', nombre: 'Secada', unidadCalculo: 'Tn' as const },
-    { id: 'concepto-gasto-puerto-acopio', codigo: 'PYA', nombre: 'Puerto / acopio', unidadCalculo: 'Tn' as const },
-    { id: 'concepto-gasto-otros', codigo: 'OTROS', nombre: 'Otros gastos de venta', unidadCalculo: 'Tn' as const },
-  ];
-
-  return conceptos.map((concepto) => ({
-    ...concepto,
-    clienteId,
-    nombreNormalizado: normalizarTexto(concepto.nombre),
-    activo: true,
-    createdAt: ahora,
-    updatedAt: ahora,
-  }));
-}
-
 export async function obtenerConceptosGastosComercialesPersistidos(clienteId: string): Promise<ConceptoGastoComercial[]> {
   const conceptos = await prisma.conceptoGastoComercialApp.findMany({
     where: { clienteId },

@@ -48,7 +48,7 @@ function prepararLote(lote: LoteApp): LoteApp {
     codigoInterno: lote.codigoInterno ? normalizarCodigo(lote.codigoInterno) : normalizarCodigo(nombre),
     superficieTotal: Number(lote.superficieTotal),
     superficieProductiva: Number(lote.superficieProductiva),
-    estadoVinculacion: lote.loteErpId ? 'vinculado_erp' : lote.estadoVinculacion || 'provisorio',
+    estadoVinculacion: lote.loteErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 

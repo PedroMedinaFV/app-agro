@@ -392,7 +392,6 @@ export function App() {
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           guardandoInsumos={planificacionDemo.guardandoInsumos}
           guardarInsumo={planificacionDemo.guardarInsumoAppDesdeModal}
-          leerNumero={leerNumero}
           notificar={toast.notify}
         />
       )}

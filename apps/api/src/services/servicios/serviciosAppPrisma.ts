@@ -53,12 +53,13 @@ function prepararServicio(servicio: ServicioApp): ServicioApp {
 
   return {
     ...servicio,
+    empresaErpId: 'global',
     codigo: normalizarCodigo(servicio.codigo || nombre),
     nombre,
     descripcionAbreviada: servicio.descripcionAbreviada ? limpiarTextoVisible(servicio.descripcionAbreviada) : undefined,
     unidadSugerida: limpiarTextoVisible(servicio.unidadSugerida || 'Ha'),
-    estadoVinculacion: servicio.servicioErpId ? 'vinculado_erp' : servicio.estadoVinculacion || 'provisorio',
-    origen: servicio.servicioErpId ? 'erp' : servicio.origen || 'provisorio',
+    estadoVinculacion: servicio.servicioErpId ? 'vinculado_erp' : 'provisorio',
+    origen: servicio.servicioErpId ? 'erp' : 'provisorio',
   };
 }
 

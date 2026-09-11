@@ -42,10 +42,10 @@ function prepararZona(zona: ZonaApp): ZonaApp {
 
   return {
     ...zona,
-    empresaErpId: zona.empresaErpId || 'global',
+    empresaErpId: 'global',
     nombre,
     codigoInterno: zona.codigoInterno ? normalizarCodigo(zona.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: zona.zonaErpId ? 'vinculado_erp' : zona.estadoVinculacion || 'provisorio',
+    estadoVinculacion: zona.zonaErpId ? 'vinculado_erp' : 'provisorio',
   };
 }
 
@@ -62,7 +62,7 @@ async function validarZona(zona: ZonaApp, usuario?: UsuarioAuditoria) {
     throw crearErrorValidacion('La zona debe tener nombre.');
   }
 
-  if (!['provisorio', 'vinculado_erp', 'archivado'].includes(zona.estadoVinculacion)) {
+  if (!['provisorio', 'vinculado_erp'].includes(zona.estadoVinculacion)) {
     throw crearErrorValidacion('El estado de vinculacion de la zona no es valido.');
   }
 

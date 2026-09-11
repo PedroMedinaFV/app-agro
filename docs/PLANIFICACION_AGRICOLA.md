@@ -713,7 +713,7 @@ Tipos sugeridos:
 
 La fuente ideal de insumos sera el ERP. Agro App guarda una copia local del padron `ErpInsumo`, pero tambien debe permitir crear insumos provisorios para no bloquear el armado de protocolos.
 
-La administracion web del padron se realiza desde `Padrones > Insumos`. Un usuario autorizado puede crear o editar nombre, codigo interno, empresa, tipo, unidad, precio estimado, moneda y estado de vinculacion.
+La administracion web del padron se realiza desde `Padrones > Insumos`. Un usuario autorizado puede crear o editar nombre, codigo interno, tipo, unidad, precio estimado, moneda y estado de vinculacion. Los insumos son globales dentro del cliente: no se selecciona empresa al crearlos y el backend los guarda con `empresaErpId = global`.
 
 La unidad del insumo se selecciona desde `Padrones/UnidadesMedida` y se guarda como codigo copiado, por ejemplo `Lts`, `Kgs`, `Bls` o `Unid`.
 

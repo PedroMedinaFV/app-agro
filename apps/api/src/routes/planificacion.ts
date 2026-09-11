@@ -6,7 +6,7 @@ import { cerrarPlanificacionPersistida, guardarPlanificacionPersistida, obtenerP
 import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
-import { obtenerConceptosGastosComercialesPersistidos, obtenerConceptosGastosComercialesSemilla } from '../services/gastosComerciales/conceptosGastosComerciales';
+import { obtenerConceptosGastosComercialesPersistidos } from '../services/gastosComerciales/conceptosGastosComerciales';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
 import { asegurarEstadiosReferenciaSemilla } from '../services/planificacion/estadiosReferenciaPrisma';
@@ -49,7 +49,7 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       protocolos: protocolosPersistidos.protocolos.length ? protocolosPersistidos.protocolos : demo.protocolos,
       preciosReferencia: preciosPersistidos.length ? preciosPersistidos : demo.preciosReferencia,
       destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
-      conceptosGastosComerciales: conceptosPersistidos.length ? conceptosPersistidos : demo.conceptosGastosComerciales || obtenerConceptosGastosComercialesSemilla(clienteId),
+      conceptosGastosComerciales: conceptosPersistidos,
       gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
       estadiosReferencia: estadiosPersistidos.length ? estadiosPersistidos : demo.estadiosReferencia,
       serviciosApp: padronesPersistidos.serviciosApp.length ? padronesPersistidos.serviciosApp : demo.serviciosApp,
