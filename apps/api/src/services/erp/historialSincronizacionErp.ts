@@ -4,6 +4,7 @@ import type {
   PadronErpSincronizable,
   SincronizacionErpHistorialItem,
 } from '@agro/tipos';
+import { randomUUID } from 'node:crypto';
 import { padronesErpSincronizables } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { listarEmpresasErpCliente } from './empresasCliente';
@@ -109,9 +110,11 @@ function mapearSincronizacion(row: SincronizacionRow, detalles: DetalleRow[]): S
 export async function iniciarSincronizacionErpHistorial(clienteId: string, usuarioId: string | undefined, items?: PadronErpSincronizable[]) {
   const itemsSolicitados = items?.length ? items : padronesErpSincronizables;
   const itemsEjecutados = normalizarItems(items);
+  const sincronizacionId = randomUUID();
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-    INSERT INTO "ErpSincronizacion" ("clienteId", "usuarioId", "estado", "itemsSolicitados", "itemsEjecutados", "updatedAt")
+    INSERT INTO "ErpSincronizacion" ("id", "clienteId", "usuarioId", "estado", "itemsSolicitados", "itemsEjecutados", "updatedAt")
     VALUES (
+      ${sincronizacionId},
       ${clienteId},
       ${usuarioId || null},
       'en_proceso',
@@ -227,8 +230,8 @@ export async function finalizarSincronizacionErpHistorial(
       WHERE "id" = ${sincronizacionId}
     `,
     prisma.$executeRaw`
-      INSERT INTO "ErpSincronizacionDetalle" ("sincronizacionId", "empresaErpId", "padron", "registros", "omitidos", "estado")
-      VALUES ${Prisma.join(detalles.map((detalle) => Prisma.sql`(${sincronizacionId}, ${detalle.empresaErpId}, ${detalle.padron}, ${detalle.registros}, ${detalle.omitidos}, 'completada')`))}
+      INSERT INTO "ErpSincronizacionDetalle" ("id", "sincronizacionId", "empresaErpId", "padron", "registros", "omitidos", "estado")
+      VALUES ${Prisma.join(detalles.map((detalle) => Prisma.sql`(${randomUUID()}, ${sincronizacionId}, ${detalle.empresaErpId}, ${detalle.padron}, ${detalle.registros}, ${detalle.omitidos}, 'completada')`))}
     `,
   ]);
 }

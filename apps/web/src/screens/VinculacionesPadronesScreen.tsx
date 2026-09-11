@@ -48,10 +48,12 @@ import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 type TipoPadron = 'zonas' | 'campos' | 'lotes' | 'especies' | 'actividades' | 'insumos' | 'labores';
+type EstadoFiltro = 'vinculadas' | 'provisorias' | 'todas';
 
 type VinculacionFila = {
   id: string;
   tipo: TipoPadron;
+  estado: 'vinculada' | 'provisoria';
   padron: string;
   propio: string;
   erp: string;
@@ -99,6 +101,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   const [estado, setEstado] = useState('Cargando vinculaciones.');
   const [guardando, setGuardando] = useState(false);
   const [tipoFiltro, setTipoFiltro] = useState<TipoPadron | 'todos'>('todos');
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('vinculadas');
+  const [busqueda, setBusqueda] = useState('');
   const [vinculacionEnEdicion, setVinculacionEnEdicion] = useState<VinculacionEnEdicion | null>(null);
 
   useEffect(() => {
@@ -174,52 +178,81 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   const filas = useMemo<VinculacionFila[]>(() => {
     const resultado: VinculacionFila[] = [];
 
-    for (const zona of zonas.filter((item) => item.zonaErpId)) {
+    for (const zona of zonas.filter((item) => item.zonaErpId || item.estadoVinculacion === 'provisorio')) {
       const zonaErp = zonasErpPorId.get(zona.zonaErpId || '');
-      resultado.push(crearFila('zonas', zona.id, 'Zonas', zona.nombre, zonaErp ? `${zonaErp.codigo} - ${zonaErp.nombre}` : zona.zonaErpId || '-', 'Global', zona.updatedAt));
+      resultado.push(crearFila('zonas', zona.id, 'Zonas', zona.nombre, zonaErp ? `${zonaErp.codigo} - ${zonaErp.nombre}` : zona.zonaErpId || 'Sin vincular', 'Global', zona.updatedAt, Boolean(zona.zonaErpId)));
     }
 
-    for (const campo of campos.filter((item) => item.campoErpId)) {
+    for (const campo of campos.filter((item) => item.campoErpId || item.estadoVinculacion === 'provisorio')) {
       const campoErp = camposErpPorId.get(campo.campoErpId || '');
-      resultado.push(crearFila('campos', campo.id, 'Campos', campo.nombre, campoErp ? `${campoErp.codigo} - ${campoErp.nombre}` : campo.campoErpId || '-', campo.zonaErpId || 'Sin zona', campo.updatedAt));
+      resultado.push(crearFila('campos', campo.id, 'Campos', campo.nombre, campoErp ? `${campoErp.codigo} - ${campoErp.nombre}` : campo.campoErpId || 'Sin vincular', campo.zonaErpId || 'Sin zona', campo.updatedAt, Boolean(campo.campoErpId)));
     }
 
-    for (const lote of lotes.filter((item) => item.loteErpId)) {
+    for (const lote of lotes.filter((item) => item.loteErpId || item.estadoVinculacion === 'provisorio')) {
       const loteErp = lotesErpPorId.get(lote.loteErpId || '');
       const campo = camposPorId.get(lote.campoAppId);
-      resultado.push(crearFila('lotes', lote.id, 'Lotes', lote.nombre, loteErp ? `${loteErp.codigo} - ${loteErp.nombre}` : lote.loteErpId || '-', campo?.nombre || 'Campo no disponible', lote.updatedAt));
+      resultado.push(crearFila('lotes', lote.id, 'Lotes', lote.nombre, loteErp ? `${loteErp.codigo} - ${loteErp.nombre}` : lote.loteErpId || 'Sin vincular', campo?.nombre || 'Campo no disponible', lote.updatedAt, Boolean(lote.loteErpId)));
     }
 
-    for (const especie of especies.filter((item) => item.especieErpId)) {
+    for (const especie of especies.filter((item) => item.especieErpId || item.estadoVinculacion === 'provisorio')) {
       const especieErp = especiesErpPorId.get(especie.especieErpId || '');
-      resultado.push(crearFila('especies', especie.id, 'Especies', especie.nombre, especieErp ? `${especieErp.codigo} - ${especieErp.nombre}` : especie.especieErpId || '-', 'Global', especie.updatedAt));
+      resultado.push(crearFila('especies', especie.id, 'Especies', especie.nombre, especieErp ? `${especieErp.codigo} - ${especieErp.nombre}` : especie.especieErpId || 'Sin vincular', 'Global', especie.updatedAt, Boolean(especie.especieErpId)));
     }
 
-    for (const actividad of actividades.filter((item) => item.actividadErpId)) {
+    for (const actividad of actividades.filter((item) => item.actividadErpId || item.estadoVinculacion === 'provisorio')) {
       const actividadErp = actividadesErpPorId.get(actividad.actividadErpId || '');
       const especie = actividad.especieAppId ? especiesPorId.get(actividad.especieAppId)?.nombre : actividad.especieErpId;
-      resultado.push(crearFila('actividades', actividad.id, 'Actividades', actividad.nombre, actividadErp ? `${actividadErp.codigo} - ${actividadErp.descripcion}` : actividad.actividadErpId || '-', especie || 'Sin especie', actividad.updatedAt));
+      resultado.push(crearFila('actividades', actividad.id, 'Actividades', actividad.nombre, actividadErp ? `${actividadErp.codigo} - ${actividadErp.descripcion}` : actividad.actividadErpId || 'Sin vincular', especie || 'Sin especie', actividad.updatedAt, Boolean(actividad.actividadErpId)));
     }
 
-    for (const insumo of insumos.filter((item) => item.insumoErpId)) {
+    for (const insumo of insumos.filter((item) => item.insumoErpId || item.estadoVinculacion === 'provisorio')) {
       const insumoErp = insumosErpPorId.get(insumo.insumoErpId || '');
-      resultado.push(crearFila('insumos', insumo.id, 'Insumos', insumo.nombre, insumoErp ? `${insumoErp.codigo} - ${insumoErp.nombre}` : insumo.insumoErpId || '-', insumo.unidad, insumo.updatedAt));
+      resultado.push(crearFila('insumos', insumo.id, 'Insumos', insumo.nombre, insumoErp ? `${insumoErp.codigo} - ${insumoErp.nombre}` : insumo.insumoErpId || 'Sin vincular', insumo.unidad, insumo.updatedAt, Boolean(insumo.insumoErpId)));
     }
 
-    for (const labor of labores.filter((item) => item.servicioErpId)) {
+    for (const labor of labores.filter((item) => item.servicioErpId || item.estadoVinculacion === 'provisorio')) {
       const servicioErp = serviciosErpPorId.get(labor.servicioErpId || '');
-      resultado.push(crearFila('labores', labor.id, 'Labores', labor.nombre, servicioErp ? `${servicioErp.codigo} - ${servicioErp.descripcion}` : labor.servicioErpId || '-', labor.unidadSugerida, labor.updatedAt));
+      resultado.push(crearFila('labores', labor.id, 'Labores', labor.nombre, servicioErp ? `${servicioErp.codigo} - ${servicioErp.descripcion}` : labor.servicioErpId || 'Sin vincular', labor.unidadSugerida, labor.updatedAt, Boolean(labor.servicioErpId)));
     }
 
     return resultado.sort((a, b) => a.padron.localeCompare(b.padron, 'es') || a.propio.localeCompare(b.propio, 'es'));
   }, [actividades, actividadesErpPorId, campos, camposErpPorId, camposPorId, especies, especiesErpPorId, especiesPorId, insumos, insumosErpPorId, labores, lotes, lotesErpPorId, serviciosErpPorId, zonas, zonasErpPorId]);
-  const filasFiltradas = tipoFiltro === 'todos' ? filas : filas.filter((fila) => fila.tipo === tipoFiltro);
+  const filasFiltradas = useMemo(() => {
+    const textoBusqueda = normalizarTexto(busqueda);
+
+    return filas.filter((fila) => {
+      const coincidePadron = tipoFiltro === 'todos' || fila.tipo === tipoFiltro;
+      const coincideEstado =
+        estadoFiltro === 'todas'
+        || (estadoFiltro === 'vinculadas' && fila.estado === 'vinculada')
+        || (estadoFiltro === 'provisorias' && fila.estado === 'provisoria');
+      const coincideBusqueda = !textoBusqueda || normalizarTexto([
+        fila.padron,
+        fila.estado,
+        fila.propio,
+        fila.erp,
+        fila.detalle,
+        fila.actualizado,
+      ].join(' ')).includes(textoBusqueda);
+
+      return coincidePadron && coincideEstado && coincideBusqueda;
+    });
+  }, [busqueda, estadoFiltro, filas, tipoFiltro]);
   const opcionesEdicion = vinculacionEnEdicion ? obtenerOpcionesEdicion(vinculacionEnEdicion.fila) : [];
 
-  function crearFila(tipo: TipoPadron, id: string, padron: string, propio: string, erp: string, detalle: string, actualizado?: string): VinculacionFila {
+  function normalizarTexto(valor: string) {
+    return valor
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  function crearFila(tipo: TipoPadron, id: string, padron: string, propio: string, erp: string, detalle: string, actualizado: string | undefined, vinculada: boolean): VinculacionFila {
     return {
       id,
       tipo,
+      estado: vinculada ? 'vinculada' : 'provisoria',
       padron,
       propio,
       erp,
@@ -362,7 +395,11 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   }
 
   function abrirEdicion(fila: VinculacionFila) {
-    setVinculacionEnEdicion({ fila, destinoErpId: obtenerErpIdActual(fila) });
+    const erpIdActual = obtenerErpIdActual(fila);
+    const opciones = obtenerOpcionesEdicion(fila);
+    const destinoErpId = erpIdActual || opciones[0]?.id || '';
+
+    setVinculacionEnEdicion({ fila, destinoErpId });
   }
 
   function obtenerErpIdActual(fila: VinculacionFila) {
@@ -437,7 +474,18 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
       await onVinculacionesActualizadas?.();
       setEstado(erpId ? 'Vinculacion actualizada con auditoria.' : 'Vinculacion eliminada con auditoria.');
-      notificar?.({ tipo: 'success', titulo: erpId ? 'Vinculacion actualizada' : 'Vinculacion eliminada', mensaje: 'El cambio quedo registrado en auditoria.' });
+      if (erpId) {
+        setEstadoFiltro('vinculadas');
+      } else {
+        setEstadoFiltro('provisorias');
+      }
+      notificar?.({
+        tipo: 'success',
+        titulo: erpId ? (fila.estado === 'provisoria' ? 'Vinculacion creada' : 'Vinculacion actualizada') : 'Vinculacion eliminada',
+        mensaje: erpId
+          ? 'El cambio quedo registrado en auditoria.'
+          : 'El registro quedo como provisorio y puede volver a vincularse desde este listado.',
+      });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo actualizar la vinculacion.';
       notificar?.({ tipo: 'error', titulo: 'No se actualizo la vinculacion', mensaje });
@@ -449,7 +497,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   return (
     <section className="planning-stack">
       <section className="metrics">
-        <article><span>Vinculaciones</span><strong>{filas.length}</strong></article>
+        <article><span>Vinculadas</span><strong>{filas.filter((fila) => fila.estado === 'vinculada').length}</strong></article>
+        <article><span>Provisorias</span><strong>{filas.filter((fila) => fila.estado === 'provisoria').length}</strong></article>
         <article><span>Zonas</span><strong>{zonas.filter((item) => item.zonaErpId).length}</strong></article>
         <article><span>Campos</span><strong>{campos.filter((item) => item.campoErpId).length}</strong></article>
         <article><span>Lotes</span><strong>{lotes.filter((item) => item.loteErpId).length}</strong></article>
@@ -457,21 +506,39 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
       <Panel
         title="Vinculaciones ERP"
-        description={estado}
+        description={`${estado} ${filasFiltradas.length !== filas.length ? `${filasFiltradas.length} de ${filas.length} coincidencias.` : ''}`.trim()}
         actions={(
-          <label className="compact-field">
-            Padron
-            <select value={tipoFiltro} onChange={(event) => setTipoFiltro(event.target.value as TipoPadron | 'todos')}>
-              <option value="todos">Todos</option>
-              <option value="zonas">Zonas</option>
-              <option value="campos">Campos</option>
-              <option value="lotes">Lotes</option>
-              <option value="especies">Especies</option>
-              <option value="actividades">Actividades</option>
-              <option value="insumos">Insumos</option>
-              <option value="labores">Labores</option>
-            </select>
-          </label>
+          <>
+            <label className="compact-field">
+              Buscar
+              <input
+                value={busqueda}
+                onChange={(event) => setBusqueda(event.target.value)}
+                placeholder="Agro App, ERP, detalle"
+              />
+            </label>
+            <label className="compact-field">
+              Padron
+              <select value={tipoFiltro} onChange={(event) => setTipoFiltro(event.target.value as TipoPadron | 'todos')}>
+                <option value="todos">Todos</option>
+                <option value="zonas">Zonas</option>
+                <option value="campos">Campos</option>
+                <option value="lotes">Lotes</option>
+                <option value="especies">Especies</option>
+                <option value="actividades">Actividades</option>
+                <option value="insumos">Insumos</option>
+                <option value="labores">Labores</option>
+              </select>
+            </label>
+            <label className="compact-field">
+              Estado
+              <select value={estadoFiltro} onChange={(event) => setEstadoFiltro(event.target.value as EstadoFiltro)}>
+                <option value="vinculadas">Vinculadas</option>
+                <option value="provisorias">Provisorias sin vincular</option>
+                <option value="todas">Todas</option>
+              </select>
+            </label>
+          </>
         )}
       >
         <DataTable
@@ -481,6 +548,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
           initialPageSize={25}
           columns={[
             { key: 'padron', label: 'Padron', width: 'minmax(110px, 0.7fr)', render: (fila) => fila.padron },
+            { key: 'estado', label: 'Estado', width: 'minmax(112px, 0.65fr)', render: (fila) => <span className="status-pill">{fila.estado === 'vinculada' ? 'Vinculada' : 'Provisoria'}</span> },
             { key: 'propio', label: 'Registro Agro App', width: 'minmax(180px, 1.2fr)', render: (fila) => <><strong>{fila.propio}</strong><span>{fila.detalle}</span></> },
             { key: 'erp', label: 'Registro ERP', width: 'minmax(220px, 1.4fr)', render: (fila) => fila.erp },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(96px, 0.55fr)', render: (fila) => fila.actualizado },
@@ -490,8 +558,14 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               width: 'minmax(170px, 0.8fr)',
               render: (fila) => (
                 <div className="table-icon-actions">
-                  <IconButton icon="edit" label={`Editar vinculacion ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)} />
-                  <IconButton icon="unlink" label={`Desvincular ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => desvincular(fila)} />
+                  {fila.estado === 'vinculada' ? (
+                    <>
+                      <IconButton icon="edit" label={`Editar vinculacion ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)} />
+                      <IconButton icon="unlink" label={`Desvincular ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => desvincular(fila)} />
+                    </>
+                  ) : (
+                    <IconButton icon="link" label={`Vincular ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)} />
+                  )}
                 </div>
               ),
             },
@@ -504,8 +578,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
           <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="editar-vinculacion-title">
             <div className="modal-header">
               <div>
-                <h2 id="editar-vinculacion-title">Editar vinculacion</h2>
-                <p className="hint">El cambio reemplaza la referencia ERP asociada y queda registrado en auditoria.</p>
+                <h2 id="editar-vinculacion-title">{vinculacionEnEdicion.fila.estado === 'provisoria' ? 'Vincular registro' : 'Editar vinculacion'}</h2>
+                <p className="hint">{vinculacionEnEdicion.fila.estado === 'provisoria' ? 'La vinculacion asigna una referencia ERP al registro provisorio y queda auditada.' : 'El cambio reemplaza la referencia ERP asociada y queda registrado en auditoria.'}</p>
               </div>
               <Button variant="ghost" onClick={() => setVinculacionEnEdicion(null)}>Cerrar</Button>
             </div>
@@ -518,6 +592,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               <label className="reference-wide">
                 Nueva referencia ERP
                 <select value={vinculacionEnEdicion.destinoErpId} onChange={(event) => setVinculacionEnEdicion((actual) => actual && { ...actual, destinoErpId: event.target.value })}>
+                  {!opcionesEdicion.length && <option value="">No hay candidatos disponibles</option>}
                   {opcionesEdicion.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.label} ({opcion.motivo})</option>)}
                 </select>
               </label>
