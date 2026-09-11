@@ -367,10 +367,14 @@ export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacion
 }
 
 export async function guardarPrecioReferencia(id: string, datos: GuardarPrecioReferenciaRequest, token?: string): Promise<GuardarPrecioReferenciaResponse> {
-  return request<GuardarPrecioReferenciaResponse>(`/precios-app/${id}`, {
+  const respuesta = await request<GuardarPrecioReferenciaResponse>(`/precios-app/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarDestinosVentaCache();
+  invalidarPlanificacionSnapshotCache();
+
+  return respuesta;
 }
 
 export async function guardarGastoComercialReferencia(

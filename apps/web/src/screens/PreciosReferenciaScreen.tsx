@@ -49,6 +49,7 @@ export function PreciosReferenciaScreen({
 }: PreciosReferenciaScreenProps) {
   const [precioEnEdicion, setPrecioEnEdicion] = useState<PrecioReferencia | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const [modoDestinoNuevo, setModoDestinoNuevo] = useState(false);
   const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
   const [actividadesPropiasDb, setActividadesPropiasDb] = useState<ActividadApp[]>([]);
   const [actividadesErp, setActividadesErp] = useState<ErpActividad[]>([]);
@@ -160,12 +161,14 @@ export function PreciosReferenciaScreen({
   function abrirNuevoPrecio() {
     setModoModal('crear');
     setActividadSeleccionadaClave(actividades[0]?.clave || '');
+    setModoDestinoNuevo(false);
     setPrecioEnEdicion(crearBorradorPrecio());
   }
 
   function abrirEditarPrecio(precio: PrecioReferencia) {
     setModoModal('editar');
     setActividadSeleccionadaClave(`agro:${precio.actividadAppId}`);
+    setModoDestinoNuevo(false);
     setPrecioEnEdicion({ ...precio });
   }
 
@@ -252,6 +255,13 @@ export function PreciosReferenciaScreen({
   const destinoCanonicoModal = precioEnEdicion
     ? destinosDisponibles.find((destino) => normalizarTexto(destino) === normalizarTexto(precioEnEdicion.destinoVenta))
     : undefined;
+  const valorSelectDestino = modoDestinoNuevo
+    ? '__nuevo__'
+    : !precioEnEdicion?.destinoVenta
+      ? ''
+      : destinoExistenteModal
+        ? destinoCanonicoModal || ''
+        : '__nuevo__';
 
   return (
     <section className="planning-stack">
@@ -326,8 +336,19 @@ export function PreciosReferenciaScreen({
               <label>
                 Destino
                 <select
-                  value={!precioEnEdicion.destinoVenta ? '' : destinoExistenteModal ? destinoCanonicoModal || '' : '__nuevo__'}
-                  onChange={(event) => actualizarBorrador({ destinoVenta: event.target.value === '__nuevo__' ? '' : event.target.value })}
+                  value={valorSelectDestino}
+                  onChange={(event) => {
+                    const valor = event.target.value;
+
+                    if (valor === '__nuevo__') {
+                      setModoDestinoNuevo(true);
+                      actualizarBorrador({ destinoVenta: '' });
+                      return;
+                    }
+
+                    setModoDestinoNuevo(false);
+                    actualizarBorrador({ destinoVenta: valor });
+                  }}
                 >
                   <option value="">Seleccionar destino</option>
                   {destinosDisponibles.map((destino) => (
@@ -337,7 +358,7 @@ export function PreciosReferenciaScreen({
                 </select>
               </label>
 
-              {!destinoExistenteModal && (
+              {modoDestinoNuevo && (
                 <label>
                   Nuevo destino
                   <input

@@ -448,6 +448,7 @@ Estado UX actual:
 - la pantalla permite editar precios desde un boton de accion por fila, con accion final `Editar`;
 - el destino se selecciona desde un catalogo y permite crear uno nuevo si no existe;
 - si se crea un destino nuevo desde el modal de precios, debe guardarse tambien como `DestinoApp` unico por cliente y nombre de destino;
+- la opcion `Crear nuevo destino` debe mostrar un input explicito para cargar el nombre, evitando que el usuario tenga que escribir sobre un select ambiguo;
 - el backend normaliza el destino con trim, espacios simples, sin tildes y uppercase para evitar duplicados por escritura del usuario;
 - la creacion automatica del destino debe auditarse igual que la creacion o edicion del precio;
 - esos precios quedan disponibles para proponer valores al crear lineas de planificacion;
