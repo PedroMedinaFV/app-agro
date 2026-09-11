@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DestinoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { obtenerDestinosVenta } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
@@ -124,28 +129,24 @@ export function DestinosVentaScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Padrones maestros</p>
-          <h2>Destinos de venta</h2>
-          <p className="hint">Catalogo unico de destinos comerciales. Se usa en precios, gastos y planificacion; las reglas para sugerir destino por zona/campo/actividad se administraran como capa separada.</p>
-        </div>
-        <div className="status-pill">{destinosOrdenados.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Padrones maestros"
+        title="Destinos de venta"
+        description="Catalogo unico de destinos comerciales. Se usa en precios, gastos y planificacion; las reglas para sugerir destino por zona/campo/actividad se administraran como capa separada."
+        aside={<div className="status-pill">{destinosOrdenados.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Destinos registrados</h2>
-            <p className="hint">El nombre se normaliza para evitar duplicados escritos con mayusculas, tildes o espacios distintos.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevoDestino} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Destinos registrados"
+        description="El nombre se normaliza para evitar duplicados escritos con mayusculas, tildes o espacios distintos."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevoDestino} disabled={!puedeConfigurarPlanificacion}>
               Nuevo destino
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={destinosOrdenados}
           getRowKey={(destino) => destino.id}
@@ -161,19 +162,20 @@ export function DestinosVentaScreen({
               label: 'Acciones',
               width: 'minmax(86px, 0.5fr)',
               render: (destino) => (
-                <button
-                  className="small"
-                  onClick={() => abrirEditarDestino(destino)}
-                  disabled={!puedeConfigurarPlanificacion || !esDestinoEditable(destino)}
-                  title={esDestinoEditable(destino) ? 'Editar destino' : 'Destino importado desde ERP'}
-                >
-                  Editar
-                </button>
+                <div className="table-icon-actions">
+                  <IconButton
+                    icon="edit"
+                    label={`Editar destino ${destino.destinoVenta}`}
+                    onClick={() => abrirEditarDestino(destino)}
+                    disabled={!puedeConfigurarPlanificacion || !esDestinoEditable(destino)}
+                    title={esDestinoEditable(destino) ? 'Editar destino' : 'Destino importado desde ERP'}
+                  />
+                </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {destinoEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -183,7 +185,7 @@ export function DestinosVentaScreen({
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="destino-modal-title">{modoModal === 'crear' ? 'Nuevo destino' : 'Editar destino'}</h2>
               </div>
-              <button className="small" onClick={() => setDestinoEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setDestinoEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -220,9 +222,9 @@ export function DestinosVentaScreen({
             )}
 
             <div className="modal-actions">
-              <button className="small" onClick={() => setDestinoEnEdicion(null)}>Cancelar</button>
-              <button
-                className="primary"
+              <Button variant="small" onClick={() => setDestinoEnEdicion(null)}>Cancelar</Button>
+              <Button
+                variant="primary"
                 onClick={aplicarModal}
                 disabled={guardandoDestinos || !destinoEnEdicion.destinoVenta.trim() || existeDestinoDuplicado}
               >
@@ -230,7 +232,7 @@ export function DestinosVentaScreen({
                   {guardandoDestinos && <LoadingSpinner label="Guardando destino" />}
                   {guardandoDestinos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

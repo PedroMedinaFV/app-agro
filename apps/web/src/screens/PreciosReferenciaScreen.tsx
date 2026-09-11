@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActividadApp, ErpActividad, ErpEspecie, ErpPuerto, PlanificacionSnapshot, PrecioReferencia, SesionUsuario } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { DecimalInput } from '../components/DecimalInput';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import { guardarActividadApp, obtenerActividadesErpImportadas, obtenerActividadesApp, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
 
 function limpiarTextoVisible(valor: string) {
@@ -264,28 +269,24 @@ export function PreciosReferenciaScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Referencias comerciales</p>
-          <h2>Precios de cereales</h2>
-          <p className="hint">Tabla base editable para proponer precios por actividad y destino al crear la planificacion. Cada cambio queda auditado cuando se guarda en backend.</p>
-        </div>
-        <div className="status-pill">{planificacion.preciosReferencia.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Referencias comerciales"
+        title="Precios de cereales"
+        description="Tabla base editable para proponer precios por actividad y destino al crear la planificacion. Cada cambio queda auditado cuando se guarda en backend."
+        aside={<div className="status-pill">{planificacion.preciosReferencia.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Precios registrados</h2>
-            <p className="hint">Los valores se copian a la linea de planificacion para conservar el supuesto original. Editar un precio no reescribe planificaciones ya cerradas.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevoPrecio} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Precios registrados"
+        description="Los valores se copian a la linea de planificacion para conservar el supuesto original. Editar un precio no reescribe planificaciones ya cerradas."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevoPrecio} disabled={!puedeConfigurarPlanificacion}>
               Nuevo precio
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={planificacion.preciosReferencia}
           getRowKey={(precio) => precio.id}
@@ -301,11 +302,15 @@ export function PreciosReferenciaScreen({
               key: 'acciones',
               label: 'Acciones',
               width: 'minmax(86px, 0.5fr)',
-              render: (precio) => <button className="small" onClick={() => abrirEditarPrecio(precio)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+              render: (precio) => (
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar precio ${precio.destinoVenta}`} onClick={() => abrirEditarPrecio(precio)} disabled={!puedeConfigurarPlanificacion} />
+                </div>
+              ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {precioEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -315,7 +320,7 @@ export function PreciosReferenciaScreen({
                 <p className="eyebrow">Precio de referencia</p>
                 <h2 id="precio-modal-title">{modoModal === 'crear' ? 'Nuevo precio' : 'Editar precio'}</h2>
               </div>
-              <button className="small" onClick={() => setPrecioEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setPrecioEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -406,9 +411,9 @@ export function PreciosReferenciaScreen({
             </div>
 
             <div className="modal-actions">
-              <button className="small" onClick={() => setPrecioEnEdicion(null)}>Cancelar</button>
-              <button
-                className="primary"
+              <Button variant="small" onClick={() => setPrecioEnEdicion(null)}>Cancelar</Button>
+              <Button
+                variant="primary"
                 onClick={aplicarModal}
                 disabled={guardandoPrecios || !actividadSeleccionadaClave || !precioEnEdicion.destinoVenta.trim() || precioEnEdicion.valor < 0}
               >
@@ -416,7 +421,7 @@ export function PreciosReferenciaScreen({
                   {guardandoPrecios && <LoadingSpinner label="Guardando precio" />}
                   {guardandoPrecios ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

@@ -12,8 +12,13 @@ import {
   PlanificacionSnapshot,
   SesionUsuario,
 } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 import {
   guardarActividadApp,
   obtenerActividadesErpImportadas,
@@ -499,28 +504,24 @@ export function GastosComercialesScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Referencias comerciales</p>
-          <h2>Gastos comerciales</h2>
-          <p className="hint">Tabla editable para definir fletes, acondicionamiento, comisiones y otros gastos por tonelada sugeridos por actividad, destino y alcance.</p>
-        </div>
-        <div className="status-pill">{planificacion.gastosComercialesReferencia.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Referencias comerciales"
+        title="Gastos comerciales"
+        description="Tabla editable para definir fletes, acondicionamiento, comisiones y otros gastos por tonelada sugeridos por actividad, destino y alcance."
+        aside={<div className="status-pill">{planificacion.gastosComercialesReferencia.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Gastos registrados</h2>
-            <p className="hint">Estos valores se proponen en la planilla y se copian a cada linea para conservar el supuesto original.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevoGasto} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Gastos registrados"
+        description="Estos valores se proponen en la planilla y se copian a cada linea para conservar el supuesto original."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevoGasto} disabled={!puedeConfigurarPlanificacion}>
               Nuevo gasto
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={planificacion.gastosComercialesReferencia}
           getRowKey={(gasto) => gasto.id}
@@ -547,20 +548,14 @@ export function GastosComercialesScreen({
               label: 'Acciones',
               width: 'minmax(76px, 0.44fr)',
               render: (gasto) => (
-                <button
-                  className="small"
-                  type="button"
-                  title="Editar gasto comercial"
-                  onClick={() => abrirEditarGasto(gasto)}
-                  disabled={!puedeConfigurarPlanificacion}
-                >
-                  Editar
-                </button>
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar gasto ${gasto.descripcion}`} onClick={() => abrirEditarGasto(gasto)} disabled={!puedeConfigurarPlanificacion} />
+                </div>
               ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {gastoEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -570,7 +565,7 @@ export function GastosComercialesScreen({
                 <p className="eyebrow">Gasto comercial</p>
                 <h2 id="gastos-modal-title">{modoModal === 'crear' ? 'Nuevo gasto' : 'Editar gasto'}</h2>
               </div>
-              <button className="small" onClick={() => { setCreandoDestino(false); setGastoEnEdicion(null); }}>Cerrar</button>
+              <Button variant="small" onClick={() => { setCreandoDestino(false); setGastoEnEdicion(null); }}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -672,7 +667,7 @@ export function GastosComercialesScreen({
             <div className="expense-items">
               <div className="panel-header inline">
                 <h3>Items</h3>
-                <button className="small" onClick={agregarItem} disabled={!conceptosGastos.length}>Agregar item</button>
+                <Button variant="small" onClick={agregarItem} disabled={!conceptosGastos.length}>Agregar item</Button>
               </div>
 
               {gastoEnEdicion.items.map((item, indice) => (
@@ -725,21 +720,21 @@ export function GastosComercialesScreen({
                       onChange={(event) => actualizarItem(indice, { observaciones: event.target.value })}
                     />
                   </label>
-                  <button className="danger" onClick={() => quitarItem(indice)} disabled={gastoEnEdicion.items.length === 1}>
+                  <Button variant="danger" onClick={() => quitarItem(indice)} disabled={gastoEnEdicion.items.length === 1}>
                     Quitar
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
 
             <div className="modal-actions">
-              <button className="small" onClick={() => { setCreandoDestino(false); setGastoEnEdicion(null); }}>Cancelar</button>
-              <button className="primary" onClick={aplicarModal} disabled={guardandoGastos || modalInvalido}>
+              <Button variant="small" onClick={() => { setCreandoDestino(false); setGastoEnEdicion(null); }}>Cancelar</Button>
+              <Button variant="primary" onClick={aplicarModal} disabled={guardandoGastos || modalInvalido}>
                 <span className="button-content">
                   {guardandoGastos && <LoadingSpinner label="Guardando gastos" />}
                   {guardandoGastos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>

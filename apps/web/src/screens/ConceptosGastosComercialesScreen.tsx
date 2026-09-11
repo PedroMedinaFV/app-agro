@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ConceptoGastoComercial, PlanificacionSnapshot } from '@agro/tipos';
+import { ActionBar } from '../components/ActionBar';
+import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { PageHeader } from '../components/PageHeader';
+import { Panel } from '../components/Panel';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -110,28 +115,24 @@ export function ConceptosGastosComercialesScreen({
 
   return (
     <section className="planning-stack">
-      <section className="planning-hero">
-        <div>
-          <p className="eyebrow">Padrones maestros</p>
-          <h2>Conceptos de gastos comerciales</h2>
-          <p className="hint">Listado controlado para flete, acondicionamiento, comisiones y otros gastos. Se usa en gastos comerciales para evitar texto libre y mantener reportes consistentes.</p>
-        </div>
-        <div className="status-pill">{conceptosOrdenados.length}</div>
-      </section>
+      <PageHeader
+        eyebrow="Padrones maestros"
+        title="Conceptos de gastos comerciales"
+        description="Listado controlado para flete, acondicionamiento, comisiones y otros gastos. Se usa en gastos comerciales para evitar texto libre y mantener reportes consistentes."
+        aside={<div className="status-pill">{conceptosOrdenados.length}</div>}
+      />
 
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Conceptos registrados</h2>
-            <p className="hint">Cada alta o modificacion debe quedar auditada desde backend. Desactivar conserva el historico sin permitir nuevos usos normales.</p>
-          </div>
-          <div className="button-row">
-            <button className="small" onClick={abrirNuevoConcepto} disabled={!puedeConfigurarPlanificacion}>
+      <Panel
+        title="Conceptos registrados"
+        description="Cada alta o modificacion debe quedar auditada desde backend. Desactivar conserva el historico sin permitir nuevos usos normales."
+        actions={(
+          <ActionBar align="end">
+            <Button variant="small" onClick={abrirNuevoConcepto} disabled={!puedeConfigurarPlanificacion}>
               Nuevo concepto
-            </button>
-          </div>
-        </div>
-
+            </Button>
+          </ActionBar>
+        )}
+      >
         <DataTable
           rows={conceptosOrdenados}
           getRowKey={(concepto) => concepto.id}
@@ -147,11 +148,15 @@ export function ConceptosGastosComercialesScreen({
               key: 'acciones',
               label: 'Acciones',
               width: 'minmax(86px, 0.5fr)',
-              render: (concepto) => <button className="small" onClick={() => abrirEditarConcepto(concepto)} disabled={!puedeConfigurarPlanificacion}>Editar</button>,
+              render: (concepto) => (
+                <div className="table-icon-actions">
+                  <IconButton icon="edit" label={`Editar concepto ${concepto.nombre}`} onClick={() => abrirEditarConcepto(concepto)} disabled={!puedeConfigurarPlanificacion} />
+                </div>
+              ),
             },
           ]}
         />
-      </section>
+      </Panel>
 
       {conceptoEnEdicion && (
         <div className="modal-backdrop" role="presentation">
@@ -161,7 +166,7 @@ export function ConceptosGastosComercialesScreen({
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="concepto-modal-title">{modoModal === 'crear' ? 'Nuevo concepto' : 'Editar concepto'}</h2>
               </div>
-              <button className="small" onClick={() => setConceptoEnEdicion(null)}>Cerrar</button>
+              <Button variant="small" onClick={() => setConceptoEnEdicion(null)}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -218,9 +223,9 @@ export function ConceptosGastosComercialesScreen({
             )}
 
             <div className="modal-actions">
-              <button className="small" onClick={() => setConceptoEnEdicion(null)}>Cancelar</button>
-              <button
-                className="primary"
+              <Button variant="small" onClick={() => setConceptoEnEdicion(null)}>Cancelar</Button>
+              <Button
+                variant="primary"
                 onClick={aplicarModal}
                 disabled={guardandoConceptos || !conceptoEnEdicion.nombre.trim() || existeNombreDuplicado}
               >
@@ -228,7 +233,7 @@ export function ConceptosGastosComercialesScreen({
                   {guardandoConceptos && <LoadingSpinner label="Guardando concepto" />}
                   {guardandoConceptos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
                 </span>
-              </button>
+              </Button>
             </div>
           </section>
         </div>
