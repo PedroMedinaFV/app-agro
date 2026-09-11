@@ -42,8 +42,8 @@ export function ProtocolosScreen({
   formatearUsd,
   setProtocoloSeleccionadoId,
 }: ProtocolosScreenProps) {
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [modoModal, setModoModal] = useState<'crear' | 'editar' | 'copiar'>('editar');
+  const [editorAbierto, setEditorAbierto] = useState(false);
+  const [modoEditor, setModoEditor] = useState<'crear' | 'editar' | 'copiar'>('editar');
   const [campaniasErp, setCampaniasErp] = useState<ErpCampania[]>([]);
   const [accionPendiente, setAccionPendiente] = useState<
     | { tipo: 'crear' }
@@ -81,20 +81,20 @@ export function ProtocolosScreen({
 
     if (accionPendiente.tipo === 'crear') {
       crearProtocoloVacio();
-      setModoModal('crear');
+      setModoEditor('crear');
     }
 
     if (accionPendiente.tipo === 'editar') {
       setProtocoloSeleccionadoId(accionPendiente.protocoloId);
-      setModoModal('editar');
+      setModoEditor('editar');
     }
 
     if (accionPendiente.tipo === 'copiar') {
       copiarProtocoloSeleccionado(accionPendiente.protocolo);
-      setModoModal('copiar');
+      setModoEditor('copiar');
     }
 
-    setModalAbierto(true);
+    setEditorAbierto(true);
     setAccionPendiente(null);
   }, [accionPendiente, copiarProtocoloSeleccionado, crearProtocoloVacio, setProtocoloSeleccionadoId]);
 
@@ -115,6 +115,26 @@ export function ProtocolosScreen({
 
   async function guardarYContinuar(protocoloEditado: ProtocoloProductivoDetalle) {
     await guardarProtocoloSeleccionado(protocoloEditado);
+    setEditorAbierto(false);
+  }
+
+  if (editorAbierto && protocoloSeleccionado) {
+    return (
+      <section className="planning-stack">
+        <ProtocoloModal
+          modo={modoEditor}
+          presentacion="pantalla"
+          protocolo={protocoloSeleccionado}
+          planificacion={planificacion}
+          campanias={campaniasDisponibles}
+          puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
+          guardandoProtocolo={guardandoProtocolo}
+          onClose={() => setEditorAbierto(false)}
+          onGuardar={guardarYContinuar}
+          formatearUsd={formatearUsd}
+        />
+      </section>
+    );
   }
 
   return (
@@ -200,20 +220,6 @@ export function ProtocolosScreen({
           ]}
         />
       </Panel>
-
-      {modalAbierto && protocoloSeleccionado && (
-        <ProtocoloModal
-          modo={modoModal}
-          protocolo={protocoloSeleccionado}
-          planificacion={planificacion}
-          campanias={campaniasDisponibles}
-          puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
-          guardandoProtocolo={guardandoProtocolo}
-          onClose={() => setModalAbierto(false)}
-          onGuardar={guardarYContinuar}
-          formatearUsd={formatearUsd}
-        />
-      )}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ErpCampania, PlanificacionSnapshot, ProtocoloProductivoDetalle } from '@agro/tipos';
 import { DecimalInput } from '../DecimalInput';
+import { IconButton } from '../IconButton';
 import { LoadingSpinner } from '../LoadingSpinner';
 import { SignedIntegerInput } from '../SignedIntegerInput';
 import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo, calcularCostoProtocoloWeb } from '../../utils/formatters';
@@ -13,6 +14,7 @@ function fechaParaInput(fecha?: string) {
 
 interface ProtocoloModalProps {
   modo: ModoProtocoloModal;
+  presentacion?: 'modal' | 'pantalla';
   protocolo: ProtocoloProductivoDetalle;
   planificacion: PlanificacionSnapshot;
   campanias: ErpCampania[];
@@ -25,6 +27,7 @@ interface ProtocoloModalProps {
 
 export function ProtocoloModal({
   modo,
+  presentacion = 'modal',
   protocolo: protocoloInicial,
   planificacion,
   campanias,
@@ -124,6 +127,16 @@ export function ProtocoloModal({
     });
   }
 
+  function eliminarLabor(etapaId: string, laborId: string) {
+    actualizarProtocolos((actual) => ({
+      ...actual,
+      etapas: actual.etapas.map((etapa) => (etapa.id === etapaId ? {
+        ...etapa,
+        labores: etapa.labores.filter((labor) => labor.id !== laborId),
+      } : etapa)),
+    }));
+  }
+
   function agregarInsumo(etapaId: string, insumoAppId?: string) {
     const insumoApp = (insumoAppId ? insumosPorId.get(insumoAppId) : undefined) || insumosDisponibles[0];
 
@@ -152,9 +165,18 @@ export function ProtocoloModal({
     });
   }
 
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="modal-panel modal-panel-wide" role="dialog" aria-modal="true" aria-labelledby="protocolo-modal-title">
+  function eliminarInsumo(etapaId: string, insumoId: string) {
+    actualizarProtocolos((actual) => ({
+      ...actual,
+      etapas: actual.etapas.map((etapa) => (etapa.id === etapaId ? {
+        ...etapa,
+        insumos: etapa.insumos.filter((insumo) => insumo.id !== insumoId),
+      } : etapa)),
+    }));
+  }
+
+  const contenido = (
+    <>
         <div className="modal-header">
           <div>
             <p className="eyebrow">Protocolos productivos</p>
@@ -349,14 +371,21 @@ export function ProtocoloModal({
                   <div>
                     <div className="panel-header inline">
                       <h3>Labores</h3>
-                      <button
-                        className="small"
+                      <IconButton
+                        icon="plus"
+                        label="Agregar labor"
                         onClick={() => agregarLabor(etapa.id, laboresDisponibles[0]?.id)}
                         disabled={!puedeConfigurarPlanificacion || laboresDisponibles.length === 0}
                         title={laboresDisponibles.length === 0 ? 'Primero carga labores desde Padrones > Labores' : 'Agregar labor al protocolo'}
-                      >
-                        Agregar
-                      </button>
+                      />
+                    </div>
+                    <div className="protocol-detail-grid-header">
+                      <span>Labor</span>
+                      <span>Indice</span>
+                      <span>Cant./ha</span>
+                      <span>Costo unit.</span>
+                      <span>Costo/ha</span>
+                      <span></span>
                     </div>
                     {etapa.labores.map((labor) => (
                       <div className="protocol-item" key={labor.id}>
@@ -445,6 +474,13 @@ export function ProtocoloModal({
                           ariaLabel={`Costo unitario de ${labor.nombre}`}
                         />
                         <span title={`${labor.cantidadPorHa} ${labor.unidad} por hectarea`}>{formatearUsd(labor.costoPorHa)} / ha</span>
+                        <IconButton
+                          icon="trash"
+                          className="danger-icon"
+                          label={`Eliminar labor ${labor.nombre}`}
+                          onClick={() => eliminarLabor(etapa.id, labor.id)}
+                          disabled={!puedeConfigurarPlanificacion}
+                        />
                       </div>
                     ))}
                   </div>
@@ -452,14 +488,21 @@ export function ProtocoloModal({
                   <div>
                     <div className="panel-header inline">
                       <h3>Insumos</h3>
-                      <button
-                        className="small"
+                      <IconButton
+                        icon="plus"
+                        label="Agregar insumo"
                         onClick={() => agregarInsumo(etapa.id, insumosDisponibles[0]?.id)}
                         disabled={!puedeConfigurarPlanificacion || insumosDisponibles.length === 0}
                         title={insumosDisponibles.length === 0 ? 'Primero carga o sincroniza insumos' : 'Agregar insumo al protocolo'}
-                      >
-                        Agregar
-                      </button>
+                      />
+                    </div>
+                    <div className="protocol-detail-grid-header">
+                      <span>Insumo</span>
+                      <span>Indice</span>
+                      <span>Dosis/ha</span>
+                      <span>Precio unit.</span>
+                      <span>Costo/ha</span>
+                      <span></span>
                     </div>
                     {etapa.insumos.map((insumo) => (
                       <div className="protocol-item" key={insumo.id}>
@@ -549,6 +592,13 @@ export function ProtocoloModal({
                           ariaLabel={`Precio unitario de ${insumo.nombre}`}
                         />
                         <span title={`${insumo.dosisPorHa} ${insumo.unidad} por hectarea`}>{formatearUsd(insumo.costoPorHa)} / ha</span>
+                        <IconButton
+                          icon="trash"
+                          className="danger-icon"
+                          label={`Eliminar insumo ${insumo.nombre}`}
+                          onClick={() => eliminarInsumo(etapa.id, insumo.id)}
+                          disabled={!puedeConfigurarPlanificacion}
+                        />
                       </div>
                     ))}
                   </div>
@@ -567,6 +617,21 @@ export function ProtocoloModal({
             </span>
           </button>
         </div>
+    </>
+  );
+
+  if (presentacion === 'pantalla') {
+    return (
+      <section className="protocol-editor-panel" aria-labelledby="protocolo-modal-title">
+        {contenido}
+      </section>
+    );
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="modal-panel modal-panel-wide" role="dialog" aria-modal="true" aria-labelledby="protocolo-modal-title">
+        {contenido}
       </section>
     </div>
   );
