@@ -1,6 +1,6 @@
 import { Usuario } from './models/usuario';
 
-export type RolUsuario = 'admin' | 'planificador' | 'operador_campo';
+export type RolUsuario = 'admin' | 'planificador' | 'responsable_compras' | 'operador_campo';
 
 export type Permiso =
   | 'erp:configurar'
@@ -17,6 +17,7 @@ export type Permiso =
   | 'planificacion:cerrar'
   | 'planificacion:configurar'
   | 'padrones-base:gestionar'
+  | 'costos:gestionar'
   | 'registros:crear'
   | 'registros:sincronizar'
   | 'precipitaciones:crear'
@@ -41,6 +42,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'planificacion:cerrar',
     'planificacion:configurar',
     'padrones-base:gestionar',
+    'costos:gestionar',
     'registros:crear',
     'registros:sincronizar',
     'precipitaciones:crear',
@@ -60,6 +62,17 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'planificacion:cerrar',
     'planificacion:configurar',
     'padrones-base:gestionar',
+    'precipitaciones:leer',
+    'observaciones:leer',
+  ],
+  responsable_compras: [
+    'erp:leer',
+    'campos:leer',
+    'lotes:leer',
+    'actividades:leer',
+    'planificacion:leer',
+    'padrones-base:gestionar',
+    'costos:gestionar',
     'precipitaciones:leer',
     'observaciones:leer',
   ],
@@ -121,7 +134,7 @@ export type GuardarUsuarioAdminResponse = {
 };
 
 export function obtenerPermisosRol(rol: string | undefined): Permiso[] {
-  if (rol === 'admin' || rol === 'planificador' || rol === 'operador_campo') {
+  if (rol === 'admin' || rol === 'planificador' || rol === 'responsable_compras' || rol === 'operador_campo') {
     return permisosPorRol[rol];
   }
 

@@ -14,6 +14,7 @@ interface LayoutProps {
   descripcion: string;
   puedeConfigurarErp: boolean;
   puedeConfigurarPlanificacion: boolean;
+  puedeGestionarCostos: boolean;
   puedeGestionarUsuarios: boolean;
   puedeLeerAuditoria: boolean;
   notificacionesPendientes: number;
@@ -21,7 +22,13 @@ interface LayoutProps {
 }
 
 function obtenerEtiquetaRol(rol: SesionUsuario['usuario']['rol']) {
-  return rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo';
+  return rol === 'admin'
+    ? 'Admin'
+    : rol === 'planificador'
+      ? 'Planificador'
+      : rol === 'responsable_compras'
+        ? 'Responsable de compras'
+        : 'Operador de campo';
 }
 
 export function Layout({
@@ -35,6 +42,7 @@ export function Layout({
   descripcion,
   puedeConfigurarErp,
   puedeConfigurarPlanificacion,
+  puedeGestionarCostos,
   puedeGestionarUsuarios,
   puedeLeerAuditoria,
   notificacionesPendientes,
@@ -112,7 +120,7 @@ export function Layout({
                 </a>
               );
             })}
-            {puedeConfigurarPlanificacion && (
+            {(puedeConfigurarPlanificacion || puedeGestionarCostos) && (
               <div className={`nav-group ${padronesAbierto ? 'open' : ''}`}>
                 <button
                   className={`nav-group-trigger ${padronActivo ? 'active' : ''}`}

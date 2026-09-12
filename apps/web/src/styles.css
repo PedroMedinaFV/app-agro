@@ -1374,6 +1374,17 @@ nav a.active .nav-icon,
   white-space: nowrap;
 }
 
+.protocol-item .protocol-readonly-value {
+  align-items: center;
+  background: #f7faf8;
+  border: 1px solid #d8e3dc;
+  border-radius: 8px;
+  color: #0b1f3a;
+  display: flex;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
 .protocol-item .icon-button {
   justify-self: end;
 }

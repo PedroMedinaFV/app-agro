@@ -14,3 +14,15 @@ export function requierePermiso(permiso: Permiso) {
     next();
   };
 }
+
+export function requiereAlgunPermiso(permisos: Permiso[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const rol = (req as RequestConUsuario).user?.rol || 'operador_campo';
+
+    if (!permisos.some((permiso) => tienePermiso(rol, permiso))) {
+      return res.status(403).json({ error: 'No tienes permisos para esta accion' });
+    }
+
+    next();
+  };
+}

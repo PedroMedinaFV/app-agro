@@ -19,9 +19,9 @@ function crearTokenSesion(usuario: { id: string; email: string; rol?: string; cl
 
 router.post('/demo', (req, res) => {
   const { email = 'demo@agroapp.local', nombre = 'Usuario Demo', rol = 'operador_campo', clienteId = 'cliente-demo' } = req.body as LoginDemoRequest;
-  const rolSesion: RolUsuario = rol === 'admin' || rol === 'planificador' || rol === 'operador_campo' ? rol : 'operador_campo';
+  const rolSesion: RolUsuario = rol === 'admin' || rol === 'planificador' || rol === 'responsable_compras' || rol === 'operador_campo' ? rol : 'operador_campo';
   const usuario = {
-    id: rolSesion === 'admin' ? 'demo-admin' : rolSesion === 'planificador' ? 'demo-planificador' : 'demo-operador',
+    id: rolSesion === 'admin' ? 'demo-admin' : rolSesion === 'planificador' ? 'demo-planificador' : rolSesion === 'responsable_compras' ? 'demo-compras' : 'demo-operador',
     email,
     nombre,
     rol: rolSesion,

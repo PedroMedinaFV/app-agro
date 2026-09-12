@@ -38,7 +38,7 @@ function crearErrorValidacion(message: string, statusCode = 400) {
 }
 
 export function camposDemoAsignados(usuario: UsuarioAutorizado) {
-  if (usuario.rol === 'admin' || usuario.rol === 'planificador') {
+  if (usuario.rol === 'admin' || usuario.rol === 'planificador' || usuario.rol === 'responsable_compras') {
     return null;
   }
 
@@ -46,7 +46,7 @@ export function camposDemoAsignados(usuario: UsuarioAutorizado) {
 }
 
 export async function obtenerCamposAsignados(usuario: UsuarioAutorizado) {
-  if (usuario.rol === 'admin' || usuario.rol === 'planificador') {
+  if (usuario.rol === 'admin' || usuario.rol === 'planificador' || usuario.rol === 'responsable_compras') {
     return null;
   }
 

@@ -60,6 +60,7 @@ export function App() {
   const puedeConfigurarErp = sesion?.permisos.includes('erp:configurar') || false;
   const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
   const puedeLeerAuditoria = sesion?.permisos.includes('auditoria:leer') || false;
+  const puedeGestionarCostos = sesion?.permisos.includes('costos:gestionar') || false;
   const debeCargarSnapshotPlanificacion = vistasConSnapshotPlanificacion.has(vista);
   const debeCargarProtocolos = vista === 'protocolos';
   const refrescarNotificaciones = useCallback(async () => {
@@ -200,6 +201,7 @@ export function App() {
         descripcion={descripcionVista}
         puedeConfigurarErp={puedeConfigurarErp}
         puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+        puedeGestionarCostos={puedeGestionarCostos}
         puedeGestionarUsuarios={puedeGestionarUsuarios}
         puedeLeerAuditoria={puedeLeerAuditoria}
         notificacionesPendientes={notificacionesPendientes}
@@ -376,7 +378,7 @@ export function App() {
           sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion || puedeGestionarCostos}
           guardandoLabores={planificacionDemo.guardandoLabores}
           guardarServicio={planificacionDemo.guardarServicioAppDesdeModal}
           leerNumero={leerNumero}
@@ -389,7 +391,7 @@ export function App() {
           sesion={sesion}
           planificacion={planificacionDemo.planificacion}
           snapshot={erp.snapshot}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion || puedeGestionarCostos}
           guardandoInsumos={planificacionDemo.guardandoInsumos}
           guardarInsumo={planificacionDemo.guardarInsumoAppDesdeModal}
           notificar={toast.notify}

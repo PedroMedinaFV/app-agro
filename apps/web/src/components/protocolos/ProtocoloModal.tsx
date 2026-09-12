@@ -84,7 +84,6 @@ export function ProtocoloModal({
     actualizarProtocolos((actual) => ({
       ...actual,
       etapas: [
-        ...actual.etapas,
         {
           id: etapaId,
           protocoloId: actual.id,
@@ -96,6 +95,7 @@ export function ProtocoloModal({
           labores: [],
           insumos: [],
         },
+        ...actual.etapas,
       ],
     }));
   }
@@ -112,7 +112,8 @@ export function ProtocoloModal({
     const indiceAplicacion = 1;
 
     actualizarEtapa(etapaId, {
-      labores: protocolo.etapas.find((etapa) => etapa.id === etapaId)?.labores.concat({
+      labores: [
+        {
         id: `labor-${Date.now()}`,
         etapaId,
         indiceAplicacion,
@@ -123,7 +124,9 @@ export function ProtocoloModal({
         cantidadPorHa,
         costoUnitario,
         costoPorHa: calcularCostoLaborProtocolo({ cantidadPorHa, costoUnitario, indiceAplicacion } as Parameters<typeof calcularCostoLaborProtocolo>[0]),
-      }) || [],
+        },
+        ...(protocolo.etapas.find((etapa) => etapa.id === etapaId)?.labores || []),
+      ],
     });
   }
 
@@ -149,7 +152,8 @@ export function ProtocoloModal({
     const indiceAplicacion = 1;
 
     actualizarEtapa(etapaId, {
-      insumos: protocolo.etapas.find((etapa) => etapa.id === etapaId)?.insumos.concat({
+      insumos: [
+        {
         id: `insumo-${Date.now()}`,
         etapaId,
         indiceAplicacion,
@@ -161,7 +165,9 @@ export function ProtocoloModal({
         dosisPorHa,
         precioUnitarioEstimado,
         costoPorHa: calcularCostoInsumoProtocolo({ dosisPorHa, precioUnitarioEstimado, indiceAplicacion } as Parameters<typeof calcularCostoInsumoProtocolo>[0]),
-      }) || [],
+        },
+        ...(protocolo.etapas.find((etapa) => etapa.id === etapaId)?.insumos || []),
+      ],
     });
   }
 
@@ -381,8 +387,8 @@ export function ProtocoloModal({
                     </div>
                     <div className="protocol-detail-grid-header">
                       <span>Labor</span>
-                      <span>Indice</span>
                       <span>Cant./ha</span>
+                      <span>Indice</span>
                       <span>Costo unit.</span>
                       <span>Costo/ha</span>
                       <span></span>
@@ -420,25 +426,6 @@ export function ProtocoloModal({
                         </select>
                         <DecimalInput
                           min={0}
-                          max={1}
-                          step="0.01"
-                          value={labor.indiceAplicacion}
-                          onValueChange={(value) => actualizarEtapa(etapa.id, {
-                            labores: etapa.labores.map((item) => {
-                              if (item.id !== labor.id) {
-                                return item;
-                              }
-
-                              const actualizado = { ...item, indiceAplicacion: value };
-                              return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
-                            }),
-                          })}
-                          disabled={!puedeConfigurarPlanificacion}
-                          title="Indice de aplicacion entre 0 y 1"
-                          ariaLabel={`Indice de aplicacion de ${labor.nombre}`}
-                        />
-                        <DecimalInput
-                          min={0}
                           step="0.01"
                           value={labor.cantidadPorHa}
                           onValueChange={(value) => actualizarEtapa(etapa.id, {
@@ -457,22 +444,26 @@ export function ProtocoloModal({
                         />
                         <DecimalInput
                           min={0}
+                          max={1}
                           step="0.01"
-                          value={labor.costoUnitario}
+                          value={labor.indiceAplicacion}
                           onValueChange={(value) => actualizarEtapa(etapa.id, {
                             labores: etapa.labores.map((item) => {
                               if (item.id !== labor.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, costoUnitario: value };
+                              const actualizado = { ...item, indiceAplicacion: value };
                               return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
-                          title="Costo unitario editable copiado desde el padron"
-                          ariaLabel={`Costo unitario de ${labor.nombre}`}
+                          title="Indice de aplicacion entre 0 y 1"
+                          ariaLabel={`Indice de aplicacion de ${labor.nombre}`}
                         />
+                        <span className="protocol-readonly-value" title="El costo unitario se administra desde Padrones > Labores">
+                          {formatearUsd(labor.costoUnitario)}
+                        </span>
                         <span title={`${labor.cantidadPorHa} ${labor.unidad} por hectarea`}>{formatearUsd(labor.costoPorHa)} / ha</span>
                         <IconButton
                           icon="trash"
@@ -498,8 +489,8 @@ export function ProtocoloModal({
                     </div>
                     <div className="protocol-detail-grid-header">
                       <span>Insumo</span>
-                      <span>Indice</span>
                       <span>Dosis/ha</span>
+                      <span>Indice</span>
                       <span>Precio unit.</span>
                       <span>Costo/ha</span>
                       <span></span>
@@ -538,25 +529,6 @@ export function ProtocoloModal({
                         </select>
                         <DecimalInput
                           min={0}
-                          max={1}
-                          step="0.01"
-                          value={insumo.indiceAplicacion}
-                          onValueChange={(value) => actualizarEtapa(etapa.id, {
-                            insumos: etapa.insumos.map((item) => {
-                              if (item.id !== insumo.id) {
-                                return item;
-                              }
-
-                              const actualizado = { ...item, indiceAplicacion: value };
-                              return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
-                            }),
-                          })}
-                          disabled={!puedeConfigurarPlanificacion}
-                          title="Indice de aplicacion entre 0 y 1"
-                          ariaLabel={`Indice de aplicacion de ${insumo.nombre}`}
-                        />
-                        <DecimalInput
-                          min={0}
                           step="0.01"
                           value={insumo.dosisPorHa}
                           onValueChange={(value) => actualizarEtapa(etapa.id, {
@@ -575,22 +547,26 @@ export function ProtocoloModal({
                         />
                         <DecimalInput
                           min={0}
+                          max={1}
                           step="0.01"
-                          value={insumo.precioUnitarioEstimado}
+                          value={insumo.indiceAplicacion}
                           onValueChange={(value) => actualizarEtapa(etapa.id, {
                             insumos: etapa.insumos.map((item) => {
                               if (item.id !== insumo.id) {
                                 return item;
                               }
 
-                              const actualizado = { ...item, precioUnitarioEstimado: value };
+                              const actualizado = { ...item, indiceAplicacion: value };
                               return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
                             }),
                           })}
                           disabled={!puedeConfigurarPlanificacion}
-                          title="Precio unitario editable copiado desde el padron"
-                          ariaLabel={`Precio unitario de ${insumo.nombre}`}
+                          title="Indice de aplicacion entre 0 y 1"
+                          ariaLabel={`Indice de aplicacion de ${insumo.nombre}`}
                         />
+                        <span className="protocol-readonly-value" title="El precio unitario se administra desde Padrones > Insumos">
+                          {formatearUsd(insumo.precioUnitarioEstimado)}
+                        </span>
                         <span title={`${insumo.dosisPorHa} ${insumo.unidad} por hectarea`}>{formatearUsd(insumo.costoPorHa)} / ha</span>
                         <IconButton
                           icon="trash"

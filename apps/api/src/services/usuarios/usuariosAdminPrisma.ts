@@ -36,7 +36,7 @@ function normalizarEmail(email: string) {
 }
 
 function normalizarRol(rol: string): RolUsuario {
-  if (rol === 'admin' || rol === 'planificador' || rol === 'operador_campo') {
+  if (rol === 'admin' || rol === 'planificador' || rol === 'responsable_compras' || rol === 'operador_campo') {
     return rol;
   }
 

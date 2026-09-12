@@ -118,6 +118,71 @@ function validarProtocolo(protocolo: ProtocoloProductivoDetalle) {
   validarItemsProtocolo(protocolo);
 }
 
+async function normalizarCostosDesdePadrones(
+  client: PrismaClient | Prisma.TransactionClient,
+  protocolo: ProtocoloProductivoDetalle,
+): Promise<ProtocoloProductivoDetalle> {
+  const servicioIds = Array.from(new Set(protocolo.etapas.flatMap((etapa) => (
+    etapa.labores.map((labor) => labor.servicioAppId).filter((id): id is string => Boolean(id))
+  ))));
+  const insumoIds = Array.from(new Set(protocolo.etapas.flatMap((etapa) => (
+    etapa.insumos.map((insumo) => insumo.insumoAppId).filter(Boolean)
+  ))));
+
+  const [servicios, insumos] = await Promise.all([
+    servicioIds.length
+      ? client.servicioApp.findMany({ where: { clienteId: protocolo.clienteId, id: { in: servicioIds } } })
+      : Promise.resolve([]),
+    insumoIds.length
+      ? client.insumoApp.findMany({ where: { clienteId: protocolo.clienteId, id: { in: insumoIds } } })
+      : Promise.resolve([]),
+  ]);
+  const servicioPorId = new Map(servicios.map((servicio) => [servicio.id, servicio]));
+  const insumoPorId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
+
+  return {
+    ...protocolo,
+    etapas: protocolo.etapas.map((etapa) => ({
+      ...etapa,
+      labores: etapa.labores.map((labor) => {
+        const servicio = labor.servicioAppId ? servicioPorId.get(labor.servicioAppId) : undefined;
+
+        if (!servicio) {
+          return { ...labor, costoPorHa: calcularCostoLabor(labor) };
+        }
+
+        const actualizado = {
+          ...labor,
+          nombre: servicio.nombre,
+          descripcion: servicio.descripcionAbreviada || undefined,
+          unidad: servicio.unidadSugerida,
+          costoUnitario: servicio.costoUnitarioSugerido,
+        };
+
+        return { ...actualizado, costoPorHa: calcularCostoLabor(actualizado) };
+      }),
+      insumos: etapa.insumos.map((insumo) => {
+        const insumoApp = insumoPorId.get(insumo.insumoAppId);
+
+        if (!insumoApp) {
+          return { ...insumo, costoPorHa: calcularCostoInsumo(insumo) };
+        }
+
+        const actualizado = {
+          ...insumo,
+          insumoErpId: insumoApp.insumoErpId || undefined,
+          nombre: insumoApp.nombre,
+          tipo: insumoApp.tipo || undefined,
+          unidad: insumoApp.unidad,
+          precioUnitarioEstimado: insumoApp.precioUnitarioEstimado,
+        };
+
+        return { ...actualizado, costoPorHa: calcularCostoInsumo(actualizado) };
+      }),
+    })),
+  };
+}
+
 type ProtocoloPrisma = Prisma.ProtocoloProductivoGetPayload<{
   include: {
     etapas: {
@@ -340,16 +405,18 @@ export async function guardarProtocoloPersistido(
   request: GuardarProtocoloRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarProtocoloResponse> {
-  const protocolo = {
+  const protocoloRecibido = {
     ...request.protocolo,
     id,
     clienteId: usuario?.clienteId || request.protocolo.clienteId,
   };
-  validarProtocolo(protocolo);
 
-  await asegurarEstadiosReferenciaSemilla(protocolo.clienteId);
+  await asegurarEstadiosReferenciaSemilla(protocoloRecibido.clienteId);
 
   return prisma.$transaction(async (tx) => {
+    const protocolo = await normalizarCostosDesdePadrones(tx, protocoloRecibido);
+    validarProtocolo(protocolo);
+
     const existente = await tx.protocoloProductivo.findUnique({
       where: { id },
       include: incluirDetalleProtocolo,

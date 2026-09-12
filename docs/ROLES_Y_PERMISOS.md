@@ -17,34 +17,36 @@ La autorizacion no queda atada solamente al nombre del rol: el backend valida pe
 
 - `admin`: administra configuracion, integraciones ERP, usuarios, empresas AGRO, sincronizacion, padrones, seguridad y auditoria.
 - `planificador`: gestiona planificacion agricola, escenarios, protocolos, precios, gastos comerciales y padrones propios de Agro App.
+- `responsable_compras`: administra costos/precios de insumos y labores. No define tecnicamente el protocolo; mantiene valores de referencia usados por planificacion.
 - `operador_campo`: trabaja en campo, principalmente desde mobile, sobre campos/lotes asignados. Puede cargar datos operativos como precipitaciones, observaciones y, mas adelante, recorridas e imagenes.
 
 ## Permisos
 
 Los permisos son declarativos y viven en `packages/tipos/src/auth.ts`.
 
-| Permiso | Admin | Planificador | Operador de campo | Uso |
-| --- | --- | --- | --- | --- |
-| `erp:configurar` | Si | No | No | Configurar credenciales e integracion ERP |
-| `erp:sincronizar` | Si | No | No | Disparar sincronizacion ERP |
-| `erp:leer` | Si | Si | Si | Consultar snapshot ERP |
-| `usuarios:gestionar` | Si | No | No | Administrar usuarios |
-| `usuarios:asignar-campos` | Si | No | No | Asignar campos ERP visibles por operador |
-| `campos:leer` | Si | Si | Si | Consultar campos |
-| `lotes:leer` | Si | Si | Si | Consultar lotes |
-| `actividades:leer` | Si | Si | Si | Consultar actividades |
-| `planificacion:leer` | Si | Si | Si | Consultar planificaciones dentro del alcance permitido |
-| `planificacion:editar` | Si | Si | No | Crear o editar planificaciones |
-| `planificacion:aprobar` | Si | Si | No | Aprobar planificaciones |
-| `planificacion:cerrar` | Si | Si | No | Cerrar planificaciones y bloquear ediciones |
-| `planificacion:configurar` | Si | Si | No | Administrar protocolos, precios y destinos sugeridos |
-| `padrones-base:gestionar` | Si | Si | No | Crear, editar o vincular zonas/campos/lotes/especies/actividades/insumos provisorios con ERP |
-| `registros:crear` | Si | No | Si | Crear registros de campo |
-| `registros:sincronizar` | Si | No | Si | Sincronizar pendientes mobile/offline |
-| `precipitaciones:crear` | Si | No | Si | Cargar precipitaciones sobre campos asignados |
-| `precipitaciones:leer` | Si | Si | Si | Consultar precipitaciones dentro del alcance permitido |
-| `observaciones:crear` | Si | No | Si | Cargar observaciones sobre campos/lotes asignados |
-| `observaciones:leer` | Si | Si | Si | Consultar observaciones dentro del alcance permitido |
+| Permiso | Admin | Planificador | Responsable compras | Operador de campo | Uso |
+| --- | --- | --- | --- | --- | --- |
+| `erp:configurar` | Si | No | No | No | Configurar credenciales e integracion ERP |
+| `erp:sincronizar` | Si | No | No | No | Disparar sincronizacion ERP |
+| `erp:leer` | Si | Si | Si | Si | Consultar snapshot ERP |
+| `usuarios:gestionar` | Si | No | No | No | Administrar usuarios |
+| `usuarios:asignar-campos` | Si | No | No | No | Asignar campos ERP visibles por operador |
+| `campos:leer` | Si | Si | Si | Si | Consultar campos |
+| `lotes:leer` | Si | Si | Si | Si | Consultar lotes |
+| `actividades:leer` | Si | Si | Si | Si | Consultar actividades |
+| `planificacion:leer` | Si | Si | Si | Si | Consultar planificaciones dentro del alcance permitido |
+| `planificacion:editar` | Si | Si | No | No | Crear o editar planificaciones |
+| `planificacion:aprobar` | Si | Si | No | No | Aprobar planificaciones |
+| `planificacion:cerrar` | Si | Si | No | No | Cerrar planificaciones y bloquear ediciones |
+| `planificacion:configurar` | Si | Si | No | No | Administrar protocolos y configuracion tecnica de planificacion |
+| `padrones-base:gestionar` | Si | Si | Si | No | Crear, editar o vincular padrones propios de Agro App con ERP |
+| `costos:gestionar` | Si | No | Si | No | Administrar precios/costos de insumos y labores |
+| `registros:crear` | Si | No | No | Si | Crear registros de campo |
+| `registros:sincronizar` | Si | No | No | Si | Sincronizar pendientes mobile/offline |
+| `precipitaciones:crear` | Si | No | No | Si | Cargar precipitaciones sobre campos asignados |
+| `precipitaciones:leer` | Si | Si | Si | Si | Consultar precipitaciones dentro del alcance permitido |
+| `observaciones:crear` | Si | No | No | Si | Cargar observaciones sobre campos/lotes asignados |
+| `observaciones:leer` | Si | Si | Si | Si | Consultar observaciones dentro del alcance permitido |
 
 ## Backend
 
@@ -96,6 +98,8 @@ Endpoints preparados:
 `admin` inicia en una vista de control y configuracion.
 
 `planificador` inicia en una vista orientada a planificacion, protocolos, precios, gastos y padrones necesarios.
+
+`responsable_compras` inicia en una vista orientada a costos de labores e insumos. Los precios no se editan dentro del protocolo; el protocolo toma los valores vigentes del padron.
 
 `operador_campo` inicia en una vista operativa:
 

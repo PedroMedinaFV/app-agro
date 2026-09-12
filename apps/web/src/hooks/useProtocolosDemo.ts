@@ -130,7 +130,6 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
     actualizarProtocolos((protocolo) => ({
       ...protocolo,
       etapas: [
-        ...protocolo.etapas,
         {
           id: etapaId,
           protocoloId: protocolo.id,
@@ -142,6 +141,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
           labores: [],
           insumos: [],
         },
+        ...protocolo.etapas,
       ],
     }));
   }
@@ -168,7 +168,6 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
       etapas: protocolo.etapas.map((etapa) => etapa.id === etapaId ? {
         ...etapa,
         labores: [
-          ...etapa.labores,
           {
             id: `labor-${Date.now()}`,
             etapaId,
@@ -181,6 +180,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
             costoUnitario,
             costoPorHa: calcularCostoLaborProtocolo({ cantidadPorHa, costoUnitario, indiceAplicacion } as Parameters<typeof calcularCostoLaborProtocolo>[0]),
           },
+          ...etapa.labores,
         ],
       } : etapa),
     }));
@@ -209,7 +209,6 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
       etapas: protocolo.etapas.map((etapa) => etapa.id === etapaId ? {
         ...etapa,
         insumos: [
-          ...etapa.insumos,
           {
             id: `insumo-${Date.now()}`,
             etapaId,
@@ -223,6 +222,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
             precioUnitarioEstimado,
             costoPorHa: calcularCostoInsumoProtocolo({ dosisPorHa, precioUnitarioEstimado, indiceAplicacion } as Parameters<typeof calcularCostoInsumoProtocolo>[0]),
           },
+          ...etapa.insumos,
         ],
       } : etapa),
     }));

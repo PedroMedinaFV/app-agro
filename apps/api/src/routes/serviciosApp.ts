@@ -1,6 +1,6 @@
 import { Request, Router } from 'express';
 import type { GuardarServicioAppRequest } from '@agro/tipos';
-import { requierePermiso } from '../middleware/permisos';
+import { requiereAlgunPermiso } from '../middleware/permisos';
 import { guardarServicioAppPersistido, obtenerServiciosAppPersistidos } from '../services/servicios/serviciosAppPrisma';
 
 const router = Router();
@@ -9,7 +9,7 @@ type RequestConUsuario = Request & {
   user?: { sub?: string; email?: string; clienteId?: string };
 };
 
-router.get('/', requierePermiso('planificacion:configurar'), async (req, res, next) => {
+router.get('/', requiereAlgunPermiso(['planificacion:configurar', 'costos:gestionar']), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
     const clienteId = request.user?.clienteId;
@@ -24,7 +24,7 @@ router.get('/', requierePermiso('planificacion:configurar'), async (req, res, ne
   }
 });
 
-router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res, next) => {
+router.put('/:id', requiereAlgunPermiso(['planificacion:configurar', 'costos:gestionar']), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
 

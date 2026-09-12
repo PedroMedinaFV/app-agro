@@ -39,7 +39,13 @@ function crearUsuarioFormulario(): UsuarioFormulario {
 }
 
 function obtenerEtiquetaRol(rol: RolUsuario) {
-  return rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo';
+  return rol === 'admin'
+    ? 'Admin'
+    : rol === 'planificador'
+      ? 'Planificador'
+      : rol === 'responsable_compras'
+        ? 'Responsable de compras'
+        : 'Operador de campo';
 }
 
 function crearFormularioDesdeUsuario(usuario: UsuarioAdminResumen): UsuarioFormulario {
@@ -295,6 +301,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                 >
                   <option value="admin">Admin</option>
                   <option value="planificador">Planificador</option>
+                  <option value="responsable_compras">Responsable de compras</option>
                   <option value="operador_campo">Operador de campo</option>
                 </select>
               </label>
