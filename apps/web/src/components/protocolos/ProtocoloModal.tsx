@@ -312,8 +312,8 @@ export function ProtocoloModal({
           </div>
 
           <div className="protocol-stages">
-            {protocolo.etapas.map((etapa) => (
-              <article className="protocol-stage" key={etapa.id}>
+            {protocolo.etapas.map((etapa, indiceEtapa) => (
+              <article className={`protocol-stage protocol-stage-tone-${indiceEtapa % 6}`} key={etapa.id}>
                 <div className="protocol-stage-header">
                   <select
                     value={etapa.estadioReferenciaId || ''}
