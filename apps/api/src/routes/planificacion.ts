@@ -1,7 +1,6 @@
 import { Request, Router } from 'express';
 import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { obtenerPlanificacionDemo, obtenerProtocolosDemo } from '../services/planificacion/mockPlanificacion';
 import { cerrarPlanificacionPersistida, guardarPlanificacionPersistida, obtenerPlanificacionesPersistidas } from '../services/planificacion/planificacionesPrisma';
 import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
@@ -20,7 +19,6 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
   try {
     const request = req as RequestConUsuario;
     const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
-    const demo = obtenerPlanificacionDemo(clienteId);
     const planificacionesPersistidas = await obtenerPlanificacionesPersistidas(clienteId);
     const preciosPersistidos = await obtenerPreciosReferenciaPersistidos(clienteId);
     const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
@@ -38,21 +36,20 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados);
 
     res.json({
-      ...demo,
-      zonasApp: padronesPersistidos.zonasApp.length ? padronesPersistidos.zonasApp : demo.zonasApp,
-      camposApp: padronesPersistidos.camposApp.length ? padronesPersistidos.camposApp : demo.camposApp,
-      lotesApp: padronesPersistidos.lotesApp.length ? padronesPersistidos.lotesApp : demo.lotesApp,
-      especiesApp: padronesPersistidos.especiesApp.length ? padronesPersistidos.especiesApp : demo.especiesApp,
-      actividadesApp: padronesPersistidos.actividadesApp.length ? padronesPersistidos.actividadesApp : demo.actividadesApp,
-      insumosApp: padronesPersistidos.insumosApp.length ? padronesPersistidos.insumosApp : demo.insumosApp,
-      planificaciones: planificacionesPersistidas.length ? planificacionesPersistidas : demo.planificaciones,
-      protocolos: protocolosPersistidos.protocolos.length ? protocolosPersistidos.protocolos : demo.protocolos,
-      preciosReferencia: preciosPersistidos.length ? preciosPersistidos : demo.preciosReferencia,
-      destinosReferencia: destinosPersistidos.length ? destinosPersistidos : demo.destinosReferencia,
+      zonasApp: padronesPersistidos.zonasApp,
+      camposApp: padronesPersistidos.camposApp,
+      lotesApp: padronesPersistidos.lotesApp,
+      especiesApp: padronesPersistidos.especiesApp,
+      actividadesApp: padronesPersistidos.actividadesApp,
+      insumosApp: padronesPersistidos.insumosApp,
+      planificaciones: planificacionesPersistidas,
+      protocolos: protocolosPersistidos.protocolos,
+      preciosReferencia: preciosPersistidos,
+      destinosReferencia: destinosPersistidos,
       conceptosGastosComerciales: conceptosPersistidos,
-      gastosComercialesReferencia: gastosPersistidos.length ? gastosPersistidos : demo.gastosComercialesReferencia,
-      estadiosReferencia: estadiosPersistidos.length ? estadiosPersistidos : demo.estadiosReferencia,
-      serviciosApp: padronesPersistidos.serviciosApp.length ? padronesPersistidos.serviciosApp : demo.serviciosApp,
+      gastosComercialesReferencia: gastosPersistidos,
+      estadiosReferencia: estadiosPersistidos,
+      serviciosApp: padronesPersistidos.serviciosApp,
       sincronizadoEn: new Date().toISOString(),
     });
   } catch (error) {
@@ -95,7 +92,7 @@ router.get('/protocolos/snapshot', requierePermiso('planificacion:leer'), async 
     await asegurarEstadiosReferenciaSemilla(clienteId);
     const persistidos = await obtenerProtocolosPersistidos(clienteId);
 
-    res.json(persistidos.protocolos.length ? persistidos : obtenerProtocolosDemo(clienteId));
+    res.json(persistidos);
   } catch (error) {
     next(error);
   }

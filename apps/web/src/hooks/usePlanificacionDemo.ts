@@ -24,7 +24,24 @@ import {
   guardarPrecioReferencia,
   obtenerPlanificacionSnapshot,
 } from '../services/api';
-import { planificacionFallback } from '../data/demoData';
+
+const planificacionVacia: PlanificacionSnapshot = {
+  zonasApp: [],
+  camposApp: [],
+  lotesApp: [],
+  especiesApp: [],
+  actividadesApp: [],
+  insumosApp: [],
+  destinosReferencia: [],
+  preciosReferencia: [],
+  conceptosGastosComerciales: [],
+  gastosComercialesReferencia: [],
+  estadiosReferencia: [],
+  serviciosApp: [],
+  protocolos: [],
+  planificaciones: [],
+  sincronizadoEn: new Date(0).toISOString(),
+};
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -52,8 +69,8 @@ function obtenerSuperficieInicialLote(lote: LoteApp) {
 }
 
 export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente = true) {
-  const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionFallback);
-  const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion demo local');
+  const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionVacia);
+  const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion sin cargar');
   const [planificacionCargada, setPlanificacionCargada] = useState(false);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
   const [guardandoPlanificacion, setGuardandoPlanificacion] = useState(false);
@@ -78,7 +95,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       setPlanificacionCargada(true);
       setPlanificacionEstado('Planificacion actualizada desde API.');
     } catch (error) {
-      setPlanificacion(planificacionFallback);
+      setPlanificacion(planificacionVacia);
       setPlanificacionCargada(true);
       setPlanificacionEstado('No se pudo refrescar la planificacion desde API.');
     } finally {
@@ -88,9 +105,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
   useEffect(() => {
     if (!sesion) {
-      setPlanificacion(planificacionFallback);
+      setPlanificacion(planificacionVacia);
       setPlanificacionCargada(false);
-      setPlanificacionEstado('Planificacion demo local');
+      setPlanificacionEstado('Planificacion sin sesion');
       return;
     }
 

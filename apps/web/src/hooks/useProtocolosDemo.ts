@@ -9,8 +9,12 @@ import {
   SesionUsuario,
 } from '@agro/tipos';
 import { guardarProtocolo, obtenerProtocolosSnapshot } from '../services/api';
-import { protocolosFallback } from '../data/demoData';
 import { calcularCostoInsumoProtocolo, calcularCostoLaborProtocolo, calcularCostoProtocoloWeb } from '../utils/formatters';
+
+const protocolosVacios: ProtocolosSnapshot = {
+  protocolos: [],
+  sincronizadoEn: new Date(0).toISOString(),
+};
 
 interface UseProtocolosDemoParams {
   sesion: SesionUsuario | null;
@@ -23,9 +27,9 @@ interface UseProtocolosDemoParams {
 }
 
 export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos, cargarAutomaticamente = true }: UseProtocolosDemoParams) {
-  const [protocolos, setProtocolos] = useState<ProtocolosSnapshot>(protocolosFallback);
-  const [protocoloSeleccionadoId, setProtocoloSeleccionadoId] = useState(protocolosFallback.protocolos[0]?.id || '');
-  const [protocolosEstado, setProtocolosEstado] = useState('Protocolos demo locales');
+  const [protocolos, setProtocolos] = useState<ProtocolosSnapshot>(protocolosVacios);
+  const [protocoloSeleccionadoId, setProtocoloSeleccionadoId] = useState('');
+  const [protocolosEstado, setProtocolosEstado] = useState('Protocolos sin cargar');
   const [protocolosCargados, setProtocolosCargados] = useState(false);
   const [cargandoProtocolos, setCargandoProtocolos] = useState(false);
   const [guardandoProtocolo, setGuardandoProtocolo] = useState(false);
@@ -44,10 +48,10 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
       setProtocoloSeleccionadoId((actual) => actual || datos.protocolos[0]?.id || '');
       setProtocolosEstado('Protocolos cargados desde API.');
     } catch (error) {
-      setProtocolos(protocolosFallback);
+      setProtocolos(protocolosVacios);
       setProtocolosCargados(true);
-      setProtocoloSeleccionadoId((actual) => actual || protocolosFallback.protocolos[0]?.id || '');
-      setProtocolosEstado('API de protocolos no disponible. Usando mock local.');
+      setProtocoloSeleccionadoId('');
+      setProtocolosEstado('API de protocolos no disponible.');
     } finally {
       setCargandoProtocolos(false);
     }
@@ -55,9 +59,9 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
 
   useEffect(() => {
     if (!sesion) {
-      setProtocolos(protocolosFallback);
+      setProtocolos(protocolosVacios);
       setProtocolosCargados(false);
-      setProtocolosEstado('Protocolos demo locales');
+      setProtocolosEstado('Protocolos sin sesion');
       return;
     }
 
