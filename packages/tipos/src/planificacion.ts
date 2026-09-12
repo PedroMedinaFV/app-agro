@@ -86,6 +86,7 @@ export type InsumoApp = {
   insumoErpId?: string;
   nombre: string;
   codigoInterno?: string;
+  idTipoInsumo?: number;
   tipo?: string;
   unidad: string;
   precioUnitarioEstimado?: number;

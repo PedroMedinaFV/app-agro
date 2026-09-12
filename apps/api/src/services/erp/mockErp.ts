@@ -8,6 +8,8 @@ import { mapearRespuestaPadronesCampos } from './mappers/padronesCampos';
 import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
 import { mapearRespuestaPadronesPuertos } from './mappers/padronesPuertos';
+import { mapearRespuestaPadronesTiposInsumo } from './mappers/padronesTiposInsumo';
+import { mapearRespuestaPadronesTiposServicio } from './mappers/padronesTiposServicio';
 import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
@@ -443,6 +445,68 @@ const respuestaPadronesInsumosMock = {
   ],
 };
 
+const respuestaPadronesTiposInsumoMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 2,
+    totalPages: 1,
+    totalRecords: 2,
+  },
+  data: [
+    {
+      idTipoInsumo: 82,
+      codigo: 'SEMI',
+      codigoCot: null,
+      codigoSima: 28,
+      descripcion: 'SEMILLAS',
+      activo: true,
+      usaPadronEstandar: false,
+      idCuentaContable: 3899,
+      fechaUltimaActualizacion: '2025-09-26T15:07:05',
+    },
+    {
+      idTipoInsumo: 83,
+      codigo: 'HERB',
+      codigoCot: null,
+      codigoSima: null,
+      descripcion: 'HERBICIDAS',
+      activo: true,
+      usaPadronEstandar: false,
+      idCuentaContable: null,
+      fechaUltimaActualizacion: null,
+    },
+  ],
+};
+
+const respuestaPadronesTiposServicioMock = {
+  succeeded: true,
+  message: null,
+  errors: [],
+  pagination: {
+    pageNumber: 1,
+    pageSize: 1,
+    totalPages: 1,
+    totalRecords: 1,
+  },
+  data: [
+    {
+      idTipoServicio: 64,
+      codigo: 'AGR1',
+      descripcion: 'ROTURACION',
+      exigeInsumo: false,
+      disponibleOt: true,
+      disponibleCompras: false,
+      disponibleVentas: false,
+      categoria: 'L',
+      idCuentaContable: 4046,
+      fechaUltimaActualizacion: '2024-10-01T16:34:10',
+    },
+  ],
+};
+
 const respuestaPadronesUnidadesMedidaMock = {
   succeeded: true,
   message: null,
@@ -533,6 +597,8 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
   const campanias = mapearRespuestaAgriculturaCampanias(respuestaAgriculturaCampaniasMock);
   const cultivos = mapearRespuestaAgriculturaCultivos(respuestaAgriculturaCultivosMock);
   const insumos = mapearRespuestaPadronesInsumos(respuestaPadronesInsumosMock);
+  const tiposInsumo = mapearRespuestaPadronesTiposInsumo(respuestaPadronesTiposInsumoMock);
+  const tiposServicio = mapearRespuestaPadronesTiposServicio(respuestaPadronesTiposServicioMock);
   const unidadesMedida = mapearRespuestaPadronesUnidadesMedida(respuestaPadronesUnidadesMedidaMock);
   const monedas = mapearRespuestaContabilidadMonedas(respuestaContabilidadMonedasMock);
   const puertos = mapearRespuestaPadronesPuertos(respuestaPadronesPuertosMock);
@@ -548,7 +614,9 @@ export async function obtenerSnapshotErpMock(): Promise<ErpSnapshot> {
     campanias,
     cultivos,
     insumos,
+    tiposInsumo,
     servicios: [],
+    tiposServicio,
     unidadesMedida,
     monedas,
     puertos,

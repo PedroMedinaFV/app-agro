@@ -59,12 +59,13 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   const idZonasUsadas = Array.from(
     new Set(camposErp.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number')),
   );
-  const [zonasErp, lotesErp, especiesErp, actividadesErp, insumosErp, serviciosErp, unidadesMedida] = await Promise.all([
+  const [zonasErp, lotesErp, especiesErp, actividadesErp, insumosErp, tiposInsumo, serviciosErp, unidadesMedida] = await Promise.all([
     prisma.erpZona.findMany({ where: { idZona: { in: idZonasUsadas }, activo: true }, distinct: ['idZona'] }),
     prisma.erpLote.findMany({ where: { campoErpId: { in: campoErpIds }, activo: true } }),
     prisma.erpEspecie.findMany({ where: { empresaErpId: 'global', activo: true } }),
     prisma.erpActividad.findMany({ where: { empresaErpId: 'global', activo: true } }),
     prisma.erpInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    prisma.erpTipoInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
     prisma.erpServicio.findMany({ where: { empresaErpId: 'global', activo: true } }),
     prisma.erpUnidadMedida.findMany({ where: { empresaErpId: 'global', activo: true } }),
   ]);
@@ -83,6 +84,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   const insumoPorErpId = new Map(insumosExistentes.map((insumo) => [insumo.insumoErpId, insumo.id]));
   const laborPorErpId = new Map(laboresExistentes.map((labor) => [labor.servicioErpId, labor.id]));
   const unidadPorId = new Map(unidadesMedida.map((unidad) => [unidad.idUnidadMedida, unidad.codigo]));
+  const tipoInsumoPorId = new Map(tiposInsumo.map((tipo) => [tipo.idTipoInsumo, tipo]));
 
   await prisma.zonaApp.createMany({
     skipDuplicates: true,
@@ -202,7 +204,8 @@ export async function asegurarPadronesPlanificacionDesdeErp(
         insumoErpId: insumo.erpId,
         nombre: insumo.nombre,
         codigoInterno: normalizarCodigo(insumo.codigo || insumo.nombre),
-        tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : null,
+        idTipoInsumo: insumo.idTipoInsumo ?? null,
+        tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || `Tipo ${insumo.idTipoInsumo}` : null,
         unidad: insumo.idUnidadMedida ? unidadPorId.get(insumo.idUnidadMedida) || 'Unid' : 'Unid',
         precioUnitarioEstimado: insumo.precioUnitario ?? null,
         moneda: 'USD',

@@ -185,6 +185,33 @@ Reglas de sincronizacion:
 - Si una labor provisoria coincide con un servicio ERP, el sistema debe generar una sugerencia de vinculacion para que un usuario autorizado confirme o rechace.
 - El precio ERP se usa como costo sugerido para nuevas selecciones, pero no debe modificar protocolos o planificaciones cerradas.
 
+### Padrones/TiposServicio
+
+El contrato de `Padrones/TiposServicio` trae la clasificacion maestra de servicios/labores. Puede recibir `NoPaginate` para traer todos los registros.
+
+Campos relevantes:
+
+- `idTipoServicio`
+- `codigo`
+- `descripcion`
+- `exigeInsumo`
+- `disponibleOt`
+- `disponibleCompras`
+- `disponibleVentas`
+- `categoria`
+- `idCuentaContable`
+- `fechaUltimaActualizacion`
+
+Para tipos de servicio, `erpId` se deriva como `tipo-servicio:${idTipoServicio}` y `empresaErpId` se guarda como `global`.
+
+Decision: se trata como padron global deduplicado. Aunque se consulte con una empresa AGRO para cumplir con `x-company`, no se duplica por empresa.
+
+Uso en Agro App:
+
+- alimenta el select de tipo en `Padrones > Labores`;
+- se guarda la referencia `idTipoServicio` en `ServicioApp`;
+- si la labor viene vinculada a un servicio ERP, el tipo no se edita desde Agro App.
+
 ### Agricultura/Cultivos
 
 El contrato de `Agricultura/Cultivos` trae cultivos agrícolas por empresa ERP y es un padrón clave para futuras cargas operativas.
@@ -255,6 +282,32 @@ Para insumos, `erpId` se deriva como `insumo:${idInsumo}`.
 Decision: se trata como padron global deduplicado. Aunque el endpoint requiere `x-company`, ALBOR devuelve el mismo catalogo para distintas empresas.
 
 El precio unitario del ERP se guarda como referencia. Cuando un insumo se use en un protocolo o planificacion, el costo debe copiarse a una version editable para evitar que cambios posteriores del ERP modifiquen supuestos historicos.
+
+### Padrones/TiposInsumo
+
+El contrato de `Padrones/TiposInsumo` trae la clasificacion maestra de insumos. Puede recibir `NoPaginate` para traer todos los registros.
+
+Campos relevantes:
+
+- `idTipoInsumo`
+- `codigo`
+- `codigoCot`
+- `codigoSima`
+- `descripcion`
+- `activo`
+- `usaPadronEstandar`
+- `idCuentaContable`
+- `fechaUltimaActualizacion`
+
+Para tipos de insumo, `erpId` se deriva como `tipo-insumo:${idTipoInsumo}` y `empresaErpId` se guarda como `global`.
+
+Decision: se trata como padron global deduplicado. Aunque se consulte con una empresa AGRO para cumplir con `x-company`, no se duplica por empresa.
+
+Uso en Agro App:
+
+- alimenta el select de tipo en `Padrones > Insumos`;
+- se guarda la referencia `idTipoInsumo` en `InsumoApp`;
+- si el insumo viene vinculado al ERP, el tipo no se edita desde Agro App.
 
 ### Padrones/UnidadesMedida
 

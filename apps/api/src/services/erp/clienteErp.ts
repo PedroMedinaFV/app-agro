@@ -10,6 +10,8 @@ import {
   ErpPadronMoneda,
   ErpPadronPuerto,
   ErpPadronServicio,
+  ErpPadronTipoInsumo,
+  ErpPadronTipoServicio,
   ErpPadronUnidadMedida,
   ErpPadronZona,
   ErpRespuestaPaginada,
@@ -28,6 +30,8 @@ import { mapearRespuestaPadronesInsumos } from './mappers/padronesInsumos';
 import { mapearRespuestaPadronesLotes } from './mappers/padronesLotes';
 import { mapearRespuestaPadronesPuertos } from './mappers/padronesPuertos';
 import { mapearRespuestaPadronesServicios } from './mappers/padronesServicios';
+import { mapearRespuestaPadronesTiposInsumo } from './mappers/padronesTiposInsumo';
+import { mapearRespuestaPadronesTiposServicio } from './mappers/padronesTiposServicio';
 import { mapearRespuestaPadronesUnidadesMedida } from './mappers/padronesUnidadesMedida';
 import { mapearRespuestaPadronesZonas } from './mappers/padronesZonas';
 import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
@@ -92,6 +96,14 @@ function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
 
   if (seleccionados.has('insumos') || seleccionados.has('servicios')) {
     seleccionados.add('unidadesMedida');
+  }
+
+  if (seleccionados.has('insumos')) {
+    seleccionados.add('tiposInsumo');
+  }
+
+  if (seleccionados.has('servicios')) {
+    seleccionados.add('tiposServicio');
   }
 
   return seleccionados;
@@ -406,8 +418,12 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
     console.log(`[erp-sync] ${empresaErpId} cultivos: ${respuestaCultivos.data.length}`);
     const respuestaInsumos = padrones.has('insumos') && consultarGlobales ? await getErpPaginado<ErpPadronInsumo>(configuracion, configuracion.pathInsumos, empresaErpId) : crearRespuestaVacia<ErpPadronInsumo>();
     console.log(`[erp-sync] ${empresaErpId} insumos: ${respuestaInsumos.data.length}`);
+    const respuestaTiposInsumo = padrones.has('tiposInsumo') && consultarGlobales ? await getErpPaginado<ErpPadronTipoInsumo>(configuracion, configuracion.pathTiposInsumo, empresaErpId) : crearRespuestaVacia<ErpPadronTipoInsumo>();
+    console.log(`[erp-sync] ${empresaErpId} tiposInsumo: ${respuestaTiposInsumo.data.length}`);
     const respuestaServicios = padrones.has('servicios') && consultarGlobales ? await getErpPaginado<ErpPadronServicio>(configuracion, configuracion.pathServicios, empresaErpId) : crearRespuestaVacia<ErpPadronServicio>();
     console.log(`[erp-sync] ${empresaErpId} servicios: ${respuestaServicios.data.length}`);
+    const respuestaTiposServicio = padrones.has('tiposServicio') && consultarGlobales ? await getErpPaginado<ErpPadronTipoServicio>(configuracion, configuracion.pathTiposServicio, empresaErpId) : crearRespuestaVacia<ErpPadronTipoServicio>();
+    console.log(`[erp-sync] ${empresaErpId} tiposServicio: ${respuestaTiposServicio.data.length}`);
     const respuestaUnidadesMedida = padrones.has('unidadesMedida') && consultarGlobales ? await getErpPaginado<ErpPadronUnidadMedida>(configuracion, configuracion.pathUnidadesMedida, empresaErpId) : crearRespuestaVacia<ErpPadronUnidadMedida>();
     console.log(`[erp-sync] ${empresaErpId} unidadesMedida: ${respuestaUnidadesMedida.data.length}`);
     const respuestaMonedas = padrones.has('monedas') && consultarGlobales ? await getErpPaginado<ErpPadronMoneda>(configuracion, configuracion.pathMonedas, empresaErpId) : crearRespuestaVacia<ErpPadronMoneda>();
@@ -424,7 +440,9 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
       campanias: mapearRespuestaAgriculturaCampanias(respuestaCampanias, empresaErpId),
       cultivos: mapearRespuestaAgriculturaCultivos(respuestaCultivos, empresaErpId),
       insumos: mapearRespuestaPadronesInsumos(respuestaInsumos, empresaErpId),
+      tiposInsumo: mapearRespuestaPadronesTiposInsumo(respuestaTiposInsumo),
       servicios: mapearRespuestaPadronesServicios(respuestaServicios, empresaErpId),
+      tiposServicio: mapearRespuestaPadronesTiposServicio(respuestaTiposServicio),
       unidadesMedida: mapearRespuestaPadronesUnidadesMedida(respuestaUnidadesMedida, empresaErpId),
       monedas: mapearRespuestaContabilidadMonedas(respuestaMonedas),
       puertos: mapearRespuestaPadronesPuertos(respuestaPuertos, empresaErpId),
@@ -443,7 +461,9 @@ export async function obtenerSnapshotErp(clienteId?: string, items?: PadronErpSi
     campanias: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.campanias)),
     cultivos: snapshotsPorEmpresa.flatMap((snapshot) => snapshot.cultivos),
     insumos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.insumos)),
+    tiposInsumo: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.tiposInsumo)),
     servicios: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.servicios)),
+    tiposServicio: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.tiposServicio)),
     unidadesMedida: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.unidadesMedida)),
     monedas: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.monedas)),
     puertos: deduplicarPorErpId(snapshotsPorEmpresa.flatMap((snapshot) => snapshot.puertos)),

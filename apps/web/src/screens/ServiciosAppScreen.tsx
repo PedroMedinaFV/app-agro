@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpMoneda, ErpServicio, ErpSnapshot, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpMoneda, ErpServicio, ErpSnapshot, ErpTipoServicio, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
-import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados } from '../services/api';
+import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados, obtenerTiposServicioErpImportados } from '../services/api';
 import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -42,6 +42,7 @@ type LaborTabla = {
   nombre: string;
   detalle: string;
   codigo: string;
+  tipo: string;
   unidad: string;
   costo: string;
   origen: string;
@@ -53,6 +54,20 @@ type LaborTabla = {
 
 function crearIdLaborDesdeErp(servicio: ErpServicio) {
   return `labor-ref-erp-${servicio.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+}
+
+function unirTiposServicio(principales: ErpTipoServicio[], secundarios: ErpTipoServicio[]) {
+  const mapa = new Map<number, ErpTipoServicio>();
+
+  for (const tipo of secundarios) {
+    mapa.set(tipo.idTipoServicio, tipo);
+  }
+
+  for (const tipo of principales) {
+    mapa.set(tipo.idTipoServicio, tipo);
+  }
+
+  return [...mapa.values()];
 }
 
 export function ServiciosAppScreen({
@@ -68,6 +83,7 @@ export function ServiciosAppScreen({
   const [laborEnEdicion, setLaborEnEdicion] = useState<ServicioApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [serviciosErp, setServiciosErp] = useState<ErpServicio[]>([]);
+  const [tiposServicioErp, setTiposServicioErp] = useState<ErpTipoServicio[]>(snapshot.tiposServicio || []);
   const [monedasErp, setMonedasErp] = useState<ErpMoneda[]>(snapshot.monedas || []);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
   const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<ServicioApp | null>(null);
@@ -90,6 +106,30 @@ export function ServiciosAppScreen({
   ), [monedasDisponibles]);
   const monedaPorDefecto = monedasDisponibles.find((moneda) => moneda.codigo.toUpperCase() === 'USD')
     || monedasDisponibles[0];
+  const tiposServicioDisponibles = useMemo(() => (
+    unirTiposServicio(snapshot.tiposServicio || [], tiposServicioErp)
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
+  ), [snapshot.tiposServicio, tiposServicioErp]);
+  const tipoServicioPorId = useMemo(() => (
+    new Map(tiposServicioDisponibles.map((tipo) => [tipo.idTipoServicio, tipo]))
+  ), [tiposServicioDisponibles]);
+
+  useEffect(() => {
+    if ((snapshot.tiposServicio || []).length) {
+      setTiposServicioErp(snapshot.tiposServicio);
+    }
+
+    async function cargarTiposServicioErp() {
+      try {
+        const respuesta = await obtenerTiposServicioErpImportados(sesion.token);
+        setTiposServicioErp(respuesta.tiposServicio);
+      } catch {
+        setTiposServicioErp([]);
+      }
+    }
+
+    cargarTiposServicioErp();
+  }, [sesion.token, snapshot.tiposServicio]);
 
   useEffect(() => {
     async function cargarServiciosErp() {
@@ -133,6 +173,7 @@ export function ServiciosAppScreen({
       clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
       codigo: '',
       nombre: '',
+      idTipoServicio: tiposServicioDisponibles[0]?.idTipoServicio,
       idMoneda: monedaPorDefecto?.idMoneda,
       unidadSugerida: unidadesDisponibles.find((unidad) => unidad.codigo === 'Ha')?.codigo || unidadesDisponibles[0]?.codigo || 'Ha',
       costoUnitarioSugerido: 0,
@@ -185,6 +226,7 @@ export function ServiciosAppScreen({
       codigo: normalizarCodigo(laborEnEdicion.codigo || nombre),
       nombre,
       descripcionAbreviada: laborEnEdicion.descripcionAbreviada ? limpiarTextoVisible(laborEnEdicion.descripcionAbreviada) : undefined,
+      idTipoServicio: laborEnEdicion.idTipoServicio,
       unidadSugerida: limpiarTextoVisible(laborEnEdicion.unidadSugerida || 'Ha'),
       costoUnitarioSugerido: laborEnEdicion.costoUnitarioSugerido || 0,
       estadoVinculacion: laborEnEdicion.servicioErpId ? 'vinculado_erp' : 'provisorio',
@@ -227,6 +269,7 @@ export function ServiciosAppScreen({
       nombre: labor.nombre,
       detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : 'Provisoria',
       codigo: labor.codigo,
+      tipo: labor.idTipoServicio ? tipoServicioPorId.get(labor.idTipoServicio)?.descripcion || `Tipo ${labor.idTipoServicio}` : '-',
       unidad: labor.unidadSugerida,
       costo: labor.costoUnitarioSugerido !== undefined ? formatearMoneda(labor.costoUnitarioSugerido, monedaPorId.get(labor.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD') : 'Sin costo',
       origen: 'Agro App',
@@ -245,6 +288,7 @@ export function ServiciosAppScreen({
         nombre: servicio.descripcion,
         detalle: `${laborPropia ? 'Con costo Agro App' : 'Disponible'} ERP`,
         codigo: servicio.codigo,
+        tipo: servicio.idTipoServicio ? tipoServicioPorId.get(servicio.idTipoServicio)?.descripcion || `Tipo ${servicio.idTipoServicio}` : '-',
         unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
         costo: costo !== undefined ? formatearMoneda(costo, moneda) : 'Sin costo',
         origen: 'ERP',
@@ -383,6 +427,7 @@ export function ServiciosAppScreen({
           columns={[
             { key: 'labor', label: 'Labor', width: 'minmax(190px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
             { key: 'codigo', label: 'Codigo', width: 'minmax(92px, 0.65fr)', render: (fila) => fila.codigo },
+            { key: 'tipo', label: 'Tipo', width: 'minmax(110px, 0.75fr)', render: (fila) => fila.tipo },
             { key: 'unidad', label: 'Unidad', width: 'minmax(76px, 0.5fr)', render: (fila) => fila.unidad },
             { key: 'costo', label: 'Costo', width: 'minmax(96px, 0.65fr)', render: (fila) => fila.costo },
             { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
@@ -441,6 +486,20 @@ export function ServiciosAppScreen({
                   placeholder="Ej. PULT"
                   onChange={(event) => actualizarBorrador({ codigo: event.target.value })}
                 />
+              </label>
+
+              <label>
+                Tipo
+                <select
+                  value={laborEnEdicion.idTipoServicio || ''}
+                  disabled={Boolean(laborEnEdicion.servicioErpId)}
+                  onChange={(event) => actualizarBorrador({ idTipoServicio: event.target.value ? Number(event.target.value) : undefined })}
+                >
+                  <option value="">Sin tipo</option>
+                  {tiposServicioDisponibles.map((tipo) => (
+                    <option key={tipo.erpId} value={tipo.idTipoServicio}>{tipo.codigo} - {tipo.descripcion}</option>
+                  ))}
+                </select>
               </label>
 
               <label>

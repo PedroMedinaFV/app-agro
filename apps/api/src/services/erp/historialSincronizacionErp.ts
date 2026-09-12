@@ -64,6 +64,14 @@ function normalizarItems(items?: PadronErpSincronizable[]) {
     seleccionados.add('unidadesMedida');
   }
 
+  if (seleccionados.has('insumos')) {
+    seleccionados.add('tiposInsumo');
+  }
+
+  if (seleccionados.has('servicios')) {
+    seleccionados.add('tiposServicio');
+  }
+
   return Array.from(seleccionados);
 }
 
@@ -138,7 +146,9 @@ async function contarPadronGlobal(padron: PadronErpSincronizable): Promise<numbe
   if (padron === 'especies') return prisma.erpEspecie.count({ where: { empresaErpId: 'global' } });
   if (padron === 'campanias') return prisma.erpCampania.count({ where: { empresaErpId: 'global' } });
   if (padron === 'insumos') return prisma.erpInsumo.count({ where: { empresaErpId: 'global' } });
+  if (padron === 'tiposInsumo') return prisma.erpTipoInsumo.count({ where: { empresaErpId: 'global' } });
   if (padron === 'servicios') return prisma.erpServicio.count({ where: { empresaErpId: 'global' } });
+  if (padron === 'tiposServicio') return prisma.erpTipoServicio.count({ where: { empresaErpId: 'global' } });
   if (padron === 'unidadesMedida') return prisma.erpUnidadMedida.count({ where: { empresaErpId: 'global' } });
   if (padron === 'monedas') return prisma.erpMoneda.count({ where: { empresaErpId: 'global' } });
   if (padron === 'puertos') return prisma.erpPuerto.count({ where: { empresaErpId: 'global' } });

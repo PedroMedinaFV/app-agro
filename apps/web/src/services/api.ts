@@ -7,6 +7,8 @@ import {
   ErpCampania,
   ErpInsumo,
   ErpMoneda,
+  ErpTipoInsumo,
+  ErpTipoServicio,
   ErpZona,
   ErpLote,
   ErpPuerto,
@@ -197,7 +199,9 @@ export type SincronizacionErpResultado = {
     campanias: number;
     cultivos: number;
     insumos: number;
+    tiposInsumo: number;
     servicios: number;
+    tiposServicio: number;
     unidadesMedida: number;
     monedas: number;
     puertos: number;
@@ -234,7 +238,9 @@ function invalidarCachesErpImportados() {
   invalidarCache(especiesErpImportadasCache);
   invalidarCache(actividadesErpImportadasCache);
   invalidarCache(insumosErpImportadosCache);
+  invalidarCache(tiposInsumoErpImportadosCache);
   invalidarCache(serviciosErpImportadosCache);
+  invalidarCache(tiposServicioErpImportadosCache);
   invalidarCache(monedasErpImportadasCache);
   invalidarCache(puertosErpImportadosCache);
   campaniasErpCache = null;
@@ -340,6 +346,16 @@ export async function obtenerInsumosErpImportados(token?: string, opciones: { fo
   return obtenerConCache(insumosErpImportadosCache, '/erp/insumos-importados', token, opciones);
 }
 
+export type TiposInsumoErpImportadosResponse = {
+  tiposInsumo: ErpTipoInsumo[];
+};
+
+const tiposInsumoErpImportadosCache: CachedGet<TiposInsumoErpImportadosResponse> = {};
+
+export async function obtenerTiposInsumoErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<TiposInsumoErpImportadosResponse> {
+  return obtenerConCache(tiposInsumoErpImportadosCache, '/erp/tipos-insumo-importados', token, opciones);
+}
+
 export type ServiciosErpImportadosResponse = {
   servicios: ErpServicio[];
 };
@@ -348,6 +364,16 @@ const serviciosErpImportadosCache: CachedGet<ServiciosErpImportadosResponse> = {
 
 export async function obtenerServiciosErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<ServiciosErpImportadosResponse> {
   return obtenerConCache(serviciosErpImportadosCache, '/erp/servicios-importados', token, opciones);
+}
+
+export type TiposServicioErpImportadosResponse = {
+  tiposServicio: ErpTipoServicio[];
+};
+
+const tiposServicioErpImportadosCache: CachedGet<TiposServicioErpImportadosResponse> = {};
+
+export async function obtenerTiposServicioErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<TiposServicioErpImportadosResponse> {
+  return obtenerConCache(tiposServicioErpImportadosCache, '/erp/tipos-servicio-importados', token, opciones);
 }
 
 export type PuertosErpImportadosResponse = {

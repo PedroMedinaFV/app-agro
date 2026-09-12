@@ -32,7 +32,9 @@ export type ConfiguracionErp = {
   pathCampanias: string;
   pathCultivos: string;
   pathInsumos: string;
+  pathTiposInsumo: string;
   pathServicios: string;
+  pathTiposServicio: string;
   pathUnidadesMedida: string;
   pathMonedas: string;
   pathPuertos: string;
@@ -93,7 +95,9 @@ export function obtenerConfiguracionErp(): ConfiguracionErp {
     pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
+    pathTiposInsumo: process.env.ERP_PATH_TIPOS_INSUMO || 'Padrones/TiposInsumo',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
+    pathTiposServicio: process.env.ERP_PATH_TIPOS_SERVICIO || 'Padrones/TiposServicio',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
     pathMonedas: process.env.ERP_PATH_MONEDAS || 'Contabilidad/Monedas',
     pathPuertos: process.env.ERP_PATH_PUERTOS || 'Padrones/Puertos',
@@ -153,7 +157,9 @@ function mapearRowAConfiguracion(row: IntegracionErpRow): ConfiguracionErp {
     pathCampanias: process.env.ERP_PATH_CAMPANIAS || 'Agricultura/Campanias',
     pathCultivos: process.env.ERP_PATH_CULTIVOS || 'Agricultura/Cultivos',
     pathInsumos: process.env.ERP_PATH_INSUMOS || 'Padrones/Insumos',
+    pathTiposInsumo: process.env.ERP_PATH_TIPOS_INSUMO || 'Padrones/TiposInsumo',
     pathServicios: process.env.ERP_PATH_SERVICIOS || 'Padrones/Servicios',
+    pathTiposServicio: process.env.ERP_PATH_TIPOS_SERVICIO || 'Padrones/TiposServicio',
     pathUnidadesMedida: process.env.ERP_PATH_UNIDADES_MEDIDA || 'Padrones/UnidadesMedida',
     pathMonedas: process.env.ERP_PATH_MONEDAS || 'Contabilidad/Monedas',
     pathPuertos: process.env.ERP_PATH_PUERTOS || 'Padrones/Puertos',

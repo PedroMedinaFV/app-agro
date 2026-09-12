@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ErpInsumo, ErpMoneda, ErpSnapshot, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
+import { ErpInsumo, ErpMoneda, ErpSnapshot, ErpTipoInsumo, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
-import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas } from '../services/api';
+import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas, obtenerTiposInsumoErpImportados } from '../services/api';
 import { formatearMoneda } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -54,6 +54,20 @@ function crearIdInsumoAppDesdeErp(insumo: ErpInsumo) {
   return `insumo-app-erp-${insumo.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
 }
 
+function unirTiposInsumo(principales: ErpTipoInsumo[], secundarios: ErpTipoInsumo[]) {
+  const mapa = new Map<number, ErpTipoInsumo>();
+
+  for (const tipo of secundarios) {
+    mapa.set(tipo.idTipoInsumo, tipo);
+  }
+
+  for (const tipo of principales) {
+    mapa.set(tipo.idTipoInsumo, tipo);
+  }
+
+  return [...mapa.values()];
+}
+
 export function InsumosAppScreen({
   sesion,
   planificacion,
@@ -66,6 +80,7 @@ export function InsumosAppScreen({
   const [insumoEnEdicion, setInsumoEnEdicion] = useState<InsumoApp | null>(null);
   const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
   const [insumosErp, setInsumosErp] = useState<ErpInsumo[]>([]);
+  const [tiposInsumoErp, setTiposInsumoErp] = useState<ErpTipoInsumo[]>(snapshot.tiposInsumo || []);
   const [monedasErp, setMonedasErp] = useState<ErpMoneda[]>(snapshot.monedas || []);
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
   const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoApp | null>(null);
@@ -89,6 +104,31 @@ export function InsumosAppScreen({
   const monedaPorDefecto = monedasDisponibles.find((moneda) => moneda.codigo.toUpperCase() === 'USD')?.codigo
     || monedasDisponibles[0]?.codigo
     || 'USD';
+  const tiposInsumoTodos = useMemo(() => (
+    unirTiposInsumo(snapshot.tiposInsumo || [], tiposInsumoErp)
+      .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
+  ), [snapshot.tiposInsumo, tiposInsumoErp]);
+  const tiposInsumoDisponibles = useMemo(() => (
+    tiposInsumoTodos.filter((tipo) => tipo.activo)
+  ), [tiposInsumoTodos]);
+  const tipoInsumoPorId = useMemo(() => new Map(tiposInsumoTodos.map((tipo) => [tipo.idTipoInsumo, tipo])), [tiposInsumoTodos]);
+
+  useEffect(() => {
+    if ((snapshot.tiposInsumo || []).length) {
+      setTiposInsumoErp(snapshot.tiposInsumo);
+    }
+
+    async function cargarTiposInsumoErp() {
+      try {
+        const respuesta = await obtenerTiposInsumoErpImportados(sesion.token);
+        setTiposInsumoErp(respuesta.tiposInsumo);
+      } catch {
+        setTiposInsumoErp([]);
+      }
+    }
+
+    cargarTiposInsumoErp();
+  }, [sesion.token, snapshot.tiposInsumo]);
 
   useEffect(() => {
     async function cargarInsumosErp() {
@@ -133,6 +173,7 @@ export function InsumosAppScreen({
       empresaErpId: 'global',
       nombre: '',
       codigoInterno: '',
+      idTipoInsumo: tiposInsumoDisponibles[0]?.idTipoInsumo,
       tipo: '',
       unidad: unidadesDisponibles.find((unidad) => unidad.codigo === 'Lts')?.codigo || unidadesDisponibles[0]?.codigo || 'Unid',
       precioUnitarioEstimado: 0,
@@ -184,7 +225,8 @@ export function InsumosAppScreen({
       empresaErpId: 'global',
       nombre,
       codigoInterno: normalizarCodigo(insumoEnEdicion.codigoInterno || nombre),
-      tipo: insumoEnEdicion.tipo ? limpiarTextoVisible(insumoEnEdicion.tipo) : undefined,
+      idTipoInsumo: insumoEnEdicion.idTipoInsumo,
+      tipo: insumoEnEdicion.idTipoInsumo ? tipoInsumoPorId.get(insumoEnEdicion.idTipoInsumo)?.descripcion : undefined,
       unidad: limpiarTextoVisible(insumoEnEdicion.unidad || 'Unid'),
       moneda: limpiarTextoVisible(insumoEnEdicion.moneda || monedaPorDefecto).toUpperCase(),
       precioUnitarioEstimado: insumoEnEdicion.precioUnitarioEstimado || 0,
@@ -227,7 +269,7 @@ export function InsumosAppScreen({
       nombre: insumo.nombre,
       detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : 'Provisorio',
       codigo: insumo.codigoInterno || '-',
-      tipo: insumo.tipo || '-',
+      tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || insumo.tipo || `Tipo ${insumo.idTipoInsumo}` : insumo.tipo || '-',
       unidad: insumo.unidad,
       precio: insumo.precioUnitarioEstimado !== undefined ? formatearMoneda(insumo.precioUnitarioEstimado, insumo.moneda || monedaPorDefecto) : 'Sin precio',
       origen: 'Agro App',
@@ -245,7 +287,7 @@ export function InsumosAppScreen({
         nombre: insumo.nombre,
         detalle: `${insumoPropio ? 'Con precio Agro App' : 'Disponible'} ERP`,
         codigo: insumo.codigo,
-        tipo: insumo.idTipoInsumo ? `Tipo ${insumo.idTipoInsumo}` : '-',
+        tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || `Tipo ${insumo.idTipoInsumo}` : '-',
         unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
         precio: precio !== undefined ? formatearMoneda(precio, moneda) : 'Sin precio',
         origen: 'ERP',
@@ -269,7 +311,8 @@ export function InsumosAppScreen({
       insumoErpId: insumoErp.erpId,
       nombre: limpiarTextoVisible(insumoErp.nombre),
       codigoInterno: normalizarCodigo(insumoErp.codigo || insumoErp.nombre),
-      tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : undefined,
+      idTipoInsumo: insumoErp.idTipoInsumo,
+      tipo: insumoErp.idTipoInsumo ? tipoInsumoPorId.get(insumoErp.idTipoInsumo)?.descripcion || `Tipo ${insumoErp.idTipoInsumo}` : undefined,
       unidad: unidad?.codigo || String(insumoErp.idUnidadMedida || 'Unid'),
       precioUnitarioEstimado: insumoErp.precioUnitario ?? 0,
       moneda,
@@ -321,7 +364,8 @@ export function InsumosAppScreen({
       insumoErpId: insumoErp.erpId,
       nombre: limpiarTextoVisible(insumoErp.nombre),
       codigoInterno: normalizarCodigo(insumoErp.codigo || insumoErp.nombre),
-      tipo: insumoErp.idTipoInsumo ? `Tipo ${insumoErp.idTipoInsumo}` : insumoPropioParaVincular.tipo,
+      idTipoInsumo: insumoErp.idTipoInsumo,
+      tipo: insumoErp.idTipoInsumo ? tipoInsumoPorId.get(insumoErp.idTipoInsumo)?.descripcion || `Tipo ${insumoErp.idTipoInsumo}` : insumoPropioParaVincular.tipo,
       unidad: unidad?.codigo || insumoPropioParaVincular.unidad,
       precioUnitarioEstimado: insumoErp.precioUnitario ?? insumoPropioParaVincular.precioUnitarioEstimado,
       moneda,
@@ -433,12 +477,22 @@ export function InsumosAppScreen({
 
               <label>
                 Tipo
-                <input
-                  value={insumoEnEdicion.tipo || ''}
+                <select
+                  value={insumoEnEdicion.idTipoInsumo || ''}
                   disabled={Boolean(insumoEnEdicion.insumoErpId)}
-                  placeholder="Ej. Herbicida"
-                  onChange={(event) => actualizarBorrador({ tipo: event.target.value })}
-                />
+                  onChange={(event) => {
+                    const idTipoInsumo = event.target.value ? Number(event.target.value) : undefined;
+                    actualizarBorrador({
+                      idTipoInsumo,
+                      tipo: idTipoInsumo ? tipoInsumoPorId.get(idTipoInsumo)?.descripcion : undefined,
+                    });
+                  }}
+                >
+                  <option value="">Sin tipo</option>
+                  {tiposInsumoDisponibles.map((tipo) => (
+                    <option key={tipo.erpId} value={tipo.idTipoInsumo}>{tipo.codigo} - {tipo.descripcion}</option>
+                  ))}
+                </select>
               </label>
 
               <label>

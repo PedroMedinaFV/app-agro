@@ -114,6 +114,14 @@ function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
     seleccionados.add('unidadesMedida');
   }
 
+  if (seleccionados.has('insumos')) {
+    seleccionados.add('tiposInsumo');
+  }
+
+  if (seleccionados.has('servicios')) {
+    seleccionados.add('tiposServicio');
+  }
+
   return seleccionados;
 }
 
@@ -128,7 +136,9 @@ function crearResultadoVacio(sincronizadoEn = new Date().toISOString()) {
     campanias: 0,
     cultivos: 0,
     insumos: 0,
+    tiposInsumo: 0,
     servicios: 0,
+    tiposServicio: 0,
     unidadesMedida: 0,
     monedas: 0,
     puertos: 0,
@@ -232,7 +242,9 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
   if (padrones.has('campanias')) borrados.push(prisma.erpCampania.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('cultivos')) borrados.push(prisma.erpCultivo.deleteMany({ where: { empresaErpId: { in: empresaErpIds } } }));
   if (padrones.has('insumos')) borrados.push(prisma.erpInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('tiposInsumo')) borrados.push(prisma.erpTipoInsumo.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('servicios')) borrados.push(prisma.erpServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
+  if (padrones.has('tiposServicio')) borrados.push(prisma.erpTipoServicio.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('unidadesMedida')) borrados.push(prisma.erpUnidadMedida.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('monedas')) borrados.push(prisma.erpMoneda.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
   if (padrones.has('puertos')) borrados.push(prisma.erpPuerto.deleteMany({ where: { OR: [{ empresaErpId: 'global' }, { empresaErpId: { in: empresaErpIds } }] } }));
@@ -405,6 +417,24 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     }),
   );
 
+  if (padrones.has('tiposInsumo')) await crearEnBloques('tiposInsumo', snapshot.tiposInsumo, (bloque) =>
+    prisma.erpTipoInsumo.createMany({
+      data: bloque.map((tipo) => ({
+        empresaErpId: tipo.empresaErpId,
+        erpId: tipo.erpId,
+        idTipoInsumo: tipo.idTipoInsumo,
+        codigo: tipo.codigo,
+        codigoCot: tipo.codigoCot ?? null,
+        codigoSima: tipo.codigoSima ?? null,
+        descripcion: tipo.descripcion,
+        activo: tipo.activo,
+        usaPadronEstandar: tipo.usaPadronEstandar,
+        idCuentaContable: tipo.idCuentaContable ?? null,
+        actualizadoEn: new Date(tipo.actualizadoEn),
+      })),
+    }),
+  );
+
   if (padrones.has('servicios')) await crearEnBloques('servicios', snapshot.servicios, (bloque) =>
     prisma.erpServicio.createMany({
       data: bloque.map((servicio) => ({
@@ -423,6 +453,25 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
         activo: servicio.activo,
         imputaDosis: servicio.imputaDosis,
         actualizadoEn: new Date(servicio.actualizadoEn),
+      })),
+    }),
+  );
+
+  if (padrones.has('tiposServicio')) await crearEnBloques('tiposServicio', snapshot.tiposServicio, (bloque) =>
+    prisma.erpTipoServicio.createMany({
+      data: bloque.map((tipo) => ({
+        empresaErpId: tipo.empresaErpId,
+        erpId: tipo.erpId,
+        idTipoServicio: tipo.idTipoServicio,
+        codigo: tipo.codigo,
+        descripcion: tipo.descripcion,
+        exigeInsumo: tipo.exigeInsumo,
+        disponibleOt: tipo.disponibleOt,
+        disponibleCompras: tipo.disponibleCompras,
+        disponibleVentas: tipo.disponibleVentas,
+        categoria: tipo.categoria ?? null,
+        idCuentaContable: tipo.idCuentaContable ?? null,
+        actualizadoEn: new Date(tipo.actualizadoEn),
       })),
     }),
   );
@@ -501,7 +550,9 @@ export async function sincronizarSnapshotErp(clienteId?: string, usuario?: Usuar
     campanias: padrones.has('campanias') ? snapshot.campanias.length : 0,
     cultivos: padrones.has('cultivos') ? snapshot.cultivos.length : 0,
     insumos: padrones.has('insumos') ? snapshot.insumos.length : 0,
+    tiposInsumo: padrones.has('tiposInsumo') ? snapshot.tiposInsumo.length : 0,
     servicios: padrones.has('servicios') ? snapshot.servicios.length : 0,
+    tiposServicio: padrones.has('tiposServicio') ? snapshot.tiposServicio.length : 0,
     unidadesMedida: padrones.has('unidadesMedida') ? snapshot.unidadesMedida.length : 0,
     monedas: padrones.has('monedas') ? snapshot.monedas.length : 0,
     puertos: padrones.has('puertos') ? snapshot.puertos.length : 0,

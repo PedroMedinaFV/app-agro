@@ -161,6 +161,18 @@ export type ErpPadronInsumo = {
   fechaUltimaActualizacion: string | null;
 };
 
+export type ErpPadronTipoInsumo = {
+  idTipoInsumo: number;
+  codigo: string;
+  codigoCot: string | null;
+  codigoSima: number | null;
+  descripcion: string;
+  activo: boolean;
+  usaPadronEstandar: boolean;
+  idCuentaContable: number | null;
+  fechaUltimaActualizacion: string | null;
+};
+
 export type ErpPadronServicio = {
   idServicio: number;
   idTipoServicio: number | null;
@@ -174,6 +186,19 @@ export type ErpPadronServicio = {
   importePersonal: number | null;
   activo: boolean;
   imputaDosis: boolean;
+  fechaUltimaActualizacion: string | null;
+};
+
+export type ErpPadronTipoServicio = {
+  idTipoServicio: number;
+  codigo: string;
+  descripcion: string;
+  exigeInsumo: boolean;
+  disponibleOt: boolean;
+  disponibleCompras: boolean;
+  disponibleVentas: boolean;
+  categoria: string | null;
+  idCuentaContable: number | null;
   fechaUltimaActualizacion: string | null;
 };
 
@@ -324,6 +349,20 @@ export type ErpInsumo = {
   actualizadoEn: string;
 };
 
+export type ErpTipoInsumo = {
+  empresaErpId: string;
+  erpId: string;
+  idTipoInsumo: number;
+  codigo: string;
+  codigoCot?: string;
+  codigoSima?: number;
+  descripcion: string;
+  activo: boolean;
+  usaPadronEstandar: boolean;
+  idCuentaContable?: number;
+  actualizadoEn: string;
+};
+
 export type ErpServicio = {
   empresaErpId: string;
   erpId: string;
@@ -339,6 +378,21 @@ export type ErpServicio = {
   importePersonal?: number;
   activo: boolean;
   imputaDosis: boolean;
+  actualizadoEn: string;
+};
+
+export type ErpTipoServicio = {
+  empresaErpId: string;
+  erpId: string;
+  idTipoServicio: number;
+  codigo: string;
+  descripcion: string;
+  exigeInsumo: boolean;
+  disponibleOt: boolean;
+  disponibleCompras: boolean;
+  disponibleVentas: boolean;
+  categoria?: string;
+  idCuentaContable?: number;
   actualizadoEn: string;
 };
 
@@ -384,7 +438,9 @@ export type ErpSnapshot = {
   campanias: ErpCampania[];
   cultivos: ErpCultivo[];
   insumos: ErpInsumo[];
+  tiposInsumo: ErpTipoInsumo[];
   servicios: ErpServicio[];
+  tiposServicio: ErpTipoServicio[];
   unidadesMedida: ErpUnidadMedida[];
   monedas: ErpMoneda[];
   puertos: ErpPuerto[];
@@ -401,7 +457,9 @@ export type PadronErpSincronizable =
   | 'campanias'
   | 'cultivos'
   | 'insumos'
+  | 'tiposInsumo'
   | 'servicios'
+  | 'tiposServicio'
   | 'unidadesMedida'
   | 'monedas'
   | 'puertos';
@@ -416,7 +474,9 @@ export const padronesErpSincronizables: PadronErpSincronizable[] = [
   'campanias',
   'cultivos',
   'insumos',
+  'tiposInsumo',
   'servicios',
+  'tiposServicio',
   'unidadesMedida',
   'monedas',
   'puertos',

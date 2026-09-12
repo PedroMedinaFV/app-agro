@@ -41,7 +41,9 @@ function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] 
     campanias: snapshot.campanias,
     cultivos: snapshot.cultivos.filter((cultivo) => lotesPermitidosIds.has(cultivo.loteErpId)),
     insumos: snapshot.insumos,
+    tiposInsumo: snapshot.tiposInsumo,
     servicios: snapshot.servicios,
+    tiposServicio: snapshot.tiposServicio,
     unidadesMedida: snapshot.unidadesMedida,
     monedas: snapshot.monedas,
     puertos: snapshot.puertos,
@@ -310,6 +312,40 @@ router.get('/insumos-importados', async (req, res, next) => {
   }
 });
 
+router.get('/tipos-insumo-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const tiposInsumo = await prisma.erpTipoInsumo.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ descripcion: 'asc' }],
+    });
+
+    res.json({
+      tiposInsumo: tiposInsumo.map((tipo) => ({
+        empresaErpId: tipo.empresaErpId,
+        erpId: tipo.erpId,
+        idTipoInsumo: tipo.idTipoInsumo,
+        codigo: tipo.codigo,
+        codigoCot: tipo.codigoCot ?? undefined,
+        codigoSima: tipo.codigoSima ?? undefined,
+        descripcion: tipo.descripcion,
+        activo: tipo.activo,
+        usaPadronEstandar: tipo.usaPadronEstandar,
+        idCuentaContable: tipo.idCuentaContable ?? undefined,
+        actualizadoEn: tipo.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/servicios-importados', async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;
@@ -341,6 +377,41 @@ router.get('/servicios-importados', async (req, res, next) => {
         activo: servicio.activo,
         imputaDosis: servicio.imputaDosis,
         actualizadoEn: servicio.actualizadoEn.toISOString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/tipos-servicio-importados', async (req, res, next) => {
+  try {
+    const user = (req as RequestConUsuario).user;
+    const clienteId = user?.clienteId;
+
+    if (!clienteId) {
+      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
+    }
+
+    const tiposServicio = await prisma.erpTipoServicio.findMany({
+      where: { empresaErpId: 'global' },
+      orderBy: [{ descripcion: 'asc' }],
+    });
+
+    res.json({
+      tiposServicio: tiposServicio.map((tipo) => ({
+        empresaErpId: tipo.empresaErpId,
+        erpId: tipo.erpId,
+        idTipoServicio: tipo.idTipoServicio,
+        codigo: tipo.codigo,
+        descripcion: tipo.descripcion,
+        exigeInsumo: tipo.exigeInsumo,
+        disponibleOt: tipo.disponibleOt,
+        disponibleCompras: tipo.disponibleCompras,
+        disponibleVentas: tipo.disponibleVentas,
+        categoria: tipo.categoria ?? undefined,
+        idCuentaContable: tipo.idCuentaContable ?? undefined,
+        actualizadoEn: tipo.actualizadoEn.toISOString(),
       })),
     });
   } catch (error) {

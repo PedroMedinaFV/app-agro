@@ -29,7 +29,9 @@ async function main() {
   const campanias = await prisma.erpCampania.count();
   const cultivos = await prisma.erpCultivo.count();
   const insumos = await prisma.erpInsumo.count();
+  const tiposInsumo = await prisma.erpTipoInsumo.count();
   const servicios = await prisma.erpServicio.count();
+  const tiposServicio = await prisma.erpTipoServicio.count();
   const unidadesMedida = await prisma.erpUnidadMedida.count();
   const monedas = await prisma.erpMoneda.count();
   const puertos = await prisma.erpPuerto.count();
@@ -54,7 +56,9 @@ async function main() {
   const campaniasAgro = await prisma.erpCampania.count({ where: { empresaErpId: 'global' } });
   const cultivosAgro = await prisma.erpCultivo.count({ where: { empresaErpId: { in: empresaErpIds } } });
   const insumosAgro = await prisma.erpInsumo.count({ where: { empresaErpId: 'global' } });
+  const tiposInsumoAgro = await prisma.erpTipoInsumo.count({ where: { empresaErpId: 'global' } });
   const serviciosAgro = await prisma.erpServicio.count({ where: { empresaErpId: 'global' } });
+  const tiposServicioAgro = await prisma.erpTipoServicio.count({ where: { empresaErpId: 'global' } });
   const unidadesMedidaAgro = await prisma.erpUnidadMedida.count({ where: { empresaErpId: 'global' } });
   const monedasAgro = await prisma.erpMoneda.count({ where: { empresaErpId: 'global' } });
   const puertosAgro = await prisma.erpPuerto.count({ where: { empresaErpId: 'global' } });
@@ -74,7 +78,9 @@ async function main() {
         campanias,
         cultivos,
         insumos,
+        tiposInsumo,
         servicios,
+        tiposServicio,
         unidadesMedida,
         monedas,
         puertos,
@@ -87,7 +93,9 @@ async function main() {
           campanias: campaniasAgro,
           cultivos: cultivosAgro,
           insumos: insumosAgro,
+          tiposInsumo: tiposInsumoAgro,
           servicios: serviciosAgro,
+          tiposServicio: tiposServicioAgro,
           unidadesMedida: unidadesMedidaAgro,
           monedas: monedasAgro,
           puertos: puertosAgro,

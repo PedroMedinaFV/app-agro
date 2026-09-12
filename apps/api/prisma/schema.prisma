@@ -351,6 +351,28 @@ model ErpInsumo {
   @@index([activo])
 }
 
+model ErpTipoInsumo {
+  id                 String   @id @default(uuid())
+  empresaErpId       String
+  erpId              String   @unique
+  idTipoInsumo       Int
+  codigo             String
+  codigoCot          String?
+  codigoSima         Int?
+  descripcion        String
+  activo             Boolean
+  usaPadronEstandar  Boolean
+  idCuentaContable   Int?
+  actualizadoEn      DateTime
+  importadoEn        DateTime @default(now())
+
+  @@index([empresaErpId])
+  @@index([idTipoInsumo])
+  @@index([codigo])
+  @@index([descripcion])
+  @@index([activo])
+}
+
 model ErpServicio {
   id                    String    @id @default(uuid())
   empresaErpId          String
@@ -377,6 +399,28 @@ model ErpServicio {
   @@index([idTipoServicio])
   @@index([idUnidadMedida])
   @@index([activo])
+}
+
+model ErpTipoServicio {
+  id                  String   @id @default(uuid())
+  empresaErpId        String
+  erpId               String   @unique
+  idTipoServicio      Int
+  codigo              String
+  descripcion         String
+  exigeInsumo         Boolean
+  disponibleOt        Boolean
+  disponibleCompras   Boolean
+  disponibleVentas    Boolean
+  categoria           String?
+  idCuentaContable    Int?
+  actualizadoEn       DateTime
+  importadoEn         DateTime @default(now())
+
+  @@index([empresaErpId])
+  @@index([idTipoServicio])
+  @@index([codigo])
+  @@index([descripcion])
 }
 
 model ErpMoneda {
@@ -674,6 +718,7 @@ model InsumoApp {
   insumoErpId           String?
   nombre                String
   codigoInterno         String?
+  idTipoInsumo          Int?
   tipo                  String?
   unidad                String
   precioUnitarioEstimado Float?
@@ -688,6 +733,7 @@ model InsumoApp {
   @@index([clienteId])
   @@index([empresaErpId])
   @@index([insumoErpId])
+  @@index([idTipoInsumo])
   @@index([estadoVinculacion])
 }
 
