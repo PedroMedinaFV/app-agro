@@ -573,26 +573,26 @@ export function PlanificacionEditorScreen({
           <span>{linea.destinoVentaManual ? 'Manual' : 'Sugerido'}</span>
         </div>
 
-        <div className="planning-cell-medium">
+        <div className="planning-cell-medium planning-cell-number">
           <span className="cell-label">Hectareas</span>
           <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} />
           <span>max. {lote?.superficieTotal ?? '-'} ha</span>
         </div>
 
-        <div className="planning-cell-medium">
+        <div className="planning-cell-medium planning-cell-number">
           <span className="cell-label">Rinde</span>
           <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => actualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditarPlanificacion} />
           <span>tn/ha - prod. {produccionEstimada.toFixed(2)} tn</span>
         </div>
 
-        <div className="planning-cell-medium">
-          <span className="cell-label">Precio venta</span>
+        <div className="planning-cell-medium planning-cell-number">
+          <span className="cell-label">P. venta</span>
           <DecimalInput value={linea.precioVentaEstimado} onValueChange={(value) => actualizarLinea(linea.id, { precioVentaEstimado: value, precioVentaManual: true })} disabled={!puedeEditarPlanificacion} />
           <span>{linea.precioVentaManual ? 'Manual' : 'Referencia'}</span>
         </div>
 
-        <div className="planning-cell-medium">
-          <span className="cell-label">Gastos comerciales</span>
+        <div className="planning-cell-medium planning-cell-number">
+          <span className="cell-label">Gtos com</span>
           <DecimalInput value={linea.gastosComercialesEstimados} onValueChange={(value) => actualizarLinea(linea.id, { gastosComercialesEstimados: value, gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} />
           <span>{gastoReferencia ? `${gastosResumen} - ${gastoReferencia.items.length} items` : 'Manual'}</span>
         </div>

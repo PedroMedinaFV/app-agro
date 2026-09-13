@@ -1783,6 +1783,16 @@ nav a.active .nav-icon,
   grid-column: span 2;
 }
 
+.planning-row > .planning-cell-number {
+  grid-column: span 1;
+  max-width: 150px;
+}
+
+.planning-row > .planning-cell-number input {
+  width: 100%;
+  max-width: 150px;
+}
+
 .planning-row > .planning-cell-actions {
   grid-column: span 1;
 }
@@ -2404,9 +2414,15 @@ nav a.active .nav-icon,
   .planning-row > :nth-child(11),
   .planning-row > .planning-cell-wide,
   .planning-row > .planning-cell-medium,
+  .planning-row > .planning-cell-number,
   .planning-row > .planning-cell-summary,
   .planning-row > .planning-cell-actions {
     grid-column: auto;
+  }
+
+  .planning-row > .planning-cell-number,
+  .planning-row > .planning-cell-number input {
+    max-width: none;
   }
 
   .reference-row,
