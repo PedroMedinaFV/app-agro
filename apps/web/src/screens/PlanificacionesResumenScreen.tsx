@@ -295,7 +295,7 @@ export function PlanificacionesResumenScreen({
           <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="nuevo-escenario-title">
             <div className="modal-header">
               <div>
-                <p className="eyebrow">Planificacion</p>
+                <p className="eyebrow">Planificación</p>
                 <h2 id="nuevo-escenario-title">Nuevo escenario</h2>
               </div>
               <Button variant="ghost" onClick={() => setModalEscenarioAbierto(false)}>Cerrar</Button>
@@ -307,7 +307,7 @@ export function PlanificacionesResumenScreen({
                 <input value={nuevoEscenario.nombre} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, nombre: event.target.value }))} placeholder="Ej. Escenario objetivo 25/26" />
               </label>
               <label>
-                Campania
+                Campaña
                 <select value={nuevoEscenario.campaniaErpId} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, campaniaErpId: event.target.value }))}>
                   {campaniasDisponibles.map((campania) => (
                     <option key={campania.erpId} value={campania.erpId}>
@@ -317,13 +317,13 @@ export function PlanificacionesResumenScreen({
                 </select>
               </label>
               <label className="form-span-2">
-                Descripcion
+                Descripción
                 <input value={nuevoEscenario.descripcion} onChange={(event) => setNuevoEscenario((actual) => ({ ...actual, descripcion: event.target.value }))} placeholder="Objetivo o supuesto principal del escenario" />
               </label>
             </div>
 
             {campaniaTieneOriginal && (
-              <p className="status-error">Esta campania ya tiene un escenario original cerrado. No se pueden crear nuevas simulaciones.</p>
+              <p className="status-error">Esta campaña ya tiene un escenario original cerrado. No se pueden crear nuevas simulaciones.</p>
             )}
 
             <div className="modal-actions">
@@ -345,14 +345,14 @@ export function PlanificacionesResumenScreen({
             <div className="modal-header">
               <div>
                 <p className="eyebrow">Cierre de escenario</p>
-                <h2 id="cerrar-planificacion-title">Cerrar planificacion</h2>
+                <h2 id="cerrar-planificacion-title">Cerrar planificación</h2>
               </div>
               <Button variant="ghost" onClick={() => setPlanificacionParaCerrarId(null)}>Cerrar</Button>
             </div>
 
             <p>
               Vas a cerrar <strong>{planificacionParaCerrar.nombre}</strong>
-              {' '}de la campania <strong>{campaniasPorId.get(planificacionParaCerrar.campaniaErpId)?.codigo || planificacionParaCerrar.campaniaErpId}</strong>.
+              {' '}de la campaña <strong>{campaniasPorId.get(planificacionParaCerrar.campaniaErpId)?.codigo || planificacionParaCerrar.campaniaErpId}</strong>.
             </p>
             <p className="status-warning">
               Este escenario quedara como original y se deshabilitaran los otros escenarios de la misma campania.

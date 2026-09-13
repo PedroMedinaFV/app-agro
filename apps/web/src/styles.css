@@ -1734,80 +1734,85 @@ nav a.active .nav-icon,
 
 .planning-tree-lines {
   display: grid;
-  gap: 10px;
+  gap: 14px;
   padding: 0 12px 12px;
 }
 
 .planning-row {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 12px;
-  padding: 14px;
-  border-top: 1px solid #edf1ee;
+  gap: 14px;
+  padding: 16px 16px 16px 20px;
+  border: 1px solid #dfe8e2;
   border-radius: 8px;
-  align-items: start;
   background: #ffffff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
 }
 
-.planning-row > div,
-.planning-row > span {
+.planning-row::before {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: #2d6a4f;
+  content: '';
+}
+
+.planning-row-main,
+.planning-row-inputs,
+.planning-row-summary {
+  display: grid;
+  gap: 12px;
   min-width: 0;
 }
 
-.planning-row > :nth-child(1),
-.planning-row > :nth-child(2),
-.planning-row > :nth-child(3),
-.planning-row > :nth-child(4) {
-  grid-column: span 3;
+.planning-row-main {
+  grid-template-columns: minmax(180px, 1.05fr) minmax(180px, 1fr) minmax(220px, 1fr) minmax(180px, 1fr);
+  align-items: start;
 }
 
-.planning-row > :nth-child(5),
-.planning-row > :nth-child(6),
-.planning-row > :nth-child(7),
-.planning-row > :nth-child(8),
-.planning-row > :nth-child(9),
-.planning-row > :nth-child(10) {
-  grid-column: span 2;
+.planning-row-inputs {
+  grid-template-columns: repeat(4, minmax(112px, 150px));
+  align-items: start;
 }
 
-.planning-row > :nth-child(11) {
-  grid-column: span 2;
+.planning-row-summary {
+  grid-template-columns: minmax(112px, 150px) minmax(220px, 1fr) auto;
+  align-items: start;
 }
 
-.planning-row > .planning-cell-wide {
-  grid-column: span 3;
+.planning-row-main > *,
+.planning-row-inputs > *,
+.planning-row-summary > * {
+  min-width: 0;
 }
 
-.planning-row > .planning-cell-medium,
-.planning-row > .planning-cell-summary {
-  grid-column: span 2;
+.planning-row .planning-cell-wide,
+.planning-row .planning-cell-number,
+.planning-row .planning-cell-summary {
+  display: grid;
+  gap: 4px;
 }
 
-.planning-row > .planning-cell-number {
-  grid-column: span 1;
+.planning-row .planning-cell-number {
   max-width: 150px;
 }
 
-.planning-row > .planning-cell-number input {
+.planning-row .planning-cell-number input {
   width: 100%;
   max-width: 150px;
 }
 
-.planning-row > .planning-cell-actions {
-  grid-column: span 1;
-}
-
-.planning-row.duplicated {
-  margin: 0 -10px;
-  padding-right: 10px;
-  padding-left: 10px;
-  border-radius: 8px;
+.planning-row.duplicated,
+.planning-row.planning-row-error {
   background: #fff8f8;
 }
 
-.planning-row div {
-  display: grid;
-  gap: 4px;
+.planning-row.duplicated::before,
+.planning-row.planning-row-error::before {
+  background: #b54747;
 }
 
 .planning-row .planning-cell-actions {
@@ -1815,7 +1820,8 @@ nav a.active .nav-icon,
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
-  align-self: center;
+  align-self: end;
+  min-height: 42px;
 }
 
 .cell-label {
@@ -2388,7 +2394,9 @@ nav a.active .nav-icon,
   .planning-filters,
   .planning-bulk-actions,
   .planning-editor-header,
-  .planning-row {
+  .planning-row-main,
+  .planning-row-inputs,
+  .planning-row-summary {
     grid-template-columns: 1fr;
   }
 
@@ -2400,28 +2408,8 @@ nav a.active .nav-icon,
     display: none;
   }
 
-  .planning-row > *,
-  .planning-row > :nth-child(1),
-  .planning-row > :nth-child(2),
-  .planning-row > :nth-child(3),
-  .planning-row > :nth-child(4),
-  .planning-row > :nth-child(5),
-  .planning-row > :nth-child(6),
-  .planning-row > :nth-child(7),
-  .planning-row > :nth-child(8),
-  .planning-row > :nth-child(9),
-  .planning-row > :nth-child(10),
-  .planning-row > :nth-child(11),
-  .planning-row > .planning-cell-wide,
-  .planning-row > .planning-cell-medium,
-  .planning-row > .planning-cell-number,
-  .planning-row > .planning-cell-summary,
-  .planning-row > .planning-cell-actions {
-    grid-column: auto;
-  }
-
-  .planning-row > .planning-cell-number,
-  .planning-row > .planning-cell-number input {
+  .planning-row .planning-cell-number,
+  .planning-row .planning-cell-number input {
     max-width: none;
   }
 

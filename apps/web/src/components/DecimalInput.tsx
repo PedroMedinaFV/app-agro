@@ -10,10 +10,17 @@ type DecimalInputProps = {
   placeholder?: string;
   title?: string;
   ariaLabel?: string;
+  decimals?: number;
 };
 
-function textoDesdeNumero(value: number) {
-  return Number.isFinite(value) ? String(value) : '';
+function redondearDecimal(value: number, decimals: number) {
+  const factor = 10 ** decimals;
+
+  return Math.round(value * factor) / factor;
+}
+
+function textoDesdeNumero(value: number, decimals: number) {
+  return Number.isFinite(value) ? redondearDecimal(value, decimals).toFixed(decimals) : '';
 }
 
 function numeroDesdeTexto(value: string) {
@@ -27,16 +34,16 @@ function numeroDesdeTexto(value: string) {
  * Input decimal controlado para tablas densas. Usa texto para permitir punto o
  * coma decimal del teclado numerico sin que el navegador bloquee la entrada.
  */
-export function DecimalInput({ value, onValueChange, disabled, min = 0, max, step = '0.01', placeholder, title, ariaLabel }: DecimalInputProps) {
-  const [texto, setTexto] = useState(textoDesdeNumero(value));
+export function DecimalInput({ value, onValueChange, disabled, min = 0, max, step = '0.01', placeholder, title, ariaLabel, decimals = 2 }: DecimalInputProps) {
+  const [texto, setTexto] = useState(textoDesdeNumero(value, decimals));
 
   useEffect(() => {
-    const siguiente = textoDesdeNumero(value);
+    const siguiente = textoDesdeNumero(value, decimals);
 
     if (numeroDesdeTexto(texto) !== value) {
       setTexto(siguiente);
     }
-  }, [value, texto]);
+  }, [value, texto, decimals]);
 
   function actualizarTexto(siguiente: string) {
     if (!/^\d*(?:[.,]\d*)?$/.test(siguiente)) {
@@ -54,7 +61,10 @@ export function DecimalInput({ value, onValueChange, disabled, min = 0, max, ste
   }
 
   function normalizarAlSalir() {
-    setTexto(textoDesdeNumero(numeroDesdeTexto(texto)));
+    const valorRedondeado = redondearDecimal(numeroDesdeTexto(texto), decimals);
+
+    setTexto(textoDesdeNumero(valorRedondeado, decimals));
+    onValueChange(valorRedondeado);
   }
 
   return (

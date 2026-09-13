@@ -50,6 +50,6 @@ export type PlanificacionBaseProps = {
   actualizarLinea: (lineaId: string, updates: Partial<PlanificacionAgricolaLinea>) => void;
   eliminarLineaPlanificacion: (lineaId: string) => void;
   obtenerProtocolosCompatibles: (linea: PlanificacionAgricolaLinea) => ProtocoloProductivoResumen[];
-  formatearUsd: (valor: number) => string;
+  formatearUsd: (valor: number, decimales?: number) => string;
   leerNumero: (valor: string) => number;
 };

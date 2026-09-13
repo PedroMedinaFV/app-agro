@@ -67,20 +67,6 @@ function obtenerSuperficieInicialLote(lote: LoteApp) {
   return superficieTotal;
 }
 
-function limitarHectareasPorLote(hectareas: number, lote?: LoteApp) {
-  if (!Number.isFinite(hectareas)) {
-    return 0;
-  }
-
-  const hectareasNoNegativas = Math.max(0, hectareas);
-
-  if (!lote || !Number.isFinite(lote.superficieTotal) || lote.superficieTotal <= 0) {
-    return hectareasNoNegativas;
-  }
-
-  return Math.min(hectareasNoNegativas, lote.superficieTotal);
-}
-
 export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente = true) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionVacia);
   const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion sin cargar');
@@ -274,8 +260,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   }
 
   function buscarPrecioSugerido(actividadAppId: string, destinoVenta: string) {
-    return planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId && item.destinoVenta === destinoVenta)
-      || planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId);
+    if (!destinoVenta) {
+      return undefined;
+    }
+
+    return planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId && item.destinoVenta === destinoVenta);
   }
 
   function buscarGastosSugeridos(
@@ -289,7 +278,8 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         item.activo
         && item.campaniaErpId === campaniaErpId
         && item.actividadAppId === linea.actividadAppId
-        && (!item.destinoVenta || item.destinoVenta === linea.destinoVenta)
+        && Boolean(linea.destinoVenta)
+        && item.destinoVenta === linea.destinoVenta
         && (!item.zonaAppId || item.zonaAppId === campo?.zonaAppId)
         && (!item.zonaErpId || item.zonaErpId === campo?.zonaErpId)
       ))
@@ -535,11 +525,19 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         }
 
         const lineaActualizada = { ...linea, ...cambios };
-        const lote = lotesAppPorId.get(lineaActualizada.loteAppId);
+        const debeRecalcularGastos = Boolean(
+          lineaActualizada.gastosComercialesReferenciaId
+          && (
+            Object.prototype.hasOwnProperty.call(cambios, 'hectareasPlanificadas')
+            || Object.prototype.hasOwnProperty.call(cambios, 'rindeEstimado')
+          ),
+        );
 
         return recalcularLinea({
           ...lineaActualizada,
-          hectareasPlanificadas: limitarHectareasPorLote(lineaActualizada.hectareasPlanificadas, lote),
+          gastosComercialesEstimados: debeRecalcularGastos
+            ? calcularGastosComerciales(lineaActualizada, lineaActualizada.gastosComercialesReferenciaId)
+            : lineaActualizada.gastosComercialesEstimados,
         });
       }),
     }));
@@ -569,10 +567,10 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       destinoVenta,
       destinoVentaManual: Boolean(destinoForzado && destinoForzado !== destino?.destinoVenta),
       precioReferenciaId: precio?.id,
-      precioVentaEstimado: precio?.valor || linea.precioVentaEstimado,
-      precioVentaManual: !precio,
+      precioVentaEstimado: precio?.valor || 0,
+      precioVentaManual: false,
       gastosComercialesReferenciaId: gastos?.id,
-      gastosComercialesEstimados: calcularGastosComerciales({ ...linea, destinoVenta, precioVentaEstimado: precio?.valor || linea.precioVentaEstimado }, gastos?.id),
+      gastosComercialesEstimados: gastos ? calcularGastosComerciales({ ...linea, destinoVenta, precioVentaEstimado: precio?.valor || 0 }, gastos.id) : 0,
     };
   }
 
@@ -705,6 +703,21 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return;
     }
 
+    if (!protocoloId) {
+      actualizarLinea(lineaId, {
+        protocoloId: undefined,
+        precioReferenciaId: undefined,
+        precioVentaEstimado: 0,
+        precioVentaManual: false,
+        gastosComercialesReferenciaId: undefined,
+        gastosComercialesEstimados: 0,
+        costoProduccionEstimado: 0,
+        margenBrutoEstimado: 0,
+        margenBrutoActualizado: 0,
+      });
+      return;
+    }
+
     const actividad = obtenerActividadDesdeProtocolo(protocoloId);
     const base = {
       ...linea,
@@ -715,7 +728,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
     actualizarLinea(lineaId, {
       ...base,
-      ...aplicarSugerenciasComerciales(base),
+      ...aplicarSugerenciasComerciales(base, base.destinoVenta || undefined),
     });
   }
 
@@ -723,6 +736,20 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     const linea = lineasPlanificacion.find((item) => item.id === lineaId);
 
     if (!linea) {
+      return;
+    }
+
+    if (!linea.protocoloId) {
+      actualizarLinea(lineaId, {
+        destinoReferenciaId: undefined,
+        destinoVenta,
+        destinoVentaManual: true,
+        precioReferenciaId: undefined,
+        precioVentaEstimado: 0,
+        precioVentaManual: false,
+        gastosComercialesReferenciaId: undefined,
+        gastosComercialesEstimados: 0,
+      });
       return;
     }
 
