@@ -103,7 +103,41 @@ function recalcularLinea(linea: PlanificacionAgricolaLinea): PlanificacionAgrico
   };
 }
 
-function validarLineas(planificacion: PlanificacionAgricola, opciones: { permitirHectareasCero: boolean }) {
+type LoteSuperficieValidacion = {
+  id: string;
+  nombre: string;
+  superficieTotal: number;
+};
+
+async function obtenerLotesSuperficieValidacion(
+  planificacion: PlanificacionAgricola,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+) {
+  const loteIds = Array.from(new Set(planificacion.lineas.map((linea) => linea.loteAppId).filter(Boolean)));
+
+  if (loteIds.length === 0) {
+    return new Map<string, LoteSuperficieValidacion>();
+  }
+
+  const lotes = await client.loteApp.findMany({
+    where: {
+      id: { in: loteIds },
+      clienteId: planificacion.clienteId,
+    },
+    select: {
+      id: true,
+      nombre: true,
+      superficieTotal: true,
+    },
+  });
+
+  return new Map(lotes.map((lote) => [lote.id, lote]));
+}
+
+function validarLineas(
+  planificacion: PlanificacionAgricola,
+  opciones: { permitirHectareasCero: boolean; lotesPorId: Map<string, LoteSuperficieValidacion> },
+) {
   const claves = new Set<string>();
 
   for (const linea of planificacion.lineas) {
@@ -113,6 +147,15 @@ function validarLineas(planificacion: PlanificacionAgricola, opciones: { permiti
 
     if (!Number.isFinite(linea.hectareasPlanificadas) || linea.hectareasPlanificadas < 0) {
       throw crearErrorValidacion('Las hectareas planificadas deben ser mayores o iguales a cero.');
+    }
+
+    const lote = opciones.lotesPorId.get(linea.loteAppId);
+    if (!lote) {
+      throw crearErrorValidacion('Cada linea debe referenciar un lote valido del cliente.');
+    }
+
+    if (Number.isFinite(lote.superficieTotal) && lote.superficieTotal >= 0 && linea.hectareasPlanificadas > lote.superficieTotal) {
+      throw crearErrorValidacion(`Las hectareas planificadas del lote ${lote.nombre} no pueden superar su superficie total (${lote.superficieTotal} ha).`);
     }
 
     if (!opciones.permitirHectareasCero && linea.hectareasPlanificadas === 0) {
@@ -147,7 +190,7 @@ function validarLineas(planificacion: PlanificacionAgricola, opciones: { permiti
   }
 }
 
-function validarPlanificacion(planificacion: PlanificacionAgricola) {
+async function validarPlanificacion(planificacion: PlanificacionAgricola) {
   if (!planificacion.clienteId) {
     throw crearErrorValidacion('La planificacion debe tener clienteId.');
   }
@@ -160,15 +203,21 @@ function validarPlanificacion(planificacion: PlanificacionAgricola) {
     throw crearErrorValidacion('El cierre o deshabilitacion debe ejecutarse por el endpoint especifico de cierre.');
   }
 
-  validarLineas(planificacion, { permitirHectareasCero: planificacion.estado === 'borrador' });
+  validarLineas(planificacion, {
+    permitirHectareasCero: planificacion.estado === 'borrador',
+    lotesPorId: await obtenerLotesSuperficieValidacion(planificacion),
+  });
 }
 
-function validarPlanificacionParaCierre(planificacion: PlanificacionAgricola) {
+async function validarPlanificacionParaCierre(planificacion: PlanificacionAgricola, tx: Prisma.TransactionClient) {
   if (planificacion.lineas.length === 0) {
     throw crearErrorValidacion('La planificacion debe tener al menos una linea para poder cerrarse.');
   }
 
-  validarLineas(planificacion, { permitirHectareasCero: false });
+  validarLineas(planificacion, {
+    permitirHectareasCero: false,
+    lotesPorId: await obtenerLotesSuperficieValidacion(planificacion, tx),
+  });
 }
 
 const incluirPlanificacion = {
@@ -257,7 +306,7 @@ export async function guardarPlanificacionPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarPlanificacionResponse> {
   const planificacion = { ...request.planificacion, id };
-  validarPlanificacion(planificacion);
+  await validarPlanificacion(planificacion);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.planificacionAgricola.findUnique({
@@ -372,7 +421,7 @@ export async function cerrarPlanificacionPersistida(
       throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
     }
 
-    validarPlanificacionParaCierre(mapearPlanificacion(existente));
+    await validarPlanificacionParaCierre(mapearPlanificacion(existente), tx);
 
     const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
       where: {

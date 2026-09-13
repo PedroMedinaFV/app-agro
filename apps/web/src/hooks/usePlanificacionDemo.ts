@@ -57,15 +57,28 @@ function normalizarTexto(valor: string) {
 }
 
 function obtenerSuperficieInicialLote(lote: LoteApp) {
-  if (Number.isFinite(lote.superficieProductiva) && lote.superficieProductiva > 0) {
-    return lote.superficieProductiva;
+  const superficieTotal = Number.isFinite(lote.superficieTotal) && lote.superficieTotal > 0 ? lote.superficieTotal : 0;
+  const superficieProductiva = Number.isFinite(lote.superficieProductiva) && lote.superficieProductiva > 0 ? lote.superficieProductiva : 0;
+
+  if (superficieProductiva > 0) {
+    return superficieTotal > 0 ? Math.min(superficieProductiva, superficieTotal) : superficieProductiva;
   }
 
-  if (Number.isFinite(lote.superficieTotal) && lote.superficieTotal > 0) {
-    return lote.superficieTotal;
+  return superficieTotal;
+}
+
+function limitarHectareasPorLote(hectareas: number, lote?: LoteApp) {
+  if (!Number.isFinite(hectareas)) {
+    return 0;
   }
 
-  return 0;
+  const hectareasNoNegativas = Math.max(0, hectareas);
+
+  if (!lote || !Number.isFinite(lote.superficieTotal) || lote.superficieTotal <= 0) {
+    return hectareasNoNegativas;
+  }
+
+  return Math.min(hectareasNoNegativas, lote.superficieTotal);
 }
 
 export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente = true) {
@@ -516,7 +529,19 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   function actualizarLinea(id: string, cambios: Partial<PlanificacionAgricolaLinea>) {
     actualizarPlanificacionActiva((actual) => ({
       ...actual,
-      lineas: actual.lineas.map((linea) => (linea.id === id ? recalcularLinea({ ...linea, ...cambios }) : linea)),
+      lineas: actual.lineas.map((linea) => {
+        if (linea.id !== id) {
+          return linea;
+        }
+
+        const lineaActualizada = { ...linea, ...cambios };
+        const lote = lotesAppPorId.get(lineaActualizada.loteAppId);
+
+        return recalcularLinea({
+          ...lineaActualizada,
+          hectareasPlanificadas: limitarHectareasPorLote(lineaActualizada.hectareasPlanificadas, lote),
+        });
+      }),
     }));
   }
 

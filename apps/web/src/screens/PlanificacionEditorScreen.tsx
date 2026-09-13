@@ -552,7 +552,11 @@ export function PlanificacionEditorScreen({
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
-          {/* <span>prod. {lote?.superficieProductiva ?? '-'}</span> */}
+          <span>prod. {lote?.superficieProductiva ?? '-'} ha / total {lote?.superficieTotal ?? '-'} ha</span>
+        </div>
+
+        <div className="planning-cell-wide">
+          <span className="cell-label">Antecesor</span>
           <span>{formatearCultivosAntecesores(cultivosAntecesores, actividadNombrePorErpId)}</span>
         </div>
 
@@ -572,7 +576,7 @@ export function PlanificacionEditorScreen({
         <div className="planning-cell-medium">
           <span className="cell-label">Hectareas</span>
           <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} />
-          {/* <span>ha</span> */}
+          <span>max. {lote?.superficieTotal ?? '-'} ha</span>
         </div>
 
         <div className="planning-cell-medium">

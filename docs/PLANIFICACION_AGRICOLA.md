@@ -132,6 +132,7 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - al crear un escenario, el backend lo persiste inmediatamente como borrador auditado y luego se abre la pantalla completa de edicion para cargar la planilla;
 - al crear un escenario nuevo, la planilla se inicializa con una linea por cada lote activo disponible en Agro App;
 - la superficie planificada de cada linea se completa por defecto con la superficie productiva del lote; si no hay superficie productiva valida, se usa la superficie total y, si tampoco existe, queda en `0` para completar manualmente;
+- las hectareas planificadas de una linea no pueden ser negativas ni superar la superficie total del lote. La UI debe limitar la carga y el backend debe rechazar cualquier payload que exceda ese maximo;
 - los totales de hectareas planificadas solo suman lineas que ya tienen protocolo asignado, porque representan superficie efectivamente planificada y no simplemente superficie disponible en la grilla;
 - al editar una planificacion, cada lote debe mostrar el/los cultivos antecesores de la campania anterior segun `ErpCultivo`. Por ejemplo, si se planifica `26/27`, se consultan cultivos `25/26` para el mismo lote. Puede haber mas de un antecesor cuando existio fina y segunda;
 - una planificacion en `borrador` puede guardar lineas con `0` hectareas para no bloquear la carga inicial, pero no puede guardar valores negativos;
