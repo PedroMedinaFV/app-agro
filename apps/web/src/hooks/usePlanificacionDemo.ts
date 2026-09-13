@@ -133,7 +133,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     margenBrutoTotal: total.margenBrutoTotal + linea.margenBrutoEstimado,
     ingresoNetoTotal: total.ingresoNetoTotal + linea.ingresoNetoEstimado,
     costoTotal: total.costoTotal + linea.costoProduccionEstimado,
-    hectareasPlanificadas: total.hectareasPlanificadas + linea.hectareasPlanificadas,
+    hectareasPlanificadas: total.hectareasPlanificadas + (linea.protocoloId ? linea.hectareasPlanificadas : 0),
   }), {
     margenBrutoTotal: 0,
     ingresoNetoTotal: 0,
@@ -149,7 +149,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const planificacionActivaBloqueada = planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada';
   const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && !planificacionActivaBloqueada);
   const puedeConfigurarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:configurar'));
-  const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && !planificacionActivaBloqueada);
+  const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && planificacionActiva && !planificacionActivaBloqueada);
 
   function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoApp {
     const ahora = new Date().toISOString();
@@ -195,6 +195,23 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     return new Set(Array.from(cantidades.entries()).filter(([, cantidad]) => cantidad > 1).map(([clave]) => clave));
   }, [lineasPlanificacion, planificacionActiva?.campaniaErpId]);
   const tieneLineasDuplicadas = clavesDuplicadas.size > 0;
+
+  function tieneLineasDuplicadasEnPlanificacion(planificacionObjetivo: PlanificacionAgricola) {
+    const cantidades = new Map<string, number>();
+
+    for (const linea of planificacionObjetivo.lineas) {
+      const clave = `${planificacionObjetivo.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+      const cantidad = (cantidades.get(clave) || 0) + 1;
+
+      if (cantidad > 1) {
+        return true;
+      }
+
+      cantidades.set(clave, cantidad);
+    }
+
+    return false;
+  }
 
   function recalcularLinea(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
     const gastosComercialesEstimados = linea.gastosComercialesReferenciaId
@@ -1222,15 +1239,21 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }
   }
 
-  async function cerrarPlanificacionActiva() {
-    if (!sesion || !planificacionActiva || !puedeCerrarPlanificacion) {
+  async function cerrarPlanificacionActiva(planificacionId: string) {
+    const planificacionObjetivo = planificacion.planificaciones.find((item) => item.id === planificacionId);
+
+    if (!sesion || !planificacionObjetivo || !sesion.permisos.includes('planificacion:cerrar')) {
+      return;
+    }
+
+    if (planificacionObjetivo.estado === 'cerrada' || planificacionObjetivo.estado === 'deshabilitada') {
       return;
     }
 
     setCerrandoPlanificacion(true);
 
     try {
-      if (tieneLineasDuplicadas) {
+      if (tieneLineasDuplicadasEnPlanificacion(planificacionObjetivo)) {
         setPlanificacionEstado('No se puede cerrar: hay lineas duplicadas para la misma campania, campo, lote y actividad.');
         notificar?.({
           tipo: 'error',
@@ -1240,7 +1263,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         return;
       }
 
-      const respuesta = await cerrarPlanificacion(planificacionActiva.id, {
+      const respuesta = await cerrarPlanificacion(planificacionObjetivo.id, {
         origen: 'web',
         motivo: 'Cierre de planificacion desde demo web',
       }, sesion.token);
@@ -1265,6 +1288,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
           return item;
         }),
       }));
+      setPlanificacionSeleccionadaId(respuesta.planificacion.id);
       setPlanificacionEstado(respuesta.mensaje);
       notificar?.({
         tipo: 'success',

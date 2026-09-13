@@ -2192,6 +2192,38 @@ nav a.active .nav-icon,
   width: min(1120px, 100%);
 }
 
+.modal-panel-narrow {
+  width: min(560px, 100%);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.summary-grid article {
+  padding: 12px;
+  border: 1px solid #dbe5de;
+  border-radius: 8px;
+  background: #f7faf8;
+}
+
+.summary-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: #576a63;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.summary-grid strong {
+  color: #071b3a;
+  font-size: 1.05rem;
+}
+
 .field-picker {
   display: grid;
   gap: 12px;

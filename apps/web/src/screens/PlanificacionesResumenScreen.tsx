@@ -16,7 +16,7 @@ type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
 
 function calcularResumen(item: PlanificacionActiva) {
   return {
-    hectareas: item.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
+    hectareas: item.lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
     ingresoNeto: item.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
     costo: item.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
     margen: item.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
@@ -24,11 +24,10 @@ function calcularResumen(item: PlanificacionActiva) {
 }
 
 export function PlanificacionesResumenScreen({
+  sesion,
   planificacion,
   campaniasDisponibles,
-  puedeEditarPlanificacion,
   puedeEditarPlanificacionPorPermiso,
-  puedeCerrarPlanificacion,
   guardandoPlanificacion,
   cerrandoPlanificacion,
   planificacionActiva,
@@ -50,12 +49,16 @@ export function PlanificacionesResumenScreen({
     campaniaErpId: campaniaInicial,
     descripcion: '',
   });
+  const [planificacionParaCerrarId, setPlanificacionParaCerrarId] = useState<string | null>(null);
   const campaniasPorId = useMemo(() => new Map(campaniasDisponibles.map((campania) => [campania.erpId, campania])), [campaniasDisponibles]);
   const resumenPorPlanificacion = useMemo(() => new Map(
     planificacion.planificaciones.map((item) => [item.id, calcularResumen(item)]),
   ), [planificacion.planificaciones]);
+  const puedeCerrarPorPermiso = sesion.permisos.includes('planificacion:cerrar');
   const preciosVisibles = useMemo(() => planificacion.preciosReferencia.slice(0, 6), [planificacion.preciosReferencia]);
   const protocolosVisibles = useMemo(() => planificacion.protocolos.slice(0, 6), [planificacion.protocolos]);
+  const planificacionParaCerrar = planificacion.planificaciones.find((item) => item.id === planificacionParaCerrarId);
+  const resumenParaCerrar = planificacionParaCerrar ? resumenPorPlanificacion.get(planificacionParaCerrar.id) : undefined;
   const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
     item.campaniaErpId === nuevoEscenario.campaniaErpId
     && item.estado === 'cerrada'
@@ -81,6 +84,61 @@ export function PlanificacionesResumenScreen({
     if (creado) {
       setModalEscenarioAbierto(false);
     }
+  }
+
+  function tieneDuplicados(item: PlanificacionActiva) {
+    const claves = new Set<string>();
+
+    for (const linea of item.lineas) {
+      const clave = `${item.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+
+      if (claves.has(clave)) {
+        return true;
+      }
+
+      claves.add(clave);
+    }
+
+    return false;
+  }
+
+  function obtenerMotivoCierreDeshabilitado(item: PlanificacionActiva) {
+    const resumen = resumenPorPlanificacion.get(item.id);
+
+    if (!puedeCerrarPorPermiso) {
+      return 'No tenes permisos para cerrar planificaciones';
+    }
+
+    if (item.estado === 'cerrada') {
+      return 'La planificacion ya esta cerrada';
+    }
+
+    if (item.estado === 'deshabilitada') {
+      return 'La planificacion esta deshabilitada por otro escenario cerrado';
+    }
+
+    if (guardandoPlanificacion || cerrandoPlanificacion) {
+      return 'Hay una accion en curso';
+    }
+
+    if (tieneDuplicados(item)) {
+      return 'Tiene lineas duplicadas';
+    }
+
+    if ((resumen?.hectareas || 0) <= 0) {
+      return 'Las hectareas planificadas deben ser mayores a cero';
+    }
+
+    return '';
+  }
+
+  async function confirmarCierrePlanificacion() {
+    if (!planificacionParaCerrar) {
+      return;
+    }
+
+    await cerrarPlanificacionActiva(planificacionParaCerrar.id);
+    setPlanificacionParaCerrarId(null);
   }
 
   return (
@@ -110,15 +168,6 @@ export function PlanificacionesResumenScreen({
           <ActionBar align="end">
             <Button variant="secondary" onClick={abrirNuevoEscenario} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || campaniasDisponibles.length === 0}>
               Nuevo escenario
-            </Button>
-            <Button variant="primary" onClick={() => planificacionActiva && onEditarPlanificacion(planificacionActiva.id)} disabled={!puedeEditarPlanificacion || !planificacionActiva}>
-              Editar
-            </Button>
-            <Button variant="secondary" onClick={cerrarPlanificacionActiva} disabled={!puedeCerrarPlanificacion || cerrandoPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas}>
-              <span className="button-content">
-                {cerrandoPlanificacion && <LoadingSpinner label="Cerrando planificacion" />}
-                {cerrandoPlanificacion ? 'Cerrando...' : 'Cerrar planificacion'}
-              </span>
             </Button>
           </ActionBar>
         )}
@@ -178,13 +227,24 @@ export function PlanificacionesResumenScreen({
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(76px, 0.36fr)',
-              render: (item) => (
-                <div className="table-icon-actions">
-                  <IconButton icon="edit" label={`Editar ${item.nombre}`} onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
-                  <IconButton icon="copy" label={`Copiar ${item.nombre}`} onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
-                </div>
-              ),
+              width: 'minmax(120px, 0.48fr)',
+              render: (item) => {
+                const motivoCierreDeshabilitado = obtenerMotivoCierreDeshabilitado(item);
+
+                return (
+                  <div className="table-icon-actions">
+                    <IconButton icon="edit" label={`Editar ${item.nombre}`} onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
+                    <IconButton icon="copy" label={`Copiar ${item.nombre}`} onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
+                    <IconButton
+                      icon="lock"
+                      label={`Cerrar ${item.nombre}`}
+                      title={motivoCierreDeshabilitado || `Cerrar ${item.nombre}`}
+                      onClick={() => setPlanificacionParaCerrarId(item.id)}
+                      disabled={Boolean(motivoCierreDeshabilitado)}
+                    />
+                  </div>
+                );
+              },
             },
           ]}
         />
@@ -272,6 +332,49 @@ export function PlanificacionesResumenScreen({
                 <span className="button-content">
                   {guardandoPlanificacion && <LoadingSpinner label="Creando escenario" />}
                   {guardandoPlanificacion ? 'Creando...' : 'Crear escenario'}
+                </span>
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {planificacionParaCerrar && (
+        <div className="modal-backdrop">
+          <section className="modal-panel modal-panel-narrow" role="dialog" aria-modal="true" aria-labelledby="cerrar-planificacion-title">
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Cierre de escenario</p>
+                <h2 id="cerrar-planificacion-title">Cerrar planificacion</h2>
+              </div>
+              <Button variant="ghost" onClick={() => setPlanificacionParaCerrarId(null)}>Cerrar</Button>
+            </div>
+
+            <p>
+              Vas a cerrar <strong>{planificacionParaCerrar.nombre}</strong>
+              {' '}de la campania <strong>{campaniasPorId.get(planificacionParaCerrar.campaniaErpId)?.codigo || planificacionParaCerrar.campaniaErpId}</strong>.
+            </p>
+            <p className="status-warning">
+              Este escenario quedara como original y se deshabilitaran los otros escenarios de la misma campania.
+            </p>
+
+            <div className="summary-grid">
+              <article>
+                <span>Hectareas</span>
+                <strong>{(resumenParaCerrar?.hectareas || 0).toFixed(2)}</strong>
+              </article>
+              <article>
+                <span>Margen</span>
+                <strong>{formatearUsd(resumenParaCerrar?.margen || 0)}</strong>
+              </article>
+            </div>
+
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setPlanificacionParaCerrarId(null)}>Cancelar</Button>
+              <Button variant="primary" onClick={confirmarCierrePlanificacion} disabled={cerrandoPlanificacion || Boolean(obtenerMotivoCierreDeshabilitado(planificacionParaCerrar))}>
+                <span className="button-content">
+                  {cerrandoPlanificacion && <LoadingSpinner label="Cerrando planificacion" />}
+                  {cerrandoPlanificacion ? 'Cerrando...' : 'Confirmar cierre'}
                 </span>
               </Button>
             </div>

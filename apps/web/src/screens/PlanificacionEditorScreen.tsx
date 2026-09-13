@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { PlanificacionAgricolaLinea } from '@agro/tipos';
+import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DecimalInput } from '../components/DecimalInput';
@@ -22,6 +22,46 @@ function normalizarTexto(valor: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
+}
+
+function obtenerCodigoCampaniaAnterior(codigo?: string) {
+  const partes = codigo?.match(/^(\d{2})\/(\d{2})$/);
+
+  if (!partes) {
+    return undefined;
+  }
+
+  const inicio = Number(partes[1]);
+  const fin = Number(partes[2]);
+
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin)) {
+    return undefined;
+  }
+
+  return `${String(inicio - 1).padStart(2, '0')}/${String(fin - 1).padStart(2, '0')}`;
+}
+
+function idsErpCoinciden(idA?: string, idB?: string) {
+  if (!idA || !idB) {
+    return false;
+  }
+
+  return idA === idB || idA.endsWith(`:${idB}`) || idB.endsWith(`:${idA}`);
+}
+
+function formatearCultivosAntecesores(cultivos: ErpCultivo[], actividadNombrePorErpId: Map<string, string>) {
+  if (cultivos.length === 0) {
+    return 'Antecesor: sin datos ERP';
+  }
+
+  return `Antecesor: ${cultivos
+    .map((cultivo) => {
+      const actividad = cultivo.actividadErpId ? actividadNombrePorErpId.get(cultivo.actividadErpId) : undefined;
+      const nombre = actividad || cultivo.nombre;
+
+      return `${nombre} (${cultivo.hectareasSembradas.toFixed(2)} ha)`;
+    })
+    .join(' / ')}`;
 }
 
 export function PlanificacionEditorScreen({
@@ -89,6 +129,53 @@ export function PlanificacionEditorScreen({
       .filter((item) => item.activo)
       .sort((a, b) => a.destinoVenta.localeCompare(b.destinoVenta))
   ), [planificacion.destinosReferencia]);
+  const actividadNombrePorErpId = useMemo(() => {
+    const actividades = new Map<string, string>();
+
+    for (const actividad of planificacion.actividadesApp || []) {
+      if (actividad.actividadErpId) {
+        actividades.set(actividad.actividadErpId, actividad.nombre);
+      }
+    }
+
+    return actividades;
+  }, [planificacion.actividadesApp]);
+  const campaniaPlanificada = useMemo(() => campaniasDisponibles.find((campania) => (
+    idsErpCoinciden(campania.erpId, planificacionActiva?.campaniaErpId)
+  )), [campaniasDisponibles, planificacionActiva?.campaniaErpId]);
+  const campaniaAnterior = useMemo(() => {
+    const codigoAnterior = obtenerCodigoCampaniaAnterior(campaniaPlanificada?.codigo);
+
+    if (!codigoAnterior) {
+      return undefined;
+    }
+
+    return campaniasDisponibles.find((campania) => campania.codigo === codigoAnterior);
+  }, [campaniaPlanificada?.codigo, campaniasDisponibles]);
+  const cultivosAntecesoresPorLote = useMemo(() => {
+    const grupos = new Map<string, ErpCultivo[]>();
+    const cultivosDisponibles = planificacion.cultivosErp || snapshot.cultivos;
+
+    if (!campaniaAnterior) {
+      return grupos;
+    }
+
+    for (const cultivo of cultivosDisponibles) {
+      if (!cultivo.activo || !idsErpCoinciden(cultivo.campaniaErpId, campaniaAnterior.erpId)) {
+        continue;
+      }
+
+      const cultivos = grupos.get(cultivo.loteErpId) || [];
+      cultivos.push(cultivo);
+      grupos.set(cultivo.loteErpId, cultivos);
+    }
+
+    for (const cultivos of grupos.values()) {
+      cultivos.sort((a, b) => b.hectareas - a.hectareas || a.nombre.localeCompare(b.nombre, 'es'));
+    }
+
+    return grupos;
+  }, [planificacion.cultivosErp, snapshot.cultivos, campaniaAnterior]);
   const gastosComercialesPorId = useMemo(() => (
     new Map(planificacion.gastosComercialesReferencia.map((gasto) => [gasto.id, gasto]))
   ), [planificacion.gastosComercialesReferencia]);
@@ -397,7 +484,7 @@ export function PlanificacionEditorScreen({
 
   function calcularResumenGrupo(lineas: PlanificacionAgricolaLinea[]) {
     return {
-      hectareas: lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0),
+      hectareas: lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
       margen: lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
       pendientes: lineas.filter((linea) => !lineaEstaCompleta(linea)).length,
       duplicadas: lineas.filter((linea) => {
@@ -454,6 +541,7 @@ export function PlanificacionEditorScreen({
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
     const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
+    const cultivosAntecesores = lote?.loteErpId ? cultivosAntecesoresPorLote.get(lote.loteErpId) || [] : [];
 
     return (
       <div className={`planning-row ${lineaDuplicada ? 'duplicated' : ''}`} key={linea.id}>
@@ -464,7 +552,8 @@ export function PlanificacionEditorScreen({
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
-          <span>prod. {lote?.superficieProductiva ?? '-'}</span>
+          {/* <span>prod. {lote?.superficieProductiva ?? '-'}</span> */}
+          <span>{formatearCultivosAntecesores(cultivosAntecesores, actividadNombrePorErpId)}</span>
         </div>
 
         <div className="planning-cell-wide">
@@ -483,7 +572,7 @@ export function PlanificacionEditorScreen({
         <div className="planning-cell-medium">
           <span className="cell-label">Hectareas</span>
           <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} />
-          <span>ha</span>
+          {/* <span>ha</span> */}
         </div>
 
         <div className="planning-cell-medium">
@@ -607,7 +696,7 @@ export function PlanificacionEditorScreen({
         <section className="metrics planning-metrics">
           <article>
             <span>Hectareas</span>
-            <strong>{hectareasPlanificadas}</strong>
+            <strong>{hectareasPlanificadas.toFixed(2)}</strong>
           </article>
           <article>
             <span>Ingreso neto</span>
@@ -793,4 +882,3 @@ export function PlanificacionEditorScreen({
     </section>
   );
 }
-

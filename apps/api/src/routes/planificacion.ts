@@ -9,6 +9,7 @@ import { obtenerConceptosGastosComercialesPersistidos } from '../services/gastos
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
 import { asegurarEstadiosReferenciaSemilla } from '../services/planificacion/estadiosReferenciaPrisma';
+import { prisma } from '../prisma';
 
 const router = Router();
 type RequestConUsuario = Request & {
@@ -34,6 +35,18 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const camposAsignados = usuarioAutorizado ? await obtenerCamposAsignados(usuarioAutorizado) : null;
 
     const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados);
+    const loteErpIds = padronesPersistidos.lotesApp
+      .map((lote) => lote.loteErpId)
+      .filter((loteErpId): loteErpId is string => Boolean(loteErpId));
+    const cultivosErp = loteErpIds.length
+      ? await prisma.erpCultivo.findMany({
+        where: {
+          loteErpId: { in: loteErpIds },
+          activo: true,
+        },
+        orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
+      })
+      : [];
 
     res.json({
       zonasApp: padronesPersistidos.zonasApp,
@@ -50,6 +63,33 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
       gastosComercialesReferencia: gastosPersistidos,
       estadiosReferencia: estadiosPersistidos,
       serviciosApp: padronesPersistidos.serviciosApp,
+      cultivosErp: cultivosErp.map((cultivo) => ({
+        empresaErpId: cultivo.empresaErpId,
+        erpId: cultivo.erpId,
+        idCultivo: cultivo.idCultivo,
+        codigo: cultivo.codigo,
+        nombre: cultivo.nombre,
+        idCampo: cultivo.idCampo,
+        campoErpId: cultivo.campoErpId,
+        idLote: cultivo.idLote,
+        loteErpId: cultivo.loteErpId,
+        idActividad: cultivo.idActividad || undefined,
+        actividadErpId: cultivo.actividadErpId || undefined,
+        idEspecie: cultivo.idEspecie || undefined,
+        especieErpId: cultivo.especieErpId || undefined,
+        idCampania: cultivo.idCampania || undefined,
+        campaniaErpId: cultivo.campaniaErpId || undefined,
+        hectareas: cultivo.hectareas,
+        hectareasSembradas: cultivo.hectareasSembradas,
+        hectareasCosechadas: cultivo.hectareasCosechadas,
+        idPuerto: cultivo.idPuerto || undefined,
+        distanciaPuerto: cultivo.distanciaPuerto || undefined,
+        idPersonalResponsable: cultivo.idPersonalResponsable || undefined,
+        esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
+        socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
+        activo: cultivo.activo,
+        actualizadoEn: cultivo.actualizadoEn.toISOString(),
+      })),
       sincronizadoEn: new Date().toISOString(),
     });
   } catch (error) {

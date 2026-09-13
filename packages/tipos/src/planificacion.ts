@@ -1,3 +1,5 @@
+import type { ErpCultivo } from './erp';
+
 export type EstadoPlanificacionAgricola = 'borrador' | 'en_revision' | 'aprobada' | 'cerrada' | 'deshabilitada';
 
 export type EstadoVinculacionPlanificacion = 'provisorio' | 'vinculado_erp';
@@ -350,6 +352,7 @@ export type PlanificacionSnapshot = {
   gastosComercialesReferencia: GastosComercialesReferencia[];
   estadiosReferencia: EstadioFenologicoReferencia[];
   serviciosApp: ServicioApp[];
+  cultivosErp?: ErpCultivo[];
   protocolos: ProtocoloProductivoResumen[];
   planificaciones: PlanificacionAgricola[];
   sincronizadoEn: string;
