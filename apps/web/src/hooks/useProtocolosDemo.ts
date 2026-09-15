@@ -337,17 +337,17 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
         origen: 'web',
         motivo: 'Guardado de protocolo desde demo web',
       }, sesion.token);
-      const protocolosPersistidos = await obtenerProtocolosSnapshot(sesion.token, { forzar: true });
 
       setProtocolos((actual) => ({
-        ...protocolosPersistidos,
-        protocolos: protocolosPersistidos.protocolos.length
-          ? protocolosPersistidos.protocolos
-          : actual.protocolos.map((protocolo) => protocolo.id === respuesta.protocolo.id ? respuesta.protocolo : protocolo),
+        ...actual,
+        protocolos: actual.protocolos.some((protocolo) => protocolo.id === respuesta.protocolo.id)
+          ? actual.protocolos.map((protocolo) => protocolo.id === respuesta.protocolo.id ? respuesta.protocolo : protocolo)
+          : [respuesta.protocolo, ...actual.protocolos],
+        sincronizadoEn: new Date().toISOString(),
       }));
       setProtocoloSeleccionadoId(respuesta.protocolo.id);
       setProtocolosEstado(respuesta.mensaje);
-      await onProtocolosPersistidos?.();
+      void onProtocolosPersistidos?.();
       notificar?.({
         tipo: 'success',
         titulo: 'Protocolo guardado',

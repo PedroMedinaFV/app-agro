@@ -6,6 +6,18 @@ import { startBackendActivity } from '../utils/backendActivity';
 const microsoftClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
 const microsoftTenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
 const microsoftRedirectUri = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || window.location.origin;
+const SESSION_STORAGE_KEY = 'agro-app-session';
+
+function leerSesionPersistida() {
+  try {
+    const valor = sessionStorage.getItem(SESSION_STORAGE_KEY);
+
+    return valor ? JSON.parse(valor) as SesionUsuario : null;
+  } catch {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+}
 
 function base64Url(bytes: ArrayBuffer | Uint8Array) {
   const array = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -50,9 +62,17 @@ async function intercambiarCodigoMicrosoft(code: string, codeVerifier: string) {
 }
 
 export function useDemoAuth() {
-  const [sesion, setSesion] = useState<SesionUsuario | null>(null);
+  const [sesion, setSesion] = useState<SesionUsuario | null>(() => leerSesionPersistida());
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    if (sesion) {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sesion));
+    } else {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [sesion]);
 
   async function entrarModoDemo() {
     setCargando(true);
