@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import type {
   ArchivosGeograficosLoteResponse,
   CrearUrlSubidaAdjuntoRequest,
@@ -29,6 +30,22 @@ type ArchivoGeograficoRow = {
   observaciones: string | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type GeoJsonGeometry =
+  | { type: 'Point'; coordinates: [number, number] | [number, number, number] }
+  | { type: 'LineString'; coordinates: Array<[number, number] | [number, number, number]> }
+  | { type: 'Polygon'; coordinates: Array<Array<[number, number] | [number, number, number]>> };
+
+type GeoJsonFeature = {
+  type: 'Feature';
+  properties: Record<string, unknown>;
+  geometry: GeoJsonGeometry;
+};
+
+type GeoJsonFeatureCollection = {
+  type: 'FeatureCollection';
+  features: GeoJsonFeature[];
 };
 
 function crearErrorValidacion(message: string, statusCode = 400) {
@@ -134,6 +151,24 @@ async function llamarSupabaseStorage<T>(pathStorageApi: string, body: unknown): 
   return contenido as T;
 }
 
+async function descargarSupabaseStorage(bucket: string, storagePath: string) {
+  const { supabaseUrl, serviceRoleKey } = obtenerConfigStorage();
+  const respuesta = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodeStoragePath(storagePath)}`, {
+    method: 'GET',
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+  });
+
+  if (!respuesta.ok) {
+    const detalle = await respuesta.text().catch(() => 'No se pudo descargar el archivo geografico.');
+    throw crearErrorValidacion(detalle || 'No se pudo descargar el archivo geografico.', respuesta.status);
+  }
+
+  return Buffer.from(await respuesta.arrayBuffer());
+}
+
 function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unknown>) {
   const rawUrl = String(data.signedURL || data.signedUrl || data.url || '');
 
@@ -142,6 +177,245 @@ function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unk
   }
 
   return rawUrl.startsWith('http') ? rawUrl : `${supabaseUrl}${rawUrl}`;
+}
+
+function limpiarXml(valor: string) {
+  return valor.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
+}
+
+function leerCoordenadasKml(contenido: string) {
+  return limpiarXml(contenido)
+    .trim()
+    .split(/\s+/)
+    .map((punto) => {
+      const [lonRaw, latRaw, altRaw] = punto.split(',');
+      const lon = Number(lonRaw);
+      const lat = Number(latRaw);
+      const alt = altRaw === undefined || altRaw === '' ? undefined : Number(altRaw);
+
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+        return undefined;
+      }
+
+      return Number.isFinite(alt) ? [lon, lat, alt] as [number, number, number] : [lon, lat] as [number, number];
+    })
+    .filter((coordenada): coordenada is [number, number] | [number, number, number] => Boolean(coordenada));
+}
+
+function cerrarAnillo(coordenadas: Array<[number, number] | [number, number, number]>) {
+  if (coordenadas.length < 3) {
+    return coordenadas;
+  }
+
+  const primera = coordenadas[0];
+  const ultima = coordenadas[coordenadas.length - 1];
+
+  if (primera[0] === ultima[0] && primera[1] === ultima[1]) {
+    return coordenadas;
+  }
+
+  return [...coordenadas, primera];
+}
+
+function extraerBloques(kml: string, etiqueta: string) {
+  const bloques: string[] = [];
+  const regex = new RegExp(`<${etiqueta}\\b[^>]*>([\\s\\S]*?)<\\/${etiqueta}>`, 'gi');
+  let match = regex.exec(kml);
+
+  while (match) {
+    bloques.push(match[1]);
+    match = regex.exec(kml);
+  }
+
+  return bloques;
+}
+
+function extraerPrimerTexto(bloque: string, etiqueta: string) {
+  const match = new RegExp(`<${etiqueta}\\b[^>]*>([\\s\\S]*?)<\\/${etiqueta}>`, 'i').exec(bloque);
+
+  return match ? limpiarXml(match[1]).trim() : undefined;
+}
+
+function parsearKmlAGeoJson(kml: string): GeoJsonFeatureCollection {
+  const features: GeoJsonFeature[] = [];
+  const placemarks = extraerBloques(kml, 'Placemark');
+  const contenedores = placemarks.length ? placemarks : [kml];
+
+  for (const bloque of contenedores) {
+    const nombre = extraerPrimerTexto(bloque, 'name');
+
+    for (const polygon of extraerBloques(bloque, 'Polygon')) {
+      const anillos: Array<Array<[number, number] | [number, number, number]>> = [];
+
+      for (const boundary of extraerBloques(polygon, 'outerBoundaryIs')) {
+        const coordenadas = extraerPrimerTexto(boundary, 'coordinates');
+        const puntos = coordenadas ? cerrarAnillo(leerCoordenadasKml(coordenadas)) : [];
+
+        if (puntos.length >= 4) {
+          anillos.push(puntos);
+        }
+      }
+
+      for (const boundary of extraerBloques(polygon, 'innerBoundaryIs')) {
+        const coordenadas = extraerPrimerTexto(boundary, 'coordinates');
+        const puntos = coordenadas ? cerrarAnillo(leerCoordenadasKml(coordenadas)) : [];
+
+        if (puntos.length >= 4) {
+          anillos.push(puntos);
+        }
+      }
+
+      if (anillos.length) {
+        features.push({
+          type: 'Feature',
+          properties: nombre ? { nombre } : {},
+          geometry: { type: 'Polygon', coordinates: anillos },
+        });
+      }
+    }
+
+    for (const lineString of extraerBloques(bloque, 'LineString')) {
+      const coordenadas = extraerPrimerTexto(lineString, 'coordinates');
+      const puntos = coordenadas ? leerCoordenadasKml(coordenadas) : [];
+
+      if (puntos.length >= 2) {
+        features.push({
+          type: 'Feature',
+          properties: nombre ? { nombre } : {},
+          geometry: { type: 'LineString', coordinates: puntos },
+        });
+      }
+    }
+
+    for (const point of extraerBloques(bloque, 'Point')) {
+      const coordenadas = extraerPrimerTexto(point, 'coordinates');
+      const puntos = coordenadas ? leerCoordenadasKml(coordenadas) : [];
+
+      if (puntos[0]) {
+        features.push({
+          type: 'Feature',
+          properties: nombre ? { nombre } : {},
+          geometry: { type: 'Point', coordinates: puntos[0] },
+        });
+      }
+    }
+  }
+
+  return { type: 'FeatureCollection', features };
+}
+
+function extraerKmlDesdeKmz(buffer: Buffer) {
+  const firmaEocd = 0x06054b50;
+  const firmaCentral = 0x02014b50;
+  const firmaLocal = 0x04034b50;
+  const inicioBusqueda = Math.max(0, buffer.length - 65557);
+  let eocdOffset = -1;
+
+  for (let indice = buffer.length - 22; indice >= inicioBusqueda; indice -= 1) {
+    if (buffer.readUInt32LE(indice) === firmaEocd) {
+      eocdOffset = indice;
+      break;
+    }
+  }
+
+  if (eocdOffset < 0) {
+    throw crearErrorValidacion('El archivo KMZ no tiene una estructura ZIP valida.');
+  }
+
+  const totalEntradas = buffer.readUInt16LE(eocdOffset + 10);
+  const centralOffset = buffer.readUInt32LE(eocdOffset + 16);
+  let cursor = centralOffset;
+
+  for (let entrada = 0; entrada < totalEntradas; entrada += 1) {
+    if (buffer.readUInt32LE(cursor) !== firmaCentral) {
+      throw crearErrorValidacion('No se pudo leer el indice del archivo KMZ.');
+    }
+
+    const metodoCompresion = buffer.readUInt16LE(cursor + 10);
+    const tamanioComprimido = buffer.readUInt32LE(cursor + 20);
+    const largoNombre = buffer.readUInt16LE(cursor + 28);
+    const largoExtra = buffer.readUInt16LE(cursor + 30);
+    const largoComentario = buffer.readUInt16LE(cursor + 32);
+    const localOffset = buffer.readUInt32LE(cursor + 42);
+    const nombre = buffer.subarray(cursor + 46, cursor + 46 + largoNombre).toString('utf8');
+
+    cursor += 46 + largoNombre + largoExtra + largoComentario;
+
+    if (!nombre.toLowerCase().endsWith('.kml')) {
+      continue;
+    }
+
+    if (buffer.readUInt32LE(localOffset) !== firmaLocal) {
+      throw crearErrorValidacion('No se pudo leer el KML interno del KMZ.');
+    }
+
+    const localNombre = buffer.readUInt16LE(localOffset + 26);
+    const localExtra = buffer.readUInt16LE(localOffset + 28);
+    const inicioDatos = localOffset + 30 + localNombre + localExtra;
+    const datos = buffer.subarray(inicioDatos, inicioDatos + tamanioComprimido);
+
+    if (metodoCompresion === 0) {
+      return datos.toString('utf8');
+    }
+
+    if (metodoCompresion === 8) {
+      return zlib.inflateRawSync(datos).toString('utf8');
+    }
+
+    throw crearErrorValidacion('El KML interno del KMZ usa una compresion no soportada.');
+  }
+
+  throw crearErrorValidacion('El archivo KMZ no contiene un KML.');
+}
+
+function calcularAreaAnilloHa(coordenadas: Array<[number, number] | [number, number, number]>) {
+  if (coordenadas.length < 4) {
+    return 0;
+  }
+
+  const radioTierra = 6378137;
+  const latitudMedia = coordenadas.reduce((total, punto) => total + punto[1], 0) / coordenadas.length;
+  const factorLatitud = Math.cos((latitudMedia * Math.PI) / 180);
+  const puntosMetros = coordenadas.map((punto) => ({
+    x: radioTierra * (punto[0] * Math.PI / 180) * factorLatitud,
+    y: radioTierra * (punto[1] * Math.PI / 180),
+  }));
+  let area = 0;
+
+  for (let indice = 0; indice < puntosMetros.length - 1; indice += 1) {
+    area += puntosMetros[indice].x * puntosMetros[indice + 1].y - puntosMetros[indice + 1].x * puntosMetros[indice].y;
+  }
+
+  return Math.abs(area / 2) / 10000;
+}
+
+function calcularSuperficieGeoJsonHa(geoJson: GeoJsonFeatureCollection) {
+  return geoJson.features.reduce((total, feature) => {
+    if (feature.geometry.type !== 'Polygon') {
+      return total;
+    }
+
+    const [exterior, ...interiores] = feature.geometry.coordinates;
+    const areaExterior = calcularAreaAnilloHa(exterior);
+    const areaInterior = interiores.reduce((subtotal, anillo) => subtotal + calcularAreaAnilloHa(anillo), 0);
+
+    return total + Math.max(0, areaExterior - areaInterior);
+  }, 0);
+}
+
+async function procesarArchivoGeografico(archivo: Pick<LoteArchivoGeografico, 'tipo' | 'storageBucket' | 'storagePath'>) {
+  const buffer = await descargarSupabaseStorage(archivo.storageBucket, archivo.storagePath);
+  const kml = archivo.tipo === 'kmz' ? extraerKmlDesdeKmz(buffer) : buffer.toString('utf8');
+  const geoJson = parsearKmlAGeoJson(kml);
+
+  if (!geoJson.features.length) {
+    throw crearErrorValidacion('No se encontraron geometrias validas en el archivo.');
+  }
+
+  return {
+    geoJson,
+    superficieCalculadaHa: calcularSuperficieGeoJsonHa(geoJson),
+  };
 }
 
 function mapearArchivo(row: ArchivoGeograficoRow): LoteArchivoGeografico {
@@ -252,12 +526,37 @@ export async function guardarArchivoGeograficoLote(
     mimeType: archivoValidado.mimeType,
     estado: request.archivo.estado || 'pendiente_procesamiento',
   };
+  let archivoParaGuardar = archivo;
+
+  if (!archivo.geometriaGeoJson) {
+    try {
+      const procesamiento = await procesarArchivoGeografico(archivo);
+
+      archivoParaGuardar = {
+        ...archivo,
+        estado: 'procesado',
+        geometriaGeoJson: procesamiento.geoJson,
+        superficieCalculadaHa: Number(procesamiento.superficieCalculadaHa.toFixed(2)),
+        observaciones: archivo.observaciones || 'Archivo geografico procesado automaticamente.',
+      };
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo procesar el archivo geografico.';
+
+      archivoParaGuardar = {
+        ...archivo,
+        estado: 'rechazado',
+        geometriaGeoJson: undefined,
+        superficieCalculadaHa: undefined,
+        observaciones: mensaje,
+      };
+    }
+  }
 
   return prisma.$transaction(async (tx) => {
     const existentePorId = await tx.$queryRaw<ArchivoGeograficoRow[]>`
       SELECT *
       FROM "LoteArchivoGeografico"
-      WHERE "id" = ${archivo.id}
+      WHERE "id" = ${archivoParaGuardar.id}
       LIMIT 1
     `;
 
@@ -266,6 +565,9 @@ export async function guardarArchivoGeograficoLote(
     }
 
     const existente = existentePorId[0] ? [existentePorId[0]] : [];
+    const geometriaGeoJson = archivoParaGuardar.geometriaGeoJson === undefined
+      ? null
+      : archivoParaGuardar.geometriaGeoJson as Prisma.InputJsonValue;
 
     if (archivo.esPrincipal) {
       await tx.$executeRaw`
@@ -273,7 +575,7 @@ export async function guardarArchivoGeograficoLote(
         SET "esPrincipal" = false
         WHERE "clienteId" = ${clienteId}
           AND "loteAppId" = ${loteAppId}
-          AND "id" <> ${archivo.id}
+          AND "id" <> ${archivoParaGuardar.id}
       `;
     }
 
@@ -298,20 +600,20 @@ export async function guardarArchivoGeograficoLote(
         "updatedAt"
       )
       VALUES (
-        ${archivo.id},
+        ${archivoParaGuardar.id},
         ${clienteId},
         ${loteAppId},
-        ${archivo.nombreArchivo},
-        ${archivo.tipo},
-        ${archivo.mimeType},
-        ${archivo.tamanioBytes},
-        ${archivo.storageBucket},
-        ${archivo.storagePath},
-        ${archivo.estado},
-        ${archivo.esPrincipal},
-        ${archivo.geometriaGeoJson === undefined ? Prisma.DbNull : archivo.geometriaGeoJson as Prisma.InputJsonValue},
-        ${archivo.superficieCalculadaHa ?? null},
-        ${archivo.observaciones ?? null},
+        ${archivoParaGuardar.nombreArchivo},
+        ${archivoParaGuardar.tipo},
+        ${archivoParaGuardar.mimeType},
+        ${archivoParaGuardar.tamanioBytes},
+        ${archivoParaGuardar.storageBucket},
+        ${archivoParaGuardar.storagePath},
+        ${archivoParaGuardar.estado},
+        ${archivoParaGuardar.esPrincipal},
+        ${geometriaGeoJson},
+        ${archivoParaGuardar.superficieCalculadaHa ?? null},
+        ${archivoParaGuardar.observaciones ?? null},
         ${usuario.id ?? null},
         ${usuario.id ?? null},
         NOW()
@@ -335,7 +637,7 @@ export async function guardarArchivoGeograficoLote(
     const guardado = await tx.$queryRaw<ArchivoGeograficoRow[]>`
       SELECT *
       FROM "LoteArchivoGeografico"
-      WHERE "id" = ${archivo.id}
+      WHERE "id" = ${archivoParaGuardar.id}
         AND "clienteId" = ${clienteId}
       LIMIT 1
     `;
@@ -345,7 +647,7 @@ export async function guardarArchivoGeograficoLote(
       clienteId,
       usuario,
       entidad: 'LoteArchivoGeografico',
-      entidadId: archivo.id,
+      entidadId: archivoParaGuardar.id,
       accion: existente[0] ? 'actualizar' : 'crear',
       origen: request.origen,
       motivo: request.motivo,
