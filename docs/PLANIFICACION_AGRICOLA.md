@@ -147,6 +147,13 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - una linea se puede copiar para soportar doble cultivo sobre el mismo lote, por ejemplo fina/invierno y segunda/verano;
 - las acciones por linea se muestran como botones de icono con tooltip para reducir ruido visual en la grilla;
 - un escenario se puede copiar completo para reutilizar una simulacion y ajustar solo supuestos puntuales; la copia tambien se persiste inmediatamente como borrador auditado;
+- el planificador puede agregar o quitar zonas, campos y lotes dentro de un escenario sin modificar los padrones maestros;
+- agregar una zona suma los campos/lotes activos de esa zona que aun no esten incluidos en el escenario;
+- agregar un campo suma los lotes activos de ese campo que aun no esten incluidos en el escenario;
+- agregar un lote suma solo ese lote;
+- quitar una zona, campo o lote elimina sus lineas del escenario, pero no borra ningun registro de padrones;
+- quitar una zona/campo/lote con datos cargados debe pedir confirmacion clara indicando cuantas lineas se van a quitar;
+- estas altas y bajas de alcance solo se permiten en planificaciones `borrador`, deben evitar duplicados y deben quedar auditadas;
 - si la planificacion no esta cerrada y el usuario tiene permiso, se habilita un boton `Editar`;
 - al editar, se abre una vista de edicion de pantalla completa dentro de la app, no un modal, porque la planilla tiene mucha densidad de datos;
 - la cabecera permite editar nombre, descripcion y campania;

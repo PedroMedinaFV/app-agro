@@ -1607,7 +1607,8 @@ nav a.active .nav-icon,
   font-size: 18px;
 }
 
-.planning-bulk-actions {
+.planning-bulk-actions,
+.planning-scope-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
   gap: 10px;
@@ -1619,16 +1620,27 @@ nav a.active .nav-icon,
   background: #ffffff;
 }
 
-.planning-bulk-actions h3 {
+.planning-bulk-actions h3,
+.planning-scope-actions h3 {
   margin: 2px 0 0;
   font-size: 15px;
 }
 
-.planning-bulk-actions button {
+.planning-bulk-actions button,
+.planning-scope-actions button {
   min-height: 38px;
   padding-right: 12px;
   padding-left: 12px;
   white-space: normal;
+}
+
+.planning-scope-actions {
+  background: #f8fbf8;
+}
+
+.danger-button {
+  color: #8a1f1f;
+  background: #fff1f1;
 }
 
 .bulk-action-result {
@@ -2288,6 +2300,34 @@ nav a.active .nav-icon,
   width: min(560px, 100%);
 }
 
+.confirmation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.confirmation-summary article {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+  background: #f8fbf8;
+}
+
+.confirmation-summary span {
+  color: #64736a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.confirmation-summary strong {
+  color: #172033;
+  overflow-wrap: anywhere;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2472,7 +2512,9 @@ nav a.active .nav-icon,
   .planning-editor-header,
   .planning-row-main,
   .planning-row-inputs,
-  .planning-row-summary {
+  .planning-row-summary,
+  .planning-scope-actions,
+  .confirmation-summary {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -85,6 +85,7 @@ export function PlanificacionEditorScreen({
   actualizarCabeceraPlanificacion,
   cambiarCampaniaPlanificacion,
   agregarLineaPlanificacion,
+  agregarLotesAEscenario,
   guardarBorradorPlanificacion,
   cambiarLote,
   cambiarProtocolo,
@@ -92,6 +93,7 @@ export function PlanificacionEditorScreen({
   actualizarLinea,
   copiarLineaPlanificacion,
   eliminarLineaPlanificacion,
+  eliminarLineasPlanificacion,
   obtenerProtocolosCompatibles,
   formatearUsd,
   leerNumero,
@@ -107,6 +109,14 @@ export function PlanificacionEditorScreen({
   const [destinoMasivo, setDestinoMasivo] = useState('');
   const [rindeMasivo, setRindeMasivo] = useState('');
   const [resultadoAccionMasiva, setResultadoAccionMasiva] = useState('');
+  const [tipoAlcanceAgregar, setTipoAlcanceAgregar] = useState<'zona' | 'campo' | 'lote'>('zona');
+  const [alcanceAgregarId, setAlcanceAgregarId] = useState('');
+  const [confirmacionQuitarAlcance, setConfirmacionQuitarAlcance] = useState<{
+    etiqueta: string;
+    lineaIds: string[];
+    totalLineas: number;
+    lineasConDatos: number;
+  } | null>(null);
   const zonasAppPorId = useMemo(() => new Map((planificacion.zonasApp || []).map((zona) => [zona.id, zona])), [planificacion.zonasApp]);
   const zonasErpPorId = useMemo(() => new Map(snapshot.zonas.flatMap((zona) => [
     [zona.erpId, zona.nombre],
@@ -321,6 +331,51 @@ export function PlanificacionEditorScreen({
       && linea.hectareasPlanificadas > lote.superficieTotal
     );
   }), [lineasPlanificacion, lotesAppPorId]);
+  const lotesIncluidosIds = useMemo(() => new Set(lineasPlanificacion.map((linea) => linea.loteAppId)), [lineasPlanificacion]);
+  const lotesDisponiblesParaAgregar = useMemo(() => (
+    planificacion.lotesApp
+      .filter((lote) => !lotesIncluidosIds.has(lote.id))
+      .sort((a, b) => {
+        const campoA = camposAppPorId.get(a.campoAppId)?.nombre || '';
+        const campoB = camposAppPorId.get(b.campoAppId)?.nombre || '';
+        return campoA.localeCompare(campoB, 'es') || a.nombre.localeCompare(b.nombre, 'es');
+      })
+  ), [planificacion.lotesApp, lotesIncluidosIds, camposAppPorId]);
+  const opcionesAlcanceAgregar = useMemo(() => {
+    if (tipoAlcanceAgregar === 'lote') {
+      return lotesDisponiblesParaAgregar.map((lote) => {
+        const campo = camposAppPorId.get(lote.campoAppId);
+        return { id: lote.id, nombre: `${campo?.nombre || 'Campo no disponible'} / ${lote.nombre}` };
+      });
+    }
+
+    if (tipoAlcanceAgregar === 'campo') {
+      const campos = new Map<string, string>();
+
+      for (const lote of lotesDisponiblesParaAgregar) {
+        const campo = camposAppPorId.get(lote.campoAppId);
+        if (campo) {
+          campos.set(campo.id, campo.nombre);
+        }
+      }
+
+      return Array.from(campos.entries())
+        .map(([id, nombre]) => ({ id, nombre }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    }
+
+    const zonas = new Map<string, string>();
+
+    for (const lote of lotesDisponiblesParaAgregar) {
+      const campo = camposAppPorId.get(lote.campoAppId);
+      const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
+      zonas.set(zonaId, obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId));
+    }
+
+    return Array.from(zonas.entries())
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }, [tipoAlcanceAgregar, lotesDisponiblesParaAgregar, camposAppPorId, planificacion.zonasApp, snapshot.zonas]);
 
   function alternarZona(zonaId: string, abierta: boolean) {
     setZonasAbiertas((actuales) => {
@@ -460,6 +515,82 @@ export function PlanificacionEditorScreen({
     }
 
     setResultadoAccionMasiva(`Rinde aplicado en ${lineasFiltradas.length} linea(s) filtradas.`);
+  }
+
+  function obtenerLoteIdsParaAgregar() {
+    if (!alcanceAgregarId) {
+      return [];
+    }
+
+    if (tipoAlcanceAgregar === 'lote') {
+      return lotesDisponiblesParaAgregar.some((lote) => lote.id === alcanceAgregarId) ? [alcanceAgregarId] : [];
+    }
+
+    if (tipoAlcanceAgregar === 'campo') {
+      return lotesDisponiblesParaAgregar
+        .filter((lote) => lote.campoAppId === alcanceAgregarId)
+        .map((lote) => lote.id);
+    }
+
+    return lotesDisponiblesParaAgregar
+      .filter((lote) => {
+        const campo = camposAppPorId.get(lote.campoAppId);
+        const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
+
+        return zonaId === alcanceAgregarId;
+      })
+      .map((lote) => lote.id);
+  }
+
+  function agregarAlcanceEscenario() {
+    const loteIds = obtenerLoteIdsParaAgregar();
+
+    if (!puedeEditarPlanificacion || loteIds.length === 0) {
+      return;
+    }
+
+    const agregadas = agregarLotesAEscenario(loteIds);
+    setResultadoAccionMasiva(`Se agregaron ${agregadas} linea(s) al escenario.`);
+    setAlcanceAgregarId('');
+  }
+
+  function lineaTieneDatos(linea: PlanificacionAgricolaLinea) {
+    return Boolean(
+      linea.protocoloId
+      || linea.destinoVenta
+      || linea.rindeEstimado > 0
+      || linea.precioVentaEstimado > 0
+      || linea.gastosComercialesEstimados > 0
+      || linea.costoProduccionEstimado > 0
+      || linea.ingresoNetoEstimado !== 0
+      || linea.margenBrutoEstimado !== 0
+    );
+  }
+
+  function quitarLineasDelEscenario(event: MouseEvent<HTMLButtonElement>, lineas: PlanificacionAgricolaLinea[], etiqueta: string) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!puedeEditarPlanificacion || lineas.length === 0) {
+      return;
+    }
+
+    setConfirmacionQuitarAlcance({
+      etiqueta,
+      lineaIds: lineas.map((linea) => linea.id),
+      totalLineas: lineas.length,
+      lineasConDatos: lineas.filter(lineaTieneDatos).length,
+    });
+  }
+
+  function confirmarQuitarAlcance() {
+    if (!confirmacionQuitarAlcance) {
+      return;
+    }
+
+    const eliminadas = eliminarLineasPlanificacion(confirmacionQuitarAlcance.lineaIds);
+    setResultadoAccionMasiva(`Se quitaron ${eliminadas} linea(s) de ${confirmacionQuitarAlcance.etiqueta}.`);
+    setConfirmacionQuitarAlcance(null);
   }
 
   function lineaEstaCompleta(linea: PlanificacionAgricolaLinea) {
@@ -767,6 +898,40 @@ export function PlanificacionEditorScreen({
           </div>
         </section>
 
+        <section className="planning-scope-actions" aria-label="Alcance del escenario">
+          <div>
+            <p className="eyebrow">Alcance del escenario</p>
+            <h3>Agregar zonas, campos o lotes</h3>
+          </div>
+          <label>
+            Tipo
+            <select
+              value={tipoAlcanceAgregar}
+              onChange={(event) => {
+                setTipoAlcanceAgregar(event.target.value as 'zona' | 'campo' | 'lote');
+                setAlcanceAgregarId('');
+              }}
+              disabled={!puedeEditarPlanificacion}
+            >
+              <option value="zona">Zona</option>
+              <option value="campo">Campo</option>
+              <option value="lote">Lote</option>
+            </select>
+          </label>
+          <label>
+            Disponible
+            <select value={alcanceAgregarId} onChange={(event) => setAlcanceAgregarId(event.target.value)} disabled={!puedeEditarPlanificacion || opcionesAlcanceAgregar.length === 0}>
+              <option value="">{opcionesAlcanceAgregar.length ? 'Seleccionar' : 'No hay disponibles'}</option>
+              {opcionesAlcanceAgregar.map((opcion) => (
+                <option key={opcion.id} value={opcion.id}>{opcion.nombre}</option>
+              ))}
+            </select>
+          </label>
+          <Button variant="small" onClick={agregarAlcanceEscenario} disabled={!puedeEditarPlanificacion || !alcanceAgregarId}>
+            Agregar al escenario
+          </Button>
+        </section>
+
         <section className="planning-bulk-actions" aria-label="Acciones masivas de planificacion">
           <div>
             <p className="eyebrow">Acciones masivas</p>
@@ -845,6 +1010,14 @@ export function PlanificacionEditorScreen({
                     {resumenZona.pendientes > 0 && <em>{resumenZona.pendientes} pendiente(s)</em>}
                     {resumenZona.duplicadas > 0 && <em className="summary-danger">{resumenZona.duplicadas} duplicada(s)</em>}
                     <div className="planning-tree-summary-actions">
+                      <Button
+                        variant="small"
+                        className="tree-toggle-button danger-button"
+                        onClick={(event) => quitarLineasDelEscenario(event, lineasZona, zona.nombre)}
+                        disabled={!puedeEditarPlanificacion}
+                      >
+                        Quitar zona
+                      </Button>
                       <Button variant="small" className="tree-toggle-button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
                         {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
                       </Button>
@@ -868,6 +1041,16 @@ export function PlanificacionEditorScreen({
                           <span>{formatearUsd(resumenCampo.margen)}</span>
                           {resumenCampo.pendientes > 0 && <em>{resumenCampo.pendientes} pendiente(s)</em>}
                           {resumenCampo.duplicadas > 0 && <em className="summary-danger">{resumenCampo.duplicadas} duplicada(s)</em>}
+                          <div className="planning-tree-summary-actions">
+                            <Button
+                              variant="small"
+                              className="tree-toggle-button danger-button"
+                              onClick={(event) => quitarLineasDelEscenario(event, campo.lineas, campo.nombre)}
+                              disabled={!puedeEditarPlanificacion}
+                            >
+                              Quitar campo
+                            </Button>
+                          </div>
                         </summary>
                         {campoAbierto && (
                           <div className="planning-tree-lines">
@@ -883,6 +1066,49 @@ export function PlanificacionEditorScreen({
           ))}
         </div>
       </Panel>
+      {confirmacionQuitarAlcance && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel modal-panel-narrow" role="dialog" aria-modal="true" aria-labelledby="quitar-alcance-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="quitar-alcance-title">Quitar del escenario</h2>
+                <p className="hint">Esta accion solo modifica la planificacion actual. No elimina zonas, campos ni lotes del padron.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setConfirmacionQuitarAlcance(null)}>
+                Cerrar
+              </Button>
+            </div>
+
+            <div className="confirmation-summary">
+              <article>
+                <span>Alcance</span>
+                <strong>{confirmacionQuitarAlcance.etiqueta}</strong>
+              </article>
+              <article>
+                <span>Lineas a quitar</span>
+                <strong>{confirmacionQuitarAlcance.totalLineas}</strong>
+              </article>
+              <article>
+                <span>Con datos cargados</span>
+                <strong>{confirmacionQuitarAlcance.lineasConDatos}</strong>
+              </article>
+            </div>
+
+            <p className="hint">
+              Al confirmar, estas lineas se quitaran del borrador. Para hacer efectivo el cambio en la base, despues guarda el borrador.
+            </p>
+
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setConfirmacionQuitarAlcance(null)}>
+                Cancelar
+              </Button>
+              <Button variant="danger" onClick={confirmarQuitarAlcance}>
+                Quitar lineas
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

@@ -275,6 +275,7 @@ export function App() {
           actualizarCabeceraPlanificacion={planificacionDemo.actualizarCabeceraPlanificacion}
           cambiarCampaniaPlanificacion={planificacionDemo.cambiarCampaniaPlanificacion}
           agregarLineaPlanificacion={planificacionDemo.agregarLineaPlanificacion}
+          agregarLotesAEscenario={planificacionDemo.agregarLotesAEscenario}
           guardarBorradorPlanificacion={planificacionDemo.guardarBorradorPlanificacion}
           cerrarPlanificacionActiva={planificacionDemo.cerrarPlanificacionActiva}
           cambiarCampo={planificacionDemo.cambiarCampo}
@@ -285,6 +286,7 @@ export function App() {
           actualizarLinea={planificacionDemo.actualizarLinea}
           copiarLineaPlanificacion={planificacionDemo.copiarLineaPlanificacion}
           eliminarLineaPlanificacion={planificacionDemo.eliminarLineaPlanificacion}
+          eliminarLineasPlanificacion={planificacionDemo.eliminarLineasPlanificacion}
           obtenerProtocolosCompatibles={planificacionDemo.obtenerProtocolosCompatibles}
           formatearUsd={formatearUsd}
           leerNumero={leerNumero}

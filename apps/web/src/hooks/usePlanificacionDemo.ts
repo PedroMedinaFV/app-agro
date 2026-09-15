@@ -818,6 +818,53 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     actualizarPlanificacionActiva((actual) => ({ ...actual, lineas: actual.lineas.filter((linea) => linea.id !== lineaId) }));
   }
 
+  function eliminarLineasPlanificacion(lineaIds: string[]) {
+    if (!puedeEditarPlanificacion || lineaIds.length === 0) {
+      return 0;
+    }
+
+    const ids = new Set(lineaIds);
+    const eliminadas = lineasPlanificacion.filter((linea) => ids.has(linea.id)).length;
+
+    actualizarPlanificacionActiva((actual) => {
+      const lineas = actual.lineas.filter((linea) => !ids.has(linea.id));
+
+      return { ...actual, lineas, updatedAt: new Date().toISOString() };
+    });
+
+    return eliminadas;
+  }
+
+  function agregarLotesAEscenario(loteAppIds: string[]) {
+    if (!planificacionActiva || !puedeEditarPlanificacion || loteAppIds.length === 0) {
+      return 0;
+    }
+
+    const idsSolicitados = new Set(loteAppIds);
+    const lotesYaIncluidosActuales = new Set(planificacionActiva.lineas.map((linea) => linea.loteAppId));
+    const lotesParaAgregar = planificacion.lotesApp.filter((lote) => idsSolicitados.has(lote.id) && !lotesYaIncluidosActuales.has(lote.id));
+
+    actualizarPlanificacionActiva((actual) => {
+      const lotesYaIncluidos = new Set(actual.lineas.map((linea) => linea.loteAppId));
+      const nuevasLineas = lotesParaAgregar
+        .filter((lote) => !lotesYaIncluidos.has(lote.id))
+        .map((lote, indice) => crearLineaDesdeLote(lote, actual.id, actual.lineas.length + indice, actual.campaniaErpId))
+        .filter((linea): linea is PlanificacionAgricolaLinea => Boolean(linea));
+
+      if (!nuevasLineas.length) {
+        return actual;
+      }
+
+      return {
+        ...actual,
+        lineas: [...actual.lineas, ...nuevasLineas],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    return lotesParaAgregar.length;
+  }
+
   function copiarLineaPlanificacion(lineaId: string) {
     if (!puedeEditarPlanificacion) {
       return;
@@ -1402,8 +1449,10 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     cambiarProtocolo,
     cambiarDestino,
     agregarLineaPlanificacion,
+    agregarLotesAEscenario,
     copiarLineaPlanificacion,
     eliminarLineaPlanificacion,
+    eliminarLineasPlanificacion,
     guardarPrecioReferenciaDesdeModal,
     guardarGastoComercialDesdeModal,
     guardarConceptoGastoComercialDesdeModal,
