@@ -13,6 +13,61 @@ import {
 import { AdjuntoLocalPendiente, guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
 import { sincronizarPendientes } from './services/sincronizacion';
 
+const esReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+function obtenerExtensionArchivo(nombreArchivo: string, mimeType: string) {
+  const extensionNombre = nombreArchivo.match(/\.[a-z0-9]+$/i)?.[0];
+
+  if (extensionNombre) {
+    return extensionNombre.toLowerCase();
+  }
+
+  if (mimeType === 'image/png') {
+    return '.png';
+  }
+
+  if (mimeType === 'image/webp') {
+    return '.webp';
+  }
+
+  return '.jpg';
+}
+
+async function copiarFotoPendienteASandbox(adjunto: AdjuntoLocalPendiente): Promise<AdjuntoLocalPendiente> {
+  if (!esReactNative) {
+    return adjunto;
+  }
+
+  const FileSystem = await import('expo-file-system');
+  const raiz = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+
+  if (!raiz) {
+    throw new Error('No hay almacenamiento local disponible para preservar la foto.');
+  }
+
+  const directorio = `${raiz}agro-app/observaciones/`;
+  const extension = obtenerExtensionArchivo(adjunto.nombreArchivo, adjunto.mimeType);
+  const destino = `${directorio}${Date.now()}-${Math.random().toString(16).slice(2)}${extension}`;
+
+  await FileSystem.makeDirectoryAsync(directorio, { intermediates: true });
+  await FileSystem.copyAsync({ from: adjunto.uri, to: destino });
+
+  return {
+    ...adjunto,
+    uri: destino,
+  };
+}
+
+async function prepararAdjuntosLocalesPendientes(adjuntos: AdjuntoLocalPendiente[]) {
+  const preparados: AdjuntoLocalPendiente[] = [];
+
+  for (const adjunto of adjuntos) {
+    preparados.push(await copiarFotoPendienteASandbox(adjunto));
+  }
+
+  return preparados;
+}
+
 const planificacionDemo: PlanificacionSnapshot = {
   sincronizadoEn: new Date().toISOString(),
   camposApp: [
@@ -307,7 +362,7 @@ export default function App() {
       const nombreFoto = fotoSeleccionada?.fileName || `observacion-${Date.now()}.jpg`;
       const mimeFoto = fotoSeleccionada?.mimeType || 'image/jpeg';
       const tamanioFoto = fotoSeleccionada?.fileSize || 1;
-      const adjuntosLocales: AdjuntoLocalPendiente[] = fotoSeleccionada
+      const adjuntosSeleccionados: AdjuntoLocalPendiente[] = fotoSeleccionada
         ? [{
           uri: fotoSeleccionada.uri,
           nombreArchivo: nombreFoto,
@@ -331,6 +386,8 @@ export default function App() {
       setGuardandoObservacion(true);
       try {
         if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
+          const adjuntosLocales = await prepararAdjuntosLocalesPendientes(adjuntosSeleccionados);
+
           await guardarRegistroLocal({
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             tipo: 'observacion',
@@ -376,16 +433,22 @@ export default function App() {
         setLongitudObservacion('');
         setFotoSeleccionada(null);
       } catch {
-        await guardarRegistroLocal({
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          tipo: 'observacion',
-          payload,
-          adjuntosLocales,
-          creadoEn: new Date().toISOString(),
-          sincronizado: false,
-        });
-        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-        Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
+        try {
+          const adjuntosLocales = await prepararAdjuntosLocalesPendientes(adjuntosSeleccionados);
+
+          await guardarRegistroLocal({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tipo: 'observacion',
+            payload,
+            adjuntosLocales,
+            creadoEn: new Date().toISOString(),
+            sincronizado: false,
+          });
+          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+          Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
+        } catch {
+          Alert.alert('Observaciones', 'No se pudo preservar la foto localmente. Intenta guardar la observacion nuevamente.');
+        }
       } finally {
         setGuardandoObservacion(false);
       }

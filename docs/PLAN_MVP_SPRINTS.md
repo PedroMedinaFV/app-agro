@@ -368,7 +368,7 @@ Criterio de aceptacion:
 Pendientes de refinamiento antes de cerrar sprint:
 
 - revisar ergonomia final de la planilla con datos reales voluminosos;
-- [ ] ajustar cierre de planificacion para seleccionar/cerrar explicitamente un escenario desde el listado, evitando depender solo de la planificacion activa;
+- [x] ajustar cierre de planificacion para seleccionar/cerrar explicitamente un escenario desde el listado, evitando depender solo de la planificacion activa;
 - [x] mejorar filtros/busqueda dentro del arbol cuando haya muchos campos y lotes;
 - [x] mostrar indicadores por zona/campo para ubicar pendientes sin abrir toda la planilla;
 - [x] validar con usuario una primera version de edicion masiva basada en filtros.
@@ -423,7 +423,7 @@ Avance realizado:
 - [x] subida real de binarios a Supabase Storage con URL firmada cuando hay sesion online;
 - [x] selector/camara mobile para tomar o adjuntar imagen real.
 - [x] sincronizacion offline diferida de fotos cuando la observacion se carga sin conexion.
-- [ ] hardening mobile para copiar el archivo al sandbox de la app antes de dejarlo pendiente.
+- [x] hardening mobile para copiar el archivo al sandbox de la app antes de dejarlo pendiente.
 
 ## Sprint 7 - Web de seguimiento operativo
 
