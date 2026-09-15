@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, SesionUsuario } from '@agro/tipos';
+import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
@@ -8,11 +8,15 @@ import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import {
   guardarCampoApp,
+  guardarArchivoGeograficoLote,
   guardarLoteApp,
+  crearUrlSubidaArchivoGeograficoLote,
+  obtenerArchivosGeograficosLote,
   obtenerCamposErpImportados,
   obtenerCamposApp,
   obtenerLotesErpImportados,
   obtenerLotesApp,
+  subirArchivoAFirmaSupabase,
 } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -87,6 +91,46 @@ function crearIdCampoDesdeErp(campoErpId: string) {
   return `campo-app-${campoErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
 }
 
+function crearIdArchivoGeografico() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `lote-geo-${crypto.randomUUID()}`;
+  }
+
+  return `lote-geo-${Date.now()}`;
+}
+
+function obtenerMimeArchivoGeografico(archivo: File) {
+  const nombre = archivo.name.toLowerCase();
+
+  if (archivo.type) {
+    return archivo.type;
+  }
+
+  if (nombre.endsWith('.kml')) {
+    return 'application/vnd.google-earth.kml+xml';
+  }
+
+  if (nombre.endsWith('.kmz')) {
+    return 'application/vnd.google-earth.kmz';
+  }
+
+  return 'application/octet-stream';
+}
+
+function obtenerTipoArchivoGeografico(archivo: File): LoteArchivoGeografico['tipo'] | undefined {
+  const nombre = archivo.name.toLowerCase();
+
+  if (nombre.endsWith('.kml')) {
+    return 'kml';
+  }
+
+  if (nombre.endsWith('.kmz')) {
+    return 'kmz';
+  }
+
+  return undefined;
+}
+
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
   const [lotesErp, setLotesErp] = useState<ErpLote[]>([]);
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
@@ -97,6 +141,9 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const [loteEnEdicion, setLoteEnEdicion] = useState<LoteApp | null>(null);
   const [modoFormulario, setModoFormulario] = useState<'crear' | 'editar' | 'copiar'>('crear');
   const [lotePropioParaVincular, setLotePropioParaVincular] = useState<LoteApp | null>(null);
+  const [loteArchivosGeograficos, setLoteArchivosGeograficos] = useState<LoteApp | null>(null);
+  const [archivosGeograficos, setArchivosGeograficos] = useState<LoteArchivoGeografico[]>([]);
+  const [archivoGeograficoSeleccionado, setArchivoGeograficoSeleccionado] = useState<File | null>(null);
   const [loteErpVincularId, setLoteErpVincularId] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
@@ -400,6 +447,82 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     }
   }
 
+  async function abrirArchivosGeograficos(lote: LoteApp) {
+    setLoteArchivosGeograficos(lote);
+    setArchivoGeograficoSeleccionado(null);
+    setArchivosGeograficos([]);
+    setGuardando(true);
+
+    try {
+      const respuesta = await obtenerArchivosGeograficosLote(lote.id, sesion.token);
+      setArchivosGeograficos(respuesta.archivos);
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los archivos geograficos.';
+      notificar?.({ tipo: 'error', titulo: 'No se cargaron archivos', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function subirArchivoGeografico() {
+    if (!loteArchivosGeograficos || !archivoGeograficoSeleccionado) {
+      return;
+    }
+
+    const tipo = obtenerTipoArchivoGeografico(archivoGeograficoSeleccionado);
+    const mimeType = obtenerMimeArchivoGeografico(archivoGeograficoSeleccionado);
+
+    if (!tipo) {
+      notificar?.({ tipo: 'error', titulo: 'Archivo invalido', mensaje: 'Solo se permiten archivos .kml o .kmz.' });
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const urlSubida = await crearUrlSubidaArchivoGeograficoLote(loteArchivosGeograficos.id, {
+        nombreArchivo: archivoGeograficoSeleccionado.name,
+        mimeType,
+        tamanioBytes: archivoGeograficoSeleccionado.size,
+      }, sesion.token);
+      const archivoParaSubir = archivoGeograficoSeleccionado.type
+        ? archivoGeograficoSeleccionado
+        : new File([archivoGeograficoSeleccionado], archivoGeograficoSeleccionado.name, { type: mimeType });
+
+      await subirArchivoAFirmaSupabase(urlSubida.signedUploadUrl, archivoParaSubir);
+
+      const ahora = new Date().toISOString();
+      const respuesta = await guardarArchivoGeograficoLote(loteArchivosGeograficos.id, {
+        archivo: {
+          id: crearIdArchivoGeografico(),
+          clienteId: sesion.usuario.clienteId || 'cliente-demo',
+          loteAppId: loteArchivosGeograficos.id,
+          nombreArchivo: archivoGeograficoSeleccionado.name,
+          tipo,
+          mimeType,
+          tamanioBytes: archivoGeograficoSeleccionado.size,
+          storageBucket: urlSubida.storageBucket,
+          storagePath: urlSubida.storagePath,
+          estado: 'pendiente_procesamiento',
+          esPrincipal: archivosGeograficos.length === 0,
+          createdAt: ahora,
+          updatedAt: ahora,
+        },
+        origen: 'web',
+        motivo: 'Vinculacion de archivo geografico KML/KMZ al lote',
+      }, sesion.token);
+
+      setArchivosGeograficos((actuales) => [respuesta.archivo, ...actuales]);
+      setArchivoGeograficoSeleccionado(null);
+      notificar?.({ tipo: 'success', titulo: 'Archivo vinculado', mensaje: respuesta.mensaje });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular el archivo geografico.';
+      notificar?.({ tipo: 'error', titulo: 'No se subio el archivo', mensaje });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   function seleccionarCampo(clave: string) {
     const campo = camposSeleccionablesPorClave.get(clave);
 
@@ -591,12 +714,13 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
             {
               key: 'accion',
               label: 'Accion',
-              width: 'minmax(150px, 0.75fr)',
+              width: 'minmax(190px, 0.85fr)',
               render: (fila) => fila.accion === 'editar'
                 ? (
                   <div className="table-icon-actions">
                     <IconButton icon="edit" label={`Editar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)} />
                     <IconButton icon="copy" label={`Copiar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)} />
+                    <IconButton icon="map" label={`Archivos geograficos de ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirArchivosGeograficos(fila.lotePropio)} />
                     {fila.lotePropio?.estadoVinculacion === 'provisorio' && (
                       <IconButton icon="link" label={`Vincular lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirVinculacion(fila.lotePropio)} />
                     )}
@@ -727,6 +851,63 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}
                   Vincular
+                </span>
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {loteArchivosGeograficos && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="archivos-geograficos-lote-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="archivos-geograficos-lote-title">Archivos geograficos</h2>
+                <p className="hint">{loteArchivosGeograficos.nombre}. Vincula KML o KMZ para usar el lote en recorridas georreferenciadas.</p>
+              </div>
+              <Button variant="ghost" onClick={() => { setLoteArchivosGeograficos(null); setArchivoGeograficoSeleccionado(null); }}>Cerrar</Button>
+            </div>
+
+            <div className="reference-modal-grid">
+              <label className="reference-wide">
+                Archivo KML/KMZ
+                <input
+                  type="file"
+                  accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
+                  onChange={(event) => setArchivoGeograficoSeleccionado(event.target.files?.[0] || null)}
+                />
+              </label>
+              <div className="reference-total">
+                <span>Archivos vinculados</span>
+                <strong>{archivosGeograficos.length}</strong>
+                <span>{archivosGeograficos.some((archivo) => archivo.esPrincipal) ? 'Con archivo principal' : 'Sin archivo principal'}</span>
+              </div>
+            </div>
+
+            <div className="reference-list">
+              {archivosGeograficos.length === 0 ? (
+                <p className="hint">Todavia no hay archivos geograficos vinculados a este lote.</p>
+              ) : archivosGeograficos.map((archivo) => (
+                <article key={archivo.id} className="reference-row">
+                  <div>
+                    <strong>{archivo.nombreArchivo}</strong>
+                    <span>{archivo.tipo.toUpperCase()} · {(archivo.tamanioBytes / 1024).toFixed(1)} KB</span>
+                  </div>
+                  <div className="table-icon-actions">
+                    <em>{archivo.esPrincipal ? 'Principal' : 'Archivo'}</em>
+                    <em>{archivo.estado.replace(/_/g, ' ')}</em>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="modal-actions">
+              <span className="hint">Por ahora queda pendiente de procesamiento; luego podremos convertirlo a geometria para mostrarlo en mapa.</span>
+              <Button variant="primary" disabled={guardando || !archivoGeograficoSeleccionado} onClick={subirArchivoGeografico}>
+                <span className="button-content">
+                  {guardando && <span className="loading-spinner" />}
+                  Vincular archivo
                 </span>
               </Button>
             </div>

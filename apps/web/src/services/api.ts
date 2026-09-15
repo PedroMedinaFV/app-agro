@@ -33,6 +33,9 @@ import {
   GuardarCampoAppResponse,
   GuardarLoteAppRequest,
   GuardarLoteAppResponse,
+  GuardarArchivoGeograficoLoteRequest,
+  GuardarArchivoGeograficoLoteResponse,
+  ArchivosGeograficosLoteResponse,
   GuardarZonaAppRequest,
   GuardarZonaAppResponse,
   GuardarDestinoAppRequest,
@@ -695,6 +698,32 @@ export async function guardarLoteApp(
 ): Promise<GuardarLoteAppResponse> {
   return request<GuardarLoteAppResponse>(`/lotes-app/${id}`, {
     method: 'PUT',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function obtenerArchivosGeograficosLote(loteAppId: string, token?: string): Promise<ArchivosGeograficosLoteResponse> {
+  return request<ArchivosGeograficosLoteResponse>(`/lotes-app/${loteAppId}/archivos-geograficos`, {}, token);
+}
+
+export async function crearUrlSubidaArchivoGeograficoLote(
+  loteAppId: string,
+  datos: CrearUrlSubidaAdjuntoRequest,
+  token?: string,
+): Promise<CrearUrlSubidaAdjuntoResponse> {
+  return request<CrearUrlSubidaAdjuntoResponse>(`/lotes-app/${loteAppId}/archivos-geograficos/upload-url`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function guardarArchivoGeograficoLote(
+  loteAppId: string,
+  datos: GuardarArchivoGeograficoLoteRequest,
+  token?: string,
+): Promise<GuardarArchivoGeograficoLoteResponse> {
+  return request<GuardarArchivoGeograficoLoteResponse>(`/lotes-app/${loteAppId}/archivos-geograficos`, {
+    method: 'POST',
     body: JSON.stringify(datos),
   }, token);
 }
