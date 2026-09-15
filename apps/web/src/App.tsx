@@ -274,7 +274,6 @@ export function App() {
           copiarEscenarioPlanificacion={planificacionDemo.copiarEscenarioPlanificacion}
           actualizarCabeceraPlanificacion={planificacionDemo.actualizarCabeceraPlanificacion}
           cambiarCampaniaPlanificacion={planificacionDemo.cambiarCampaniaPlanificacion}
-          agregarLineaPlanificacion={planificacionDemo.agregarLineaPlanificacion}
           agregarLotesAEscenario={planificacionDemo.agregarLotesAEscenario}
           guardarBorradorPlanificacion={planificacionDemo.guardarBorradorPlanificacion}
           cerrarPlanificacionActiva={planificacionDemo.cerrarPlanificacionActiva}

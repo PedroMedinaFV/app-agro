@@ -84,7 +84,6 @@ export function PlanificacionEditorScreen({
   protocolosPorId,
   actualizarCabeceraPlanificacion,
   cambiarCampaniaPlanificacion,
-  agregarLineaPlanificacion,
   agregarLotesAEscenario,
   guardarBorradorPlanificacion,
   cambiarLote,
@@ -454,7 +453,10 @@ export function PlanificacionEditorScreen({
 
     setZonasAbiertas((actuales) => new Set([...actuales, zonaId]));
 
-    if (campoIds.every((campoId) => camposAbiertos.has(campoId))) {
+    const zonaEstaAbierta = zonasAbiertas.has(zonaId);
+    const todosLosCamposAbiertos = campoIds.length > 0 && campoIds.every((campoId) => camposAbiertos.has(campoId));
+
+    if (zonaEstaAbierta && todosLosCamposAbiertos) {
       contraerCamposDeZona(campoIds);
     } else {
       expandirCamposDeZona(campoIds);
@@ -577,7 +579,7 @@ export function PlanificacionEditorScreen({
     }
 
     cambiarCampaniaPlanificacion(confirmacionCambioCampania.campaniaErpId);
-    setResultadoAccionMasiva('Se cambio la campania y se resetearon protocolos, precios, gastos, costos y resultados.');
+    setResultadoAccionMasiva('Se cambio la campania y se resetearon protocolos, rindes, precios, gastos, costos y resultados.');
     setConfirmacionCambioCampania(null);
   }
 
@@ -821,9 +823,6 @@ export function PlanificacionEditorScreen({
         description="Estos datos identifican la planificacion y se guardan junto con el borrador."
         actions={(
           <ActionBar align="end">
-            <Button variant="small" onClick={agregarLineaPlanificacion} disabled={!puedeEditarPlanificacion}>
-              Nueva linea
-            </Button>
             <Button variant="primary" onClick={guardarBorradorPlanificacion} disabled={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas || lineasConHectareasExcedidas.length > 0}>
               <span className="button-content">
                 {guardandoPlanificacion && <LoadingSpinner label="Guardando planificacion" />}
@@ -1046,7 +1045,7 @@ export function PlanificacionEditorScreen({
                         Quitar zona
                       </Button>
                       <Button variant="small" className="tree-toggle-button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
-                        {zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
+                        {zonaAbierta && zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
                       </Button>
                     </div>
                   </summary>

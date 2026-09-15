@@ -38,7 +38,6 @@ export type PlanificacionBaseProps = {
   copiarEscenarioPlanificacion: (planificacionId: string) => Promise<string | undefined>;
   actualizarCabeceraPlanificacion: (updates: Partial<Pick<PlanificacionActiva, 'nombre' | 'descripcion'>>) => void;
   cambiarCampaniaPlanificacion: (campaniaErpId: string) => void;
-  agregarLineaPlanificacion: () => void;
   agregarLotesAEscenario: (loteAppIds: string[]) => number;
   copiarLineaPlanificacion: (lineaId: string) => void;
   guardarBorradorPlanificacion: () => void;

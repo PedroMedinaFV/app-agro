@@ -768,60 +768,6 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     actualizarLinea(lineaId, aplicarSugerenciasComerciales(linea, destinoVenta));
   }
 
-  function agregarLineaPlanificacion() {
-    if (!planificacionActiva || !puedeEditarPlanificacion) {
-      return;
-    }
-
-    const ultimaLinea = planificacionActiva.lineas[planificacionActiva.lineas.length - 1];
-    const campoPorDefectoId = ultimaLinea?.campoAppId || planificacion.camposApp[0]?.id;
-    const lote = planificacion.lotesApp.find((item) => item.campoAppId === campoPorDefectoId) || planificacion.lotesApp[0];
-    const campo = lote ? camposAppPorId.get(lote.campoAppId) : undefined;
-    const actividad = planificacion.actividadesApp?.[0];
-    const destino = actividad ? planificacion.destinosReferencia.find((item) => item.activo) : undefined;
-    const precio = actividad ? planificacion.preciosReferencia.find((item) => item.actividadAppId === actividad.id && (!destino || item.destinoVenta === destino.destinoVenta)) : undefined;
-    const ahora = new Date().toISOString();
-
-    if (!lote || !campo || !actividad) {
-      return;
-    }
-
-    const base: PlanificacionAgricolaLinea = {
-      id: `linea-planificacion-${Date.now()}`,
-      planificacionId: planificacionActiva.id,
-      empresaErpId: campo.empresaErpId,
-      campoAppId: campo.id,
-      campoErpId: campo.campoErpId,
-      loteAppId: lote.id,
-      loteErpId: lote.loteErpId,
-      actividadAppId: actividad.id,
-      actividadErpId: actividad.actividadErpId,
-      destinoReferenciaId: destino?.id,
-      destinoVenta: destino?.destinoVenta || '',
-      destinoVentaManual: !destino,
-      precioReferenciaId: precio?.id,
-      precioVentaEstimado: precio?.valor || 0,
-      precioVentaManual: !precio,
-      hectareasPlanificadas: obtenerSuperficieInicialLote(lote),
-      rindeEstimado: 0,
-      gastosComercialesReferenciaId: undefined,
-      gastosComercialesEstimados: 0,
-      protocoloId: undefined,
-      ingresoBrutoEstimado: 0,
-      ingresoNetoEstimado: 0,
-      costoProduccionEstimado: 0,
-      margenBrutoEstimado: 0,
-      margenBrutoActualizado: 0,
-      estado: 'borrador',
-      createdAt: ahora,
-      updatedAt: ahora,
-    };
-    const protocolo = obtenerProtocolosCompatibles(base)[0];
-    const nuevaLinea = recalcularLinea({ ...base, protocoloId: protocolo?.id, ...aplicarSugerenciasComerciales(base) });
-
-    actualizarPlanificacionActiva((actual) => ({ ...actual, lineas: [...actual.lineas, nuevaLinea] }));
-  }
-
   function eliminarLineaPlanificacion(lineaId: string) {
     if (!puedeEditarPlanificacion) {
       return;
@@ -1460,7 +1406,6 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     cambiarActividad,
     cambiarProtocolo,
     cambiarDestino,
-    agregarLineaPlanificacion,
     agregarLotesAEscenario,
     copiarLineaPlanificacion,
     eliminarLineaPlanificacion,
