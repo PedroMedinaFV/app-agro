@@ -500,19 +500,31 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   }
 
   function cambiarCampaniaPlanificacion(campaniaErpId: string) {
+    const ahora = new Date().toISOString();
+
     actualizarPlanificacionActiva((actual) => ({
       ...actual,
       campaniaErpId,
-      lineas: actual.lineas.map((linea) => {
-        const gastos = buscarGastosSugeridos(linea, campaniaErpId);
-
-        return recalcularLinea({
-          ...linea,
-          gastosComercialesReferenciaId: gastos?.id,
-          gastosComercialesEstimados: gastos ? calcularGastosComerciales(linea, gastos.id) : 0,
-          updatedAt: new Date().toISOString(),
-        });
-      }),
+      lineas: actual.lineas.map((linea) => ({
+        ...linea,
+        protocoloId: undefined,
+        destinoReferenciaId: undefined,
+        destinoVenta: '',
+        destinoVentaManual: false,
+        precioReferenciaId: undefined,
+        precioVentaEstimado: 0,
+        precioVentaManual: false,
+        rindeEstimado: 0,
+        gastosComercialesReferenciaId: undefined,
+        gastosComercialesEstimados: 0,
+        ingresoBrutoEstimado: 0,
+        ingresoNetoEstimado: 0,
+        costoProduccionEstimado: 0,
+        margenBrutoEstimado: 0,
+        margenBrutoActualizado: 0,
+        updatedAt: ahora,
+      })),
+      updatedAt: ahora,
     }));
   }
 

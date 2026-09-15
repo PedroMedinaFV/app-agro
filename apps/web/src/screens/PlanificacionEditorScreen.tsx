@@ -117,6 +117,10 @@ export function PlanificacionEditorScreen({
     totalLineas: number;
     lineasConDatos: number;
   } | null>(null);
+  const [confirmacionCambioCampania, setConfirmacionCambioCampania] = useState<{
+    campaniaErpId: string;
+    codigo: string;
+  } | null>(null);
   const zonasAppPorId = useMemo(() => new Map((planificacion.zonasApp || []).map((zona) => [zona.id, zona])), [planificacion.zonasApp]);
   const zonasErpPorId = useMemo(() => new Map(snapshot.zonas.flatMap((zona) => [
     [zona.erpId, zona.nombre],
@@ -554,6 +558,29 @@ export function PlanificacionEditorScreen({
     setAlcanceAgregarId('');
   }
 
+  function solicitarCambioCampania(campaniaErpId: string) {
+    if (!planificacionActiva || campaniaErpId === planificacionActiva.campaniaErpId) {
+      return;
+    }
+
+    const campania = campaniasDisponibles.find((item) => item.erpId === campaniaErpId);
+
+    setConfirmacionCambioCampania({
+      campaniaErpId,
+      codigo: campania?.codigo || campaniaErpId,
+    });
+  }
+
+  function confirmarCambioCampania() {
+    if (!confirmacionCambioCampania) {
+      return;
+    }
+
+    cambiarCampaniaPlanificacion(confirmacionCambioCampania.campaniaErpId);
+    setResultadoAccionMasiva('Se cambio la campania y se resetearon protocolos, precios, gastos, costos y resultados.');
+    setConfirmacionCambioCampania(null);
+  }
+
   function lineaTieneDatos(linea: PlanificacionAgricolaLinea) {
     return Boolean(
       linea.protocoloId
@@ -814,7 +841,7 @@ export function PlanificacionEditorScreen({
           </label>
           <label>
             Campania
-            <select value={planificacionActiva?.campaniaErpId || ''} onChange={(event) => cambiarCampaniaPlanificacion(event.target.value)} disabled={!puedeEditarPlanificacion}>
+            <select value={planificacionActiva?.campaniaErpId || ''} onChange={(event) => solicitarCambioCampania(event.target.value)} disabled={!puedeEditarPlanificacion}>
               {campaniasDisponibles.map((campania) => (
                 <option key={campania.erpId} value={campania.erpId}>
                   {campania.codigo} {campania.esActual ? '(actual)' : ''}
@@ -1104,6 +1131,50 @@ export function PlanificacionEditorScreen({
               </Button>
               <Button variant="danger" onClick={confirmarQuitarAlcance}>
                 Quitar lineas
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
+      {confirmacionCambioCampania && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel modal-panel-narrow" role="dialog" aria-modal="true" aria-labelledby="cambio-campania-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="cambio-campania-title">Cambiar campania</h2>
+                <p className="hint">La campania define los protocolos disponibles y los calculos economicos del escenario.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setConfirmacionCambioCampania(null)}>
+                Cerrar
+              </Button>
+            </div>
+
+            <div className="confirmation-summary">
+              <article>
+                <span>Campania actual</span>
+                <strong>{campaniaPlanificada?.codigo || planificacionActiva?.campaniaErpId || '-'}</strong>
+              </article>
+              <article>
+                <span>Nueva campania</span>
+                <strong>{confirmacionCambioCampania.codigo}</strong>
+              </article>
+              <article>
+                <span>Lineas afectadas</span>
+                <strong>{lineasPlanificacion.length}</strong>
+              </article>
+            </div>
+
+            <p className="hint">
+              Al confirmar se quitaran los protocolos aplicados y se resetearan destino, rinde, precio, gastos comerciales, costos e indicadores economicos.
+              Se conservan los lotes y hectareas cargadas.
+            </p>
+
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setConfirmacionCambioCampania(null)}>
+                Cancelar
+              </Button>
+              <Button variant="danger" onClick={confirmarCambioCampania}>
+                Cambiar y resetear
               </Button>
             </div>
           </section>
