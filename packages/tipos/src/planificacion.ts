@@ -52,6 +52,29 @@ export type LoteApp = {
   updatedAt: string;
 };
 
+export type TipoArchivoGeograficoLote = 'kml' | 'kmz';
+
+export type EstadoArchivoGeograficoLote = 'pendiente_procesamiento' | 'procesado' | 'rechazado';
+
+export type LoteArchivoGeografico = {
+  id: string;
+  clienteId: string;
+  loteAppId: string;
+  nombreArchivo: string;
+  tipo: TipoArchivoGeograficoLote;
+  mimeType: string;
+  tamanioBytes: number;
+  storageBucket: string;
+  storagePath: string;
+  estado: EstadoArchivoGeograficoLote;
+  esPrincipal: boolean;
+  geometriaGeoJson?: unknown;
+  superficieCalculadaHa?: number;
+  observaciones?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type EspecieApp = {
   id: string;
   clienteId: string;
@@ -503,6 +526,22 @@ export type GuardarLoteAppResponse = {
   lote: LoteApp;
   auditado: boolean;
   mensaje: string;
+};
+
+export type GuardarArchivoGeograficoLoteRequest = {
+  archivo: LoteArchivoGeografico;
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarArchivoGeograficoLoteResponse = {
+  archivo: LoteArchivoGeografico;
+  auditado: boolean;
+  mensaje: string;
+};
+
+export type ArchivosGeograficosLoteResponse = {
+  archivos: LoteArchivoGeografico[];
 };
 
 export type CerrarPlanificacionRequest = {

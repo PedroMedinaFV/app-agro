@@ -35,6 +35,7 @@ model Cliente {
   zonasApp ZonaApp[]
   camposApp CampoApp[]
   lotesApp LoteApp[]
+  loteArchivosGeograficos LoteArchivoGeografico[]
   especiesApp EspecieApp[]
   actividadesApp ActividadApp[]
   insumosApp InsumoApp[]
@@ -561,11 +562,40 @@ model LoteApp {
   precipitaciones   PrecipitacionCampo[]
   observaciones     ObservacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
+  archivosGeograficos LoteArchivoGeografico[]
 
   @@index([clienteId])
   @@index([campoAppId])
   @@index([loteErpId])
   @@index([estadoVinculacion])
+}
+
+model LoteArchivoGeografico {
+  id                    String   @id @default(uuid())
+  cliente               Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  loteApp               LoteApp  @relation(fields: [loteAppId], references: [id], onDelete: Cascade)
+  loteAppId             String
+  nombreArchivo         String
+  tipo                  String
+  mimeType              String
+  tamanioBytes          Int
+  storageBucket         String
+  storagePath           String
+  estado                String   @default("pendiente_procesamiento")
+  esPrincipal           Boolean  @default(false)
+  geometriaGeoJson      Json?
+  superficieCalculadaHa Float?
+  observaciones         String?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([clienteId])
+  @@index([loteAppId])
+  @@index([estado])
+  @@unique([clienteId, storageBucket, storagePath])
 }
 
 model PrecipitacionCampo {

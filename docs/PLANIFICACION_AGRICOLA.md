@@ -73,6 +73,8 @@ La pantalla web de `Lotes` debe cargar los campos propios desde el backend de pa
 
 Si al crear un lote el usuario selecciona un campo ERP que todavia no tiene su registro operativo en `CampoApp`, la web debe crear primero ese campo propio ya vinculado al ERP y luego guardar el lote asociado. Ambas acciones deben pasar por backend y auditoria. Para el usuario, el flujo debe verse como una sola accion de guardado del lote.
 
+Cada lote puede tener archivos geograficos asociados en formato `KML` o `KMZ`. Estos archivos sirven para recorridas operativas, visualizacion en mapa y georreferenciacion mobile. La metadata del archivo se guarda en `LoteArchivoGeografico`; el binario debe almacenarse en storage y la geometria procesada puede persistirse como GeoJSON simplificado para consultas rapidas. Un lote puede tener varios archivos, pero solo uno deberia marcarse como principal para la vista de mapa.
+
 El snapshot de planificacion (`GET /planificacion/snapshot`) no debe usar padrones mock cuando existen datos sincronizados o persistidos. Antes de responder, el backend materializa los padrones ERP activos como entidades operativas de Agro App vinculadas al ERP: zonas, campos, lotes, especies, actividades, insumos y labores. Esto permite que la planilla use siempre `zonaAppId`, `campoAppId`, `loteAppId`, `actividadAppId` e `insumoAppId` reales, guardables y validables por Prisma. El mock queda solo como fallback de desarrollo cuando no hay cache ERP ni datos propios disponibles.
 
 Cuando el registro aparezca mas adelante en los padrones del ERP, un usuario autorizado debe poder vincular el registro provisorio con el registro ERP correspondiente.

@@ -44,6 +44,7 @@ Funciones esperadas:
 
 - ver campos y lotes asignados;
 - visualizar lotes mediante georreferenciacion geografica;
+- vincular a cada lote archivos geograficos `KML` o `KMZ` para disponer de perimetros y capas de referencia durante la recorrida;
 - seleccionar lotes desde mapa o listado;
 - registrar recorridas;
 - consultar ficha operativa de lote/cultivo;

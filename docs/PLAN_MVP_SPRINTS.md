@@ -385,6 +385,7 @@ Incluye:
 - login y sesion;
 - lista de campos/lotes asignados;
 - vista geografica simple o preparacion de modelo georreferenciado;
+- archivos geograficos `KML`/`KMZ` vinculados a lote para perimetros de recorrida;
 - ficha de lote/cultivo;
 - carga de observacion;
 - carga rapida de precipitaciones por campo asignado, con lote opcional;
