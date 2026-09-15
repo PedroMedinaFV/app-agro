@@ -8,6 +8,7 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
+import { formatearNumero } from '../utils/formatters';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
@@ -62,13 +63,6 @@ function formatearCultivosAntecesores(cultivos: ErpCultivo[], actividadNombrePor
       return `${nombre} (${cultivo.hectareasSembradas.toFixed(2)} ha)`;
     })
     .join(' / ')}`;
-}
-
-function formatearNumero(valor: number, decimales = 2) {
-  return new Intl.NumberFormat('es-AR', {
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales,
-  }).format(Number.isFinite(valor) ? valor : 0);
 }
 
 export function PlanificacionEditorScreen({
@@ -526,6 +520,7 @@ export function PlanificacionEditorScreen({
       .join(' + ');
     const produccionEstimada = linea.hectareasPlanificadas * linea.rindeEstimado;
     const margenPorHa = linea.hectareasPlanificadas > 0 ? linea.margenBrutoEstimado / linea.hectareasPlanificadas : 0;
+    const ingresoNetoPorHa = linea.hectareasPlanificadas > 0 ? linea.ingresoNetoEstimado / linea.hectareasPlanificadas : 0;
     const costoProduccionPorHa = linea.hectareasPlanificadas > 0 ? linea.costoProduccionEstimado / linea.hectareasPlanificadas : 0;
     const gastosComercialesPorHa = linea.hectareasPlanificadas > 0 ? linea.gastosComercialesEstimados / linea.hectareasPlanificadas : 0;
     const gastosComercialesPorTn = produccionEstimada > 0 ? linea.gastosComercialesEstimados / produccionEstimada : 0;
@@ -609,18 +604,16 @@ export function PlanificacionEditorScreen({
 
         <div className="planning-row-summary">
           <div className="planning-cell-summary">
-            <span className="cell-label">Margen bruto</span>
-            <strong>{formatearUsd(linea.margenBrutoEstimado)}</strong>
-            <span>{formatearUsd(margenPorHa)} / ha</span>
+            <span className="cell-label">Ingreso neto</span>
+            <strong>{formatearUsd(linea.ingresoNetoEstimado)}</strong>
+            <span>{formatearNumero(ingresoNetoPorHa, 2)} USD/ha</span>
+           
           </div>
 
           <div className="planning-cell-summary">
-            <span className="cell-label">Resultado economico</span>
-            <strong>Neto {formatearUsd(linea.ingresoNetoEstimado)}</strong>
-            <span>Resultado prod. {formatearNumero(produccionEstimada)} tn</span>
-            <span>Bruto {formatearUsd(linea.ingresoBrutoEstimado)}</span>
-            <span>Gtos com {formatearUsd(linea.gastosComercialesEstimados)} ({formatearUsd(gastosComercialesPorHa, 2)} / ha)</span>
-            <span>Costo prod. {formatearUsd(linea.costoProduccionEstimado)} ({formatearUsd(costoProduccionPorHa, 2)} / ha)</span>
+            <span className="cell-label">Margen bruto</span>
+            <strong>{formatearUsd(linea.margenBrutoEstimado)}</strong>
+            <span>{formatearNumero((linea.ingresoNetoEstimado - linea.costoProduccionEstimado) / linea.hectareasPlanificadas, 2)} USD/ha </span>
           </div>
 
           <div className="row-actions planning-cell-actions">

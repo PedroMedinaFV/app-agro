@@ -155,7 +155,7 @@ La experiencia principal de carga debe ser tipo planilla/Excel en web:
 - al agregar una nueva linea, proponer por defecto el campo de la linea anterior;
 - seleccionar destino de venta desde una tabla de destinos disponibles;
 - recalcular ingresos, costos y margen bruto en vivo;
-- formulas por linea: `resultadoProductivoTn = hectareasPlanificadas * rindeEstimado`; `ingresoBrutoEstimado = resultadoProductivoTn * precioVentaEstimado`; `ingresoNetoEstimado = ingresoBrutoEstimado - gastosComercialesEstimados`; `margenBrutoEstimado = ingresoNetoEstimado - costoProduccionEstimado`;
+- formulas por linea: `resultadoProductivoTn = hectareasPlanificadas * rindeEstimado`; `ingresoBrutoEstimado = resultadoProductivoTn * precioVentaEstimado`; `ingresoNetoEstimado = ingresoBrutoEstimado - gastosComercialesEstimados`; `margenBrutoEstimado = ingresoNetoEstimado - costoProduccionEstimado`. En lectura por hectarea, el ingreso bruto equivale a `rindeEstimado * precioVentaEstimado`;
 - `gastosComercialesEstimados`, `ingresoBrutoEstimado`, `ingresoNetoEstimado`, `costoProduccionEstimado` y `margenBrutoEstimado` se guardan como importes totales de la linea. La UI puede mostrar equivalentes por hectarea o tonelada, pero no debe mezclarlos con los totales;
 - recalcular los gastos comerciales sugeridos cuando cambian hectareas o rinde, siempre que la linea conserve una referencia de gastos;
 - si el usuario edita manualmente el importe de gastos comerciales, la linea deja de depender de la referencia sugerida para no sobrescribir su decision;

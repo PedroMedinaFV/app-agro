@@ -1,11 +1,14 @@
 import type { ProtocoloProductivoDetalle } from '@agro/tipos';
 
 export function formatearUsd(valor: number, decimales = 0) {
+  return `USD ${formatearNumero(valor, decimales)}`;
+}
+
+export function formatearNumero(valor: number, decimales = 2) {
   return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'USD',
+    minimumFractionDigits: decimales,
     maximumFractionDigits: decimales,
-  }).format(valor);
+  }).format(Number.isFinite(valor) ? valor : 0);
 }
 
 export function formatearMoneda(valor: number, moneda = 'USD') {
