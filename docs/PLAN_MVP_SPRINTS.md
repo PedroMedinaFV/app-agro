@@ -470,17 +470,17 @@ Objetivo:
 
 Incluye:
 
-- modelo preliminar de ordenes de aplicacion, siembra, fertilizacion, cosecha y laboreo;
-- reglas de validacion inspiradas en SIMA/ALBOR;
-- estados: borrador, aprobada, enviada, error_envio, confirmada;
-- semaforo de integracion;
+- [x] modelo preliminar de ordenes de aplicacion, siembra, fertilizacion, cosecha y laboreo;
+- [x] reglas de validacion inspiradas en SIMA/ALBOR;
+- [x] estados: borrador, aprobada, enviada, error_envio, confirmada;
+- [x] semaforo de integracion;
 - pantalla web de revision y envio;
 - mobile alta operativa limitada;
 - bitacora de errores de envio.
 
 Criterio de aceptacion MVP extendido:
 
-- queda documentado el contrato;
+- [x] queda documentado el contrato;
 - se puede simular una orden desde planificacion/protocolo;
 - no se envia a ALBOR hasta validar endpoint real y reglas contables/operativas.
 

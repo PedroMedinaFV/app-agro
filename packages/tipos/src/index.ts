@@ -16,3 +16,4 @@ export * from './precipitacion';
 export * from './observacion';
 export * from './operativo';
 export * from './auditoria';
+export * from './ordenTrabajo';
