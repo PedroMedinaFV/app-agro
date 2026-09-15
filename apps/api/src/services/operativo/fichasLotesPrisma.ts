@@ -2,6 +2,7 @@ import type {
   CampoApp,
   CultivoOperativoResumen,
   FichaLoteOperativoResponse,
+  GeografiaLoteOperativoResumen,
   LoteApp,
   PlanificacionOperativaLineaResumen,
   ZonaApp,
@@ -95,6 +96,18 @@ type ObservacionUltimaRow = {
   cantidadAdjuntos: bigint;
 };
 
+type ArchivoGeograficoRow = {
+  id: string;
+  nombreArchivo: string;
+  tipo: string;
+  estado: string;
+  esPrincipal: boolean;
+  geometriaGeoJson: unknown | null;
+  superficieCalculadaHa: number | null;
+  observaciones: string | null;
+  updatedAt: Date;
+};
+
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
@@ -179,6 +192,24 @@ function mapearLinea(row: PlanificacionLineaRow): PlanificacionOperativaLineaRes
     hectareasPlanificadas: row.hectareasPlanificadas,
     rindeEstimado: row.rindeEstimado,
     margenBrutoEstimado: row.margenBrutoEstimado,
+  };
+}
+
+function mapearGeografia(row: ArchivoGeograficoRow | undefined): GeografiaLoteOperativoResumen | undefined {
+  if (!row) {
+    return undefined;
+  }
+
+  return {
+    archivoId: row.id,
+    nombreArchivo: row.nombreArchivo,
+    tipo: row.tipo as GeografiaLoteOperativoResumen['tipo'],
+    estado: row.estado as GeografiaLoteOperativoResumen['estado'],
+    esPrincipal: row.esPrincipal,
+    superficieCalculadaHa: row.superficieCalculadaHa ?? undefined,
+    geometriaGeoJson: row.geometriaGeoJson || undefined,
+    observaciones: row.observaciones || undefined,
+    actualizadoEn: row.updatedAt.toISOString(),
   };
 }
 
@@ -298,6 +329,26 @@ export async function obtenerFichaLoteOperativo(
     ORDER BY planificacion."createdAt" DESC, linea."createdAt" DESC
     LIMIT 20
   `;
+  const archivosGeograficos = await prisma.$queryRaw<ArchivoGeograficoRow[]>`
+    SELECT
+      "id",
+      "nombreArchivo",
+      "tipo",
+      "estado",
+      "esPrincipal",
+      "geometriaGeoJson",
+      "superficieCalculadaHa",
+      "observaciones",
+      "updatedAt"
+    FROM "LoteArchivoGeografico"
+    WHERE "clienteId" = ${clienteId}
+      AND "loteAppId" = ${loteAppId}
+    ORDER BY
+      CASE WHEN "estado" = 'procesado' THEN 0 ELSE 1 END,
+      "esPrincipal" DESC,
+      "updatedAt" DESC
+    LIMIT 1
+  `;
   const precipitaciones = await prisma.$queryRaw<PrecipitacionResumenRow[]>`
     SELECT
       COUNT(*) AS "cantidadRegistros",
@@ -337,6 +388,7 @@ export async function obtenerFichaLoteOperativo(
     campo: mapearCampo(row),
     lote: mapearLote(row),
     zona: mapearZona(row),
+    geografia: mapearGeografia(archivosGeograficos[0]),
     cultivos: cultivos.map(mapearCultivo),
     planificaciones: planificaciones.map(mapearLinea),
     precipitaciones: {

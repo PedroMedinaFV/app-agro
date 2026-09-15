@@ -228,6 +228,10 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
               <p><strong>Zona:</strong> {fichaLote.zona?.nombre || 'Sin zona'}</p>
               <p><strong>Total:</strong> {fichaLote.lote.superficieTotal.toFixed(1)} ha</p>
               <p><strong>Productiva:</strong> {fichaLote.lote.superficieProductiva.toFixed(1)} ha</p>
+              <p><strong>Geografia:</strong> {fichaLote.geografia?.estado === 'procesado' ? 'Disponible' : fichaLote.geografia?.estado || 'Sin archivo'}</p>
+              {fichaLote.geografia?.superficieCalculadaHa !== undefined && (
+                <p><strong>Superficie KML/KMZ:</strong> {fichaLote.geografia.superficieCalculadaHa.toFixed(2)} ha</p>
+              )}
             </article>
 
             <article>

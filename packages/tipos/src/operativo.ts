@@ -1,4 +1,4 @@
-import type { CampoApp, LoteApp, ZonaApp } from './planificacion';
+import type { CampoApp, EstadoArchivoGeograficoLote, LoteApp, TipoArchivoGeograficoLote, ZonaApp } from './planificacion';
 
 export type CultivoOperativoResumen = {
   id: string;
@@ -44,10 +44,23 @@ export type ObservacionOperativaResumen = {
   }>;
 };
 
+export type GeografiaLoteOperativoResumen = {
+  archivoId?: string;
+  nombreArchivo?: string;
+  tipo?: TipoArchivoGeograficoLote;
+  estado?: EstadoArchivoGeograficoLote;
+  esPrincipal: boolean;
+  superficieCalculadaHa?: number;
+  geometriaGeoJson?: unknown;
+  observaciones?: string;
+  actualizadoEn?: string;
+};
+
 export type FichaLoteOperativoResponse = {
   campo: CampoApp;
   lote: LoteApp;
   zona?: ZonaApp;
+  geografia?: GeografiaLoteOperativoResumen;
   cultivos: CultivoOperativoResumen[];
   planificaciones: PlanificacionOperativaLineaResumen[];
   precipitaciones: PrecipitacionOperativaResumen;

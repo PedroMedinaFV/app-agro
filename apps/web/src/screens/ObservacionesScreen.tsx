@@ -503,6 +503,10 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               <p><strong>Zona:</strong> {fichaLote.zona?.nombre || 'Sin zona'}</p>
               <p><strong>Estado lote:</strong> {fichaLote.lote.estadoVinculacion}</p>
               <p><strong>Codigo:</strong> {fichaLote.lote.codigoInterno || 'Sin codigo'}</p>
+              <p><strong>Geografia:</strong> {fichaLote.geografia?.estado === 'procesado' ? 'Disponible' : fichaLote.geografia?.estado || 'Sin archivo'}</p>
+              {fichaLote.geografia?.superficieCalculadaHa !== undefined && (
+                <p><strong>Superficie KML/KMZ:</strong> {fichaLote.geografia.superficieCalculadaHa.toFixed(2)} ha</p>
+              )}
             </article>
 
             <article>

@@ -573,6 +573,12 @@ export default function App() {
                 <Text style={styles.note}>Superficie productiva: {fichaLote?.lote.superficieProductiva ?? loteSeleccionado?.superficieProductiva ?? 0} ha</Text>
                 <Text style={styles.note}>Estado: {fichaLote?.lote.estadoVinculacion ?? loteSeleccionado?.estadoVinculacion ?? 'sin datos'}</Text>
                 <Text style={styles.note}>Zona: {fichaLote?.zona?.nombre || 'Sin zona informada'}</Text>
+                <Text style={styles.note}>
+                  Geografia: {fichaLote?.geografia?.estado === 'procesado' ? 'Disponible' : fichaLote?.geografia?.estado || 'Sin archivo'}
+                </Text>
+                {fichaLote?.geografia?.superficieCalculadaHa !== undefined && (
+                  <Text style={styles.note}>Superficie KML/KMZ: {fichaLote.geografia.superficieCalculadaHa.toFixed(2)} ha</Text>
+                )}
                 <Text style={styles.note}>Cultivos ERP: {fichaLote?.cultivos.length ?? 0}</Text>
                 {fichaLote?.cultivos.slice(0, 2).map((cultivo) => (
                   <Text key={cultivo.id} style={styles.note}>
