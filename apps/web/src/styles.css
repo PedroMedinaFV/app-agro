@@ -125,6 +125,34 @@ button:disabled {
   font-weight: 800;
 }
 
+.password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.password-field input {
+  min-width: 0;
+}
+
+.password-field input::-ms-reveal,
+.password-field input::-ms-clear {
+  display: none;
+}
+
+.password-field input::-webkit-credentials-auto-fill-button,
+.password-field input::-webkit-textfield-decoration-container {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.password-field .icon-button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+}
+
 .login-divider {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

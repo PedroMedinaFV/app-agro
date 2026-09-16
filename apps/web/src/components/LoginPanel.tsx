@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconButton } from './IconButton';
 import { LoadingSpinner } from './LoadingSpinner';
 
 interface LoginPanelProps {
@@ -18,6 +19,7 @@ export function LoginPanel({
 }: LoginPanelProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   return (
     <div className="login-shell">
@@ -48,15 +50,21 @@ export function LoginPanel({
           </label>
           <label>
             Contrasena
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              minLength={8}
-              disabled={cargando}
-            />
-            <span className="hint">La contrasena la define el administrador. Debe tener al menos 8 caracteres.</span>
+            <span className="password-field">
+              <input
+                type={mostrarPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                disabled={cargando}
+              />
+              <IconButton
+                icon={mostrarPassword ? 'eye-off' : 'eye'}
+                label={mostrarPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                onClick={() => setMostrarPassword((actual) => !actual)}
+                disabled={cargando}
+              />
+            </span>
           </label>
           <button className="primary" type="submit" disabled={cargando}>
             <span className="button-content">

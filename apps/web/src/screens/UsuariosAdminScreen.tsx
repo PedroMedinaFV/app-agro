@@ -66,6 +66,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
   const [campos, setCampos] = useState<ErpCampo[]>([]);
   const [zonas, setZonas] = useState<ErpZona[]>([]);
   const [usuarioEnEdicion, setUsuarioEnEdicion] = useState<UsuarioFormulario | null>(null);
+  const [mostrarPasswordTemporal, setMostrarPasswordTemporal] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [estado, setEstado] = useState('Cargando usuarios.');
   const puedeGestionarUsuarios = sesion.permisos.includes('usuarios:gestionar');
@@ -208,6 +209,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
 
       await cargarDatos();
       setUsuarioEnEdicion(null);
+      setMostrarPasswordTemporal(false);
       notificar?.({ tipo: 'success', titulo: 'Usuario guardado', mensaje: 'El rol, accesos y campos asignados quedaron actualizados.' });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo guardar el usuario.';
@@ -230,7 +232,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
         title="Usuarios del cliente"
         description={estado}
         actions={(
-          <Button variant="small" disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearUsuarioFormulario())}>
+          <Button variant="small" disabled={!puedeGestionarUsuarios} onClick={() => { setMostrarPasswordTemporal(false); setUsuarioEnEdicion(crearUsuarioFormulario()); }}>
             Nuevo usuario
           </Button>
         )}
@@ -267,7 +269,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
               width: 'minmax(90px, 0.5fr)',
               render: (usuario) => (
                 <div className="table-icon-actions">
-                  <IconButton icon="edit" label={`Editar usuario ${usuario.email}`} disabled={!puedeGestionarUsuarios} onClick={() => setUsuarioEnEdicion(crearFormularioDesdeUsuario(usuario))} />
+                  <IconButton icon="edit" label={`Editar usuario ${usuario.email}`} disabled={!puedeGestionarUsuarios} onClick={() => { setMostrarPasswordTemporal(false); setUsuarioEnEdicion(crearFormularioDesdeUsuario(usuario)); }} />
                 </div>
               ),
             },
@@ -283,7 +285,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                 <p className="eyebrow">Administracion</p>
                 <h2 id="usuario-modal-title">Usuario</h2>
               </div>
-              <Button variant="small" onClick={() => setUsuarioEnEdicion(null)}>Cerrar</Button>
+              <Button variant="small" onClick={() => { setUsuarioEnEdicion(null); setMostrarPasswordTemporal(false); }}>Cerrar</Button>
             </div>
 
             <div className="reference-modal-grid">
@@ -323,15 +325,23 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
 
               <label>
                 Contrasena temporal
-                <input
-                  type="password"
-                  value={usuarioEnEdicion.passwordTemporal}
-                  placeholder="Opcional, minimo 8 caracteres"
-                  disabled={guardando}
-                  autoComplete="new-password"
-                  minLength={8}
-                  onChange={(event) => actualizarFormulario({ passwordTemporal: event.target.value })}
-                />
+                <span className="password-field">
+                  <input
+                    type={mostrarPasswordTemporal ? 'text' : 'password'}
+                    value={usuarioEnEdicion.passwordTemporal}
+                    placeholder="Opcional, minimo 8 caracteres"
+                    disabled={guardando}
+                    autoComplete="new-password"
+                    minLength={8}
+                    onChange={(event) => actualizarFormulario({ passwordTemporal: event.target.value })}
+                  />
+                  <IconButton
+                    icon={mostrarPasswordTemporal ? 'eye-off' : 'eye'}
+                    label={mostrarPasswordTemporal ? 'Ocultar contrasena temporal' : 'Mostrar contrasena temporal'}
+                    onClick={() => setMostrarPasswordTemporal((actual) => !actual)}
+                    disabled={guardando}
+                  />
+                </span>
                 <span className="hint">Restriccion: minimo 8 caracteres. Si queda vacia, no se modifica la contrasena actual. Si la completas, habilita o resetea el acceso con email y contrasena.</span>
               </label>
             </div>
@@ -393,7 +403,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
             )}
 
             <div className="modal-actions">
-              <Button variant="small" onClick={() => setUsuarioEnEdicion(null)}>Cancelar</Button>
+              <Button variant="small" onClick={() => { setUsuarioEnEdicion(null); setMostrarPasswordTemporal(false); }}>Cancelar</Button>
               <Button variant="primary" disabled={guardando} onClick={guardar}>
                 {guardando ? 'Guardando...' : 'Guardar usuario'}
               </Button>
