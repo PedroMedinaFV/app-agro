@@ -25,6 +25,7 @@ type UsuarioFormulario = {
   email: string;
   nombre: string;
   rol: RolUsuario;
+  passwordTemporal: string;
   camposAsignados: string[];
 };
 
@@ -34,6 +35,7 @@ function crearUsuarioFormulario(): UsuarioFormulario {
     email: '',
     nombre: '',
     rol: 'operador_campo',
+    passwordTemporal: '',
     camposAsignados: [],
   };
 }
@@ -54,6 +56,7 @@ function crearFormularioDesdeUsuario(usuario: UsuarioAdminResumen): UsuarioFormu
     email: usuario.email,
     nombre: usuario.nombre || '',
     rol: usuario.rol,
+    passwordTemporal: '',
     camposAsignados: usuario.camposAsignados,
   };
 }
@@ -184,12 +187,18 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
       return;
     }
 
+    if (usuarioEnEdicion.passwordTemporal && usuarioEnEdicion.passwordTemporal.length < 8) {
+      notificar?.({ tipo: 'error', titulo: 'Contrasena invalida', mensaje: 'La contrasena temporal debe tener al menos 8 caracteres.' });
+      return;
+    }
+
     setGuardando(true);
     try {
       const respuestaUsuario = await guardarUsuarioAdmin(usuarioEnEdicion.id, {
         email: usuarioEnEdicion.email,
         nombre: usuarioEnEdicion.nombre || undefined,
         rol: usuarioEnEdicion.rol,
+        passwordTemporal: usuarioEnEdicion.passwordTemporal || undefined,
       }, sesion.token);
       const camposAsignados = usuarioEnEdicion.rol === 'operador_campo' ? usuarioEnEdicion.camposAsignados : [];
 
@@ -199,7 +208,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
 
       await cargarDatos();
       setUsuarioEnEdicion(null);
-      notificar?.({ tipo: 'success', titulo: 'Usuario guardado', mensaje: 'El rol y los campos asignados quedaron actualizados.' });
+      notificar?.({ tipo: 'success', titulo: 'Usuario guardado', mensaje: 'El rol, accesos y campos asignados quedaron actualizados.' });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo guardar el usuario.';
       notificar?.({ tipo: 'error', titulo: 'No se guardo', mensaje });
@@ -213,7 +222,7 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
       <PageHeader
         eyebrow="Administracion"
         title="Usuarios"
-        description="Alta de usuarios, rol operativo y campos permitidos. El login Microsoft se enlaza por email."
+        description="Alta de usuarios, rol operativo, accesos y campos permitidos."
         aside={<div className="status-pill">{usuarios.length}</div>}
       />
 
@@ -239,6 +248,12 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
               label: 'Microsoft',
               width: 'minmax(100px, 0.6fr)',
               render: (usuario) => usuario.microsoftId ? 'Enlazado' : 'Pendiente',
+            },
+            {
+              key: 'emailPassword',
+              label: 'Email/pass',
+              width: 'minmax(110px, 0.6fr)',
+              render: (usuario) => usuario.tienePassword ? 'Activo' : 'Sin clave',
             },
             {
               key: 'campos',
@@ -304,6 +319,20 @@ export function UsuariosAdminScreen({ sesion, notificar }: UsuariosAdminScreenPr
                   <option value="responsable_compras">Responsable de compras</option>
                   <option value="operador_campo">Operador de campo</option>
                 </select>
+              </label>
+
+              <label>
+                Contrasena temporal
+                <input
+                  type="password"
+                  value={usuarioEnEdicion.passwordTemporal}
+                  placeholder="Opcional, minimo 8 caracteres"
+                  disabled={guardando}
+                  autoComplete="new-password"
+                  minLength={8}
+                  onChange={(event) => actualizarFormulario({ passwordTemporal: event.target.value })}
+                />
+                <span className="hint">Restriccion: minimo 8 caracteres. Si queda vacia, no se modifica la contrasena actual. Si la completas, habilita o resetea el acceso con email y contrasena.</span>
               </label>
             </div>
 

@@ -3,6 +3,7 @@ export type {
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
   LoginDemoRequest,
+  LoginEmailRequest,
   Permiso,
   RolUsuario,
   SesionUsuario,

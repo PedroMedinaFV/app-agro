@@ -105,6 +105,11 @@ export type LoginDemoRequest = {
   clienteId?: string;
 };
 
+export type LoginEmailRequest = {
+  email: string;
+  password: string;
+};
+
 export type UsuarioAdminResumen = {
   id: string;
   email: string;
@@ -112,6 +117,7 @@ export type UsuarioAdminResumen = {
   rol: RolUsuario;
   clienteId: string;
   microsoftId?: string;
+  tienePassword: boolean;
   camposAsignados: string[];
   createdAt: string;
   updatedAt: string;
@@ -125,6 +131,7 @@ export type GuardarUsuarioAdminRequest = {
   email: string;
   nombre?: string;
   rol: RolUsuario;
+  passwordTemporal?: string;
 };
 
 export type GuardarUsuarioAdminResponse = {

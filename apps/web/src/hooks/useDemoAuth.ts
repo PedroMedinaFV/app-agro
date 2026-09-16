@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { obtenerPermisosRol, SesionUsuario } from '@agro/tipos';
-import { loginDemo, loginMicrosoft } from '../services/api';
+import { loginDemo, loginEmail, loginMicrosoft } from '../services/api';
 import { startBackendActivity } from '../utils/backendActivity';
 
 const microsoftClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
@@ -90,6 +90,28 @@ export function useDemoAuth() {
         origen: 'demo',
         permisos: obtenerPermisosRol('admin'),
       });
+    } finally {
+      finishBackendActivity();
+      setCargando(false);
+    }
+  }
+
+  async function entrarConEmail(email: string, password: string) {
+    const emailLimpio = email.trim().toLowerCase();
+
+    if (!emailLimpio || !password) {
+      setError('Ingresa email y contrasena.');
+      return;
+    }
+
+    setCargando(true);
+    setError('');
+    const finishBackendActivity = startBackendActivity('Iniciando sesion...');
+
+    try {
+      setSesion(await loginEmail({ email: emailLimpio, password }));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'No se pudo iniciar sesion con email y contrasena.');
     } finally {
       finishBackendActivity();
       setCargando(false);
@@ -192,6 +214,7 @@ export function useDemoAuth() {
     error,
     cargando,
     entrarModoDemo,
+    entrarConEmail,
     entrarConMicrosoft,
     cerrarSesion,
   };

@@ -181,6 +181,7 @@ export function App() {
       <LoginPanel
         error={auth.error}
         cargando={auth.cargando}
+        onEmailLogin={auth.entrarConEmail}
         onMicrosoftLogin={auth.entrarConMicrosoft}
         onDemoLogin={auth.entrarModoDemo}
       />

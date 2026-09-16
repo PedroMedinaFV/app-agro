@@ -65,6 +65,7 @@ import {
   InsumoApp,
   LoteApp,
   LoginDemoRequest,
+  LoginEmailRequest,
   NotificacionUsuarioResumen,
   ObservacionesResponse,
   PadronErpSincronizable,
@@ -174,6 +175,13 @@ function getBackendActivityLabel(ruta: string, method: string) {
 
 export async function loginDemo(datos: LoginDemoRequest): Promise<SesionUsuario> {
   return request<SesionUsuario>('/auth/demo', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+export async function loginEmail(datos: LoginEmailRequest): Promise<SesionUsuario> {
+  return request<SesionUsuario>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(datos),
   });

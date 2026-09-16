@@ -5,6 +5,7 @@ import type {
   UsuarioAdminResumen,
   UsuariosAdminResponse,
 } from '@agro/tipos';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../prisma';
 import { listarAsignacionesUsuario } from './asignacionCampos';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
@@ -16,6 +17,7 @@ type UsuarioAdminRow = {
   rol: string;
   clienteId: string | null;
   microsoftId: string | null;
+  tienePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -54,6 +56,7 @@ async function mapearUsuario(usuario: UsuarioAdminRow): Promise<UsuarioAdminResu
     rol: normalizarRol(usuario.rol),
     clienteId,
     microsoftId: usuario.microsoftId || undefined,
+    tienePassword: usuario.tienePassword,
     camposAsignados: asignaciones.map((asignacion) => asignacion.campoErpId),
     createdAt: usuario.createdAt.toISOString(),
     updatedAt: usuario.updatedAt.toISOString(),
@@ -71,12 +74,13 @@ function validarUsuarioRequest(request: GuardarUsuarioAdminRequest) {
     email,
     nombre: request.nombre ? limpiarTextoVisible(request.nombre) : null,
     rol: normalizarRol(request.rol),
+    passwordTemporal: request.passwordTemporal?.trim() || undefined,
   };
 }
 
 export async function obtenerUsuariosAdmin(clienteId: string): Promise<UsuariosAdminResponse> {
   const usuarios = await prisma.$queryRaw<UsuarioAdminRow[]>`
-    SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", "createdAt", "updatedAt"
+    SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", ("password" IS NOT NULL) AS "tienePassword", "createdAt", "updatedAt"
     FROM "Usuario"
     WHERE "clienteId" = ${clienteId}
     ORDER BY "nombre" ASC NULLS LAST, "email" ASC
@@ -101,7 +105,7 @@ export async function guardarUsuarioAdmin(
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.$queryRaw<UsuarioAdminRow[]>`
-      SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", "createdAt", "updatedAt"
+      SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", ("password" IS NOT NULL) AS "tienePassword", "createdAt", "updatedAt"
       FROM "Usuario"
       WHERE "id" = ${id}
       LIMIT 1
@@ -112,7 +116,7 @@ export async function guardarUsuarioAdmin(
     }
 
     const emailDuplicado = await tx.$queryRaw<UsuarioAdminRow[]>`
-      SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", "createdAt", "updatedAt"
+      SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", ("password" IS NOT NULL) AS "tienePassword", "createdAt", "updatedAt"
       FROM "Usuario"
       WHERE "email" = ${datos.email} AND "id" <> ${id}
       LIMIT 1
@@ -122,12 +126,18 @@ export async function guardarUsuarioAdmin(
       throw crearErrorValidacion('Ya existe un usuario con ese email.', 409);
     }
 
+    if (datos.passwordTemporal && datos.passwordTemporal.length < 8) {
+      throw crearErrorValidacion('La contrasena temporal debe tener al menos 8 caracteres.');
+    }
+
+    const passwordHash = datos.passwordTemporal ? await bcrypt.hash(datos.passwordTemporal, 10) : undefined;
     const guardado = await tx.usuario.upsert({
       where: { id },
       update: {
         email: datos.email,
         nombre: datos.nombre,
         rol: datos.rol,
+        ...(passwordHash ? { password: passwordHash } : {}),
       },
       create: {
         id,
@@ -135,9 +145,10 @@ export async function guardarUsuarioAdmin(
         nombre: datos.nombre,
         rol: datos.rol,
         clienteId,
+        password: passwordHash,
       },
     });
-    const usuarioMapeado = await mapearUsuario(guardado);
+    const usuarioMapeado = await mapearUsuario({ ...guardado, tienePassword: Boolean(guardado.password) });
 
     await registrarAuditoria(tx, {
       clienteId,
@@ -149,7 +160,10 @@ export async function guardarUsuarioAdmin(
       motivo: 'Administracion de usuario y rol.',
       valoresAntes: existente[0] ? await mapearUsuario(existente[0]) : undefined,
       valoresDespues: usuarioMapeado,
-      metadata: usuario?.email ? { email: usuario.email } : undefined,
+      metadata: {
+        ...(usuario?.email ? { email: usuario.email } : {}),
+        passwordTemporalActualizada: Boolean(passwordHash),
+      },
     });
 
     return {
