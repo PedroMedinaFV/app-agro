@@ -31,6 +31,14 @@ function obtenerEtiquetaRol(rol: SesionUsuario['usuario']['rol']) {
         : 'Operador de campo';
 }
 
+function obtenerEtiquetaOrigen(origen: SesionUsuario['origen']) {
+  return origen === 'microsoft'
+    ? 'Microsoft'
+    : origen === 'email'
+      ? 'Email'
+      : 'Demo';
+}
+
 export function Layout({
   sesion,
   sidebarAbierto,
@@ -92,7 +100,14 @@ export function Layout({
           <h1>Agro App</h1>
         </div>
         <div className="header-user">
-          <span>{sesion.usuario.nombre}</span>
+          <div className="session-summary">
+            <strong>{sesion.usuario.nombre || sesion.usuario.email}</strong>
+            <span>{sesion.usuario.email}</span>
+          </div>
+          <div className="session-badges" aria-label="Datos de sesion">
+            <span>{obtenerEtiquetaRol(sesion.usuario.rol)}</span>
+            <span>{obtenerEtiquetaOrigen(sesion.origen)}</span>
+          </div>
           <button className="ghost" onClick={onLogout}>Cerrar</button>
         </div>
       </header>
