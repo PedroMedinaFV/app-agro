@@ -78,15 +78,19 @@ export function PreciosReferenciaScreen({
   const especiesPropias = especiesPropiasDb.length ? especiesPropiasDb : planificacion.especiesApp || [];
   const especiesAppErpIds = new Set(especiesPropias.map((especie) => especie.especieErpId).filter(Boolean));
   const especies = useMemo<EspecieSeleccionable[]>(() => {
-    const propias = especiesPropias.map((especie) => ({
-      clave: `agro:${especie.id}`,
-      nombre: especie.nombre,
-      empresaErpId: especie.empresaErpId,
-      especieAppId: especie.id,
-      especieErpId: especie.especieErpId,
-      codigo: especie.codigoInterno,
-      origen: 'agro' as const,
-    }));
+    const propias = especiesPropias.map((especie) => {
+      const esErp = especie.estadoVinculacion === 'vinculado_erp' || Boolean(especie.especieErpId);
+
+      return {
+        clave: esErp && especie.especieErpId ? `erp:${especie.especieErpId}` : `agro:${especie.id}`,
+        nombre: especie.nombre,
+        empresaErpId: especie.empresaErpId,
+        especieAppId: especie.id,
+        especieErpId: especie.especieErpId,
+        codigo: especie.codigoInterno,
+        origen: esErp ? 'erp' as const : 'agro' as const,
+      };
+    });
     const erp = especiesErp
       .filter((especie) => !especiesAppErpIds.has(especie.erpId))
       .map((especie) => ({
@@ -164,7 +168,7 @@ export function PreciosReferenciaScreen({
     const especieAppId = precio.especieAppId || actividad?.especieAppId;
     const especieErpId = precio.especieErpId || actividad?.especieErpId;
 
-    setEspecieSeleccionadaClave(especieAppId ? `agro:${especieAppId}` : especieErpId ? `erp:${especieErpId}` : '');
+    setEspecieSeleccionadaClave(especieErpId ? `erp:${especieErpId}` : especieAppId ? `agro:${especieAppId}` : '');
     setModoDestinoNuevo(false);
     setPrecioEnEdicion({ ...precio, especieAppId, especieErpId });
   }
