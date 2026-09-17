@@ -22,7 +22,7 @@ interface UseProtocolosDemoParams {
   planificacion: PlanificacionSnapshot;
   planificacionActiva: PlanificacionAgricola | undefined;
   notificar?: (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
-  onProtocolosPersistidos?: () => Promise<void> | void;
+  onProtocolosPersistidos?: (protocolo: ProtocoloProductivoDetalle) => Promise<void> | void;
   cargarAutomaticamente?: boolean;
 }
 
@@ -347,7 +347,7 @@ export function useProtocolosDemo({ sesion, snapshot, planificacion, planificaci
       }));
       setProtocoloSeleccionadoId(respuesta.protocolo.id);
       setProtocolosEstado(respuesta.mensaje);
-      void onProtocolosPersistidos?.();
+      void onProtocolosPersistidos?.(respuesta.protocolo);
       notificar?.({
         tipo: 'success',
         titulo: 'Protocolo guardado',

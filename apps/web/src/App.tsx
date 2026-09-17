@@ -84,7 +84,7 @@ export function App() {
     planificacion: planificacionDemo.planificacion,
     planificacionActiva: planificacionDemo.planificacionActiva,
     notificar: toast.notify,
-    onProtocolosPersistidos: planificacionDemo.refrescarPlanificacion,
+    onProtocolosPersistidos: planificacionDemo.incorporarProtocoloPlanificacion,
     cargarAutomaticamente: debeCargarProtocolos,
   });
 

@@ -156,7 +156,7 @@ async function normalizarCostosDesdePadrones(
           nombre: servicio.nombre,
           descripcion: servicio.descripcionAbreviada || undefined,
           unidad: servicio.unidadSugerida,
-          costoUnitario: servicio.costoUnitarioSugerido,
+          costoUnitario: servicio.costoUnitarioSugerido ?? 0,
         };
 
         return { ...actualizado, costoPorHa: calcularCostoLabor(actualizado) };
@@ -174,7 +174,7 @@ async function normalizarCostosDesdePadrones(
           nombre: insumoApp.nombre,
           tipo: insumoApp.tipo || undefined,
           unidad: insumoApp.unidad,
-          precioUnitarioEstimado: insumoApp.precioUnitarioEstimado,
+          precioUnitarioEstimado: insumoApp.precioUnitarioEstimado ?? 0,
         };
 
         return { ...actualizado, costoPorHa: calcularCostoInsumo(actualizado) };
@@ -284,9 +284,7 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
   });
   await tx.protocoloEtapa.deleteMany({ where: { protocoloId: protocolo.id } });
 
-  for (const [indice, etapa] of protocolo.etapas.entries()) {
-    await tx.protocoloEtapa.create({
-      data: {
+  const etapas = protocolo.etapas.map((etapa, indice) => ({
         id: etapa.id,
         protocoloId: protocolo.id,
         estadioReferenciaId: etapa.estadioReferenciaId,
@@ -297,37 +295,45 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
         fechaObjetivo: parsearFecha(etapa.fechaObjetivo),
         diasDesdeSiembra: etapa.diasDesdeSiembra,
         observaciones: etapa.observaciones,
-        labores: {
-          create: etapa.labores.map((labor) => ({
-            id: labor.id,
-            servicioAppId: labor.servicioAppId,
-            indiceAplicacion: labor.indiceAplicacion,
-            nombre: labor.nombre,
-            descripcion: labor.descripcion,
-            unidad: labor.unidad,
-            cantidadPorHa: labor.cantidadPorHa,
-            costoUnitario: labor.costoUnitario,
-            costoPorHa: calcularCostoLabor(labor),
-            momentoEstimado: labor.momentoEstimado,
-          })),
-        },
-        insumos: {
-          create: etapa.insumos.map((insumo) => ({
-            id: insumo.id,
-            indiceAplicacion: insumo.indiceAplicacion,
-            insumoAppId: insumo.insumoAppId,
-            insumoErpId: insumo.insumoErpId,
-            nombre: insumo.nombre,
-            tipo: insumo.tipo,
-            unidad: insumo.unidad,
-            dosisPorHa: insumo.dosisPorHa,
-            precioUnitarioEstimado: insumo.precioUnitarioEstimado,
-            costoPorHa: calcularCostoInsumo(insumo),
-            momentoEstimado: insumo.momentoEstimado,
-          })),
-        },
-      },
-    });
+  }));
+  const labores = protocolo.etapas.flatMap((etapa) => etapa.labores.map((labor) => ({
+    id: labor.id,
+    etapaId: etapa.id,
+    servicioAppId: labor.servicioAppId,
+    indiceAplicacion: labor.indiceAplicacion,
+    nombre: labor.nombre,
+    descripcion: labor.descripcion,
+    unidad: labor.unidad,
+    cantidadPorHa: labor.cantidadPorHa,
+    costoUnitario: labor.costoUnitario,
+    costoPorHa: calcularCostoLabor(labor),
+    momentoEstimado: labor.momentoEstimado,
+  })));
+  const insumos = protocolo.etapas.flatMap((etapa) => etapa.insumos.map((insumo) => ({
+    id: insumo.id,
+    etapaId: etapa.id,
+    indiceAplicacion: insumo.indiceAplicacion,
+    insumoAppId: insumo.insumoAppId,
+    insumoErpId: insumo.insumoErpId,
+    nombre: insumo.nombre,
+    tipo: insumo.tipo,
+    unidad: insumo.unidad,
+    dosisPorHa: insumo.dosisPorHa,
+    precioUnitarioEstimado: insumo.precioUnitarioEstimado,
+    costoPorHa: calcularCostoInsumo(insumo),
+    momentoEstimado: insumo.momentoEstimado,
+  })));
+
+  if (etapas.length) {
+    await tx.protocoloEtapa.createMany({ data: etapas });
+  }
+
+  if (labores.length) {
+    await tx.protocoloLabor.createMany({ data: labores });
+  }
+
+  if (insumos.length) {
+    await tx.protocoloInsumo.createMany({ data: insumos });
   }
 }
 

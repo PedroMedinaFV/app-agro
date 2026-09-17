@@ -11,6 +11,7 @@ import {
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
   PrecioReferencia,
+  ProtocoloProductivoResumen,
   SesionUsuario,
 } from '@agro/tipos';
 import {
@@ -101,6 +102,20 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       setCargandoPlanificacion(false);
     }
   }, [sesion]);
+
+  const incorporarProtocoloPlanificacion = useCallback((protocolo: ProtocoloProductivoResumen) => {
+    setPlanificacion((actual) => {
+      const existe = actual.protocolos.some((item) => item.id === protocolo.id);
+
+      return {
+        ...actual,
+        protocolos: existe
+          ? actual.protocolos.map((item) => (item.id === protocolo.id ? protocolo : item))
+          : [protocolo, ...actual.protocolos],
+        sincronizadoEn: new Date().toISOString(),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (!sesion) {
@@ -1418,6 +1433,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     guardarInsumoAppDesdeModal,
     obtenerProtocolosCompatibles,
     refrescarPlanificacion,
+    incorporarProtocoloPlanificacion,
     guardarBorradorPlanificacion,
     cerrarPlanificacionActiva,
   };
