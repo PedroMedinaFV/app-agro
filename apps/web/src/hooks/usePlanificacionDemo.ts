@@ -698,6 +698,55 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     }));
   }
 
+  function actualizarLineas(
+    lineaIds: string[],
+    obtenerCambios: (linea: PlanificacionAgricolaLinea) => Partial<PlanificacionAgricolaLinea> | undefined,
+  ) {
+    if (lineaIds.length === 0) {
+      return 0;
+    }
+
+    const ids = new Set(lineaIds);
+    const ahora = new Date().toISOString();
+    let aplicadas = 0;
+
+    actualizarPlanificacionActiva((actual) => ({
+      ...actual,
+      lineas: actual.lineas.map((linea) => {
+        if (!ids.has(linea.id)) {
+          return linea;
+        }
+
+        const cambios = obtenerCambios(linea);
+
+        if (!cambios) {
+          return linea;
+        }
+
+        aplicadas += 1;
+
+        const lineaActualizada = { ...linea, ...cambios, updatedAt: ahora };
+        const debeRecalcularGastos = Boolean(
+          lineaActualizada.gastosComercialesReferenciaId
+          && (
+            Object.prototype.hasOwnProperty.call(cambios, 'hectareasPlanificadas')
+            || Object.prototype.hasOwnProperty.call(cambios, 'rindeEstimado')
+          ),
+        );
+
+        return recalcularLinea({
+          ...lineaActualizada,
+          gastosComercialesEstimados: debeRecalcularGastos
+            ? calcularGastosComerciales(lineaActualizada, lineaActualizada.gastosComercialesReferenciaId)
+            : lineaActualizada.gastosComercialesEstimados,
+        });
+      }),
+      updatedAt: ahora,
+    }));
+
+    return aplicadas;
+  }
+
   function obtenerActividadDesdeProtocolo(protocoloId?: string) {
     const protocolo = protocoloId ? protocolosPorId.get(protocoloId) : undefined;
 
@@ -727,6 +776,52 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       gastosComercialesReferenciaId: gastos?.id,
       gastosComercialesEstimados: gastos ? calcularGastosComerciales({ ...linea, destinoVenta, precioVentaEstimado: precio?.valor || 0 }, gastos.id) : 0,
     };
+  }
+
+  function obtenerCambiosProtocolo(linea: PlanificacionAgricolaLinea, protocoloId?: string): Partial<PlanificacionAgricolaLinea> {
+    if (!protocoloId) {
+      return {
+        protocoloId: undefined,
+        precioReferenciaId: undefined,
+        precioVentaEstimado: 0,
+        precioVentaManual: false,
+        gastosComercialesReferenciaId: undefined,
+        gastosComercialesEstimados: 0,
+        costoProduccionEstimado: 0,
+        margenBrutoEstimado: 0,
+        margenBrutoActualizado: 0,
+      };
+    }
+
+    const actividad = obtenerActividadDesdeProtocolo(protocoloId);
+    const base = {
+      ...linea,
+      protocoloId,
+      actividadAppId: actividad?.id || linea.actividadAppId,
+      actividadErpId: actividad?.actividadErpId || linea.actividadErpId,
+    };
+
+    return {
+      ...base,
+      ...aplicarSugerenciasComerciales(base, base.destinoVenta || undefined),
+    };
+  }
+
+  function obtenerCambiosDestino(linea: PlanificacionAgricolaLinea, destinoVenta: string): Partial<PlanificacionAgricolaLinea> {
+    if (!linea.protocoloId) {
+      return {
+        destinoReferenciaId: undefined,
+        destinoVenta,
+        destinoVentaManual: true,
+        precioReferenciaId: undefined,
+        precioVentaEstimado: 0,
+        precioVentaManual: false,
+        gastosComercialesReferenciaId: undefined,
+        gastosComercialesEstimados: 0,
+      };
+    }
+
+    return aplicarSugerenciasComerciales(linea, destinoVenta);
   }
 
   function crearLineaDesdeLote(
@@ -920,33 +1015,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return;
     }
 
-    if (!protocoloId) {
-      actualizarLinea(lineaId, {
-        protocoloId: undefined,
-        precioReferenciaId: undefined,
-        precioVentaEstimado: 0,
-        precioVentaManual: false,
-        gastosComercialesReferenciaId: undefined,
-        gastosComercialesEstimados: 0,
-        costoProduccionEstimado: 0,
-        margenBrutoEstimado: 0,
-        margenBrutoActualizado: 0,
-      });
-      return;
-    }
-
-    const actividad = obtenerActividadDesdeProtocolo(protocoloId);
-    const base = {
-      ...linea,
-      protocoloId,
-      actividadAppId: actividad?.id || linea.actividadAppId,
-      actividadErpId: actividad?.actividadErpId || linea.actividadErpId,
-    };
-
-    actualizarLinea(lineaId, {
-      ...base,
-      ...aplicarSugerenciasComerciales(base, base.destinoVenta || undefined),
-    });
+    actualizarLinea(lineaId, obtenerCambiosProtocolo(linea, protocoloId));
   }
 
   function cambiarDestino(lineaId: string, destinoVenta: string) {
@@ -956,21 +1025,31 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return;
     }
 
-    if (!linea.protocoloId) {
-      actualizarLinea(lineaId, {
-        destinoReferenciaId: undefined,
-        destinoVenta,
-        destinoVentaManual: true,
-        precioReferenciaId: undefined,
-        precioVentaEstimado: 0,
-        precioVentaManual: false,
-        gastosComercialesReferenciaId: undefined,
-        gastosComercialesEstimados: 0,
-      });
-      return;
+    actualizarLinea(lineaId, obtenerCambiosDestino(linea, destinoVenta));
+  }
+
+  function aplicarProtocoloALineas(lineaIds: string[], protocoloId: string) {
+    if (!puedeEditarPlanificacion || !protocoloId) {
+      return 0;
     }
 
-    actualizarLinea(lineaId, aplicarSugerenciasComerciales(linea, destinoVenta));
+    return actualizarLineas(lineaIds, (linea) => obtenerCambiosProtocolo(linea, protocoloId));
+  }
+
+  function aplicarDestinoALineas(lineaIds: string[], destinoVenta: string) {
+    if (!puedeEditarPlanificacion || !destinoVenta) {
+      return 0;
+    }
+
+    return actualizarLineas(lineaIds, (linea) => obtenerCambiosDestino(linea, destinoVenta));
+  }
+
+  function aplicarRindeALineas(lineaIds: string[], rindeEstimado: number) {
+    if (!puedeEditarPlanificacion || !Number.isFinite(rindeEstimado) || rindeEstimado < 0) {
+      return 0;
+    }
+
+    return actualizarLineas(lineaIds, () => ({ rindeEstimado }));
   }
 
   function eliminarLineaPlanificacion(lineaId: string) {
@@ -1615,6 +1694,9 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     cambiarActividad,
     cambiarProtocolo,
     cambiarDestino,
+    aplicarProtocoloALineas,
+    aplicarDestinoALineas,
+    aplicarRindeALineas,
     agregarLotesAEscenario,
     copiarLineaPlanificacion,
     eliminarLineaPlanificacion,

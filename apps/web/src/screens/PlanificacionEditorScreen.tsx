@@ -90,6 +90,9 @@ export function PlanificacionEditorScreen({
   cambiarProtocolo,
   cambiarDestino,
   actualizarLinea,
+  aplicarProtocoloALineas,
+  aplicarDestinoALineas,
+  aplicarRindeALineas,
   copiarLineaPlanificacion,
   eliminarLineaPlanificacion,
   eliminarLineasPlanificacion,
@@ -475,14 +478,10 @@ export function PlanificacionEditorScreen({
       return;
     }
 
-    let aplicadas = 0;
-
-    for (const linea of lineasFiltradas) {
-      if (obtenerProtocolosParaLinea(linea).some((protocolo) => protocolo.id === protocoloMasivoId)) {
-        cambiarProtocolo(linea.id, protocoloMasivoId);
-        aplicadas += 1;
-      }
-    }
+    const lineaIds = lineasFiltradas
+      .filter((linea) => obtenerProtocolosParaLinea(linea).some((protocolo) => protocolo.id === protocoloMasivoId))
+      .map((linea) => linea.id);
+    const aplicadas = aplicarProtocoloALineas(lineaIds, protocoloMasivoId);
 
     setResultadoAccionMasiva(`Protocolo aplicado en ${aplicadas} de ${lineasFiltradas.length} linea(s) filtradas.`);
   }
@@ -492,19 +491,12 @@ export function PlanificacionEditorScreen({
       return;
     }
 
-    let aplicadas = 0;
-
-    for (const linea of lineasFiltradas) {
-      const destinoCompatible = planificacion.destinosReferencia.some((destino) => (
-        destino.activo
-        && destino.destinoVenta === destinoMasivo
-      ));
-
-      if (destinoCompatible) {
-        cambiarDestino(linea.id, destinoMasivo);
-        aplicadas += 1;
-      }
-    }
+    const destinoCompatible = planificacion.destinosReferencia.some((destino) => (
+      destino.activo
+      && destino.destinoVenta === destinoMasivo
+    ));
+    const lineaIds = destinoCompatible ? lineasFiltradas.map((linea) => linea.id) : [];
+    const aplicadas = aplicarDestinoALineas(lineaIds, destinoMasivo);
 
     setResultadoAccionMasiva(`Destino aplicado en ${aplicadas} de ${lineasFiltradas.length} linea(s) filtradas.`);
   }
@@ -516,11 +508,9 @@ export function PlanificacionEditorScreen({
       return;
     }
 
-    for (const linea of lineasFiltradas) {
-      actualizarLinea(linea.id, { rindeEstimado: rinde });
-    }
+    const aplicadas = aplicarRindeALineas(lineasFiltradas.map((linea) => linea.id), rinde);
 
-    setResultadoAccionMasiva(`Rinde aplicado en ${lineasFiltradas.length} linea(s) filtradas.`);
+    setResultadoAccionMasiva(`Rinde aplicado en ${aplicadas} de ${lineasFiltradas.length} linea(s) filtradas.`);
   }
 
   function obtenerLoteIdsParaAgregar() {

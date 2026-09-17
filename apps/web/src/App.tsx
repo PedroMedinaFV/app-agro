@@ -292,6 +292,9 @@ export function App() {
           cambiarProtocolo={planificacionDemo.cambiarProtocolo}
           cambiarDestino={planificacionDemo.cambiarDestino}
           actualizarLinea={planificacionDemo.actualizarLinea}
+          aplicarProtocoloALineas={planificacionDemo.aplicarProtocoloALineas}
+          aplicarDestinoALineas={planificacionDemo.aplicarDestinoALineas}
+          aplicarRindeALineas={planificacionDemo.aplicarRindeALineas}
           copiarLineaPlanificacion={planificacionDemo.copiarLineaPlanificacion}
           eliminarLineaPlanificacion={planificacionDemo.eliminarLineaPlanificacion}
           eliminarLineasPlanificacion={planificacionDemo.eliminarLineasPlanificacion}
