@@ -728,26 +728,26 @@ export function PlanificacionEditorScreen({
         <div className="planning-row-inputs">
           <div className="planning-cell-number">
             <span className="cell-label">Hectareas</span>
-            <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} />
+            <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} commitOnBlur />
             <span>max. {lote?.superficieTotal ?? '-'} ha</span>
             {hectareasExcedidas && <span className="cell-error">Supera la superficie total del lote</span>}
           </div>
 
           <div className="planning-cell-number">
             <span className="cell-label">Rinde</span>
-            <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => actualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditarPlanificacion} />
+            <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => actualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditarPlanificacion} commitOnBlur />
             <span>tn/ha - prod. {produccionEstimada.toFixed(2)} tn</span>
           </div>
 
           <div className="planning-cell-number">
             <span className="cell-label">P. venta</span>
-            <DecimalInput value={linea.precioVentaEstimado} onValueChange={(value) => actualizarLinea(linea.id, { precioVentaEstimado: value, precioVentaManual: true })} disabled={!puedeEditarPlanificacion} />
+            <DecimalInput value={linea.precioVentaEstimado} onValueChange={(value) => actualizarLinea(linea.id, { precioVentaEstimado: value, precioVentaManual: true })} disabled={!puedeEditarPlanificacion} commitOnBlur />
             <span>{linea.precioVentaManual ? 'Manual' : 'Referencia'}</span>
           </div>
 
           <div className="planning-cell-number">
             <span className="cell-label">Gtos com</span>
-            <DecimalInput value={linea.gastosComercialesEstimados} onValueChange={(value) => actualizarLinea(linea.id, { gastosComercialesEstimados: value, gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} />
+            <DecimalInput value={linea.gastosComercialesEstimados} onValueChange={(value) => actualizarLinea(linea.id, { gastosComercialesEstimados: value, gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} commitOnBlur />
             <span>{gastoReferencia ? `${gastosResumen} - ${gastoReferencia.items.length} items` : `${formatearUsd(gastosComercialesPorTn, 2)} / tn equiv.`}</span>
           </div>
         </div>

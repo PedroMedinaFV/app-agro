@@ -147,7 +147,7 @@ export type PrecioApp = {
   id: string;
   clienteId: string;
   empresaErpId?: string;
-  actividadAppId: string;
+  actividadAppId?: string;
   actividadErpId?: string;
   especieAppId?: string;
   especieErpId?: string;

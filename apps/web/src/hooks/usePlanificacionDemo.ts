@@ -400,7 +400,17 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return undefined;
     }
 
-    return planificacion.preciosReferencia.find((item) => item.activo && item.actividadAppId === actividadAppId && item.destinoVenta === destinoVenta);
+    const actividad = planificacion.actividadesApp?.find((item) => item.id === actividadAppId);
+
+    return planificacion.preciosReferencia.find((item) => (
+      item.activo
+      && item.destinoVenta === destinoVenta
+      && (
+        (actividad?.especieAppId && item.especieAppId === actividad.especieAppId)
+        || (actividad?.especieErpId && item.especieErpId === actividad.especieErpId)
+        || item.actividadAppId === actividadAppId
+      )
+    ));
   }
 
   function buscarGastosSugeridos(
@@ -908,7 +918,15 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
         return pesoB - pesoA || a.destinoVenta.localeCompare(b.destinoVenta);
       })[0];
     const destinoVenta = destino?.destinoVenta || '';
-    const precio = snapshotBase.preciosReferencia.find((item) => item.activo && item.actividadAppId === lineaConProtocolo.actividadAppId && item.destinoVenta === destinoVenta);
+    const precio = snapshotBase.preciosReferencia.find((item) => (
+      item.activo
+      && item.destinoVenta === destinoVenta
+      && (
+        (actividadProtocolo?.especieAppId && item.especieAppId === actividadProtocolo.especieAppId)
+        || (actividadProtocolo?.especieErpId && item.especieErpId === actividadProtocolo.especieErpId)
+        || item.actividadAppId === lineaConProtocolo.actividadAppId
+      )
+    ));
     const gastos = snapshotBase.gastosComercialesReferencia.find((item) => (
       item.activo
       && item.campaniaErpId === campaniaErpId

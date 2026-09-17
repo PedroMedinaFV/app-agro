@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 
 type DecimalInputProps = {
   value: number;
@@ -11,6 +12,7 @@ type DecimalInputProps = {
   title?: string;
   ariaLabel?: string;
   decimals?: number;
+  commitOnBlur?: boolean;
 };
 
 function redondearDecimal(value: number, decimals: number) {
@@ -34,16 +36,33 @@ function numeroDesdeTexto(value: string) {
  * Input decimal controlado para tablas densas. Usa texto para permitir punto o
  * coma decimal del teclado numerico sin que el navegador bloquee la entrada.
  */
-export function DecimalInput({ value, onValueChange, disabled, min = 0, max, step = '0.01', placeholder, title, ariaLabel, decimals = 2 }: DecimalInputProps) {
+export function DecimalInput({
+  value,
+  onValueChange,
+  disabled,
+  min = 0,
+  max,
+  step = '0.01',
+  placeholder,
+  title,
+  ariaLabel,
+  decimals = 2,
+  commitOnBlur = false,
+}: DecimalInputProps) {
   const [texto, setTexto] = useState(textoDesdeNumero(value, decimals));
+  const [editando, setEditando] = useState(false);
 
   useEffect(() => {
+    if (commitOnBlur && editando) {
+      return;
+    }
+
     const siguiente = textoDesdeNumero(value, decimals);
 
     if (numeroDesdeTexto(texto) !== value) {
       setTexto(siguiente);
     }
-  }, [value, texto, decimals]);
+  }, [value, texto, decimals, commitOnBlur, editando]);
 
   function actualizarTexto(siguiente: string) {
     if (!/^\d*(?:[.,]\d*)?$/.test(siguiente)) {
@@ -51,6 +70,10 @@ export function DecimalInput({ value, onValueChange, disabled, min = 0, max, ste
     }
 
     setTexto(siguiente);
+
+    if (commitOnBlur) {
+      return;
+    }
 
     if (siguiente === '' || siguiente === '.' || siguiente === ',') {
       onValueChange(0);
@@ -60,11 +83,25 @@ export function DecimalInput({ value, onValueChange, disabled, min = 0, max, ste
     onValueChange(numeroDesdeTexto(siguiente));
   }
 
-  function normalizarAlSalir() {
+  function confirmarValor() {
     const valorRedondeado = redondearDecimal(numeroDesdeTexto(texto), decimals);
 
     setTexto(textoDesdeNumero(valorRedondeado, decimals));
     onValueChange(valorRedondeado);
+  }
+
+  function normalizarAlSalir() {
+    setEditando(false);
+    confirmarValor();
+  }
+
+  function confirmarConEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    confirmarValor();
+    event.currentTarget.blur();
   }
 
   return (
@@ -76,7 +113,9 @@ export function DecimalInput({ value, onValueChange, disabled, min = 0, max, ste
       step={step}
       value={texto}
       onChange={(event) => actualizarTexto(event.target.value)}
+      onFocus={() => setEditando(true)}
       onBlur={normalizarAlSalir}
+      onKeyDown={confirmarConEnter}
       disabled={disabled}
       placeholder={placeholder}
       title={title}

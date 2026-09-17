@@ -37,7 +37,7 @@ function mapearPrecio(precio: PrecioPrisma): PrecioReferencia {
     id: precio.id,
     clienteId: precio.clienteId,
     empresaErpId: precio.empresaErpId || undefined,
-    actividadAppId: precio.actividadAppId,
+    actividadAppId: precio.actividadAppId || undefined,
     actividadErpId: precio.actividadErpId || undefined,
     especieAppId: precio.especieAppId || undefined,
     especieErpId: precio.especieErpId || undefined,
@@ -59,8 +59,8 @@ function validarPrecio(precio: PrecioReferencia) {
     throw crearErrorValidacion('El precio debe tener clienteId.');
   }
 
-  if (!precio.actividadAppId) {
-    throw crearErrorValidacion('El precio debe tener actividadAppId.');
+  if (!precio.especieAppId && !precio.especieErpId) {
+    throw crearErrorValidacion('El precio debe tener especieAppId o especieErpId.');
   }
 
   if (!precio.destinoVenta.trim()) {

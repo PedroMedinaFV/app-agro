@@ -1040,8 +1040,8 @@ model PrecioApp {
   cliente               Cliente  @relation(fields: [clienteId], references: [id])
   clienteId             String
   empresaErpId          String?
-  actividadApp ActividadApp @relation(fields: [actividadAppId], references: [id])
-  actividadAppId String
+  actividadApp ActividadApp? @relation(fields: [actividadAppId], references: [id])
+  actividadAppId String?
   actividadErpId        String?
   especieApp  EspecieApp? @relation(fields: [especieAppId], references: [id])
   especieAppId String?
@@ -1062,6 +1062,8 @@ model PrecioApp {
   @@index([clienteId])
   @@index([actividadAppId])
   @@index([actividadErpId])
+  @@index([especieAppId])
+  @@index([especieErpId])
   @@index([destinoVenta])
   @@index([activo])
 }
