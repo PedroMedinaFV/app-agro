@@ -61,7 +61,11 @@ export function App() {
   const puedeGestionarUsuarios = sesion?.permisos.includes('usuarios:gestionar') || false;
   const puedeLeerAuditoria = sesion?.permisos.includes('auditoria:leer') || false;
   const puedeGestionarCostos = sesion?.permisos.includes('costos:gestionar') || false;
-  const debeCargarSnapshotPlanificacion = vistasConSnapshotPlanificacion.has(vista);
+  const modoCargaPlanificacion = vista === 'planificacion'
+    ? 'resumen'
+    : vistasConSnapshotPlanificacion.has(vista)
+      ? 'snapshot'
+      : false;
   const debeCargarProtocolos = vista === 'protocolos';
   const refrescarNotificaciones = useCallback(async () => {
     if (!sesion || !sesion.permisos.includes('planificacion:configurar')) {
@@ -77,7 +81,7 @@ export function App() {
     }
   }, [sesion]);
   const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
-  const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify, debeCargarSnapshotPlanificacion);
+  const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify, modoCargaPlanificacion);
   const protocolosDemo = useProtocolosDemo({
     sesion,
     snapshot: erp.snapshot,
@@ -251,6 +255,7 @@ export function App() {
         <PlanificacionScreen
           sesion={sesion}
           planificacion={planificacionDemo.planificacion}
+          planificacionesResumen={planificacionDemo.planificacionesResumen}
           snapshot={erp.snapshot}
           campaniasDisponibles={campaniasImportadas.length ? campaniasImportadas : erp.snapshot.campanias}
           puedeEditarPlanificacion={planificacionDemo.puedeEditarPlanificacion}
@@ -258,6 +263,8 @@ export function App() {
           puedeCerrarPlanificacion={planificacionDemo.puedeCerrarPlanificacion}
           guardandoPlanificacion={planificacionDemo.guardandoPlanificacion}
           cerrandoPlanificacion={planificacionDemo.cerrandoPlanificacion}
+          cargandoPlanificacion={planificacionDemo.cargandoPlanificacion}
+          cargandoResumenPlanificacion={planificacionDemo.cargandoResumenPlanificacion}
           planificacionActiva={planificacionDemo.planificacionActiva}
           lineasPlanificacion={planificacionDemo.lineasPlanificacion}
           hectareasPlanificadas={planificacionDemo.hectareasPlanificadas}
@@ -270,6 +277,7 @@ export function App() {
           camposAppPorId={planificacionDemo.camposAppPorId}
           lotesAppPorId={planificacionDemo.lotesAppPorId}
           protocolosPorId={planificacionDemo.protocolosPorId}
+          asegurarPlanificacion={planificacionDemo.asegurarPlanificacion}
           seleccionarPlanificacion={planificacionDemo.seleccionarPlanificacion}
           crearEscenarioPlanificacion={planificacionDemo.crearEscenarioPlanificacion}
           copiarEscenarioPlanificacion={planificacionDemo.copiarEscenarioPlanificacion}
@@ -306,7 +314,7 @@ export function App() {
           crearProtocoloVacio={protocolosDemo.crearProtocoloVacio}
           copiarProtocoloSeleccionado={protocolosDemo.copiarProtocoloSeleccionado}
           guardarProtocoloSeleccionado={protocolosDemo.guardarProtocoloSeleccionado}
-          asegurarPlanificacion={planificacionDemo.asegurarPlanificacion}
+          asegurarPlanificacion={async () => { await planificacionDemo.asegurarPlanificacion(); }}
           formatearUsd={formatearUsd}
           setProtocoloSeleccionadoId={protocolosDemo.setProtocoloSeleccionadoId}
         />
@@ -429,7 +437,7 @@ export function App() {
           sesion={sesion}
           puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
           notificar={toast.notify}
-          onVinculacionesActualizadas={planificacionDemo.refrescarPlanificacion}
+          onVinculacionesActualizadas={async () => { await planificacionDemo.refrescarPlanificacion({ forzar: true }); }}
         />
       )}
 

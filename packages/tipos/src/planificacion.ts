@@ -362,6 +362,21 @@ export type PlanificacionAgricola = {
   updatedAt: string;
 };
 
+export type PlanificacionAgricolaResumen = Omit<PlanificacionAgricola, 'lineas'> & {
+  cantidadLineas: number;
+  hectareasPlanificadas: number;
+  ingresoNetoEstimado: number;
+  costoProduccionEstimado: number;
+  margenBrutoEstimado: number;
+  tieneLineasDuplicadas: boolean;
+};
+
+export type PlanificacionesResumenResponse = {
+  planificaciones: PlanificacionAgricolaResumen[];
+  camposProvisorios: number;
+  sincronizadoEn: string;
+};
+
 export type PlanificacionSnapshot = {
   zonasApp?: ZonaApp[];
   camposApp: CampoApp[];

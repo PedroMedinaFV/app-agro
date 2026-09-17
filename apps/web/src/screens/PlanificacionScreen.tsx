@@ -6,12 +6,14 @@ import { PlanificacionBaseProps } from './planificacionTypes';
 export function PlanificacionScreen(props: PlanificacionBaseProps) {
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  function abrirEditor(planificacionId: string) {
+  async function abrirEditor(planificacionId: string) {
+    await props.asegurarPlanificacion();
     props.seleccionarPlanificacion(planificacionId);
     setModoEdicion(true);
   }
 
   async function crearYEditarEscenario(datos: { nombre: string; campaniaErpId: string; descripcion?: string }) {
+    await props.asegurarPlanificacion();
     const planificacionId = await props.crearEscenarioPlanificacion(datos);
 
     if (planificacionId) {
@@ -22,6 +24,7 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
   }
 
   async function copiarYEditarEscenario(planificacionId: string) {
+    await props.asegurarPlanificacion();
     const copiaId = await props.copiarEscenarioPlanificacion(planificacionId);
 
     if (copiaId) {

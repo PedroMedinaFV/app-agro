@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
+import type { PlanificacionAgricolaResumen } from '@agro/tipos';
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onEditarPlanificacion: (planificacionId: string) => void;
@@ -23,13 +24,42 @@ function calcularResumen(item: PlanificacionActiva) {
   };
 }
 
+function convertirResumenLocal(item: PlanificacionActiva): PlanificacionAgricolaResumen {
+  const resumen = calcularResumen(item);
+
+  return {
+    id: item.id,
+    clienteId: item.clienteId,
+    campaniaErpId: item.campaniaErpId,
+    nombre: item.nombre,
+    descripcion: item.descripcion,
+    estado: item.estado,
+    escenarioOriginal: item.escenarioOriginal,
+    escenarioBloqueadoPorId: item.escenarioBloqueadoPorId,
+    cerradaPor: item.cerradaPor,
+    cerradaAt: item.cerradaAt,
+    motivoCierre: item.motivoCierre,
+    cantidadLineas: item.lineas.length,
+    hectareasPlanificadas: resumen.hectareas,
+    ingresoNetoEstimado: resumen.ingresoNeto,
+    costoProduccionEstimado: resumen.costo,
+    margenBrutoEstimado: resumen.margen,
+    tieneLineasDuplicadas: false,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
 export function PlanificacionesResumenScreen({
   sesion,
   planificacion,
+  planificacionesResumen,
   campaniasDisponibles,
   puedeEditarPlanificacionPorPermiso,
   guardandoPlanificacion,
   cerrandoPlanificacion,
+  cargandoPlanificacion,
+  cargandoResumenPlanificacion,
   planificacionActiva,
   camposProvisorios,
   tieneLineasDuplicadas,
@@ -51,15 +81,17 @@ export function PlanificacionesResumenScreen({
   });
   const [planificacionParaCerrarId, setPlanificacionParaCerrarId] = useState<string | null>(null);
   const campaniasPorId = useMemo(() => new Map(campaniasDisponibles.map((campania) => [campania.erpId, campania])), [campaniasDisponibles]);
-  const resumenPorPlanificacion = useMemo(() => new Map(
-    planificacion.planificaciones.map((item) => [item.id, calcularResumen(item)]),
-  ), [planificacion.planificaciones]);
+  const planificacionesListado = useMemo(() => (
+    planificacionesResumen.length > 0
+      ? planificacionesResumen
+      : planificacion.planificaciones.map(convertirResumenLocal)
+  ), [planificacion.planificaciones, planificacionesResumen]);
   const puedeCerrarPorPermiso = sesion.permisos.includes('planificacion:cerrar');
   const preciosVisibles = useMemo(() => planificacion.preciosReferencia.slice(0, 6), [planificacion.preciosReferencia]);
   const protocolosVisibles = useMemo(() => planificacion.protocolos.slice(0, 6), [planificacion.protocolos]);
-  const planificacionParaCerrar = planificacion.planificaciones.find((item) => item.id === planificacionParaCerrarId);
-  const resumenParaCerrar = planificacionParaCerrar ? resumenPorPlanificacion.get(planificacionParaCerrar.id) : undefined;
-  const campaniaTieneOriginal = planificacion.planificaciones.some((item) => (
+  const planificacionParaCerrar = planificacionesListado.find((item) => item.id === planificacionParaCerrarId);
+  const resumenParaCerrar = planificacionParaCerrar;
+  const campaniaTieneOriginal = planificacionesListado.some((item) => (
     item.campaniaErpId === nuevoEscenario.campaniaErpId
     && item.estado === 'cerrada'
     && item.escenarioOriginal
@@ -86,25 +118,7 @@ export function PlanificacionesResumenScreen({
     }
   }
 
-  function tieneDuplicados(item: PlanificacionActiva) {
-    const claves = new Set<string>();
-
-    for (const linea of item.lineas) {
-      const clave = `${item.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
-
-      if (claves.has(clave)) {
-        return true;
-      }
-
-      claves.add(clave);
-    }
-
-    return false;
-  }
-
-  function obtenerMotivoCierreDeshabilitado(item: PlanificacionActiva) {
-    const resumen = resumenPorPlanificacion.get(item.id);
-
+  function obtenerMotivoCierreDeshabilitado(item: PlanificacionAgricolaResumen) {
     if (!puedeCerrarPorPermiso) {
       return 'No tenes permisos para cerrar planificaciones';
     }
@@ -121,11 +135,11 @@ export function PlanificacionesResumenScreen({
       return 'Hay una accion en curso';
     }
 
-    if (tieneDuplicados(item)) {
+    if (item.tieneLineasDuplicadas) {
       return 'Tiene lineas duplicadas';
     }
 
-    if ((resumen?.hectareas || 0) <= 0) {
+    if (item.hectareasPlanificadas <= 0) {
       return 'Las hectareas planificadas deben ser mayores a cero';
     }
 
@@ -173,9 +187,9 @@ export function PlanificacionesResumenScreen({
         )}
       >
         <DataTable
-          rows={planificacion.planificaciones}
+          rows={planificacionesListado}
           getRowKey={(item) => item.id}
-          emptyMessage="Todavia no hay planificaciones registradas."
+          emptyMessage={cargandoResumenPlanificacion || cargandoPlanificacion ? 'Cargando planificaciones...' : 'Todavia no hay planificaciones registradas.'}
           columns={[
             {
               key: 'nombre',
@@ -204,25 +218,25 @@ export function PlanificacionesResumenScreen({
               key: 'hectareas',
               label: 'Hectareas',
               width: 'minmax(74px, 0.48fr)',
-              render: (item) => (resumenPorPlanificacion.get(item.id)?.hectareas || 0).toFixed(2),
+              render: (item) => item.hectareasPlanificadas.toFixed(2),
             },
             {
               key: 'ingreso',
               label: 'Ingreso neto',
               width: 'minmax(92px, 0.68fr)',
-              render: (item) => formatearUsd(resumenPorPlanificacion.get(item.id)?.ingresoNeto || 0),
+              render: (item) => formatearUsd(item.ingresoNetoEstimado),
             },
             {
               key: 'costo',
               label: 'Costo',
               width: 'minmax(86px, 0.62fr)',
-              render: (item) => formatearUsd(resumenPorPlanificacion.get(item.id)?.costo || 0),
+              render: (item) => formatearUsd(item.costoProduccionEstimado),
             },
             {
               key: 'margen',
               label: 'Margen',
               width: 'minmax(92px, 0.68fr)',
-              render: (item) => <strong>{formatearUsd(resumenPorPlanificacion.get(item.id)?.margen || 0)}</strong>,
+              render: (item) => <strong>{formatearUsd(item.margenBrutoEstimado)}</strong>,
             },
             {
               key: 'acciones',
@@ -361,11 +375,11 @@ export function PlanificacionesResumenScreen({
             <div className="summary-grid">
               <article>
                 <span>Hectareas</span>
-                <strong>{(resumenParaCerrar?.hectareas || 0).toFixed(2)}</strong>
+                <strong>{(resumenParaCerrar?.hectareasPlanificadas || 0).toFixed(2)}</strong>
               </article>
               <article>
                 <span>Margen</span>
-                <strong>{formatearUsd(resumenParaCerrar?.margen || 0)}</strong>
+                <strong>{formatearUsd(resumenParaCerrar?.margenBrutoEstimado || 0)}</strong>
               </article>
             </div>
 

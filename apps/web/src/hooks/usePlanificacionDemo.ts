@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ConceptoGastoComercial,
   DestinoApp,
@@ -9,6 +9,7 @@ import {
   LoteApp,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
+  PlanificacionAgricolaResumen,
   PlanificacionSnapshot,
   PrecioReferencia,
   ProtocoloProductivoResumen,
@@ -23,6 +24,7 @@ import {
   guardarServicioApp,
   guardarPlanificacion,
   guardarPrecioReferencia,
+  obtenerPlanificacionesResumen,
   obtenerPlanificacionSnapshot,
 } from '../services/api';
 
@@ -68,11 +70,61 @@ function obtenerSuperficieInicialLote(lote: LoteApp) {
   return superficieTotal;
 }
 
-export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente = true) {
+type ModoCargaPlanificacion = boolean | 'resumen' | 'snapshot';
+
+const resumenVacio = {
+  planificaciones: [] as PlanificacionAgricolaResumen[],
+  camposProvisorios: 0,
+  sincronizadoEn: new Date(0).toISOString(),
+};
+
+function resumirPlanificacionLocal(planificacion: PlanificacionAgricola): PlanificacionAgricolaResumen {
+  const claves = new Set<string>();
+  let tieneLineasDuplicadas = false;
+
+  for (const linea of planificacion.lineas) {
+    const clave = `${planificacion.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+
+    if (claves.has(clave)) {
+      tieneLineasDuplicadas = true;
+      break;
+    }
+
+    claves.add(clave);
+  }
+
+  return {
+    id: planificacion.id,
+    clienteId: planificacion.clienteId,
+    campaniaErpId: planificacion.campaniaErpId,
+    nombre: planificacion.nombre,
+    descripcion: planificacion.descripcion,
+    estado: planificacion.estado,
+    escenarioOriginal: planificacion.escenarioOriginal,
+    escenarioBloqueadoPorId: planificacion.escenarioBloqueadoPorId,
+    cerradaPor: planificacion.cerradaPor,
+    cerradaAt: planificacion.cerradaAt,
+    motivoCierre: planificacion.motivoCierre,
+    cantidadLineas: planificacion.lineas.length,
+    hectareasPlanificadas: planificacion.lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
+    ingresoNetoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
+    costoProduccionEstimado: planificacion.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
+    margenBrutoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
+    tieneLineasDuplicadas,
+    createdAt: planificacion.createdAt,
+    updatedAt: planificacion.updatedAt,
+  };
+}
+
+export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente: ModoCargaPlanificacion = true) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionVacia);
+  const planificacionRef = useRef(planificacionVacia);
+  const [resumenPlanificaciones, setResumenPlanificaciones] = useState(resumenVacio);
   const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion sin cargar');
   const [planificacionCargada, setPlanificacionCargada] = useState(false);
+  const [resumenPlanificacionCargado, setResumenPlanificacionCargado] = useState(false);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
+  const [cargandoResumenPlanificacion, setCargandoResumenPlanificacion] = useState(false);
   const [guardandoPlanificacion, setGuardandoPlanificacion] = useState(false);
   const [cerrandoPlanificacion, setCerrandoPlanificacion] = useState(false);
   const [guardandoPrecios, setGuardandoPrecios] = useState(false);
@@ -83,21 +135,58 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const [guardandoInsumos, setGuardandoInsumos] = useState(false);
   const [planificacionSeleccionadaId, setPlanificacionSeleccionadaId] = useState<string>();
 
-  const refrescarPlanificacion = useCallback(async (opciones: { forzar?: boolean } = {}) => {
+  useEffect(() => {
+    planificacionRef.current = planificacion;
+  }, [planificacion]);
+
+  const refrescarResumenPlanificacion = useCallback(async (opciones: { forzar?: boolean } = {}) => {
     if (!sesion) {
       return;
+    }
+
+    setCargandoResumenPlanificacion(true);
+
+    try {
+      const resumen = await obtenerPlanificacionesResumen(sesion.token, opciones);
+      setResumenPlanificaciones(resumen);
+      setResumenPlanificacionCargado(true);
+      setPlanificacionEstado('Resumen de planificaciones cargado.');
+    } catch {
+      setResumenPlanificaciones(resumenVacio);
+      setResumenPlanificacionCargado(true);
+      setPlanificacionEstado('No se pudo cargar el resumen de planificaciones.');
+    } finally {
+      setCargandoResumenPlanificacion(false);
+    }
+  }, [sesion]);
+
+  const refrescarPlanificacion = useCallback(async (opciones: { forzar?: boolean } = {}) => {
+    if (!sesion) {
+      return undefined;
     }
 
     setCargandoPlanificacion(true);
 
     try {
-      setPlanificacion(await obtenerPlanificacionSnapshot(sesion.token, opciones));
+      const siguiente = await obtenerPlanificacionSnapshot(sesion.token, opciones);
+
+      planificacionRef.current = siguiente;
+      setPlanificacion(siguiente);
+      setResumenPlanificaciones({
+        planificaciones: siguiente.planificaciones.map(resumirPlanificacionLocal),
+        camposProvisorios: siguiente.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length,
+        sincronizadoEn: siguiente.sincronizadoEn,
+      });
+      setResumenPlanificacionCargado(true);
       setPlanificacionCargada(true);
       setPlanificacionEstado('Planificacion actualizada desde API.');
+      return siguiente;
     } catch (error) {
       setPlanificacion(planificacionVacia);
+      planificacionRef.current = planificacionVacia;
       setPlanificacionCargada(true);
       setPlanificacionEstado('No se pudo refrescar la planificacion desde API.');
+      return undefined;
     } finally {
       setCargandoPlanificacion(false);
     }
@@ -120,22 +209,45 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   useEffect(() => {
     if (!sesion) {
       setPlanificacion(planificacionVacia);
+      setResumenPlanificaciones(resumenVacio);
       setPlanificacionCargada(false);
+      setResumenPlanificacionCargado(false);
       setPlanificacionEstado('Planificacion sin sesion');
       return;
     }
 
-    if (!cargarAutomaticamente || planificacionCargada || cargandoPlanificacion) {
+    const modoCarga = cargarAutomaticamente === true ? 'snapshot' : cargarAutomaticamente;
+
+    if (!modoCarga) {
       return;
     }
 
-    void refrescarPlanificacion();
-  }, [cargarAutomaticamente, cargandoPlanificacion, planificacionCargada, refrescarPlanificacion, sesion]);
+    if (modoCarga === 'resumen') {
+      if (!resumenPlanificacionCargado && !cargandoResumenPlanificacion) {
+        void refrescarResumenPlanificacion();
+      }
+      return;
+    }
+
+    if (!planificacionCargada && !cargandoPlanificacion) {
+      void refrescarPlanificacion();
+    }
+  }, [
+    cargarAutomaticamente,
+    cargandoPlanificacion,
+    cargandoResumenPlanificacion,
+    planificacionCargada,
+    refrescarPlanificacion,
+    refrescarResumenPlanificacion,
+    resumenPlanificacionCargado,
+    sesion,
+  ]);
 
   const asegurarPlanificacion = useCallback(async () => {
     if (!planificacionCargada && !cargandoPlanificacion) {
-      await refrescarPlanificacion();
+      return refrescarPlanificacion();
     }
+    return planificacionRef.current;
   }, [cargandoPlanificacion, planificacionCargada, refrescarPlanificacion]);
 
   const planificacionActiva = planificacion.planificaciones.find((item) => item.id === planificacionSeleccionadaId) || planificacion.planificaciones[0];
@@ -158,7 +270,16 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const ingresoNetoTotal = resumenPlanificacion.ingresoNetoTotal;
   const costoTotal = resumenPlanificacion.costoTotal;
   const hectareasPlanificadas = resumenPlanificacion.hectareasPlanificadas;
-  const camposProvisorios = useMemo(() => planificacion.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length, [planificacion.camposApp]);
+  const camposProvisorios = useMemo(() => (
+    planificacionCargada
+      ? planificacion.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length
+      : resumenPlanificaciones.camposProvisorios
+  ), [planificacion.camposApp, planificacionCargada, resumenPlanificaciones.camposProvisorios]);
+  const planificacionesResumen = useMemo(() => (
+    planificacionCargada
+      ? planificacion.planificaciones.map(resumirPlanificacionLocal)
+      : resumenPlanificaciones.planificaciones
+  ), [planificacion.planificaciones, planificacionCargada, resumenPlanificaciones.planificaciones]);
   const puedeEditarPlanificacionPorPermiso = Boolean(sesion?.permisos.includes('planificacion:editar'));
   const planificacionActivaBloqueada = planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada';
   const puedeEditarPlanificacion = Boolean(puedeEditarPlanificacionPorPermiso && !planificacionActivaBloqueada);
@@ -408,7 +529,13 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return undefined;
     }
 
-    const existeOriginalCerrado = planificacion.planificaciones.some((item) => (
+    const snapshotPlanificacion = planificacionCargada ? planificacion : await asegurarPlanificacion();
+
+    if (!snapshotPlanificacion) {
+      return undefined;
+    }
+
+    const existeOriginalCerrado = snapshotPlanificacion.planificaciones.some((item) => (
       item.campaniaErpId === datos.campaniaErpId
       && item.estado === 'cerrada'
       && item.escenarioOriginal
@@ -433,8 +560,8 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       descripcion,
       estado: 'borrador',
       escenarioOriginal: false,
-      lineas: planificacion.lotesApp
-        .map((lote, indice) => crearLineaDesdeLote(lote, id, indice, datos.campaniaErpId))
+      lineas: snapshotPlanificacion.lotesApp
+        .map((lote, indice) => crearLineaDesdeLote(lote, id, indice, datos.campaniaErpId, snapshotPlanificacion))
         .filter((linea): linea is PlanificacionAgricolaLinea => Boolean(linea)),
       createdAt: ahora,
       updatedAt: ahora,
@@ -453,13 +580,14 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       return undefined;
     }
 
-    const origen = planificacion.planificaciones.find((item) => item.id === planificacionId);
+    const snapshotPlanificacion = planificacionCargada ? planificacion : await asegurarPlanificacion();
+    const origen = snapshotPlanificacion?.planificaciones.find((item) => item.id === planificacionId);
 
-    if (!origen) {
+    if (!snapshotPlanificacion || !origen) {
       return undefined;
     }
 
-    const existeOriginalCerrado = planificacion.planificaciones.some((item) => (
+    const existeOriginalCerrado = snapshotPlanificacion.planificaciones.some((item) => (
       item.id !== origen.id
       && item.campaniaErpId === origen.campaniaErpId
       && item.estado === 'cerrada'
@@ -601,9 +729,18 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
     };
   }
 
-  function crearLineaDesdeLote(lote: LoteApp, planificacionId: string, indice: number, campaniaErpId: string): PlanificacionAgricolaLinea | undefined {
-    const campo = camposAppPorId.get(lote.campoAppId);
-    const actividad = planificacion.actividadesApp?.[0];
+  function crearLineaDesdeLote(
+    lote: LoteApp,
+    planificacionId: string,
+    indice: number,
+    campaniaErpId: string,
+    snapshotBase = planificacion,
+  ): PlanificacionAgricolaLinea | undefined {
+    const camposBasePorId = snapshotBase === planificacion
+      ? camposAppPorId
+      : new Map(snapshotBase.camposApp.map((campo) => [campo.id, campo]));
+    const campo = camposBasePorId.get(lote.campoAppId);
+    const actividad = snapshotBase.actividadesApp?.[0];
     const ahora = new Date().toISOString();
 
     if (!campo || !actividad) {
@@ -640,8 +777,22 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       createdAt: ahora,
       updatedAt: ahora,
     };
-    const protocolo = obtenerProtocolosCompatibles(base).find((item) => item.campaniaErpId === campaniaErpId) || obtenerProtocolosCompatibles(base)[0];
-    const actividadProtocolo = obtenerActividadDesdeProtocolo(protocolo?.id);
+    const protocolosCompatibles = snapshotBase.protocolos
+      .filter((item) => {
+        if (!item.activo || item.actividadAppId !== base.actividadAppId) {
+          return false;
+        }
+
+        const coincideCampo = !item.campoAppId || item.campoAppId === base.campoAppId;
+        const coincideZona = !item.zonaAppId || item.zonaAppId === campo.zonaAppId;
+
+        return coincideCampo && coincideZona;
+      })
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
+    const protocolo = protocolosCompatibles.find((item) => item.campaniaErpId === campaniaErpId) || protocolosCompatibles[0];
+    const actividadProtocolo = protocolo
+      ? snapshotBase.actividadesApp?.find((item) => item.id === protocolo.actividadAppId)
+      : undefined;
     const lineaConProtocolo = {
       ...base,
       protocoloId: protocolo?.id,
@@ -649,7 +800,46 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       actividadErpId: actividadProtocolo?.actividadErpId || base.actividadErpId,
     };
 
-    return recalcularLinea({ ...lineaConProtocolo, ...aplicarSugerenciasComerciales(lineaConProtocolo) });
+    if (snapshotBase === planificacion) {
+      return recalcularLinea({ ...lineaConProtocolo, ...aplicarSugerenciasComerciales(lineaConProtocolo) });
+    }
+
+    const destino = snapshotBase.destinosReferencia
+      .filter((item) => item.activo)
+      .sort((a, b) => {
+        const pesoA = (a.campoAppId === lineaConProtocolo.campoAppId ? 3 : 0) + (a.campoErpId === lineaConProtocolo.campoErpId ? 2 : 0);
+        const pesoB = (b.campoAppId === lineaConProtocolo.campoAppId ? 3 : 0) + (b.campoErpId === lineaConProtocolo.campoErpId ? 2 : 0);
+
+        return pesoB - pesoA || a.destinoVenta.localeCompare(b.destinoVenta);
+      })[0];
+    const destinoVenta = destino?.destinoVenta || '';
+    const precio = snapshotBase.preciosReferencia.find((item) => item.activo && item.actividadAppId === lineaConProtocolo.actividadAppId && item.destinoVenta === destinoVenta);
+    const gastos = snapshotBase.gastosComercialesReferencia.find((item) => (
+      item.activo
+      && item.campaniaErpId === campaniaErpId
+      && item.actividadAppId === lineaConProtocolo.actividadAppId
+      && item.destinoVenta === destinoVenta
+      && (!item.zonaAppId || item.zonaAppId === campo.zonaAppId)
+      && (!item.zonaErpId || item.zonaErpId === campo.zonaErpId)
+    ));
+    const lineaConComercial = {
+      ...lineaConProtocolo,
+      destinoReferenciaId: destino?.id,
+      destinoVenta,
+      precioReferenciaId: precio?.id,
+      precioVentaEstimado: precio?.valor || 0,
+      gastosComercialesReferenciaId: gastos?.id,
+      gastosComercialesEstimados: gastos
+        ? gastos.items.reduce((total, item) => {
+          const produccionEstimadaTn = lineaConProtocolo.hectareasPlanificadas * lineaConProtocolo.rindeEstimado;
+          const baseCalculo = item.unidadCalculo === 'Ha' ? lineaConProtocolo.hectareasPlanificadas : produccionEstimadaTn;
+
+          return total + item.valorPorTonelada * baseCalculo;
+        }, 0)
+        : 0,
+    };
+
+    return recalcularLinea(lineaConComercial);
   }
 
   function cambiarCampo(lineaId: string, campoAppId: string) {
@@ -1312,7 +1502,8 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   }
 
   async function cerrarPlanificacionActiva(planificacionId: string) {
-    const planificacionObjetivo = planificacion.planificaciones.find((item) => item.id === planificacionId);
+    const snapshotPlanificacion = planificacionCargada ? planificacion : await asegurarPlanificacion();
+    const planificacionObjetivo = snapshotPlanificacion?.planificaciones.find((item) => item.id === planificacionId);
 
     if (!sesion || !planificacionObjetivo || !sesion.permisos.includes('planificacion:cerrar')) {
       return;
@@ -1382,9 +1573,12 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
 
   return {
     planificacion,
+    planificacionesResumen,
     planificacionEstado,
     planificacionCargada,
+    resumenPlanificacionCargado,
     cargandoPlanificacion,
+    cargandoResumenPlanificacion,
     guardandoPlanificacion,
     cerrandoPlanificacion,
     guardandoPrecios,

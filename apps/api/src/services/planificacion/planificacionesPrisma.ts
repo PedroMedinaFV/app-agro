@@ -5,6 +5,7 @@ import type {
   GuardarPlanificacionResponse,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
+  PlanificacionAgricolaResumen,
 } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -237,6 +238,78 @@ export async function obtenerPlanificacionesPersistidas(clienteId: string) {
   });
 
   return registros.map(mapearPlanificacion);
+}
+
+export async function obtenerPlanificacionesResumenPersistidas(clienteId: string): Promise<PlanificacionAgricolaResumen[]> {
+  const registros = await prisma.planificacionAgricola.findMany({
+    where: { clienteId },
+    select: {
+      id: true,
+      clienteId: true,
+      campaniaErpId: true,
+      nombre: true,
+      descripcion: true,
+      estado: true,
+      escenarioOriginal: true,
+      escenarioBloqueadoPorId: true,
+      cerradaPor: true,
+      cerradaAt: true,
+      motivoCierre: true,
+      createdAt: true,
+      updatedAt: true,
+      lineas: {
+        select: {
+          campoAppId: true,
+          loteAppId: true,
+          actividadAppId: true,
+          protocoloId: true,
+          hectareasPlanificadas: true,
+          ingresoNetoEstimado: true,
+          costoProduccionEstimado: true,
+          margenBrutoEstimado: true,
+        },
+      },
+    },
+    orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+  });
+
+  return registros.map((planificacion) => {
+    const claves = new Set<string>();
+    let tieneLineasDuplicadas = false;
+
+    for (const linea of planificacion.lineas) {
+      const clave = `${planificacion.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+
+      if (claves.has(clave)) {
+        tieneLineasDuplicadas = true;
+        break;
+      }
+
+      claves.add(clave);
+    }
+
+    return {
+      id: planificacion.id,
+      clienteId: planificacion.clienteId,
+      campaniaErpId: planificacion.campaniaErpId,
+      nombre: planificacion.nombre,
+      descripcion: planificacion.descripcion || undefined,
+      estado: planificacion.estado as PlanificacionAgricola['estado'],
+      escenarioOriginal: planificacion.escenarioOriginal,
+      escenarioBloqueadoPorId: planificacion.escenarioBloqueadoPorId || undefined,
+      cerradaPor: planificacion.cerradaPor || undefined,
+      cerradaAt: serializarFecha(planificacion.cerradaAt),
+      motivoCierre: planificacion.motivoCierre || undefined,
+      cantidadLineas: planificacion.lineas.length,
+      hectareasPlanificadas: planificacion.lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
+      ingresoNetoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
+      costoProduccionEstimado: planificacion.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
+      margenBrutoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
+      tieneLineasDuplicadas,
+      createdAt: planificacion.createdAt.toISOString(),
+      updatedAt: planificacion.updatedAt.toISOString(),
+    };
+  });
 }
 
 async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: PlanificacionAgricola) {

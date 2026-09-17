@@ -69,6 +69,7 @@ import {
   NotificacionUsuarioResumen,
   ObservacionesResponse,
   PadronErpSincronizable,
+  PlanificacionesResumenResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
   ProtocolosSnapshot,
@@ -425,9 +426,16 @@ export async function guardarEmpresasErpAdmin(clienteId: string, empresasErpIds:
 
 let planificacionSnapshotCache: { token?: string; respuesta: PlanificacionSnapshot } | null = null;
 let planificacionSnapshotEnVuelo: { token?: string; promesa: Promise<PlanificacionSnapshot> } | null = null;
+const planificacionesResumenCache: CachedGet<PlanificacionesResumenResponse> = {};
 
 export function invalidarPlanificacionSnapshotCache() {
   planificacionSnapshotCache = null;
+  planificacionesResumenCache.respuesta = undefined;
+  planificacionesResumenCache.promesa = undefined;
+}
+
+export async function obtenerPlanificacionesResumen(token?: string, opciones: { forzar?: boolean } = {}): Promise<PlanificacionesResumenResponse> {
+  return obtenerConCache(planificacionesResumenCache, '/planificacion/resumen', token, opciones);
 }
 
 export async function obtenerPlanificacionSnapshot(token?: string, opciones: { forzar?: boolean } = {}): Promise<PlanificacionSnapshot> {

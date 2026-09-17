@@ -1,7 +1,12 @@
 import { Request, Router } from 'express';
 import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
-import { cerrarPlanificacionPersistida, guardarPlanificacionPersistida, obtenerPlanificacionesPersistidas } from '../services/planificacion/planificacionesPrisma';
+import {
+  cerrarPlanificacionPersistida,
+  guardarPlanificacionPersistida,
+  obtenerPlanificacionesPersistidas,
+  obtenerPlanificacionesResumenPersistidas,
+} from '../services/planificacion/planificacionesPrisma';
 import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
@@ -15,6 +20,30 @@ const router = Router();
 type RequestConUsuario = Request & {
   user?: { sub?: string; email?: string; clienteId?: string; rol?: string };
 };
+
+router.get('/resumen', requierePermiso('planificacion:leer'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+    const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
+    const [planificaciones, camposProvisorios] = await Promise.all([
+      obtenerPlanificacionesResumenPersistidas(clienteId),
+      prisma.campoApp.count({
+        where: {
+          clienteId,
+          estadoVinculacion: 'provisorio',
+        },
+      }),
+    ]);
+
+    res.json({
+      planificaciones,
+      camposProvisorios,
+      sincronizadoEn: new Date().toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
   try {

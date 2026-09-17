@@ -4,6 +4,7 @@ import {
   ErpSnapshot,
   LoteApp,
   PlanificacionAgricolaLinea,
+  PlanificacionAgricolaResumen,
   PlanificacionSnapshot,
   ProtocoloProductivoResumen,
   SesionUsuario,
@@ -13,6 +14,7 @@ export type PlanificacionActiva = PlanificacionSnapshot['planificaciones'][numbe
 
 export type PlanificacionBaseProps = {
   planificacion: PlanificacionSnapshot;
+  planificacionesResumen: PlanificacionAgricolaResumen[];
   snapshot: ErpSnapshot;
   sesion: SesionUsuario;
   campaniasDisponibles: ErpCampania[];
@@ -21,6 +23,8 @@ export type PlanificacionBaseProps = {
   puedeCerrarPlanificacion: boolean;
   guardandoPlanificacion: boolean;
   cerrandoPlanificacion: boolean;
+  cargandoPlanificacion: boolean;
+  cargandoResumenPlanificacion: boolean;
   planificacionActiva: PlanificacionActiva | undefined;
   lineasPlanificacion: PlanificacionAgricolaLinea[];
   hectareasPlanificadas: number;
@@ -33,6 +37,7 @@ export type PlanificacionBaseProps = {
   camposAppPorId: Map<string, CampoApp>;
   lotesAppPorId: Map<string, LoteApp>;
   protocolosPorId: Map<string, ProtocoloProductivoResumen>;
+  asegurarPlanificacion: () => Promise<PlanificacionSnapshot | undefined>;
   seleccionarPlanificacion: (planificacionId: string) => void;
   crearEscenarioPlanificacion: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => Promise<string | undefined>;
   copiarEscenarioPlanificacion: (planificacionId: string) => Promise<string | undefined>;
