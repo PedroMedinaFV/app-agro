@@ -3,8 +3,6 @@ import type { MouseEvent } from 'react';
 import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
-import { DecimalInput } from '../components/DecimalInput';
-import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
@@ -12,10 +10,9 @@ import { AccionesAlcancePlanificacion, TipoAlcancePlanificacion } from '../compo
 import { AccionesMasivasPlanificacion } from '../components/planificacion/AccionesMasivasPlanificacion';
 import { ArbolPlanificacion } from '../components/planificacion/ArbolPlanificacion';
 import { EstadoCargaFiltro, FiltrosPlanificacion } from '../components/planificacion/FiltrosPlanificacion';
-import { formatearNumero } from '../utils/formatters';
+import { LineaPlanificacion } from '../components/planificacion/LineaPlanificacion';
 import {
   calcularResumenGrupoPlanificacion,
-  formatearCultivosAntecesores,
   idsErpCoinciden,
   lineaPlanificacionEstaCompleta,
   lineaPlanificacionTieneDatos,
@@ -604,15 +601,6 @@ export function PlanificacionEditorScreen({
     const lote = lotesAppPorId.get(linea.loteAppId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
     const gastoReferencia = linea.gastosComercialesReferenciaId ? gastosComercialesPorId.get(linea.gastosComercialesReferenciaId) : undefined;
-    const gastosResumen = gastoReferencia?.items
-      .map((item) => `${formatearUsd(item.valorPorTonelada)} / ${item.unidadCalculo || 'Tn'}`)
-      .join(' + ');
-    const produccionEstimada = linea.hectareasPlanificadas * linea.rindeEstimado;
-    const margenPorHa = linea.hectareasPlanificadas > 0 ? linea.margenBrutoEstimado / linea.hectareasPlanificadas : 0;
-    const ingresoNetoPorHa = linea.hectareasPlanificadas > 0 ? linea.ingresoNetoEstimado / linea.hectareasPlanificadas : 0;
-    const costoProduccionPorHa = linea.hectareasPlanificadas > 0 ? linea.costoProduccionEstimado / linea.hectareasPlanificadas : 0;
-    const gastosComercialesPorHa = linea.hectareasPlanificadas > 0 ? linea.gastosComercialesEstimados / linea.hectareasPlanificadas : 0;
-    const gastosComercialesPorTn = produccionEstimada > 0 ? linea.gastosComercialesEstimados / produccionEstimada : 0;
     const lotesDelCampo = lotesPorCampo.get(linea.campoAppId) || [];
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
     const claveLinea = obtenerClaveLinea(planificacionActiva?.campaniaErpId, linea);
@@ -621,107 +609,29 @@ export function PlanificacionEditorScreen({
     const hectareasExcedidas = Boolean(lote && linea.hectareasPlanificadas > lote.superficieTotal);
 
     return (
-      <div className={`planning-row ${lineaDuplicada ? 'duplicated' : ''} ${hectareasExcedidas ? 'planning-row-error' : ''}`} key={linea.id}>
-        <div className="planning-row-main">
-          <div className="planning-cell-wide">
-            <span className="cell-label">Lote</span>
-            <select value={linea.loteAppId} onChange={(event) => cambiarLote(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
-              {lotesDelCampo.map((item) => (
-                <option key={item.id} value={item.id}>{item.nombre}</option>
-              ))}
-            </select>
-            <span>prod. {lote?.superficieProductiva ?? '-'} ha / total {lote?.superficieTotal ?? '-'} ha</span>
-          </div>
-
-          <div className="planning-cell-wide planning-cell-antecesor">
-            <span className="cell-label">Antecesor</span>
-            <span>{formatearCultivosAntecesores(cultivosAntecesores, actividadNombrePorErpId)}</span>
-          </div>
-
-          <div className="planning-cell-wide">
-            <span className="cell-label">Protocolo</span>
-            <select value={linea.protocoloId || ''} onChange={(event) => cambiarProtocolo(linea.id, event.target.value || undefined)} disabled={!puedeEditarPlanificacion}>
-              <option value="">Sin protocolo</option>
-              {protocolosCompatibles.map((item) => (
-                <option key={item.id} value={item.id}>{item.nombre}</option>
-              ))}
-            </select>
-            <span>{protocolo ? `${formatearUsd(protocolo.costoEstimadoPorHa)} / ha - act. ${new Date(protocolo.updatedAt).toLocaleDateString('es-AR')}` : 'Selecciona protocolo para definir actividad'}</span>
-            {lineaDuplicada && <span className="cell-error">Actividad duplicada para este lote</span>}
-          </div>
-
-          <div className="planning-cell-wide">
-            <span className="cell-label">Destino</span>
-            <select value={linea.destinoVenta} onChange={(event) => cambiarDestino(linea.id, event.target.value)} disabled={!puedeEditarPlanificacion}>
-              {destinosDisponibles.map((destino) => (
-                <option key={destino.id} value={destino.destinoVenta}>{destino.destinoVenta}</option>
-              ))}
-              {!destinosDisponibles.some((destino) => destino.destinoVenta === linea.destinoVenta) && (
-                <option value={linea.destinoVenta}>{linea.destinoVenta || 'Sin destino'}</option>
-              )}
-            </select>
-            <span>{linea.destinoVentaManual ? 'Manual' : 'Sugerido'}</span>
-          </div>
-        </div>
-
-        <div className="planning-row-inputs">
-          <div className="planning-cell-number">
-            <span className="cell-label">Hectareas</span>
-            <DecimalInput value={linea.hectareasPlanificadas} onValueChange={(value) => actualizarLinea(linea.id, { hectareasPlanificadas: value })} disabled={!puedeEditarPlanificacion} commitOnBlur />
-            <span>max. {lote?.superficieTotal ?? '-'} ha</span>
-            {hectareasExcedidas && <span className="cell-error">Supera la superficie total del lote</span>}
-          </div>
-
-          <div className="planning-cell-number">
-            <span className="cell-label">Rinde</span>
-            <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => actualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditarPlanificacion} commitOnBlur />
-            <span>tn/ha - prod. {produccionEstimada.toFixed(2)} tn</span>
-          </div>
-
-          <div className="planning-cell-number">
-            <span className="cell-label">P. venta</span>
-            <DecimalInput value={linea.precioVentaEstimado} onValueChange={(value) => actualizarLinea(linea.id, { precioVentaEstimado: value, precioVentaManual: true })} disabled={!puedeEditarPlanificacion} commitOnBlur />
-            <span>{linea.precioVentaManual ? 'Manual' : 'Referencia'}</span>
-          </div>
-
-          <div className="planning-cell-number">
-            <span className="cell-label">Gtos com</span>
-            <DecimalInput value={linea.gastosComercialesEstimados} onValueChange={(value) => actualizarLinea(linea.id, { gastosComercialesEstimados: value, gastosComercialesReferenciaId: undefined })} disabled={!puedeEditarPlanificacion} commitOnBlur />
-            <span>{gastoReferencia ? `${gastosResumen} - ${gastoReferencia.items.length} items` : `${formatearUsd(gastosComercialesPorTn, 2)} / tn equiv.`}</span>
-          </div>
-        </div>
-
-        <div className="planning-row-summary">
-          <div className="planning-cell-summary">
-            <span className="cell-label">Ingreso neto</span>
-            <strong>{formatearUsd(linea.ingresoNetoEstimado)}</strong>
-            <span>{formatearNumero(ingresoNetoPorHa, 2)} USD/ha</span>
-           
-          </div>
-
-          <div className="planning-cell-summary">
-            <span className="cell-label">Margen bruto</span>
-            <strong>{formatearUsd(linea.margenBrutoEstimado)}</strong>
-            <span>{formatearNumero((linea.ingresoNetoEstimado - linea.costoProduccionEstimado) / linea.hectareasPlanificadas, 2)} USD/ha </span>
-          </div>
-
-          <div className="row-actions planning-cell-actions">
-            <IconButton
-              icon="copy"
-              label="Copiar linea"
-              onClick={() => copiarLineaPlanificacion(linea.id)}
-              disabled={!puedeEditarPlanificacion}
-            />
-            <IconButton
-              icon="close"
-              className="danger-icon"
-              label="Quitar linea"
-              onClick={() => eliminarLineaPlanificacion(linea.id)}
-              disabled={!puedeEditarPlanificacion || lineasPlanificacion.length === 1}
-            />
-          </div>
-        </div>
-      </div>
+      <LineaPlanificacion
+        key={linea.id}
+        linea={linea}
+        lote={lote}
+        lotesDelCampo={lotesDelCampo}
+        protocolo={protocolo}
+        protocolosCompatibles={protocolosCompatibles}
+        destinosDisponibles={destinosDisponibles}
+        gastoReferencia={gastoReferencia}
+        cultivosAntecesores={cultivosAntecesores}
+        actividadNombrePorErpId={actividadNombrePorErpId}
+        lineaDuplicada={lineaDuplicada}
+        hectareasExcedidas={hectareasExcedidas}
+        puedeEditar={puedeEditarPlanificacion}
+        cantidadLineas={lineasPlanificacion.length}
+        formatearUsd={formatearUsd}
+        onCambiarLote={cambiarLote}
+        onCambiarProtocolo={cambiarProtocolo}
+        onCambiarDestino={cambiarDestino}
+        onActualizarLinea={actualizarLinea}
+        onCopiarLinea={copiarLineaPlanificacion}
+        onEliminarLinea={eliminarLineaPlanificacion}
+      />
     );
   }
 
