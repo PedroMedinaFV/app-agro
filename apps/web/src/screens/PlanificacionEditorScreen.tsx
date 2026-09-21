@@ -8,6 +8,9 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
+import { PlanificacionBulkActions } from '../components/planificacion/PlanificacionBulkActions';
+import { EstadoCargaFiltro, PlanificacionFilters } from '../components/planificacion/PlanificacionFilters';
+import { PlanificacionScopeActions, TipoAlcancePlanificacion } from '../components/planificacion/PlanificacionScopeActions';
 import { formatearNumero } from '../utils/formatters';
 import {
   calcularResumenGrupoPlanificacion,
@@ -24,8 +27,6 @@ import { PlanificacionBaseProps } from './planificacionTypes';
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
   onVolverResumen: () => void;
 };
-
-type EstadoCargaFiltro = 'todos' | 'completas' | 'pendientes' | 'duplicadas';
 
 export function PlanificacionEditorScreen({
   planificacion,
@@ -73,7 +74,7 @@ export function PlanificacionEditorScreen({
   const [destinoMasivo, setDestinoMasivo] = useState('');
   const [rindeMasivo, setRindeMasivo] = useState('');
   const [resultadoAccionMasiva, setResultadoAccionMasiva] = useState('');
-  const [tipoAlcanceAgregar, setTipoAlcanceAgregar] = useState<'zona' | 'campo' | 'lote'>('zona');
+  const [tipoAlcanceAgregar, setTipoAlcanceAgregar] = useState<TipoAlcancePlanificacion>('zona');
   const [alcanceAgregarId, setAlcanceAgregarId] = useState('');
   const [confirmacionQuitarAlcance, setConfirmacionQuitarAlcance] = useState<{
     etiqueta: string;
@@ -800,129 +801,54 @@ export function PlanificacionEditorScreen({
           </article>
         </section>
 
-        <section className="planning-filters" aria-label="Filtros de planificacion">
-          <label>
-            Buscar
-            <input
-              value={busqueda}
-              onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Zona, campo, lote, protocolo o destino"
-            />
-          </label>
-          <label>
-            Zona
-            <select
-              value={filtroZonaId}
-              onChange={(event) => {
-                setFiltroZonaId(event.target.value);
-                setFiltroCampoId('');
-              }}
-            >
-              <option value="">Todas las zonas</option>
-              {zonasParaFiltro.map((zona) => (
-                <option key={zona.id} value={zona.id}>{zona.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Campo
-            <select value={filtroCampoId} onChange={(event) => setFiltroCampoId(event.target.value)}>
-              <option value="">Todos los campos</option>
-              {camposParaFiltro.map((campo) => (
-                <option key={campo.id} value={campo.id}>{campo.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Estado de carga
-            <select value={filtroEstadoCarga} onChange={(event) => setFiltroEstadoCarga(event.target.value as EstadoCargaFiltro)}>
-              <option value="todos">Todos</option>
-              <option value="completas">Completas</option>
-              <option value="pendientes">Pendientes</option>
-              <option value="duplicadas">Duplicadas</option>
-            </select>
-          </label>
-          <div className="planning-filter-summary">
-            <strong>{lineasFiltradas.length}</strong>
-            <span>de {lineasPlanificacion.length} lineas</span>
-            <Button variant="small" onClick={limpiarFiltros} disabled={!busqueda && !filtroZonaId && !filtroCampoId && filtroEstadoCarga === 'todos'}>
-              Limpiar
-            </Button>
-          </div>
-        </section>
+        <PlanificacionFilters
+          busqueda={busqueda}
+          filtroZonaId={filtroZonaId}
+          filtroCampoId={filtroCampoId}
+          filtroEstadoCarga={filtroEstadoCarga}
+          zonas={zonasParaFiltro}
+          campos={camposParaFiltro}
+          lineasFiltradas={lineasFiltradas.length}
+          totalLineas={lineasPlanificacion.length}
+          onBusquedaChange={setBusqueda}
+          onZonaChange={(zonaId) => {
+            setFiltroZonaId(zonaId);
+            setFiltroCampoId('');
+          }}
+          onCampoChange={setFiltroCampoId}
+          onEstadoCargaChange={setFiltroEstadoCarga}
+          onLimpiar={limpiarFiltros}
+        />
 
-        <section className="planning-scope-actions" aria-label="Alcance del escenario">
-          <div>
-            <p className="eyebrow">Alcance del escenario</p>
-            <h3>Agregar zonas, campos o lotes</h3>
-          </div>
-          <label>
-            Tipo
-            <select
-              value={tipoAlcanceAgregar}
-              onChange={(event) => {
-                setTipoAlcanceAgregar(event.target.value as 'zona' | 'campo' | 'lote');
-                setAlcanceAgregarId('');
-              }}
-              disabled={!puedeEditarPlanificacion}
-            >
-              <option value="zona">Zona</option>
-              <option value="campo">Campo</option>
-              <option value="lote">Lote</option>
-            </select>
-          </label>
-          <label>
-            Disponible
-            <select value={alcanceAgregarId} onChange={(event) => setAlcanceAgregarId(event.target.value)} disabled={!puedeEditarPlanificacion || opcionesAlcanceAgregar.length === 0}>
-              <option value="">{opcionesAlcanceAgregar.length ? 'Seleccionar' : 'No hay disponibles'}</option>
-              {opcionesAlcanceAgregar.map((opcion) => (
-                <option key={opcion.id} value={opcion.id}>{opcion.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <Button variant="small" onClick={agregarAlcanceEscenario} disabled={!puedeEditarPlanificacion || !alcanceAgregarId}>
-            Agregar al escenario
-          </Button>
-        </section>
+        <PlanificacionScopeActions
+          tipoAlcance={tipoAlcanceAgregar}
+          alcanceId={alcanceAgregarId}
+          opciones={opcionesAlcanceAgregar}
+          puedeEditar={puedeEditarPlanificacion}
+          onTipoAlcanceChange={(tipo) => {
+            setTipoAlcanceAgregar(tipo);
+            setAlcanceAgregarId('');
+          }}
+          onAlcanceChange={setAlcanceAgregarId}
+          onAgregar={agregarAlcanceEscenario}
+        />
 
-        <section className="planning-bulk-actions" aria-label="Acciones masivas de planificacion">
-          <div>
-            <p className="eyebrow">Acciones masivas</p>
-            <h3>Aplicar sobre lineas filtradas</h3>
-          </div>
-          <label>
-            Protocolo
-            <select value={protocoloMasivoId} onChange={(event) => setProtocoloMasivoId(event.target.value)}>
-              <option value="">Seleccionar protocolo</option>
-              {protocolosParaAccionMasiva.map((protocolo) => (
-                <option key={protocolo.id} value={protocolo.id}>{protocolo.nombre}</option>
-              ))}
-            </select>
-          </label>
-          <Button variant="small" onClick={aplicarProtocoloAFiltradas} disabled={!puedeEditarPlanificacion || !protocoloMasivoId || lineasFiltradas.length === 0}>
-            Aplicar protocolo
-          </Button>
-          <label>
-            Destino
-            <select value={destinoMasivo} onChange={(event) => setDestinoMasivo(event.target.value)}>
-              <option value="">Seleccionar destino</option>
-              {destinosParaAccionMasiva.map((destino) => (
-                <option key={destino} value={destino}>{destino}</option>
-              ))}
-            </select>
-          </label>
-          <Button variant="small" onClick={aplicarDestinoAFiltradas} disabled={!puedeEditarPlanificacion || !destinoMasivo || lineasFiltradas.length === 0}>
-            Aplicar destino
-          </Button>
-          <label>
-            Rinde tn/ha
-            <input type="text" inputMode="decimal" value={rindeMasivo} onChange={(event) => setRindeMasivo(event.target.value)} placeholder="Ej. 3.20" />
-          </label>
-          <Button variant="small" onClick={aplicarRindeAFiltradas} disabled={!puedeEditarPlanificacion || !rindeMasivo || lineasFiltradas.length === 0}>
-            Aplicar rinde
-          </Button>
-          {resultadoAccionMasiva && <span className="bulk-action-result">{resultadoAccionMasiva}</span>}
-        </section>
+        <PlanificacionBulkActions
+          protocoloId={protocoloMasivoId}
+          destino={destinoMasivo}
+          rinde={rindeMasivo}
+          protocolos={protocolosParaAccionMasiva}
+          destinos={destinosParaAccionMasiva}
+          resultado={resultadoAccionMasiva}
+          puedeEditar={puedeEditarPlanificacion}
+          totalLineasFiltradas={lineasFiltradas.length}
+          onProtocoloChange={setProtocoloMasivoId}
+          onDestinoChange={setDestinoMasivo}
+          onRindeChange={setRindeMasivo}
+          onAplicarProtocolo={aplicarProtocoloAFiltradas}
+          onAplicarDestino={aplicarDestinoAFiltradas}
+          onAplicarRinde={aplicarRindeAFiltradas}
+        />
 
         <div className="planning-table">
           {lineasAgrupadas.length === 0 && (
