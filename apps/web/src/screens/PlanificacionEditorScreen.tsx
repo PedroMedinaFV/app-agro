@@ -9,6 +9,16 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { formatearNumero } from '../utils/formatters';
+import {
+  calcularResumenGrupoPlanificacion,
+  formatearCultivosAntecesores,
+  idsErpCoinciden,
+  lineaPlanificacionEstaCompleta,
+  lineaPlanificacionTieneDatos,
+  normalizarTexto,
+  obtenerClaveLinea,
+  obtenerCodigoCampaniaAnterior,
+} from '../utils/planificacion/planificacionHelpers';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
@@ -16,54 +26,6 @@ type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
 };
 
 type EstadoCargaFiltro = 'todos' | 'completas' | 'pendientes' | 'duplicadas';
-
-function normalizarTexto(valor: string) {
-  return valor
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function obtenerCodigoCampaniaAnterior(codigo?: string) {
-  const partes = codigo?.match(/^(\d{2})\/(\d{2})$/);
-
-  if (!partes) {
-    return undefined;
-  }
-
-  const inicio = Number(partes[1]);
-  const fin = Number(partes[2]);
-
-  if (!Number.isFinite(inicio) || !Number.isFinite(fin)) {
-    return undefined;
-  }
-
-  return `${String(inicio - 1).padStart(2, '0')}/${String(fin - 1).padStart(2, '0')}`;
-}
-
-function idsErpCoinciden(idA?: string, idB?: string) {
-  if (!idA || !idB) {
-    return false;
-  }
-
-  return idA === idB || idA.endsWith(`:${idB}`) || idB.endsWith(`:${idA}`);
-}
-
-function formatearCultivosAntecesores(cultivos: ErpCultivo[], actividadNombrePorErpId: Map<string, string>) {
-  if (cultivos.length === 0) {
-    return 'Sin datos ERP';
-  }
-
-  return `${cultivos
-    .map((cultivo) => {
-      const actividad = cultivo.actividadErpId ? actividadNombrePorErpId.get(cultivo.actividadErpId) : undefined;
-      const nombre = actividad || cultivo.nombre;
-
-      return `${nombre} (${cultivo.hectareasSembradas.toFixed(2)} ha)`;
-    })
-    .join(' / ')}`;
-}
 
 export function PlanificacionEditorScreen({
   planificacion,
@@ -234,9 +196,9 @@ export function PlanificacionEditorScreen({
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
     const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
     const zonaNombre = obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId);
-    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+    const claveLinea = obtenerClaveLinea(planificacionActiva?.campaniaErpId, linea);
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
-    const lineaCompleta = Boolean(linea.protocoloId && linea.destinoVenta && linea.hectareasPlanificadas > 0 && linea.rindeEstimado > 0 && linea.precioVentaEstimado > 0);
+    const lineaCompleta = lineaPlanificacionEstaCompleta(linea);
     const textoLinea = normalizarTexto([
       zonaNombre,
       campo?.nombre,
@@ -573,19 +535,6 @@ export function PlanificacionEditorScreen({
     setConfirmacionCambioCampania(null);
   }
 
-  function lineaTieneDatos(linea: PlanificacionAgricolaLinea) {
-    return Boolean(
-      linea.protocoloId
-      || linea.destinoVenta
-      || linea.rindeEstimado > 0
-      || linea.precioVentaEstimado > 0
-      || linea.gastosComercialesEstimados > 0
-      || linea.costoProduccionEstimado > 0
-      || linea.ingresoNetoEstimado !== 0
-      || linea.margenBrutoEstimado !== 0
-    );
-  }
-
   function quitarLineasDelEscenario(event: MouseEvent<HTMLButtonElement>, lineas: PlanificacionAgricolaLinea[], etiqueta: string) {
     event.preventDefault();
     event.stopPropagation();
@@ -598,7 +547,7 @@ export function PlanificacionEditorScreen({
       etiqueta,
       lineaIds: lineas.map((linea) => linea.id),
       totalLineas: lineas.length,
-      lineasConDatos: lineas.filter(lineaTieneDatos).length,
+      lineasConDatos: lineas.filter(lineaPlanificacionTieneDatos).length,
     });
   }
 
@@ -612,20 +561,8 @@ export function PlanificacionEditorScreen({
     setConfirmacionQuitarAlcance(null);
   }
 
-  function lineaEstaCompleta(linea: PlanificacionAgricolaLinea) {
-    return Boolean(linea.protocoloId && linea.destinoVenta && linea.hectareasPlanificadas > 0 && linea.rindeEstimado > 0 && linea.precioVentaEstimado > 0);
-  }
-
   function calcularResumenGrupo(lineas: PlanificacionAgricolaLinea[]) {
-    return {
-      hectareas: lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
-      margen: lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
-      pendientes: lineas.filter((linea) => !lineaEstaCompleta(linea)).length,
-      duplicadas: lineas.filter((linea) => {
-        const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
-        return clavesDuplicadas.has(claveLinea);
-      }).length,
-    };
+    return calcularResumenGrupoPlanificacion(lineas, planificacionActiva?.campaniaErpId, clavesDuplicadas);
   }
 
   function obtenerNombreZona(zonaAppId?: string, zonaErpId?: string) {
@@ -676,7 +613,7 @@ export function PlanificacionEditorScreen({
     const gastosComercialesPorTn = produccionEstimada > 0 ? linea.gastosComercialesEstimados / produccionEstimada : 0;
     const lotesDelCampo = lotesPorCampo.get(linea.campoAppId) || [];
     const protocolosCompatibles = obtenerProtocolosParaLinea(linea);
-    const claveLinea = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
+    const claveLinea = obtenerClaveLinea(planificacionActiva?.campaniaErpId, linea);
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
     const cultivosAntecesores = lote?.loteErpId ? cultivosAntecesoresPorLote.get(lote.loteErpId) || [] : [];
     const hectareasExcedidas = Boolean(lote && linea.hectareasPlanificadas > lote.superficieTotal);

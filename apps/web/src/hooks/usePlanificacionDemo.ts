@@ -9,8 +9,8 @@ import {
   LoteApp,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
-  PlanificacionAgricolaResumen,
   PlanificacionSnapshot,
+  PlanificacionesResumenResponse,
   PrecioReferencia,
   ProtocoloProductivoResumen,
   SesionUsuario,
@@ -27,6 +27,17 @@ import {
   obtenerPlanificacionesResumen,
   obtenerPlanificacionSnapshot,
 } from '../services/api';
+import {
+  calcularGastosComercialesLinea,
+  calcularResumenPlanificacion,
+  limpiarTextoVisible,
+  normalizarTexto,
+  obtenerClavesDuplicadas,
+  obtenerSuperficieInicialLote,
+  recalcularLineaPlanificacion,
+  resumirPlanificacionLocal,
+  tieneLineasDuplicadasEnPlanificacion,
+} from '../utils/planificacion/planificacionHelpers';
 
 const planificacionVacia: PlanificacionSnapshot = {
   zonasApp: [],
@@ -48,73 +59,13 @@ const planificacionVacia: PlanificacionSnapshot = {
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarTexto(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function obtenerSuperficieInicialLote(lote: LoteApp) {
-  const superficieTotal = Number.isFinite(lote.superficieTotal) && lote.superficieTotal > 0 ? lote.superficieTotal : 0;
-  const superficieProductiva = Number.isFinite(lote.superficieProductiva) && lote.superficieProductiva > 0 ? lote.superficieProductiva : 0;
-
-  if (superficieProductiva > 0) {
-    return superficieTotal > 0 ? Math.min(superficieProductiva, superficieTotal) : superficieProductiva;
-  }
-
-  return superficieTotal;
-}
-
 type ModoCargaPlanificacion = boolean | 'resumen' | 'snapshot';
 
-const resumenVacio = {
-  planificaciones: [] as PlanificacionAgricolaResumen[],
+const resumenVacio: PlanificacionesResumenResponse = {
+  planificaciones: [],
   camposProvisorios: 0,
   sincronizadoEn: new Date(0).toISOString(),
 };
-
-function resumirPlanificacionLocal(planificacion: PlanificacionAgricola): PlanificacionAgricolaResumen {
-  const claves = new Set<string>();
-  let tieneLineasDuplicadas = false;
-
-  for (const linea of planificacion.lineas) {
-    const clave = `${planificacion.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
-
-    if (claves.has(clave)) {
-      tieneLineasDuplicadas = true;
-      break;
-    }
-
-    claves.add(clave);
-  }
-
-  return {
-    id: planificacion.id,
-    clienteId: planificacion.clienteId,
-    campaniaErpId: planificacion.campaniaErpId,
-    nombre: planificacion.nombre,
-    descripcion: planificacion.descripcion,
-    estado: planificacion.estado,
-    escenarioOriginal: planificacion.escenarioOriginal,
-    escenarioBloqueadoPorId: planificacion.escenarioBloqueadoPorId,
-    cerradaPor: planificacion.cerradaPor,
-    cerradaAt: planificacion.cerradaAt,
-    motivoCierre: planificacion.motivoCierre,
-    cantidadLineas: planificacion.lineas.length,
-    hectareasPlanificadas: planificacion.lineas.reduce((total, linea) => total + (linea.protocoloId ? linea.hectareasPlanificadas : 0), 0),
-    ingresoNetoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.ingresoNetoEstimado, 0),
-    costoProduccionEstimado: planificacion.lineas.reduce((total, linea) => total + linea.costoProduccionEstimado, 0),
-    margenBrutoEstimado: planificacion.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0),
-    tieneLineasDuplicadas,
-    createdAt: planificacion.createdAt,
-    updatedAt: planificacion.updatedAt,
-  };
-}
 
 export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente: ModoCargaPlanificacion = true) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionVacia);
@@ -255,17 +206,11 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const camposAppPorId = useMemo(() => new Map(planificacion.camposApp.map((campo) => [campo.id, campo])), [planificacion.camposApp]);
   const lotesAppPorId = useMemo(() => new Map(planificacion.lotesApp.map((lote) => [lote.id, lote])), [planificacion.lotesApp]);
   const protocolosPorId = useMemo(() => new Map(planificacion.protocolos.map((protocolo) => [protocolo.id, protocolo])), [planificacion.protocolos]);
-  const resumenPlanificacion = useMemo(() => lineasPlanificacion.reduce((total, linea) => ({
-    margenBrutoTotal: total.margenBrutoTotal + linea.margenBrutoEstimado,
-    ingresoNetoTotal: total.ingresoNetoTotal + linea.ingresoNetoEstimado,
-    costoTotal: total.costoTotal + linea.costoProduccionEstimado,
-    hectareasPlanificadas: total.hectareasPlanificadas + (linea.protocoloId ? linea.hectareasPlanificadas : 0),
-  }), {
-    margenBrutoTotal: 0,
-    ingresoNetoTotal: 0,
-    costoTotal: 0,
-    hectareasPlanificadas: 0,
-  }), [lineasPlanificacion]);
+  const gastosComercialesReferenciaPorId = useMemo(
+    () => new Map(planificacion.gastosComercialesReferencia.map((gasto) => [gasto.id, gasto])),
+    [planificacion.gastosComercialesReferencia],
+  );
+  const resumenPlanificacion = useMemo(() => calcularResumenPlanificacion(lineasPlanificacion), [lineasPlanificacion]);
   const margenBrutoTotal = resumenPlanificacion.margenBrutoTotal;
   const ingresoNetoTotal = resumenPlanificacion.ingresoNetoTotal;
   const costoTotal = resumenPlanificacion.costoTotal;
@@ -319,69 +264,18 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       destinosReferencia: [crearDestinoReferenciaDesdePrecio(precio), ...snapshotActual.destinosReferencia],
     };
   }
-  const clavesDuplicadas = useMemo(() => {
-    const cantidades = new Map<string, number>();
-
-    for (const linea of lineasPlanificacion) {
-      const clave = `${planificacionActiva?.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
-      cantidades.set(clave, (cantidades.get(clave) || 0) + 1);
-    }
-
-    return new Set(Array.from(cantidades.entries()).filter(([, cantidad]) => cantidad > 1).map(([clave]) => clave));
-  }, [lineasPlanificacion, planificacionActiva?.campaniaErpId]);
+  const clavesDuplicadas = useMemo(
+    () => obtenerClavesDuplicadas(lineasPlanificacion, planificacionActiva?.campaniaErpId),
+    [lineasPlanificacion, planificacionActiva?.campaniaErpId],
+  );
   const tieneLineasDuplicadas = clavesDuplicadas.size > 0;
 
-  function tieneLineasDuplicadasEnPlanificacion(planificacionObjetivo: PlanificacionAgricola) {
-    const cantidades = new Map<string, number>();
-
-    for (const linea of planificacionObjetivo.lineas) {
-      const clave = `${planificacionObjetivo.campaniaErpId}|${linea.campoAppId}|${linea.loteAppId}|${linea.actividadAppId}`;
-      const cantidad = (cantidades.get(clave) || 0) + 1;
-
-      if (cantidad > 1) {
-        return true;
-      }
-
-      cantidades.set(clave, cantidad);
-    }
-
-    return false;
-  }
-
   function recalcularLinea(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
-    const gastosComercialesEstimados = linea.gastosComercialesReferenciaId
-      ? calcularGastosComerciales(linea, linea.gastosComercialesReferenciaId)
-      : linea.gastosComercialesEstimados;
-    const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
-    const ingresoBrutoEstimado = linea.hectareasPlanificadas * linea.rindeEstimado * linea.precioVentaEstimado;
-    const ingresoNetoEstimado = ingresoBrutoEstimado - gastosComercialesEstimados;
-    const costoProduccionEstimado = linea.hectareasPlanificadas * (protocolo?.costoEstimadoPorHa || 0);
-
-    return {
-      ...linea,
-      gastosComercialesEstimados,
-      ingresoBrutoEstimado,
-      ingresoNetoEstimado,
-      costoProduccionEstimado,
-      margenBrutoEstimado: ingresoNetoEstimado - costoProduccionEstimado,
-      margenBrutoActualizado: ingresoNetoEstimado - costoProduccionEstimado,
-    };
+    return recalcularLineaPlanificacion(linea, { protocolosPorId, gastosComercialesReferenciaPorId });
   }
 
   function calcularGastosComerciales(linea: PlanificacionAgricolaLinea, referenciaId?: string) {
-    const referencia = planificacion.gastosComercialesReferencia.find((item) => item.id === referenciaId);
-
-    if (!referencia) {
-      return linea.gastosComercialesEstimados;
-    }
-
-    const produccionEstimadaTn = linea.hectareasPlanificadas * linea.rindeEstimado;
-
-    return referencia.items.reduce((total, item) => {
-      const baseCalculo = item.unidadCalculo === 'Ha' ? linea.hectareasPlanificadas : produccionEstimadaTn;
-
-      return total + item.valorPorTonelada * baseCalculo;
-    }, 0);
+    return calcularGastosComercialesLinea(linea, referenciaId ? gastosComercialesReferenciaPorId.get(referenciaId) : undefined);
   }
 
   function buscarDestinoSugerido(linea: Pick<PlanificacionAgricolaLinea, 'campoAppId' | 'campoErpId'>) {
