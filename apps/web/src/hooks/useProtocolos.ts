@@ -16,7 +16,7 @@ const protocolosVacios: ProtocolosSnapshot = {
   sincronizadoEn: new Date(0).toISOString(),
 };
 
-interface UseProtocolosDemoParams {
+interface UseProtocolosParams {
   sesion: SesionUsuario | null;
   snapshot: ErpSnapshot;
   planificacion: PlanificacionSnapshot;
@@ -26,7 +26,7 @@ interface UseProtocolosDemoParams {
   cargarAutomaticamente?: boolean;
 }
 
-export function useProtocolosDemo({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos, cargarAutomaticamente = true }: UseProtocolosDemoParams) {
+export function useProtocolos({ sesion, snapshot, planificacion, planificacionActiva, notificar, onProtocolosPersistidos, cargarAutomaticamente = true }: UseProtocolosParams) {
   const [protocolos, setProtocolos] = useState<ProtocolosSnapshot>(protocolosVacios);
   const [protocoloSeleccionadoId, setProtocoloSeleccionadoId] = useState('');
   const [protocolosEstado, setProtocolosEstado] = useState('Protocolos sin cargar');

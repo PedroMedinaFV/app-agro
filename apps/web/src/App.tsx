@@ -30,7 +30,7 @@ import { obtenerCampaniasErpImportadas, obtenerNotificaciones } from './services
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
 import { usePlanificacion } from './hooks/usePlanificacion';
-import { useProtocolosDemo } from './hooks/useProtocolosDemo';
+import { useProtocolos } from './hooks/useProtocolos';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
@@ -82,7 +82,7 @@ export function App() {
   }, [sesion]);
   const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
   const planificacionApp = usePlanificacion(sesion, erp.snapshot, toast.notify, modoCargaPlanificacion);
-  const protocolosDemo = useProtocolosDemo({
+  const protocolosApp = useProtocolos({
     sesion,
     snapshot: erp.snapshot,
     planificacion: planificacionApp.planificacion,
@@ -177,7 +177,7 @@ export function App() {
     : vista === 'planificacion'
       ? planificacionApp.planificacionEstado
       : vista === 'protocolos'
-        ? protocolosDemo.protocolosEstado
+        ? protocolosApp.protocolosEstado
         : erp.erpEstado;
 
   if (!sesion) {
@@ -307,19 +307,19 @@ export function App() {
       {vista === 'protocolos' && (
         <ProtocolosScreen
           sesion={sesion}
-          protocolos={protocolosDemo.protocolos}
+          protocolos={protocolosApp.protocolos}
           snapshot={erp.snapshot}
           planificacion={planificacionApp.planificacion}
           puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
-          guardandoProtocolo={protocolosDemo.guardandoProtocolo}
-          protocoloSeleccionadoId={protocolosDemo.protocoloSeleccionadoId}
-          protocoloSeleccionado={protocolosDemo.protocoloSeleccionado}
-          crearProtocoloVacio={protocolosDemo.crearProtocoloVacio}
-          copiarProtocoloSeleccionado={protocolosDemo.copiarProtocoloSeleccionado}
-          guardarProtocoloSeleccionado={protocolosDemo.guardarProtocoloSeleccionado}
+          guardandoProtocolo={protocolosApp.guardandoProtocolo}
+          protocoloSeleccionadoId={protocolosApp.protocoloSeleccionadoId}
+          protocoloSeleccionado={protocolosApp.protocoloSeleccionado}
+          crearProtocoloVacio={protocolosApp.crearProtocoloVacio}
+          copiarProtocoloSeleccionado={protocolosApp.copiarProtocoloSeleccionado}
+          guardarProtocoloSeleccionado={protocolosApp.guardarProtocoloSeleccionado}
           asegurarPlanificacion={async () => { await planificacionApp.asegurarPlanificacion(); }}
           formatearUsd={formatearUsd}
-          setProtocoloSeleccionadoId={protocolosDemo.setProtocoloSeleccionadoId}
+          setProtocoloSeleccionadoId={protocolosApp.setProtocoloSeleccionadoId}
         />
       )}
 
