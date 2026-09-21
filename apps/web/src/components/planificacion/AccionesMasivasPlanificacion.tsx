@@ -5,7 +5,7 @@ type OpcionProtocolo = {
   nombre: string;
 };
 
-type PlanificacionBulkActionsProps = {
+type AccionesMasivasPlanificacionProps = {
   protocoloId: string;
   destino: string;
   rinde: string;
@@ -22,7 +22,7 @@ type PlanificacionBulkActionsProps = {
   onAplicarRinde: () => void;
 };
 
-export function PlanificacionBulkActions({
+export function AccionesMasivasPlanificacion({
   protocoloId,
   destino,
   rinde,
@@ -37,7 +37,7 @@ export function PlanificacionBulkActions({
   onAplicarProtocolo,
   onAplicarDestino,
   onAplicarRinde,
-}: PlanificacionBulkActionsProps) {
+}: AccionesMasivasPlanificacionProps) {
   const sinLineas = totalLineasFiltradas === 0;
 
   return (

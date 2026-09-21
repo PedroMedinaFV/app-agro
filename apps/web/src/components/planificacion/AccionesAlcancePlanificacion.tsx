@@ -7,7 +7,7 @@ type OpcionAlcance = {
   nombre: string;
 };
 
-type PlanificacionScopeActionsProps = {
+type AccionesAlcancePlanificacionProps = {
   tipoAlcance: TipoAlcancePlanificacion;
   alcanceId: string;
   opciones: OpcionAlcance[];
@@ -17,7 +17,7 @@ type PlanificacionScopeActionsProps = {
   onAgregar: () => void;
 };
 
-export function PlanificacionScopeActions({
+export function AccionesAlcancePlanificacion({
   tipoAlcance,
   alcanceId,
   opciones,
@@ -25,7 +25,7 @@ export function PlanificacionScopeActions({
   onTipoAlcanceChange,
   onAlcanceChange,
   onAgregar,
-}: PlanificacionScopeActionsProps) {
+}: AccionesAlcancePlanificacionProps) {
   return (
     <section className="planning-scope-actions" aria-label="Alcance del escenario">
       <div>

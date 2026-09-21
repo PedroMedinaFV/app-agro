@@ -7,7 +7,7 @@ type OpcionFiltro = {
   nombre: string;
 };
 
-type PlanificacionFiltersProps = {
+type FiltrosPlanificacionProps = {
   busqueda: string;
   filtroZonaId: string;
   filtroCampoId: string;
@@ -23,7 +23,7 @@ type PlanificacionFiltersProps = {
   onLimpiar: () => void;
 };
 
-export function PlanificacionFilters({
+export function FiltrosPlanificacion({
   busqueda,
   filtroZonaId,
   filtroCampoId,
@@ -37,7 +37,7 @@ export function PlanificacionFilters({
   onCampoChange,
   onEstadoCargaChange,
   onLimpiar,
-}: PlanificacionFiltersProps) {
+}: FiltrosPlanificacionProps) {
   const tieneFiltros = Boolean(busqueda || filtroZonaId || filtroCampoId || filtroEstadoCarga !== 'todos');
 
   return (

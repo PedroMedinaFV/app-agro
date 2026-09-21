@@ -37,7 +37,7 @@ import {
   recalcularLineaPlanificacion,
   resumirPlanificacionLocal,
   tieneLineasDuplicadasEnPlanificacion,
-} from '../utils/planificacion/planificacionHelpers';
+} from '../utils/planificacion/ayudantesPlanificacion';
 
 const planificacionVacia: PlanificacionSnapshot = {
   zonasApp: [],

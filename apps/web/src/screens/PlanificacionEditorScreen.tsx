@@ -8,9 +8,10 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
-import { PlanificacionBulkActions } from '../components/planificacion/PlanificacionBulkActions';
-import { EstadoCargaFiltro, PlanificacionFilters } from '../components/planificacion/PlanificacionFilters';
-import { PlanificacionScopeActions, TipoAlcancePlanificacion } from '../components/planificacion/PlanificacionScopeActions';
+import { AccionesAlcancePlanificacion, TipoAlcancePlanificacion } from '../components/planificacion/AccionesAlcancePlanificacion';
+import { AccionesMasivasPlanificacion } from '../components/planificacion/AccionesMasivasPlanificacion';
+import { ArbolPlanificacion } from '../components/planificacion/ArbolPlanificacion';
+import { EstadoCargaFiltro, FiltrosPlanificacion } from '../components/planificacion/FiltrosPlanificacion';
 import { formatearNumero } from '../utils/formatters';
 import {
   calcularResumenGrupoPlanificacion,
@@ -21,7 +22,7 @@ import {
   normalizarTexto,
   obtenerClaveLinea,
   obtenerCodigoCampaniaAnterior,
-} from '../utils/planificacion/planificacionHelpers';
+} from '../utils/planificacion/ayudantesPlanificacion';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {
@@ -599,7 +600,7 @@ export function PlanificacionEditorScreen({
       .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime());
   }
 
-  function renderLinea(linea: PlanificacionAgricolaLinea) {
+  function renderizarLinea(linea: PlanificacionAgricolaLinea) {
     const lote = lotesAppPorId.get(linea.loteAppId);
     const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
     const gastoReferencia = linea.gastosComercialesReferenciaId ? gastosComercialesPorId.get(linea.gastosComercialesReferenciaId) : undefined;
@@ -801,7 +802,7 @@ export function PlanificacionEditorScreen({
           </article>
         </section>
 
-        <PlanificacionFilters
+        <FiltrosPlanificacion
           busqueda={busqueda}
           filtroZonaId={filtroZonaId}
           filtroCampoId={filtroCampoId}
@@ -820,7 +821,7 @@ export function PlanificacionEditorScreen({
           onLimpiar={limpiarFiltros}
         />
 
-        <PlanificacionScopeActions
+        <AccionesAlcancePlanificacion
           tipoAlcance={tipoAlcanceAgregar}
           alcanceId={alcanceAgregarId}
           opciones={opcionesAlcanceAgregar}
@@ -833,7 +834,7 @@ export function PlanificacionEditorScreen({
           onAgregar={agregarAlcanceEscenario}
         />
 
-        <PlanificacionBulkActions
+        <AccionesMasivasPlanificacion
           protocoloId={protocoloMasivoId}
           destino={destinoMasivo}
           rinde={rindeMasivo}
@@ -850,100 +851,21 @@ export function PlanificacionEditorScreen({
           onAplicarRinde={aplicarRindeAFiltradas}
         />
 
-        <div className="planning-table">
-          {lineasAgrupadas.length === 0 && (
-            <p className="hint">{lineasPlanificacion.length === 0 ? 'No hay lotes activos para planificar. Primero crea o sincroniza lotes.' : 'No hay lineas que coincidan con los filtros aplicados.'}</p>
-          )}
-          {lineasAgrupadas.length > 0 && (
-            <div className="planning-tree-toolbar">
-              <span>Vista por zona y campo</span>
-              <ActionBar compact>
-                <Button variant="small" className="tree-toggle-button" onClick={alternarTodoArbol}>
-                  {lineasAgrupadas.length > 0
-                    && lineasAgrupadas.every((zona) => zonasAbiertas.has(zona.id))
-                    && lineasAgrupadas.flatMap((zona) => zona.campos).every((campo) => camposAbiertos.has(campo.id))
-                    ? 'Contraer todo'
-                    : 'Expandir todo'}
-                </Button>
-              </ActionBar>
-            </div>
-          )}
-          {lineasAgrupadas.map((zona) => (
-            (() => {
-              const lineasZona = zona.campos.flatMap((campo) => campo.lineas);
-              const resumenZona = calcularResumenGrupo(lineasZona);
-              const zonaAbierta = zonasAbiertas.has(zona.id);
-
-              return (
-                <details
-                  className="planning-tree-zone"
-                  key={zona.id}
-                  open={zonaAbierta}
-                  onToggle={(event) => alternarZona(zona.id, event.currentTarget.open)}
-                >
-                  <summary>
-                    <strong>{zona.nombre}</strong>
-                    <span>{lineasZona.length} linea(s)</span>
-                    <span>{resumenZona.hectareas.toFixed(2)} ha</span>
-                    <span>{formatearUsd(resumenZona.margen)}</span>
-                    {resumenZona.pendientes > 0 && <em>{resumenZona.pendientes} pendiente(s)</em>}
-                    {resumenZona.duplicadas > 0 && <em className="summary-danger">{resumenZona.duplicadas} duplicada(s)</em>}
-                    <div className="planning-tree-summary-actions">
-                      <Button
-                        variant="small"
-                        className="tree-toggle-button danger-button"
-                        onClick={(event) => quitarLineasDelEscenario(event, lineasZona, zona.nombre)}
-                        disabled={!puedeEditarPlanificacion}
-                      >
-                        Quitar zona
-                      </Button>
-                      <Button variant="small" className="tree-toggle-button" onClick={(event) => alternarCamposDeZona(event, zona.id, zona.campos.map((campo) => campo.id))}>
-                        {zonaAbierta && zona.campos.every((campo) => camposAbiertos.has(campo.id)) ? 'Contraer campos' : 'Expandir campos'}
-                      </Button>
-                    </div>
-                  </summary>
-                  {zonaAbierta && zona.campos.map((campo) => {
-                    const resumenCampo = calcularResumenGrupo(campo.lineas);
-                    const campoAbierto = camposAbiertos.has(campo.id);
-
-                    return (
-                      <details
-                        className="planning-tree-field"
-                        key={campo.id}
-                        open={campoAbierto}
-                        onToggle={(event) => alternarCampo(campo.id, event.currentTarget.open)}
-                      >
-                        <summary>
-                          <strong>{campo.nombre}</strong>
-                          <span>{campo.lineas.length} linea(s)</span>
-                          <span>{resumenCampo.hectareas.toFixed(2)} ha</span>
-                          <span>{formatearUsd(resumenCampo.margen)}</span>
-                          {resumenCampo.pendientes > 0 && <em>{resumenCampo.pendientes} pendiente(s)</em>}
-                          {resumenCampo.duplicadas > 0 && <em className="summary-danger">{resumenCampo.duplicadas} duplicada(s)</em>}
-                          <div className="planning-tree-summary-actions">
-                            <Button
-                              variant="small"
-                              className="tree-toggle-button danger-button"
-                              onClick={(event) => quitarLineasDelEscenario(event, campo.lineas, campo.nombre)}
-                              disabled={!puedeEditarPlanificacion}
-                            >
-                              Quitar campo
-                            </Button>
-                          </div>
-                        </summary>
-                        {campoAbierto && (
-                          <div className="planning-tree-lines">
-                            {campo.lineas.map(renderLinea)}
-                          </div>
-                        )}
-                      </details>
-                    );
-                  })}
-                </details>
-              );
-            })()
-          ))}
-        </div>
+        <ArbolPlanificacion
+          zonas={lineasAgrupadas}
+          totalLineas={lineasPlanificacion.length}
+          zonasAbiertas={zonasAbiertas}
+          camposAbiertos={camposAbiertos}
+          puedeEditar={puedeEditarPlanificacion}
+          calcularResumenGrupo={calcularResumenGrupo}
+          formatearUsd={formatearUsd}
+          renderizarLinea={renderizarLinea}
+          onAlternarTodo={alternarTodoArbol}
+          onAlternarZona={alternarZona}
+          onAlternarCampo={alternarCampo}
+          onAlternarCamposZona={alternarCamposDeZona}
+          onQuitarLineas={quitarLineasDelEscenario}
+        />
       </Panel>
       {confirmacionQuitarAlcance && (
         <div className="modal-backdrop" role="presentation">
