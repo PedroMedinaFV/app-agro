@@ -1,10 +1,13 @@
 import {
+  DestinoApp,
   ErpCultivo,
   GastosComercialesReferencia,
   LoteApp,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionAgricolaResumen,
+  PlanificacionSnapshot,
+  PrecioReferencia,
   ProtocoloProductivoResumen,
 } from '@agro/tipos';
 
@@ -201,4 +204,38 @@ export function formatearCultivosAntecesores(cultivos: ErpCultivo[], actividadNo
       return `${nombre} (${cultivo.hectareasSembradas.toFixed(2)} ha)`;
     })
     .join(' / ');
+}
+
+export function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoApp {
+  const ahora = new Date().toISOString();
+  const destinoVenta = limpiarTextoVisible(precio.destinoVenta);
+
+  return {
+    id: `destino-precio-${precio.id}`,
+    clienteId: precio.clienteId,
+    empresaErpId: precio.empresaErpId,
+    destinoVenta,
+    destinoVentaNormalizado: normalizarTexto(destinoVenta),
+    descripcion: `Destino creado desde precio ${destinoVenta}`,
+    activo: true,
+    origen: 'app',
+    createdAt: ahora,
+    updatedAt: ahora,
+  };
+}
+
+export function anexarDestinoSiNoExiste(snapshotActual: PlanificacionSnapshot, precio: PrecioReferencia): PlanificacionSnapshot {
+  const destinoNormalizado = normalizarTexto(precio.destinoVenta);
+  const existeDestino = snapshotActual.destinosReferencia.some((destino) => (
+    (destino.destinoVentaNormalizado || normalizarTexto(destino.destinoVenta)) === destinoNormalizado
+  ));
+
+  if (existeDestino) {
+    return snapshotActual;
+  }
+
+  return {
+    ...snapshotActual,
+    destinosReferencia: [crearDestinoReferenciaDesdePrecio(precio), ...snapshotActual.destinosReferencia],
+  };
 }

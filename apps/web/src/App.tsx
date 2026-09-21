@@ -29,7 +29,7 @@ import { ToastViewport } from './components/ToastViewport';
 import { obtenerCampaniasErpImportadas, obtenerNotificaciones } from './services/api';
 import { useDemoAuth } from './hooks/useDemoAuth';
 import { useErpDemo } from './hooks/useErpDemo';
-import { usePlanificacionDemo } from './hooks/usePlanificacionDemo';
+import { usePlanificacion } from './hooks/usePlanificacion';
 import { useProtocolosDemo } from './hooks/useProtocolosDemo';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
@@ -81,14 +81,14 @@ export function App() {
     }
   }, [sesion]);
   const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
-  const planificacionDemo = usePlanificacionDemo(sesion, erp.snapshot, toast.notify, modoCargaPlanificacion);
+  const planificacionApp = usePlanificacion(sesion, erp.snapshot, toast.notify, modoCargaPlanificacion);
   const protocolosDemo = useProtocolosDemo({
     sesion,
     snapshot: erp.snapshot,
-    planificacion: planificacionDemo.planificacion,
-    planificacionActiva: planificacionDemo.planificacionActiva,
+    planificacion: planificacionApp.planificacion,
+    planificacionActiva: planificacionApp.planificacionActiva,
     notificar: toast.notify,
-    onProtocolosPersistidos: planificacionDemo.incorporarProtocoloPlanificacion,
+    onProtocolosPersistidos: planificacionApp.incorporarProtocoloPlanificacion,
     cargarAutomaticamente: debeCargarProtocolos,
   });
 
@@ -175,7 +175,7 @@ export function App() {
     : vista === 'observaciones'
       ? 'Observaciones operativas generadas desde web y mobile'
     : vista === 'planificacion'
-      ? planificacionDemo.planificacionEstado
+      ? planificacionApp.planificacionEstado
       : vista === 'protocolos'
         ? protocolosDemo.protocolosEstado
         : erp.erpEstado;
@@ -205,7 +205,7 @@ export function App() {
         titulo={tituloVista}
         descripcion={descripcionVista}
         puedeConfigurarErp={puedeConfigurarErp}
-        puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+        puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
         puedeGestionarCostos={puedeGestionarCostos}
         puedeGestionarUsuarios={puedeGestionarUsuarios}
         puedeLeerAuditoria={puedeLeerAuditoria}
@@ -235,8 +235,8 @@ export function App() {
         <CamposScreen
           sesion={sesion}
           empresas={erp.empresasDisponibles}
-          zonasPropias={planificacionDemo.planificacion.zonasApp || []}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          zonasPropias={planificacionApp.planificacion.zonasApp || []}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
       )}
@@ -245,8 +245,8 @@ export function App() {
         <LotesScreen
           sesion={sesion}
           empresas={erp.empresasDisponibles}
-          camposPropios={planificacionDemo.planificacion.camposApp}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          camposPropios={planificacionApp.planificacion.camposApp}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
       )}
@@ -254,51 +254,51 @@ export function App() {
       {vista === 'planificacion' && (
         <PlanificacionScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
-          planificacionesResumen={planificacionDemo.planificacionesResumen}
+          planificacion={planificacionApp.planificacion}
+          planificacionesResumen={planificacionApp.planificacionesResumen}
           snapshot={erp.snapshot}
           campaniasDisponibles={campaniasImportadas.length ? campaniasImportadas : erp.snapshot.campanias}
-          puedeEditarPlanificacion={planificacionDemo.puedeEditarPlanificacion}
-          puedeEditarPlanificacionPorPermiso={planificacionDemo.puedeEditarPlanificacionPorPermiso}
-          puedeCerrarPlanificacion={planificacionDemo.puedeCerrarPlanificacion}
-          guardandoPlanificacion={planificacionDemo.guardandoPlanificacion}
-          cerrandoPlanificacion={planificacionDemo.cerrandoPlanificacion}
-          cargandoPlanificacion={planificacionDemo.cargandoPlanificacion}
-          cargandoResumenPlanificacion={planificacionDemo.cargandoResumenPlanificacion}
-          planificacionActiva={planificacionDemo.planificacionActiva}
-          lineasPlanificacion={planificacionDemo.lineasPlanificacion}
-          hectareasPlanificadas={planificacionDemo.hectareasPlanificadas}
-          ingresoNetoTotal={planificacionDemo.ingresoNetoTotal}
-          costoTotal={planificacionDemo.costoTotal}
-          margenBrutoTotal={planificacionDemo.margenBrutoTotal}
-          camposProvisorios={planificacionDemo.camposProvisorios}
-          tieneLineasDuplicadas={planificacionDemo.tieneLineasDuplicadas}
-          clavesDuplicadas={planificacionDemo.clavesDuplicadas}
-          camposAppPorId={planificacionDemo.camposAppPorId}
-          lotesAppPorId={planificacionDemo.lotesAppPorId}
-          protocolosPorId={planificacionDemo.protocolosPorId}
-          asegurarPlanificacion={planificacionDemo.asegurarPlanificacion}
-          seleccionarPlanificacion={planificacionDemo.seleccionarPlanificacion}
-          crearEscenarioPlanificacion={planificacionDemo.crearEscenarioPlanificacion}
-          copiarEscenarioPlanificacion={planificacionDemo.copiarEscenarioPlanificacion}
-          actualizarCabeceraPlanificacion={planificacionDemo.actualizarCabeceraPlanificacion}
-          cambiarCampaniaPlanificacion={planificacionDemo.cambiarCampaniaPlanificacion}
-          agregarLotesAEscenario={planificacionDemo.agregarLotesAEscenario}
-          guardarBorradorPlanificacion={planificacionDemo.guardarBorradorPlanificacion}
-          cerrarPlanificacionActiva={planificacionDemo.cerrarPlanificacionActiva}
-          cambiarCampo={planificacionDemo.cambiarCampo}
-          cambiarLote={planificacionDemo.cambiarLote}
-          cambiarActividad={planificacionDemo.cambiarActividad}
-          cambiarProtocolo={planificacionDemo.cambiarProtocolo}
-          cambiarDestino={planificacionDemo.cambiarDestino}
-          actualizarLinea={planificacionDemo.actualizarLinea}
-          aplicarProtocoloALineas={planificacionDemo.aplicarProtocoloALineas}
-          aplicarDestinoALineas={planificacionDemo.aplicarDestinoALineas}
-          aplicarRindeALineas={planificacionDemo.aplicarRindeALineas}
-          copiarLineaPlanificacion={planificacionDemo.copiarLineaPlanificacion}
-          eliminarLineaPlanificacion={planificacionDemo.eliminarLineaPlanificacion}
-          eliminarLineasPlanificacion={planificacionDemo.eliminarLineasPlanificacion}
-          obtenerProtocolosCompatibles={planificacionDemo.obtenerProtocolosCompatibles}
+          puedeEditarPlanificacion={planificacionApp.puedeEditarPlanificacion}
+          puedeEditarPlanificacionPorPermiso={planificacionApp.puedeEditarPlanificacionPorPermiso}
+          puedeCerrarPlanificacion={planificacionApp.puedeCerrarPlanificacion}
+          guardandoPlanificacion={planificacionApp.guardandoPlanificacion}
+          cerrandoPlanificacion={planificacionApp.cerrandoPlanificacion}
+          cargandoPlanificacion={planificacionApp.cargandoPlanificacion}
+          cargandoResumenPlanificacion={planificacionApp.cargandoResumenPlanificacion}
+          planificacionActiva={planificacionApp.planificacionActiva}
+          lineasPlanificacion={planificacionApp.lineasPlanificacion}
+          hectareasPlanificadas={planificacionApp.hectareasPlanificadas}
+          ingresoNetoTotal={planificacionApp.ingresoNetoTotal}
+          costoTotal={planificacionApp.costoTotal}
+          margenBrutoTotal={planificacionApp.margenBrutoTotal}
+          camposProvisorios={planificacionApp.camposProvisorios}
+          tieneLineasDuplicadas={planificacionApp.tieneLineasDuplicadas}
+          clavesDuplicadas={planificacionApp.clavesDuplicadas}
+          camposAppPorId={planificacionApp.camposAppPorId}
+          lotesAppPorId={planificacionApp.lotesAppPorId}
+          protocolosPorId={planificacionApp.protocolosPorId}
+          asegurarPlanificacion={planificacionApp.asegurarPlanificacion}
+          seleccionarPlanificacion={planificacionApp.seleccionarPlanificacion}
+          crearEscenarioPlanificacion={planificacionApp.crearEscenarioPlanificacion}
+          copiarEscenarioPlanificacion={planificacionApp.copiarEscenarioPlanificacion}
+          actualizarCabeceraPlanificacion={planificacionApp.actualizarCabeceraPlanificacion}
+          cambiarCampaniaPlanificacion={planificacionApp.cambiarCampaniaPlanificacion}
+          agregarLotesAEscenario={planificacionApp.agregarLotesAEscenario}
+          guardarBorradorPlanificacion={planificacionApp.guardarBorradorPlanificacion}
+          cerrarPlanificacionActiva={planificacionApp.cerrarPlanificacionActiva}
+          cambiarCampo={planificacionApp.cambiarCampo}
+          cambiarLote={planificacionApp.cambiarLote}
+          cambiarActividad={planificacionApp.cambiarActividad}
+          cambiarProtocolo={planificacionApp.cambiarProtocolo}
+          cambiarDestino={planificacionApp.cambiarDestino}
+          actualizarLinea={planificacionApp.actualizarLinea}
+          aplicarProtocoloALineas={planificacionApp.aplicarProtocoloALineas}
+          aplicarDestinoALineas={planificacionApp.aplicarDestinoALineas}
+          aplicarRindeALineas={planificacionApp.aplicarRindeALineas}
+          copiarLineaPlanificacion={planificacionApp.copiarLineaPlanificacion}
+          eliminarLineaPlanificacion={planificacionApp.eliminarLineaPlanificacion}
+          eliminarLineasPlanificacion={planificacionApp.eliminarLineasPlanificacion}
+          obtenerProtocolosCompatibles={planificacionApp.obtenerProtocolosCompatibles}
           formatearUsd={formatearUsd}
           leerNumero={leerNumero}
         />
@@ -309,15 +309,15 @@ export function App() {
           sesion={sesion}
           protocolos={protocolosDemo.protocolos}
           snapshot={erp.snapshot}
-          planificacion={planificacionDemo.planificacion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          planificacion={planificacionApp.planificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           guardandoProtocolo={protocolosDemo.guardandoProtocolo}
           protocoloSeleccionadoId={protocolosDemo.protocoloSeleccionadoId}
           protocoloSeleccionado={protocolosDemo.protocoloSeleccionado}
           crearProtocoloVacio={protocolosDemo.crearProtocoloVacio}
           copiarProtocoloSeleccionado={protocolosDemo.copiarProtocoloSeleccionado}
           guardarProtocoloSeleccionado={protocolosDemo.guardarProtocoloSeleccionado}
-          asegurarPlanificacion={async () => { await planificacionDemo.asegurarPlanificacion(); }}
+          asegurarPlanificacion={async () => { await planificacionApp.asegurarPlanificacion(); }}
           formatearUsd={formatearUsd}
           setProtocoloSeleccionadoId={protocolosDemo.setProtocoloSeleccionadoId}
         />
@@ -326,10 +326,10 @@ export function App() {
       {vista === 'precios' && (
         <PreciosReferenciaScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
-          guardandoPrecios={planificacionDemo.guardandoPrecios}
-          guardarPrecioReferencia={planificacionDemo.guardarPrecioReferenciaDesdeModal}
+          planificacion={planificacionApp.planificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
+          guardandoPrecios={planificacionApp.guardandoPrecios}
+          guardarPrecioReferencia={planificacionApp.guardarPrecioReferenciaDesdeModal}
           formatearUsd={formatearUsd}
         />
       )}
@@ -337,11 +337,11 @@ export function App() {
       {vista === 'gastos' && (
         <GastosComercialesScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
+          planificacion={planificacionApp.planificacion}
           campanias={erp.snapshot.campanias}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
-          guardandoGastos={planificacionDemo.guardandoGastos}
-          guardarGastoComercial={planificacionDemo.guardarGastoComercialDesdeModal}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
+          guardandoGastos={planificacionApp.guardandoGastos}
+          guardarGastoComercial={planificacionApp.guardarGastoComercialDesdeModal}
           formatearUsd={formatearUsd}
           leerNumero={leerNumero}
         />
@@ -369,31 +369,31 @@ export function App() {
 
       {vista === 'padrones-conceptos-gastos' && (
         <ConceptosGastosComercialesScreen
-          planificacion={planificacionDemo.planificacion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
-          guardandoConceptos={planificacionDemo.guardandoConceptosGastos}
-          guardarConcepto={planificacionDemo.guardarConceptoGastoComercialDesdeModal}
+          planificacion={planificacionApp.planificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
+          guardandoConceptos={planificacionApp.guardandoConceptosGastos}
+          guardarConcepto={planificacionApp.guardarConceptoGastoComercialDesdeModal}
         />
       )}
 
       {vista === 'padrones-destinos' && (
         <DestinosVentaScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
-          guardandoDestinos={planificacionDemo.guardandoDestinos}
-          guardarDestino={planificacionDemo.guardarDestinoVentaDesdeModal}
+          planificacion={planificacionApp.planificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
+          guardandoDestinos={planificacionApp.guardandoDestinos}
+          guardarDestino={planificacionApp.guardarDestinoVentaDesdeModal}
         />
       )}
 
       {vista === 'padrones-labores' && (
         <ServiciosAppScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
+          planificacion={planificacionApp.planificacion}
           snapshot={erp.snapshot}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion || puedeGestionarCostos}
-          guardandoLabores={planificacionDemo.guardandoLabores}
-          guardarServicio={planificacionDemo.guardarServicioAppDesdeModal}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion || puedeGestionarCostos}
+          guardandoLabores={planificacionApp.guardandoLabores}
+          guardarServicio={planificacionApp.guardarServicioAppDesdeModal}
           leerNumero={leerNumero}
           notificar={toast.notify}
         />
@@ -402,11 +402,11 @@ export function App() {
       {vista === 'padrones-insumos' && (
         <InsumosAppScreen
           sesion={sesion}
-          planificacion={planificacionDemo.planificacion}
+          planificacion={planificacionApp.planificacion}
           snapshot={erp.snapshot}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion || puedeGestionarCostos}
-          guardandoInsumos={planificacionDemo.guardandoInsumos}
-          guardarInsumo={planificacionDemo.guardarInsumoAppDesdeModal}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion || puedeGestionarCostos}
+          guardandoInsumos={planificacionApp.guardandoInsumos}
+          guardarInsumo={planificacionApp.guardarInsumoAppDesdeModal}
           notificar={toast.notify}
         />
       )}
@@ -414,7 +414,7 @@ export function App() {
       {vista === 'padrones-zonas' && (
         <ZonasScreen
           sesion={sesion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
       )}
@@ -422,7 +422,7 @@ export function App() {
       {vista === 'padrones-especies' && (
         <EspeciesAppScreen
           sesion={sesion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
       )}
@@ -430,7 +430,7 @@ export function App() {
       {vista === 'padrones-actividades' && (
         <ActividadesAppScreen
           sesion={sesion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
         />
       )}
@@ -438,9 +438,9 @@ export function App() {
       {vista === 'padrones-vinculaciones' && (
         <VinculacionesPadronesScreen
           sesion={sesion}
-          puedeConfigurarPlanificacion={planificacionDemo.puedeConfigurarPlanificacion}
+          puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           notificar={toast.notify}
-          onVinculacionesActualizadas={async () => { await planificacionDemo.refrescarPlanificacion({ forzar: true }); }}
+          onVinculacionesActualizadas={async () => { await planificacionApp.refrescarPlanificacion({ forzar: true }); }}
         />
       )}
 
@@ -470,3 +470,4 @@ export function App() {
     </>
   );
 }
+

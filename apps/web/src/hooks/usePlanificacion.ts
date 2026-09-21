@@ -10,7 +10,6 @@ import {
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionSnapshot,
-  PlanificacionesResumenResponse,
   PrecioReferencia,
   ProtocoloProductivoResumen,
   SesionUsuario,
@@ -28,6 +27,7 @@ import {
   obtenerPlanificacionSnapshot,
 } from '../services/api';
 import {
+  anexarDestinoSiNoExiste,
   calcularGastosComercialesLinea,
   calcularResumenPlanificacion,
   limpiarTextoVisible,
@@ -38,39 +38,17 @@ import {
   resumirPlanificacionLocal,
   tieneLineasDuplicadasEnPlanificacion,
 } from '../utils/planificacion/ayudantesPlanificacion';
+import {
+  ModoCargaPlanificacion,
+  NotificarPlanificacion,
+  planificacionVacia,
+  resumenPlanificacionVacio,
+} from './planificacion/estadoPlanificacion';
 
-const planificacionVacia: PlanificacionSnapshot = {
-  zonasApp: [],
-  camposApp: [],
-  lotesApp: [],
-  especiesApp: [],
-  actividadesApp: [],
-  insumosApp: [],
-  destinosReferencia: [],
-  preciosReferencia: [],
-  conceptosGastosComerciales: [],
-  gastosComercialesReferencia: [],
-  estadiosReferencia: [],
-  serviciosApp: [],
-  protocolos: [],
-  planificaciones: [],
-  sincronizadoEn: new Date(0).toISOString(),
-};
-
-type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
-
-type ModoCargaPlanificacion = boolean | 'resumen' | 'snapshot';
-
-const resumenVacio: PlanificacionesResumenResponse = {
-  planificaciones: [],
-  camposProvisorios: 0,
-  sincronizadoEn: new Date(0).toISOString(),
-};
-
-export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: Notificar, cargarAutomaticamente: ModoCargaPlanificacion = true) {
+export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnapshot, notificar?: NotificarPlanificacion, cargarAutomaticamente: ModoCargaPlanificacion = true) {
   const [planificacion, setPlanificacion] = useState<PlanificacionSnapshot>(planificacionVacia);
   const planificacionRef = useRef(planificacionVacia);
-  const [resumenPlanificaciones, setResumenPlanificaciones] = useState(resumenVacio);
+  const [resumenPlanificaciones, setResumenPlanificaciones] = useState(resumenPlanificacionVacio);
   const [planificacionEstado, setPlanificacionEstado] = useState('Planificacion sin cargar');
   const [planificacionCargada, setPlanificacionCargada] = useState(false);
   const [resumenPlanificacionCargado, setResumenPlanificacionCargado] = useState(false);
@@ -103,7 +81,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
       setResumenPlanificacionCargado(true);
       setPlanificacionEstado('Resumen de planificaciones cargado.');
     } catch {
-      setResumenPlanificaciones(resumenVacio);
+      setResumenPlanificaciones(resumenPlanificacionVacio);
       setResumenPlanificacionCargado(true);
       setPlanificacionEstado('No se pudo cargar el resumen de planificaciones.');
     } finally {
@@ -160,7 +138,7 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   useEffect(() => {
     if (!sesion) {
       setPlanificacion(planificacionVacia);
-      setResumenPlanificaciones(resumenVacio);
+      setResumenPlanificaciones(resumenPlanificacionVacio);
       setPlanificacionCargada(false);
       setResumenPlanificacionCargado(false);
       setPlanificacionEstado('Planificacion sin sesion');
@@ -231,39 +209,6 @@ export function usePlanificacionDemo(sesion: SesionUsuario | null, snapshot: Erp
   const puedeConfigurarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:configurar'));
   const puedeCerrarPlanificacion = Boolean(sesion?.permisos.includes('planificacion:cerrar') && planificacionActiva && !planificacionActivaBloqueada);
 
-  function crearDestinoReferenciaDesdePrecio(precio: PrecioReferencia): DestinoApp {
-    const ahora = new Date().toISOString();
-    const destinoVenta = limpiarTextoVisible(precio.destinoVenta);
-
-    return {
-      id: `destino-precio-${precio.id}`,
-      clienteId: precio.clienteId,
-      empresaErpId: precio.empresaErpId,
-      destinoVenta,
-      destinoVentaNormalizado: normalizarTexto(destinoVenta),
-      descripcion: `Destino creado desde precio ${destinoVenta}`,
-      activo: true,
-      origen: 'app',
-      createdAt: ahora,
-      updatedAt: ahora,
-    };
-  }
-
-  function anexarDestinoSiNoExiste(snapshotActual: PlanificacionSnapshot, precio: PrecioReferencia): PlanificacionSnapshot {
-    const destinoNormalizado = normalizarTexto(precio.destinoVenta);
-    const existeDestino = snapshotActual.destinosReferencia.some((destino) => (
-      (destino.destinoVentaNormalizado || normalizarTexto(destino.destinoVenta)) === destinoNormalizado
-    ));
-
-    if (existeDestino) {
-      return snapshotActual;
-    }
-
-    return {
-      ...snapshotActual,
-      destinosReferencia: [crearDestinoReferenciaDesdePrecio(precio), ...snapshotActual.destinosReferencia],
-    };
-  }
   const clavesDuplicadas = useMemo(
     () => obtenerClavesDuplicadas(lineasPlanificacion, planificacionActiva?.campaniaErpId),
     [lineasPlanificacion, planificacionActiva?.campaniaErpId],
