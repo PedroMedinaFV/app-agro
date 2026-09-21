@@ -1,30 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { ErpCampania } from '@agro/tipos';
 import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
-import { HomeScreen } from './screens/HomeScreen';
-import { NotificacionesScreen } from './screens/NotificacionesScreen';
-import { PlanificacionScreen } from './screens/PlanificacionScreen';
-import { ProtocolosScreen } from './screens/ProtocolosScreen';
-import { PreciosReferenciaScreen } from './screens/PreciosReferenciaScreen';
-import { GastosComercialesScreen } from './screens/GastosComercialesScreen';
-import { PrecipitacionesScreen } from './screens/PrecipitacionesScreen';
-import { ObservacionesScreen } from './screens/ObservacionesScreen';
-import { SeguimientoOperativoScreen } from './screens/SeguimientoOperativoScreen';
-import { UsuariosAdminScreen } from './screens/UsuariosAdminScreen';
-import { AuditoriaScreen } from './screens/AuditoriaScreen';
-import { ConceptosGastosComercialesScreen } from './screens/ConceptosGastosComercialesScreen';
-import { DestinosVentaScreen } from './screens/DestinosVentaScreen';
-import { ServiciosAppScreen } from './screens/ServiciosAppScreen';
-import { InsumosAppScreen } from './screens/InsumosAppScreen';
-import { ZonasScreen } from './screens/ZonasScreen';
-import { EspeciesAppScreen } from './screens/EspeciesAppScreen';
-import { ActividadesAppScreen } from './screens/ActividadesAppScreen';
-import { EmpresasErpScreen } from './screens/EmpresasErpScreen';
-import { SincronizacionErpScreen } from './screens/SincronizacionErpScreen';
-import { CamposScreen } from './screens/CamposScreen';
-import { LotesScreen } from './screens/LotesScreen';
-import { VinculacionesPadronesScreen } from './screens/VinculacionesPadronesScreen';
 import { ToastViewport } from './components/ToastViewport';
 import { obtenerCampaniasErpImportadas, obtenerNotificaciones } from './services/api';
 import { useDemoAuth } from './hooks/useDemoAuth';
@@ -35,6 +12,30 @@ import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
 type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'auditoria' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+
+const HomeScreen = lazy(() => import('./screens/HomeScreen').then((modulo) => ({ default: modulo.HomeScreen })));
+const NotificacionesScreen = lazy(() => import('./screens/NotificacionesScreen').then((modulo) => ({ default: modulo.NotificacionesScreen })));
+const PlanificacionScreen = lazy(() => import('./screens/PlanificacionScreen').then((modulo) => ({ default: modulo.PlanificacionScreen })));
+const ProtocolosScreen = lazy(() => import('./screens/ProtocolosScreen').then((modulo) => ({ default: modulo.ProtocolosScreen })));
+const PreciosReferenciaScreen = lazy(() => import('./screens/PreciosReferenciaScreen').then((modulo) => ({ default: modulo.PreciosReferenciaScreen })));
+const GastosComercialesScreen = lazy(() => import('./screens/GastosComercialesScreen').then((modulo) => ({ default: modulo.GastosComercialesScreen })));
+const PrecipitacionesScreen = lazy(() => import('./screens/PrecipitacionesScreen').then((modulo) => ({ default: modulo.PrecipitacionesScreen })));
+const ObservacionesScreen = lazy(() => import('./screens/ObservacionesScreen').then((modulo) => ({ default: modulo.ObservacionesScreen })));
+const SeguimientoOperativoScreen = lazy(() => import('./screens/SeguimientoOperativoScreen').then((modulo) => ({ default: modulo.SeguimientoOperativoScreen })));
+const UsuariosAdminScreen = lazy(() => import('./screens/UsuariosAdminScreen').then((modulo) => ({ default: modulo.UsuariosAdminScreen })));
+const AuditoriaScreen = lazy(() => import('./screens/AuditoriaScreen').then((modulo) => ({ default: modulo.AuditoriaScreen })));
+const ConceptosGastosComercialesScreen = lazy(() => import('./screens/ConceptosGastosComercialesScreen').then((modulo) => ({ default: modulo.ConceptosGastosComercialesScreen })));
+const DestinosVentaScreen = lazy(() => import('./screens/DestinosVentaScreen').then((modulo) => ({ default: modulo.DestinosVentaScreen })));
+const ServiciosAppScreen = lazy(() => import('./screens/ServiciosAppScreen').then((modulo) => ({ default: modulo.ServiciosAppScreen })));
+const InsumosAppScreen = lazy(() => import('./screens/InsumosAppScreen').then((modulo) => ({ default: modulo.InsumosAppScreen })));
+const ZonasScreen = lazy(() => import('./screens/ZonasScreen').then((modulo) => ({ default: modulo.ZonasScreen })));
+const EspeciesAppScreen = lazy(() => import('./screens/EspeciesAppScreen').then((modulo) => ({ default: modulo.EspeciesAppScreen })));
+const ActividadesAppScreen = lazy(() => import('./screens/ActividadesAppScreen').then((modulo) => ({ default: modulo.ActividadesAppScreen })));
+const EmpresasErpScreen = lazy(() => import('./screens/EmpresasErpScreen').then((modulo) => ({ default: modulo.EmpresasErpScreen })));
+const SincronizacionErpScreen = lazy(() => import('./screens/SincronizacionErpScreen').then((modulo) => ({ default: modulo.SincronizacionErpScreen })));
+const CamposScreen = lazy(() => import('./screens/CamposScreen').then((modulo) => ({ default: modulo.CamposScreen })));
+const LotesScreen = lazy(() => import('./screens/LotesScreen').then((modulo) => ({ default: modulo.LotesScreen })));
+const VinculacionesPadronesScreen = lazy(() => import('./screens/VinculacionesPadronesScreen').then((modulo) => ({ default: modulo.VinculacionesPadronesScreen })));
 
 const vistasConSnapshotPlanificacion = new Set<Vista>([
   'campos',
@@ -211,6 +212,7 @@ export function App() {
         puedeLeerAuditoria={puedeLeerAuditoria}
         notificacionesPendientes={notificacionesPendientes}
       >
+        <Suspense fallback={<div className="panel">Cargando pantalla...</div>}>
         {vista === 'inicio' && (
           <HomeScreen
             snapshot={erp.snapshot}
@@ -466,6 +468,7 @@ export function App() {
           sincronizarPadrones={erp.sincronizarPadrones}
         />
       )}
+        </Suspense>
       </Layout>
     </>
   );
