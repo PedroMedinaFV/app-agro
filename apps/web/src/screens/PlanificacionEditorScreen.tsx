@@ -1,16 +1,17 @@
 ﻿import { useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
-import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { AccionesAlcancePlanificacion, TipoAlcancePlanificacion } from '../components/planificacion/AccionesAlcancePlanificacion';
+import { AccionGuardarPlanificacion } from '../components/planificacion/AccionGuardarPlanificacion';
 import { AccionesMasivasPlanificacion } from '../components/planificacion/AccionesMasivasPlanificacion';
 import { ArbolPlanificacion } from '../components/planificacion/ArbolPlanificacion';
+import { CabeceraPlanificacionEditor } from '../components/planificacion/CabeceraPlanificacionEditor';
 import { EstadoCargaFiltro, FiltrosPlanificacion } from '../components/planificacion/FiltrosPlanificacion';
 import { LineaPlanificacion } from '../components/planificacion/LineaPlanificacion';
+import { MetricasPlanificacion } from '../components/planificacion/MetricasPlanificacion';
 import {
   calcularResumenGrupoPlanificacion,
   idsErpCoinciden,
@@ -661,56 +662,32 @@ export function PlanificacionEditorScreen({
         title="Datos de cabecera"
         description="Estos datos identifican la planificacion y se guardan junto con el borrador."
         actions={(
-          <ActionBar align="end">
-            <Button variant="primary" onClick={guardarBorradorPlanificacion} disabled={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas || lineasConHectareasExcedidas.length > 0}>
-              <span className="button-content">
-                {guardandoPlanificacion && <LoadingSpinner label="Guardando planificacion" />}
-                {guardandoPlanificacion ? 'Guardando...' : 'Guardar borrador'}
-              </span>
-            </Button>
-          </ActionBar>
+          <AccionGuardarPlanificacion
+            guardando={guardandoPlanificacion}
+            deshabilitado={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas || lineasConHectareasExcedidas.length > 0}
+            onGuardar={guardarBorradorPlanificacion}
+          />
         )}
       >
 
-        <div className="planning-editor-header">
-          <label>
-            Nombre
-            <input value={planificacionActiva?.nombre || ''} onChange={(event) => actualizarCabeceraPlanificacion({ nombre: event.target.value })} disabled={!puedeEditarPlanificacion} />
-          </label>
-          <label>
-            Campania
-            <select value={planificacionActiva?.campaniaErpId || ''} onChange={(event) => solicitarCambioCampania(event.target.value)} disabled={!puedeEditarPlanificacion}>
-              {campaniasDisponibles.map((campania) => (
-                <option key={campania.erpId} value={campania.erpId}>
-                  {campania.codigo} {campania.esActual ? '(actual)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="planning-editor-description">
-            Descripcion
-            <input value={planificacionActiva?.descripcion || ''} onChange={(event) => actualizarCabeceraPlanificacion({ descripcion: event.target.value })} disabled={!puedeEditarPlanificacion} />
-          </label>
-        </div>
+        <CabeceraPlanificacionEditor
+          nombre={planificacionActiva?.nombre || ''}
+          campaniaErpId={planificacionActiva?.campaniaErpId || ''}
+          descripcion={planificacionActiva?.descripcion || ''}
+          campanias={campaniasDisponibles}
+          puedeEditar={puedeEditarPlanificacion}
+          onNombreChange={(nombre) => actualizarCabeceraPlanificacion({ nombre })}
+          onCampaniaChange={solicitarCambioCampania}
+          onDescripcionChange={(descripcion) => actualizarCabeceraPlanificacion({ descripcion })}
+        />
 
-        <section className="metrics planning-metrics">
-          <article>
-            <span>Hectareas</span>
-            <strong>{hectareasPlanificadas.toFixed(2)}</strong>
-          </article>
-          <article>
-            <span>Ingreso neto</span>
-            <strong>{formatearUsd(ingresoNetoTotal)}</strong>
-          </article>
-          <article>
-            <span>Costo produccion</span>
-            <strong>{formatearUsd(costoTotal)}</strong>
-          </article>
-          <article>
-            <span>Margen bruto</span>
-            <strong>{formatearUsd(margenBrutoTotal)}</strong>
-          </article>
-        </section>
+        <MetricasPlanificacion
+          hectareasPlanificadas={hectareasPlanificadas}
+          ingresoNetoTotal={ingresoNetoTotal}
+          costoTotal={costoTotal}
+          margenBrutoTotal={margenBrutoTotal}
+          formatearUsd={formatearUsd}
+        />
 
         <FiltrosPlanificacion
           busqueda={busqueda}
