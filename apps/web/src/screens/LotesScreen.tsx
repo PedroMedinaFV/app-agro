@@ -4,6 +4,10 @@ import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
+import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
+import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosGeograficosLote';
+import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
+import type { CampoSeleccionable } from '../components/lotes/tiposLotes';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import {
@@ -30,16 +34,6 @@ type LotesScreenProps = {
   notificar?: Notificar;
 };
 
-type CampoSeleccionable = {
-  clave: string;
-  campoAppId?: string;
-  campoErpId?: string;
-  empresaErpId: string;
-  codigo?: string;
-  nombre: string;
-  origen: 'agro' | 'erp';
-};
-
 type LoteTabla = {
   id: string;
   nombre: string;
@@ -53,14 +47,6 @@ type LoteTabla = {
   loteErp?: ErpLote;
 };
 
-type PuntoGeo = [number, number] | [number, number, number];
-type GeometriaGeoJson =
-  | { type: 'Point'; coordinates: PuntoGeo }
-  | { type: 'LineString'; coordinates: PuntoGeo[] }
-  | { type: 'Polygon'; coordinates: PuntoGeo[][] };
-type FeatureGeoJson = { type: 'Feature'; geometry?: GeometriaGeoJson | null };
-type FeatureCollectionGeoJson = { type: 'FeatureCollection'; features: FeatureGeoJson[] };
-
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
@@ -70,12 +56,6 @@ function normalizarCodigo(valor: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
-}
-
-function leerNumeroPositivo(valor: string) {
-  const numero = Number(valor);
-
-  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
 function crearLoteNuevo(clienteId: string, campoAppId: string): LoteApp {
@@ -137,133 +117,6 @@ function obtenerTipoArchivoGeografico(archivo: File): LoteArchivoGeografico['tip
   }
 
   return undefined;
-}
-
-function esPuntoGeo(valor: unknown): valor is PuntoGeo {
-  return Array.isArray(valor)
-    && valor.length >= 2
-    && typeof valor[0] === 'number'
-    && typeof valor[1] === 'number'
-    && Number.isFinite(valor[0])
-    && Number.isFinite(valor[1]);
-}
-
-function obtenerFeatureCollection(valor: unknown): FeatureCollectionGeoJson | undefined {
-  if (!valor || typeof valor !== 'object') {
-    return undefined;
-  }
-
-  const candidato = valor as { type?: unknown; features?: unknown };
-
-  if (candidato.type !== 'FeatureCollection' || !Array.isArray(candidato.features)) {
-    return undefined;
-  }
-
-  return candidato as FeatureCollectionGeoJson;
-}
-
-function obtenerPuntosGeometria(geometria: GeometriaGeoJson) {
-  if (geometria.type === 'Point') {
-    return [geometria.coordinates].filter(esPuntoGeo);
-  }
-
-  if (geometria.type === 'LineString') {
-    return geometria.coordinates.filter(esPuntoGeo);
-  }
-
-  return geometria.coordinates.flat().filter(esPuntoGeo);
-}
-
-function crearProyectorGeoJson(features: FeatureGeoJson[]) {
-  const puntos = features.flatMap((feature) => feature.geometry ? obtenerPuntosGeometria(feature.geometry) : []);
-
-  if (!puntos.length) {
-    return undefined;
-  }
-
-  const lons = puntos.map((punto) => punto[0]);
-  const lats = puntos.map((punto) => punto[1]);
-  const minLon = Math.min(...lons);
-  const maxLon = Math.max(...lons);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const ancho = Math.max(maxLon - minLon, 0.000001);
-  const alto = Math.max(maxLat - minLat, 0.000001);
-  const padding = 12;
-  const viewport = 200 - padding * 2;
-
-  return (punto: PuntoGeo) => {
-    const x = padding + ((punto[0] - minLon) / ancho) * viewport;
-    const y = padding + ((maxLat - punto[1]) / alto) * viewport;
-
-    return [x, y] as const;
-  };
-}
-
-function crearPathLinea(puntos: PuntoGeo[], proyectar: (punto: PuntoGeo) => readonly [number, number]) {
-  return puntos
-    .filter(esPuntoGeo)
-    .map((punto, indice) => {
-      const [x, y] = proyectar(punto);
-
-      return `${indice === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(' ');
-}
-
-function LoteGeoPreview({ archivo }: { archivo: LoteArchivoGeografico }) {
-  const geoJson = obtenerFeatureCollection(archivo.geometriaGeoJson);
-
-  if (!geoJson || !geoJson.features.length) {
-    return (
-      <div className="geo-preview geo-preview-empty">
-        {archivo.estado === 'rechazado' ? archivo.observaciones || 'Archivo rechazado.' : 'Sin geometria procesada.'}
-      </div>
-    );
-  }
-
-  const proyectar = crearProyectorGeoJson(geoJson.features);
-
-  if (!proyectar) {
-    return <div className="geo-preview geo-preview-empty">Sin coordenadas visibles.</div>;
-  }
-
-  return (
-    <div className="geo-preview" aria-label={`Vista previa geografica de ${archivo.nombreArchivo}`}>
-      <svg viewBox="0 0 200 200" role="img" aria-hidden="true">
-        <rect x="1" y="1" width="198" height="198" rx="10" />
-        {geoJson.features.map((feature, indiceFeature) => {
-          const geometria = feature.geometry;
-
-          if (!geometria) {
-            return null;
-          }
-
-          if (geometria.type === 'Point' && esPuntoGeo(geometria.coordinates)) {
-            const [x, y] = proyectar(geometria.coordinates);
-
-            return <circle key={indiceFeature} cx={x} cy={y} r="3.5" />;
-          }
-
-          if (geometria.type === 'LineString') {
-            const path = crearPathLinea(geometria.coordinates, proyectar);
-
-            return path ? <path key={indiceFeature} d={path} /> : null;
-          }
-
-          if (geometria.type !== 'Polygon') {
-            return null;
-          }
-
-          return geometria.coordinates.map((anillo, indiceAnillo) => {
-            const path = crearPathLinea(anillo, proyectar);
-
-            return path ? <path key={`${indiceFeature}-${indiceAnillo}`} d={`${path} Z`} className={indiceAnillo === 0 ? 'geo-polygon' : 'geo-hole'} /> : null;
-          });
-        })}
-      </svg>
-    </div>
-  );
 }
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
@@ -872,187 +725,40 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       </Panel>
 
       {loteEnEdicion && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel">
-            <div className="modal-header">
-              <div>
-                <h2>{modoFormulario === 'editar' ? 'Editar lote' : modoFormulario === 'copiar' ? 'Copiar lote' : 'Nuevo lote'}</h2>
-                <p className="hint">Los lotes propios permiten planificar aunque todavia no existan en ALBOR.</p>
-              </div>
-              <Button variant="ghost" onClick={() => setLoteEnEdicion(null)}>Cerrar</Button>
-            </div>
-
-            <div className="reference-modal-grid">
-              <label className="reference-wide">
-                Campo
-                <select
-                  value={campoSeleccionadoClave || `agro:${loteEnEdicion.campoAppId}`}
-                  onChange={(event) => seleccionarCampo(event.target.value)}
-                >
-                  {camposSeleccionables.map((campo) => (
-                    <option key={campo.clave} value={campo.clave}>
-                      {campo.codigo ? `${campo.codigo} - ` : ''}{campo.nombre} ({campo.origen === 'erp' ? 'ERP' : 'Agro App'})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Codigo interno
-                <input
-                  value={loteEnEdicion.codigoInterno || ''}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, codigoInterno: event.target.value })}
-                  placeholder="Se normaliza en mayusculas"
-                />
-              </label>
-              <label className="reference-wide">
-                Nombre
-                <input
-                  value={loteEnEdicion.nombre}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, nombre: event.target.value })}
-                  placeholder="Nombre del lote"
-                />
-              </label>
-              <label>
-                Superficie total
-                <input
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  value={loteEnEdicion.superficieTotal}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, superficieTotal: leerNumeroPositivo(event.target.value) })}
-                />
-              </label>
-              <label>
-                Superficie productiva
-                <input
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  value={loteEnEdicion.superficieProductiva}
-                  onChange={(event) => setLoteEnEdicion((actual) => actual && { ...actual, superficieProductiva: leerNumeroPositivo(event.target.value) })}
-                />
-              </label>
-            </div>
-
-            <div className="modal-actions">
-              <span className="hint">{modoFormulario === 'copiar' ? 'La copia se guarda como lote provisorio nuevo y queda lista para ajustar nombre o codigo.' : 'La vinculacion con ERP quedara como accion separada, propuesta y auditada.'}</span>
-              <Button variant="primary" disabled={guardando} onClick={guardarLote}>
-                <span className="button-content">
-                  {guardando && <span className="loading-spinner" />}
-                  Guardar
-                </span>
-              </Button>
-            </div>
-          </section>
-        </div>
+        <FormularioLoteModal
+          lote={loteEnEdicion}
+          modo={modoFormulario}
+          camposSeleccionables={camposSeleccionables}
+          campoSeleccionadoClave={campoSeleccionadoClave}
+          guardando={guardando}
+          onClose={() => setLoteEnEdicion(null)}
+          onSeleccionarCampo={seleccionarCampo}
+          onActualizarLote={(lote) => setLoteEnEdicion(lote)}
+          onGuardar={guardarLote}
+        />
       )}
-
       {lotePropioParaVincular && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="vincular-lote-title">
-            <div className="modal-header">
-              <div>
-                <h2 id="vincular-lote-title">Vincular lote provisorio</h2>
-                <p className="hint">La vinculacion no modifica los datos historicos de planificacion; solo enlaza el lote propio con el identificador ERP.</p>
-              </div>
-              <Button variant="ghost" onClick={() => { setLotePropioParaVincular(null); setLoteErpVincularId(''); }}>Cerrar</Button>
-            </div>
-
-            <div className="reference-modal-grid">
-              <div className="reference-total">
-                <span>Lote provisorio</span>
-                <strong>{lotePropioParaVincular.nombre}</strong>
-                <span>{lotePropioParaVincular.codigoInterno || 'Sin codigo interno'}</span>
-              </div>
-              <label className="reference-wide">
-                Lote ERP disponible
-                <select value={loteErpVincularId} onChange={(event) => setLoteErpVincularId(event.target.value)}>
-                  {lotesErpSugeridosParaVincular.map(({ registro, motivo }) => {
-                    const campo = camposErpPorId.get(registro.campoErpId);
-
-                    return (
-                      <option key={registro.erpId} value={registro.erpId}>
-                        {registro.codigo ? `${registro.codigo} - ` : ''}{registro.nombre} ({campo?.nombre || `Campo ${registro.idCampo}`}; {motivo})
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            </div>
-
-            <div className="modal-actions">
-              <span className="hint">El backend valida que el lote ERP exista y que no este vinculado a otro lote del cliente.</span>
-              <Button variant="primary" disabled={guardando || !loteErpVincularId} onClick={confirmarVinculacionLote}>
-                <span className="button-content">
-                  {guardando && <span className="loading-spinner" />}
-                  Vincular
-                </span>
-              </Button>
-            </div>
-          </section>
-        </div>
+        <ModalVincularLote
+          lote={lotePropioParaVincular}
+          loteErpVincularId={loteErpVincularId}
+          sugerencias={lotesErpSugeridosParaVincular}
+          camposErpPorId={camposErpPorId}
+          guardando={guardando}
+          onClose={() => { setLotePropioParaVincular(null); setLoteErpVincularId(''); }}
+          onChangeLoteErp={setLoteErpVincularId}
+          onConfirmar={confirmarVinculacionLote}
+        />
       )}
-
       {loteArchivosGeograficos && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="archivos-geograficos-lote-title">
-            <div className="modal-header">
-              <div>
-                <h2 id="archivos-geograficos-lote-title">Archivos geograficos</h2>
-                <p className="hint">{loteArchivosGeograficos.nombre}. Vincula KML o KMZ para usar el lote en recorridas georreferenciadas.</p>
-              </div>
-              <Button variant="ghost" onClick={() => { setLoteArchivosGeograficos(null); setArchivoGeograficoSeleccionado(null); }}>Cerrar</Button>
-            </div>
-
-            <div className="reference-modal-grid">
-              <label className="reference-wide">
-                Archivo KML/KMZ
-                <input
-                  type="file"
-                  accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
-                  onChange={(event) => setArchivoGeograficoSeleccionado(event.target.files?.[0] || null)}
-                />
-              </label>
-              <div className="reference-total">
-                <span>Archivos vinculados</span>
-                <strong>{archivosGeograficos.length}</strong>
-                <span>{archivosGeograficos.some((archivo) => archivo.esPrincipal) ? 'Con archivo principal' : 'Sin archivo principal'}</span>
-              </div>
-            </div>
-
-            <div className="reference-list">
-              {archivosGeograficos.length === 0 ? (
-                <p className="hint">Todavia no hay archivos geograficos vinculados a este lote.</p>
-              ) : archivosGeograficos.map((archivo) => (
-                <article key={archivo.id} className="geo-file-row">
-                  <LoteGeoPreview archivo={archivo} />
-                  <div className="geo-file-data">
-                    <strong>{archivo.nombreArchivo}</strong>
-                    <span>{archivo.tipo.toUpperCase()} - {(archivo.tamanioBytes / 1024).toFixed(1)} KB</span>
-                    {archivo.superficieCalculadaHa !== undefined && (
-                      <span>Superficie detectada: {archivo.superficieCalculadaHa.toFixed(2)} ha</span>
-                    )}
-                    {archivo.observaciones && <span>{archivo.observaciones}</span>}
-                  </div>
-                  <div className="table-icon-actions">
-                    <em>{archivo.esPrincipal ? 'Principal' : 'Archivo'}</em>
-                    <em>{archivo.estado.replace(/_/g, ' ')}</em>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="modal-actions">
-              <span className="hint">El backend procesa el archivo y guarda GeoJSON para mobile, recorridas y vista de mapa.</span>
-              <Button variant="primary" disabled={guardando || !archivoGeograficoSeleccionado} onClick={subirArchivoGeografico}>
-                <span className="button-content">
-                  {guardando && <span className="loading-spinner" />}
-                  Vincular archivo
-                </span>
-              </Button>
-            </div>
-          </section>
-        </div>
+        <ModalArchivosGeograficosLote
+          lote={loteArchivosGeograficos}
+          archivos={archivosGeograficos}
+          archivoSeleccionado={archivoGeograficoSeleccionado}
+          guardando={guardando}
+          onClose={() => { setLoteArchivosGeograficos(null); setArchivoGeograficoSeleccionado(null); }}
+          onSeleccionarArchivo={setArchivoGeograficoSeleccionado}
+          onSubirArchivo={subirArchivoGeografico}
+        />
       )}
     </div>
   );
