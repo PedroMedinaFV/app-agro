@@ -12,6 +12,8 @@ import { CabeceraPlanificacionEditor } from '../components/planificacion/Cabecer
 import { EstadoCargaFiltro, FiltrosPlanificacion } from '../components/planificacion/FiltrosPlanificacion';
 import { LineaPlanificacion } from '../components/planificacion/LineaPlanificacion';
 import { MetricasPlanificacion } from '../components/planificacion/MetricasPlanificacion';
+import { ConfirmacionCambioCampania, ModalCambioCampaniaPlanificacion } from '../components/planificacion/ModalCambioCampaniaPlanificacion';
+import { ConfirmacionQuitarAlcance, ModalQuitarAlcancePlanificacion } from '../components/planificacion/ModalQuitarAlcancePlanificacion';
 import {
   calcularResumenGrupoPlanificacion,
   idsErpCoinciden,
@@ -75,16 +77,8 @@ export function PlanificacionEditorScreen({
   const [resultadoAccionMasiva, setResultadoAccionMasiva] = useState('');
   const [tipoAlcanceAgregar, setTipoAlcanceAgregar] = useState<TipoAlcancePlanificacion>('zona');
   const [alcanceAgregarId, setAlcanceAgregarId] = useState('');
-  const [confirmacionQuitarAlcance, setConfirmacionQuitarAlcance] = useState<{
-    etiqueta: string;
-    lineaIds: string[];
-    totalLineas: number;
-    lineasConDatos: number;
-  } | null>(null);
-  const [confirmacionCambioCampania, setConfirmacionCambioCampania] = useState<{
-    campaniaErpId: string;
-    codigo: string;
-  } | null>(null);
+  const [confirmacionQuitarAlcance, setConfirmacionQuitarAlcance] = useState<ConfirmacionQuitarAlcance | null>(null);
+  const [confirmacionCambioCampania, setConfirmacionCambioCampania] = useState<ConfirmacionCambioCampania | null>(null);
   const zonasAppPorId = useMemo(() => new Map((planificacion.zonasApp || []).map((zona) => [zona.id, zona])), [planificacion.zonasApp]);
   const zonasErpPorId = useMemo(() => new Map(snapshot.zonas.flatMap((zona) => [
     [zona.erpId, zona.nombre],
@@ -754,93 +748,18 @@ export function PlanificacionEditorScreen({
           onQuitarLineas={quitarLineasDelEscenario}
         />
       </Panel>
-      {confirmacionQuitarAlcance && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel modal-panel-narrow" role="dialog" aria-modal="true" aria-labelledby="quitar-alcance-title">
-            <div className="modal-header">
-              <div>
-                <h2 id="quitar-alcance-title">Quitar del escenario</h2>
-                <p className="hint">Esta accion solo modifica la planificacion actual. No elimina zonas, campos ni lotes del padron.</p>
-              </div>
-              <Button variant="ghost" onClick={() => setConfirmacionQuitarAlcance(null)}>
-                Cerrar
-              </Button>
-            </div>
-
-            <div className="confirmation-summary">
-              <article>
-                <span>Alcance</span>
-                <strong>{confirmacionQuitarAlcance.etiqueta}</strong>
-              </article>
-              <article>
-                <span>Lineas a quitar</span>
-                <strong>{confirmacionQuitarAlcance.totalLineas}</strong>
-              </article>
-              <article>
-                <span>Con datos cargados</span>
-                <strong>{confirmacionQuitarAlcance.lineasConDatos}</strong>
-              </article>
-            </div>
-
-            <p className="hint">
-              Al confirmar, estas lineas se quitaran del borrador. Para hacer efectivo el cambio en la base, despues guarda el borrador.
-            </p>
-
-            <div className="modal-actions">
-              <Button variant="ghost" onClick={() => setConfirmacionQuitarAlcance(null)}>
-                Cancelar
-              </Button>
-              <Button variant="danger" onClick={confirmarQuitarAlcance}>
-                Quitar lineas
-              </Button>
-            </div>
-          </section>
-        </div>
-      )}
-      {confirmacionCambioCampania && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal-panel modal-panel-narrow" role="dialog" aria-modal="true" aria-labelledby="cambio-campania-title">
-            <div className="modal-header">
-              <div>
-                <h2 id="cambio-campania-title">Cambiar campania</h2>
-                <p className="hint">La campania define los protocolos disponibles y los calculos economicos del escenario.</p>
-              </div>
-              <Button variant="ghost" onClick={() => setConfirmacionCambioCampania(null)}>
-                Cerrar
-              </Button>
-            </div>
-
-            <div className="confirmation-summary">
-              <article>
-                <span>Campania actual</span>
-                <strong>{campaniaPlanificada?.codigo || planificacionActiva?.campaniaErpId || '-'}</strong>
-              </article>
-              <article>
-                <span>Nueva campania</span>
-                <strong>{confirmacionCambioCampania.codigo}</strong>
-              </article>
-              <article>
-                <span>Lineas afectadas</span>
-                <strong>{lineasPlanificacion.length}</strong>
-              </article>
-            </div>
-
-            <p className="hint">
-              Al confirmar se quitaran los protocolos aplicados y se resetearan destino, rinde, precio, gastos comerciales, costos e indicadores economicos.
-              Se conservan los lotes y hectareas cargadas.
-            </p>
-
-            <div className="modal-actions">
-              <Button variant="ghost" onClick={() => setConfirmacionCambioCampania(null)}>
-                Cancelar
-              </Button>
-              <Button variant="danger" onClick={confirmarCambioCampania}>
-                Cambiar y resetear
-              </Button>
-            </div>
-          </section>
-        </div>
-      )}
+      <ModalQuitarAlcancePlanificacion
+        confirmacion={confirmacionQuitarAlcance}
+        onCerrar={() => setConfirmacionQuitarAlcance(null)}
+        onConfirmar={confirmarQuitarAlcance}
+      />
+      <ModalCambioCampaniaPlanificacion
+        confirmacion={confirmacionCambioCampania}
+        campaniaActual={campaniaPlanificada?.codigo || planificacionActiva?.campaniaErpId || '-'}
+        totalLineas={lineasPlanificacion.length}
+        onCerrar={() => setConfirmacionCambioCampania(null)}
+        onConfirmar={confirmarCambioCampania}
+      />
     </section>
   );
 }
