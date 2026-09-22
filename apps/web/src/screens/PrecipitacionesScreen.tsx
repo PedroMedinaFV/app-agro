@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, LoteApp, PrecipitacionCampo, SesionUsuario } from '@agro/tipos';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { FechaInput } from '../components/FechaInput';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import {
@@ -25,26 +26,35 @@ type FormularioPrecipitacion = {
   observaciones: string;
 };
 
-function fechaActualInput() {
+function fechaActualIso() {
   const ahora = new Date();
   ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
 
-  return ahora.toISOString().slice(0, 16);
+  return ahora.toISOString().slice(0, 10);
 }
 
 function formatearFecha(valor: string) {
+  const fecha = new Date(valor);
+
+  if (Number.isNaN(fecha.getTime())) {
+    return '-';
+  }
+
   return new Intl.DateTimeFormat('es-AR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(valor));
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(fecha);
 }
 
 function crearFormularioInicial(campoAppId = ''): FormularioPrecipitacion {
+  const fechaEvento = fechaActualIso();
+
   return {
     campoAppId,
     loteAppId: '',
     milimetros: '',
-    fechaEvento: fechaActualInput(),
+    fechaEvento,
     observaciones: '',
   };
 }
@@ -120,9 +130,16 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
 
   async function guardar() {
     const milimetros = Number(formulario.milimetros);
+    const fechaEvento = formulario.fechaEvento ? `${formulario.fechaEvento}T12:00:00` : '';
+    const fechaValida = new Date(fechaEvento);
 
     if (!formulario.campoAppId || !Number.isFinite(milimetros) || milimetros <= 0) {
       notificar?.({ tipo: 'error', titulo: 'Datos incompletos', mensaje: 'Selecciona campo e informa milimetros mayores a cero.' });
+      return;
+    }
+
+    if (Number.isNaN(fechaValida.getTime())) {
+      notificar?.({ tipo: 'error', titulo: 'Fecha invalida', mensaje: 'Ingresa una fecha valida.' });
       return;
     }
 
@@ -132,7 +149,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
         campoAppId: formulario.campoAppId,
         loteAppId: formulario.loteAppId || undefined,
         milimetros,
-        fechaEvento: new Date(formulario.fechaEvento).toISOString(),
+        fechaEvento: fechaValida.toISOString(),
         observaciones: formulario.observaciones || undefined,
         origen: 'web',
       }, sesion.token);
@@ -201,12 +218,11 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
           </label>
 
           <label>
-            Fecha y hora
-            <input
-              type="datetime-local"
+            Fecha
+            <FechaInput
               value={formulario.fechaEvento}
               disabled={!puedeCrear || guardando}
-              onChange={(event) => actualizarFormulario({ fechaEvento: event.target.value })}
+              onChange={(fechaEvento) => actualizarFormulario({ fechaEvento })}
             />
           </label>
 

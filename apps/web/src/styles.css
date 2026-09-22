@@ -307,6 +307,55 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.15);
 }
 
+.fecha-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.fecha-input input[type="text"] {
+  padding-right: 48px;
+  cursor: pointer;
+}
+
+.fecha-input-button {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #123f31;
+  cursor: pointer;
+}
+
+.fecha-input-button:hover:not(:disabled) {
+  background: #eaf1eb;
+}
+
+.fecha-input-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fecha-input-native {
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .primary,
 .secondary,
 .ghost,
