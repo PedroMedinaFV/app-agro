@@ -7,7 +7,6 @@ import { IconButton } from '../components/IconButton';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
 import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosGeograficosLote';
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
-import type { CampoSeleccionable } from '../components/lotes/tiposLotes';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import {
@@ -22,6 +21,19 @@ import {
   obtenerLotesApp,
   subirArchivoAFirmaSupabase,
 } from '../services/api';
+import {
+  construirCamposSeleccionables,
+  construirFilasLotes,
+  crearIdArchivoGeografico,
+  crearIdCampoDesdeErp,
+  crearLoteNuevo,
+  filtrarLotesErp,
+  filtrarLotesPropios,
+  limpiarTextoVisible,
+  normalizarCodigo,
+  obtenerMimeArchivoGeografico,
+  obtenerTipoArchivoGeografico,
+} from '../utils/lotes/ayudantesLotes';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -33,91 +45,6 @@ type LotesScreenProps = {
   puedeConfigurarPlanificacion: boolean;
   notificar?: Notificar;
 };
-
-type LoteTabla = {
-  id: string;
-  nombre: string;
-  detalle: string;
-  campo: string;
-  superficie: string;
-  origen: string;
-  estado: string;
-  accion: 'editar' | 'importado';
-  lotePropio?: LoteApp;
-  loteErp?: ErpLote;
-};
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function crearLoteNuevo(clienteId: string, campoAppId: string): LoteApp {
-  const ahora = new Date().toISOString();
-
-  return {
-    id: `lote-app-${Date.now()}`,
-    clienteId,
-    campoAppId,
-    nombre: '',
-    codigoInterno: '',
-    superficieTotal: 0,
-    superficieProductiva: 0,
-    estadoVinculacion: 'provisorio',
-    createdAt: ahora,
-    updatedAt: ahora,
-  };
-}
-
-function crearIdCampoDesdeErp(campoErpId: string) {
-  return `campo-app-${campoErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
-}
-
-function crearIdArchivoGeografico() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return `lote-geo-${crypto.randomUUID()}`;
-  }
-
-  return `lote-geo-${Date.now()}`;
-}
-
-function obtenerMimeArchivoGeografico(archivo: File) {
-  const nombre = archivo.name.toLowerCase();
-
-  if (archivo.type) {
-    return archivo.type;
-  }
-
-  if (nombre.endsWith('.kml')) {
-    return 'application/vnd.google-earth.kml+xml';
-  }
-
-  if (nombre.endsWith('.kmz')) {
-    return 'application/vnd.google-earth.kmz';
-  }
-
-  return 'application/octet-stream';
-}
-
-function obtenerTipoArchivoGeografico(archivo: File): LoteArchivoGeografico['tipo'] | undefined {
-  const nombre = archivo.name.toLowerCase();
-
-  if (nombre.endsWith('.kml')) {
-    return 'kml';
-  }
-
-  if (nombre.endsWith('.kmz')) {
-    return 'kmz';
-  }
-
-  return undefined;
-}
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
   const [lotesErp, setLotesErp] = useState<ErpLote[]>([]);
@@ -165,60 +92,25 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const empresasPorId = useMemo(() => new Map(empresas.map((empresa) => [empresa.erpId, empresa])), [empresas]);
   const camposPropiosPorId = useMemo(() => new Map(camposPropiosActuales.map((campo) => [campo.id, campo])), [camposPropiosActuales]);
   const camposErpPorId = useMemo(() => new Map(camposErp.map((campo) => [campo.erpId, campo])), [camposErp]);
-  const camposVinculados = useMemo(() => new Set(camposPropiosActuales.map((campo) => campo.campoErpId).filter(Boolean)), [camposPropiosActuales]);
-  const camposSeleccionables = useMemo<CampoSeleccionable[]>(() => {
-    const propios = camposPropiosActuales.map((campo) => ({
-      clave: `agro:${campo.id}`,
-      campoAppId: campo.id,
-      campoErpId: campo.campoErpId,
-      empresaErpId: campo.empresaErpId,
-      codigo: campo.codigoInterno,
-      nombre: campo.nombre,
-      origen: 'agro' as const,
-    }));
-    const importados = camposErp
-      .filter((campo) => !camposVinculados.has(campo.erpId))
-      .map((campo) => ({
-        clave: `erp:${campo.erpId}`,
-        campoErpId: campo.erpId,
-        empresaErpId: campo.empresaErpId,
-        codigo: campo.codigo,
-        nombre: campo.nombre,
-        origen: 'erp' as const,
-      }));
-
-    return [...propios, ...importados].sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [camposErp, camposPropiosActuales, camposVinculados]);
+  const camposSeleccionables = useMemo(
+    () => construirCamposSeleccionables(camposPropiosActuales, camposErp),
+    [camposErp, camposPropiosActuales],
+  );
   const camposSeleccionablesPorClave = useMemo(
     () => new Map(camposSeleccionables.map((campo) => [campo.clave, campo])),
     [camposSeleccionables],
   );
-  const camposParaFiltrar = useMemo<CampoSeleccionable[]>(() => {
-    const propios = camposPropiosActuales.map((campo) => ({
-      clave: `agro:${campo.id}`,
-      campoAppId: campo.id,
-      campoErpId: campo.campoErpId,
-      empresaErpId: campo.empresaErpId,
-      codigo: campo.codigoInterno,
-      nombre: campo.nombre,
-      origen: 'agro' as const,
-    }));
-    const importados = camposErp.map((campo) => ({
-      clave: `erp:${campo.erpId}`,
-      campoErpId: campo.erpId,
-      empresaErpId: campo.empresaErpId,
-      codigo: campo.codigo,
-      nombre: campo.nombre,
-      origen: 'erp' as const,
-    }));
-
-    return [...propios, ...importados].sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [camposErp, camposPropiosActuales]);
+  const camposParaFiltrar = useMemo(
+    () => construirCamposSeleccionables(camposPropiosActuales, camposErp, false),
+    [camposErp, camposPropiosActuales],
+  );
   const camposParaFiltrarPorClave = useMemo(
     () => new Map(camposParaFiltrar.map((campo) => [campo.clave, campo])),
     [camposParaFiltrar],
   );
-  const lotesVinculados = useMemo(() => new Set(lotesPropios.map((lote) => lote.loteErpId).filter(Boolean)), [lotesPropios]);
+  const lotesVinculados = useMemo(() => (
+    new Set(lotesPropios.map((lote) => lote.loteErpId).filter((loteErpId): loteErpId is string => Boolean(loteErpId)))
+  ), [lotesPropios]);
   const lotesErpDisponiblesParaVincular = useMemo(() => {
     if (!lotePropioParaVincular) {
       return [];
@@ -243,54 +135,9 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   ), [lotePropioParaVincular, lotesErpDisponiblesParaVincular]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
-  const lotesErpFiltrados = lotesErp.filter((lote) => {
-    const campo = camposErpPorId.get(lote.campoErpId);
-    const texto = normalizarCodigo(`${lote.codigo} ${lote.nombre} ${campo?.nombre || ''} ${empresasPorId.get(lote.empresaErpId)?.nombre || lote.empresaErpId}`);
-    const coincideCampo = !campoFiltrado || lote.campoErpId === campoFiltrado.campoErpId;
-
-    return texto.includes(filtroNormalizado) && coincideCampo;
-  });
-  const lotesPropiosFiltrados = lotesPropios.filter((lote) => !lote.loteErpId).filter((lote) => {
-    const campo = camposPropiosPorId.get(lote.campoAppId);
-    const texto = normalizarCodigo(`${lote.codigoInterno || ''} ${lote.nombre} ${campo?.nombre || ''}`);
-    const coincideCampo = !campoFiltrado
-      || lote.campoAppId === campoFiltrado.campoAppId
-      || Boolean(campoFiltrado.campoErpId && campo?.campoErpId === campoFiltrado.campoErpId);
-
-    return texto.includes(filtroNormalizado) && coincideCampo;
-  });
-  const filasLote: LoteTabla[] = [
-    ...lotesPropiosFiltrados.map((lote) => {
-      const campo = camposPropiosPorId.get(lote.campoAppId);
-
-      return {
-        id: lote.id,
-        nombre: lote.nombre,
-        detalle: lote.codigoInterno || 'Sin codigo interno',
-        campo: campo?.nombre || 'Campo no disponible',
-        superficie: `${lote.superficieProductiva} / ${lote.superficieTotal} ha`,
-        origen: 'Agro App',
-        estado: lote.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP',
-        accion: 'editar' as const,
-        lotePropio: lote,
-      };
-    }),
-    ...lotesErpFiltrados.map((lote) => {
-      const campo = camposErpPorId.get(lote.campoErpId);
-
-      return {
-        id: lote.erpId,
-        nombre: lote.nombre,
-        detalle: `${lote.codigo} - x-company ${lote.empresaErpId.replace('empresa:', '')}`,
-        campo: campo?.nombre || `Campo ${lote.idCampo}`,
-        superficie: `${lote.hectareasProductivas ?? lote.areaHectareas} / ${lote.areaHectareas} ha`,
-        origen: 'ERP',
-        estado: lotesVinculados.has(lote.erpId) ? 'Vinculado' : 'Disponible',
-        accion: 'importado' as const,
-        loteErp: lote,
-      };
-    }),
-  ];
+  const lotesErpFiltrados = filtrarLotesErp(lotesErp, camposErpPorId, empresasPorId, filtroNormalizado, campoFiltrado);
+  const lotesPropiosFiltrados = filtrarLotesPropios(lotesPropios, camposPropiosPorId, filtroNormalizado, campoFiltrado);
+  const filasLote = construirFilasLotes(lotesPropiosFiltrados, lotesErpFiltrados, camposPropiosPorId, camposErpPorId, lotesVinculados);
 
   function abrirNuevoLote() {
     const campoSugerido = camposSeleccionables[0];
