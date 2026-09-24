@@ -10,21 +10,11 @@ import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados, obtenerTiposServicioErpImportados } from '../services/api';
-import { formatearMoneda } from '../utils/formatters';
+import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/ayudantesPadrones';
+import { construirFilasLabores } from '../utils/padrones/filasInsumosServicios';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 interface ServiciosAppScreenProps {
   sesion: SesionUsuario;
@@ -37,37 +27,8 @@ interface ServiciosAppScreenProps {
   notificar?: Notificar;
 }
 
-type LaborTabla = {
-  id: string;
-  nombre: string;
-  detalle: string;
-  codigo: string;
-  tipo: string;
-  unidad: string;
-  costo: string;
-  origen: string;
-  estado: string;
-  accion: 'editar';
-  laborPropia?: ServicioApp;
-  servicioErp?: ErpServicio;
-};
-
 function crearIdLaborDesdeErp(servicio: ErpServicio) {
   return `labor-ref-erp-${servicio.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
-}
-
-function unirTiposServicio(principales: ErpTipoServicio[], secundarios: ErpTipoServicio[]) {
-  const mapa = new Map<number, ErpTipoServicio>();
-
-  for (const tipo of secundarios) {
-    mapa.set(tipo.idTipoServicio, tipo);
-  }
-
-  for (const tipo of principales) {
-    mapa.set(tipo.idTipoServicio, tipo);
-  }
-
-  return [...mapa.values()];
 }
 
 export function ServiciosAppScreen({
@@ -107,7 +68,7 @@ export function ServiciosAppScreen({
   const monedaPorDefecto = monedasDisponibles.find((moneda) => moneda.codigo.toUpperCase() === 'USD')
     || monedasDisponibles[0];
   const tiposServicioDisponibles = useMemo(() => (
-    unirTiposServicio(snapshot.tiposServicio || [], tiposServicioErp)
+    unirPorClave(snapshot.tiposServicio || [], tiposServicioErp, (tipo) => tipo.idTipoServicio)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.tiposServicio, tiposServicioErp]);
   const tipoServicioPorId = useMemo(() => (
@@ -244,11 +205,11 @@ export function ServiciosAppScreen({
     labor.id !== laborEnEdicion.id && labor.codigo === codigoActual
   )));
   const serviciosVinculados = useMemo(
-    () => new Set(laboresOrdenadas.map((labor) => labor.servicioErpId).filter((id): id is string => Boolean(id))),
+    () => crearSetVinculados(laboresOrdenadas, (labor) => labor.servicioErpId),
     [laboresOrdenadas],
   );
   const laboresPorServicioErpId = useMemo(() => (
-    new Map(laboresOrdenadas.filter((labor) => labor.servicioErpId).map((labor) => [labor.servicioErpId, labor]))
+    crearMapaPorErpId(laboresOrdenadas, (labor) => labor.servicioErpId)
   ), [laboresOrdenadas]);
   const serviciosErpDisponiblesParaVincular = useMemo(() => serviciosErp
     .filter((servicio) => !serviciosVinculados.has(servicio.erpId))
@@ -263,42 +224,15 @@ export function ServiciosAppScreen({
       )
       : []
   ), [laborPropiaParaVincular, serviciosErpDisponiblesParaVincular]);
-  const filasLabor: LaborTabla[] = [
-    ...laboresOrdenadas.filter((labor) => !labor.servicioErpId).map((labor) => ({
-      id: labor.id,
-      nombre: labor.nombre,
-      detalle: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : 'Provisoria',
-      codigo: labor.codigo,
-      tipo: labor.idTipoServicio ? tipoServicioPorId.get(labor.idTipoServicio)?.descripcion || `Tipo ${labor.idTipoServicio}` : '-',
-      unidad: labor.unidadSugerida,
-      costo: labor.costoUnitarioSugerido !== undefined ? formatearMoneda(labor.costoUnitarioSugerido, monedaPorId.get(labor.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD') : 'Sin costo',
-      origen: 'Agro App',
-      estado: labor.estadoVinculacion === 'vinculado_erp' ? 'Vinculada ERP' : 'Provisoria',
-      accion: 'editar' as const,
-      laborPropia: labor,
-    })),
-    ...serviciosErp.map((servicio) => {
-      const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === servicio.idUnidadMedida);
-      const laborPropia = laboresPorServicioErpId.get(servicio.erpId);
-      const costo = laborPropia?.costoUnitarioSugerido ?? servicio.precioUnitario;
-      const moneda = monedaPorId.get(laborPropia?.idMoneda || servicio.idMoneda || 0)?.codigo || monedaPorDefecto?.codigo || 'USD';
-
-      return {
-        id: servicio.erpId,
-        nombre: servicio.descripcion,
-        detalle: `${laborPropia ? 'Con costo Agro App' : 'Disponible'} ERP`,
-        codigo: servicio.codigo,
-        tipo: servicio.idTipoServicio ? tipoServicioPorId.get(servicio.idTipoServicio)?.descripcion || `Tipo ${servicio.idTipoServicio}` : '-',
-        unidad: unidad?.codigo || String(servicio.idUnidadMedida || '-'),
-        costo: costo !== undefined ? formatearMoneda(costo, moneda) : 'Sin costo',
-        origen: 'ERP',
-        estado: servicio.activo ? 'Activo' : 'Inactivo',
-        accion: 'editar' as const,
-        laborPropia,
-        servicioErp: servicio,
-      };
-    }),
-  ];
+  const filasLabor = construirFilasLabores({
+    laboresOrdenadas,
+    serviciosErp,
+    laboresPorServicioErpId,
+    tipoServicioPorId,
+    unidadesMedida: snapshot.unidadesMedida,
+    monedaPorId,
+    monedaPorDefecto,
+  });
 
   function abrirEditarServicioErp(servicioErp: ErpServicio, laborPropia?: ServicioApp) {
     const ahora = new Date().toISOString();

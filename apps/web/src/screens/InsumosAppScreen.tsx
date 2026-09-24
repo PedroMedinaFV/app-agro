@@ -10,21 +10,11 @@ import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas, obtenerTiposInsumoErpImportados } from '../services/api';
-import { formatearMoneda } from '../utils/formatters';
+import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/ayudantesPadrones';
+import { construirFilasInsumos } from '../utils/padrones/filasInsumosServicios';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 interface InsumosAppScreenProps {
   sesion: SesionUsuario;
@@ -36,36 +26,8 @@ interface InsumosAppScreenProps {
   notificar?: Notificar;
 }
 
-type InsumoTabla = {
-  id: string;
-  nombre: string;
-  detalle: string;
-  codigo: string;
-  tipo: string;
-  unidad: string;
-  precio: string;
-  origen: string;
-  accion: 'editar';
-  insumoPropio?: InsumoApp;
-  insumoErp?: ErpInsumo;
-};
-
 function crearIdInsumoAppDesdeErp(insumo: ErpInsumo) {
   return `insumo-app-erp-${insumo.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
-}
-
-function unirTiposInsumo(principales: ErpTipoInsumo[], secundarios: ErpTipoInsumo[]) {
-  const mapa = new Map<number, ErpTipoInsumo>();
-
-  for (const tipo of secundarios) {
-    mapa.set(tipo.idTipoInsumo, tipo);
-  }
-
-  for (const tipo of principales) {
-    mapa.set(tipo.idTipoInsumo, tipo);
-  }
-
-  return [...mapa.values()];
 }
 
 export function InsumosAppScreen({
@@ -105,7 +67,7 @@ export function InsumosAppScreen({
     || monedasDisponibles[0]?.codigo
     || 'USD';
   const tiposInsumoTodos = useMemo(() => (
-    unirTiposInsumo(snapshot.tiposInsumo || [], tiposInsumoErp)
+    unirPorClave(snapshot.tiposInsumo || [], tiposInsumoErp, (tipo) => tipo.idTipoInsumo)
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
   ), [snapshot.tiposInsumo, tiposInsumoErp]);
   const tiposInsumoDisponibles = useMemo(() => (
@@ -244,11 +206,11 @@ export function InsumosAppScreen({
     insumo.id !== insumoEnEdicion.id && insumo.codigoInterno === codigoActual
   )));
   const filtroPropiosErp = useMemo(
-    () => new Set(insumosOrdenados.map((insumo) => insumo.insumoErpId).filter((id): id is string => Boolean(id))),
+    () => crearSetVinculados(insumosOrdenados, (insumo) => insumo.insumoErpId),
     [insumosOrdenados],
   );
   const insumosPropiosPorErpId = useMemo(() => (
-    new Map(insumosOrdenados.filter((insumo) => insumo.insumoErpId).map((insumo) => [insumo.insumoErpId, insumo]))
+    crearMapaPorErpId(insumosOrdenados, (insumo) => insumo.insumoErpId)
   ), [insumosOrdenados]);
   const insumosErpDisponiblesParaVincular = useMemo(() => insumosErp
     .filter((insumo) => !filtroPropiosErp.has(insumo.erpId))
@@ -263,40 +225,15 @@ export function InsumosAppScreen({
       )
       : []
   ), [insumoPropioParaVincular, insumosErpDisponiblesParaVincular]);
-  const filasInsumo: InsumoTabla[] = [
-    ...insumosOrdenados.filter((insumo) => !insumo.insumoErpId).map((insumo) => ({
-      id: insumo.id,
-      nombre: insumo.nombre,
-      detalle: insumo.estadoVinculacion === 'vinculado_erp' ? 'Vinculado ERP' : 'Provisorio',
-      codigo: insumo.codigoInterno || '-',
-      tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || insumo.tipo || `Tipo ${insumo.idTipoInsumo}` : insumo.tipo || '-',
-      unidad: insumo.unidad,
-      precio: insumo.precioUnitarioEstimado !== undefined ? formatearMoneda(insumo.precioUnitarioEstimado, insumo.moneda || monedaPorDefecto) : 'Sin precio',
-      origen: 'Agro App',
-      accion: 'editar' as const,
-      insumoPropio: insumo,
-    })),
-    ...insumosErp.map((insumo) => {
-      const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumo.idUnidadMedida);
-      const insumoPropio = insumosPropiosPorErpId.get(insumo.erpId);
-      const precio = insumoPropio?.precioUnitarioEstimado ?? insumo.precioUnitario;
-      const moneda = insumoPropio?.moneda || monedaPorId.get(insumo.idMonedaPrecioUnitario || 0)?.codigo || monedaPorDefecto;
-
-      return {
-        id: insumo.erpId,
-        nombre: insumo.nombre,
-        detalle: `${insumoPropio ? 'Con precio Agro App' : 'Disponible'} ERP`,
-        codigo: insumo.codigo,
-        tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || `Tipo ${insumo.idTipoInsumo}` : '-',
-        unidad: unidad?.codigo || String(insumo.idUnidadMedida || '-'),
-        precio: precio !== undefined ? formatearMoneda(precio, moneda) : 'Sin precio',
-        origen: 'ERP',
-        accion: 'editar' as const,
-        insumoPropio,
-        insumoErp: insumo,
-      };
-    }),
-  ];
+  const filasInsumo = construirFilasInsumos({
+    insumosOrdenados,
+    insumosErp,
+    insumosPropiosPorErpId,
+    tipoInsumoPorId,
+    unidadesMedida: snapshot.unidadesMedida,
+    monedaPorId,
+    monedaPorDefecto,
+  });
 
   function abrirEditarInsumoErp(insumoErp: ErpInsumo, insumoPropio?: InsumoApp) {
     const ahora = new Date().toISOString();
