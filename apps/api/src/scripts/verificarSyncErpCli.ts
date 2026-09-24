@@ -7,11 +7,15 @@ function obtenerClienteIdDesdeArgs() {
     return argumento.split('=')[1] || undefined;
   }
 
-  return process.env.CLIENTE_ID || 'cliente-demo';
+  return process.env.CLIENTE_ID;
 }
 
 async function main() {
   const clienteId = obtenerClienteIdDesdeArgs();
+
+  if (!clienteId) {
+    throw new Error('Indica --clienteId=<id> o define CLIENTE_ID para verificar la sincronizacion ERP.');
+  }
   const empresasAgroSeleccionadas = await prisma.clienteEmpresaErp.findMany({
     where: { clienteId },
     select: { empresaErpId: true },

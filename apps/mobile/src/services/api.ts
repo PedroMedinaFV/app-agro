@@ -9,6 +9,7 @@ import type {
   ObservacionesResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
+  SesionUsuario,
 } from '@agro/tipos';
 
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
@@ -42,21 +43,21 @@ async function request<T>(ruta: string, options: PeticionOptions = {}, token?: s
 }
 
 export async function loginUsuario(email: string, password: string) {
-  return request<{ token: string; usuario: { id: string; email: string; nombre?: string | null } }>('/auth/login', {
+  return request<SesionUsuario>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
 }
 
 export async function registrarUsuario(email: string, nombre: string, password: string) {
-  return request<{ token: string; usuario: { id: string; email: string; nombre?: string | null } }>('/auth/registro', {
+  return request<SesionUsuario>('/auth/registro', {
     method: 'POST',
     body: JSON.stringify({ email, nombre, password }),
   });
 }
 
 export async function loginMicrosoft(idToken: string) {
-  return request<{ token: string; usuario: { id: string; email: string; nombre?: string | null } }>('/auth/microsoft', {
+  return request<SesionUsuario>('/auth/microsoft', {
     method: 'POST',
     body: JSON.stringify({ idToken }),
   });

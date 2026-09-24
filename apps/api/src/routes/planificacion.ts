@@ -21,10 +21,22 @@ type RequestConUsuario = Request & {
   user?: { sub?: string; email?: string; clienteId?: string; rol?: string };
 };
 
+function obtenerClienteId(req: Request, request: RequestConUsuario) {
+  const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined);
+
+  if (!clienteId) {
+    const error = new Error('La sesion no tiene cliente asignado.') as Error & { statusCode?: number };
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return clienteId;
+}
+
 router.get('/resumen', requierePermiso('planificacion:leer'), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
-    const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
+    const clienteId = obtenerClienteId(req, request);
     const [planificaciones, camposProvisorios] = await Promise.all([
       obtenerPlanificacionesResumenPersistidas(clienteId),
       prisma.campoApp.count({
@@ -48,7 +60,7 @@ router.get('/resumen', requierePermiso('planificacion:leer'), async (req, res, n
 router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
-    const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
+    const clienteId = obtenerClienteId(req, request);
     const planificacionesPersistidas = await obtenerPlanificacionesPersistidas(clienteId);
     const preciosPersistidos = await obtenerPreciosReferenciaPersistidos(clienteId);
     const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
@@ -157,7 +169,7 @@ router.post('/:id/cerrar', requierePermiso('planificacion:cerrar'), async (req, 
 router.get('/protocolos/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
-    const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined) || 'cliente-demo';
+    const clienteId = obtenerClienteId(req, request);
     await asegurarEstadiosReferenciaSemilla(clienteId);
     const persistidos = await obtenerProtocolosPersistidos(clienteId);
 

@@ -20,18 +20,6 @@ function mapearRow(row: EmpresaErpClienteRow): EmpresaErpCliente {
   };
 }
 
-async function asegurarClienteDemo(clienteId: string) {
-  if (clienteId !== 'cliente-demo') {
-    return;
-  }
-
-  await prisma.cliente.upsert({
-    where: { id: clienteId },
-    update: { nombre: 'Cliente Demo', activo: true },
-    create: { id: clienteId, nombre: 'Cliente Demo', activo: true },
-  });
-}
-
 export async function listarEmpresasErpCliente(clienteId: string) {
   const rows = await prisma.$queryRaw<EmpresaErpClienteRow[]>`
     SELECT * FROM "ClienteEmpresaErp"
@@ -43,8 +31,6 @@ export async function listarEmpresasErpCliente(clienteId: string) {
 }
 
 export async function reemplazarEmpresasErpCliente(input: AsignarEmpresasErpClienteInput, asignadoPor?: string) {
-  await asegurarClienteDemo(input.clienteId);
-
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
       DELETE FROM "ClienteEmpresaErp"

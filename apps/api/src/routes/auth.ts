@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { obtenerPermisosRol } from '@agro/tipos';
-import type { LoginDemoRequest, RolUsuario, SesionUsuario } from '@agro/tipos';
+import type { RolUsuario } from '@agro/tipos';
 import { prisma, obtenerUsuarioPorEmail, crearUsuario } from '../prisma';
 import { validarIdTokenMicrosoft } from '../services/microsoftIdentity';
 
@@ -16,28 +16,6 @@ function crearTokenSesion(usuario: { id: string; email: string; rol?: string; cl
     { expiresIn: '8h' },
   );
 }
-
-router.post('/demo', (req, res) => {
-  const { email = 'demo@agroapp.local', nombre = 'Usuario Demo', rol = 'operador_campo', clienteId = 'cliente-demo' } = req.body as LoginDemoRequest;
-  const rolSesion: RolUsuario = rol === 'admin' || rol === 'planificador' || rol === 'responsable_compras' || rol === 'operador_campo' ? rol : 'operador_campo';
-  const usuario = {
-    id: rolSesion === 'admin' ? 'demo-admin' : rolSesion === 'planificador' ? 'demo-planificador' : rolSesion === 'responsable_compras' ? 'demo-compras' : 'demo-operador',
-    email,
-    nombre,
-    rol: rolSesion,
-    clienteId,
-  };
-
-  // El modo demo permite validar web/mobile sin bloquear al equipo por PostgreSQL o Microsoft Entra.
-  const respuesta: SesionUsuario = {
-    token: crearTokenSesion(usuario),
-    usuario,
-    origen: 'demo',
-    permisos: obtenerPermisosRol(rolSesion),
-  };
-
-  res.json(respuesta);
-});
 
 router.post('/registro', async (req, res) => {
   const { email, nombre, password } = req.body;

@@ -1,18 +1,16 @@
 import type { EstadioFenologicoReferencia } from '@agro/tipos';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '../../prisma';
-import { estadiosReferenciaDemo } from './mockPlanificacion';
+import { estadiosReferenciaSemilla } from './estadiosReferenciaSemilla';
 
 type ClientePrisma = PrismaClient | Prisma.TransactionClient;
-type EstadioSemilla = (typeof estadiosReferenciaDemo)[number] & {
+type EstadioSemilla = (typeof estadiosReferenciaSemilla)[number] & {
   actividadErpId?: string;
   empresaErpId?: string;
 };
 
 function crearEstadioId(clienteId: string, idEstadio: number) {
-  return clienteId === 'cliente-demo'
-    ? `estadio-semilla-${idEstadio}`
-    : `estadio-${clienteId}-semilla-${idEstadio}`;
+  return `estadio-${clienteId}-semilla-${idEstadio}`;
 }
 
 function mapearEstadio(registro: {
@@ -46,7 +44,7 @@ function mapearEstadio(registro: {
 export async function asegurarEstadiosReferenciaSemilla(clienteId: string, client: ClientePrisma = prisma) {
   const estadios = [];
 
-  for (const estadioBase of estadiosReferenciaDemo) {
+  for (const estadioBase of estadiosReferenciaSemilla) {
     const estadio = estadioBase as EstadioSemilla;
 
     const guardado = await client.estadioFenologicoReferencia.upsert({

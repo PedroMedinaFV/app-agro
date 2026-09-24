@@ -2,7 +2,6 @@ export * from './models/usuario';
 export type {
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
-  LoginDemoRequest,
   LoginEmailRequest,
   Permiso,
   RolUsuario,

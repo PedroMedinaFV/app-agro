@@ -37,12 +37,12 @@ function crearErrorValidacion(message: string, statusCode = 400) {
   return error;
 }
 
-export function camposDemoAsignados(usuario: UsuarioAutorizado) {
+export function camposAsignadosPorDefecto(usuario: UsuarioAutorizado) {
   if (usuario.rol === 'admin' || usuario.rol === 'planificador' || usuario.rol === 'responsable_compras') {
     return null;
   }
 
-  return ['empresa:mock:campo:241'];
+  return [];
 }
 
 export async function obtenerCamposAsignados(usuario: UsuarioAutorizado) {
@@ -51,7 +51,7 @@ export async function obtenerCamposAsignados(usuario: UsuarioAutorizado) {
   }
 
   if (!usuario.clienteId) {
-    return camposDemoAsignados(usuario);
+    return camposAsignadosPorDefecto(usuario);
   }
 
   try {
@@ -61,13 +61,9 @@ export async function obtenerCamposAsignados(usuario: UsuarioAutorizado) {
       WHERE "clienteId" = ${usuario.clienteId} AND "usuarioId" = ${usuario.sub}
     `;
 
-    if (!rows.length && usuario.sub.startsWith('demo-')) {
-      return camposDemoAsignados(usuario);
-    }
-
     return rows.map((row) => row.campoErpId);
   } catch (error) {
-    return camposDemoAsignados(usuario);
+    return camposAsignadosPorDefecto(usuario);
   }
 }
 

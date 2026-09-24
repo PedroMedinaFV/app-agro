@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
-import { FichaLoteOperativoResponse, obtenerPermisosRol, PlanificacionSnapshot, RolUsuario, SesionUsuario } from '@agro/tipos';
+import { FichaLoteOperativoResponse, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import {
   crearObservacion,
   crearPrecipitacion,
   crearUrlSubidaAdjuntoObservacion,
+  loginUsuario,
   obtenerFichaLoteOperativo,
   obtenerPlanificacionSnapshot,
   subirArchivoAFirmaSupabase,
@@ -38,7 +40,6 @@ async function copiarFotoPendienteASandbox(adjunto: AdjuntoLocalPendiente): Prom
     return adjunto;
   }
 
-  const FileSystem = await import('expo-file-system');
   const raiz = FileSystem.documentDirectory || FileSystem.cacheDirectory;
 
   if (!raiz) {
@@ -68,111 +69,31 @@ async function prepararAdjuntosLocalesPendientes(adjuntos: AdjuntoLocalPendiente
   return preparados;
 }
 
-const planificacionDemo: PlanificacionSnapshot = {
-  sincronizadoEn: new Date().toISOString(),
-  camposApp: [
-    {
-      id: 'campo-app-erp-241',
-      clienteId: 'cliente-demo',
-      empresaErpId: 'empresa:mock',
-      campoErpId: 'empresa:mock:campo:241',
-      nombre: 'LA PROVIDENCIA',
-      codigoInterno: '00006',
-      estadoVinculacion: 'vinculado_erp',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ],
-  lotesApp: [
-    {
-      id: 'lote-app-erp-724',
-      clienteId: 'cliente-demo',
-      campoAppId: 'campo-app-erp-241',
-      loteErpId: 'empresa:mock:lote:724',
-      nombre: 'CABALLO LOCO 1',
-      codigoInterno: 'CL1',
-      superficieTotal: 60,
-      superficieProductiva: 60,
-      estadoVinculacion: 'vinculado_erp',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ],
+const planificacionVacia: PlanificacionSnapshot = {
+  zonasApp: [],
+  camposApp: [],
+  lotesApp: [],
+  especiesApp: [],
+  actividadesApp: [],
+  insumosApp: [],
   destinosReferencia: [],
   preciosReferencia: [],
   conceptosGastosComerciales: [],
   gastosComercialesReferencia: [],
-  estadiosReferencia: [
-    { id: 'estadio-semilla-109', idEstadio: 109, codigo: 'Si', nombre: 'Siembra', ordenCronologico: 9, activo: true, origen: 'semilla' },
-  ],
-  serviciosApp: [
-    { id: 'labor-ref-siembra', clienteId: 'cliente-demo', codigo: 'SIEM', nombre: 'Siembra contratista', unidadSugerida: 'ha', costoUnitarioSugerido: 62, estadoVinculacion: 'provisorio', activo: true, origen: 'semilla', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  ],
-  protocolos: [
-    {
-      id: 'protocolo-girasol-media',
-      clienteId: 'cliente-demo',
-      nombre: 'Girasol tecnologia media',
-      descripcion: 'Girasol - tecnologia media',
-      campaniaErpId: 'empresa:mock:campania:961',
-      actividadAppId: 'actividad-app-girasol',
-      actividadErpId: 'empresa:mock:actividad:48',
-      tipoFecha: 'relativa_siembra',
-      fechaSiembra: '2026-10-15',
-      costoEstimadoPorHa: 520,
-      activo: true,
-      createdAt: '2026-01-15T10:00:00.000Z',
-      updatedAt: '2026-08-10T10:00:00.000Z',
-    },
-  ],
-  planificaciones: [
-    {
-      id: 'planificacion-25-26-demo',
-      clienteId: 'cliente-demo',
-      campaniaErpId: 'empresa:mock:campania:961',
-      nombre: 'Planificacion agricola demo',
-      estado: 'borrador',
-      escenarioOriginal: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      lineas: [
-        {
-          id: 'linea-planificacion-1',
-          planificacionId: 'planificacion-25-26-demo',
-          empresaErpId: 'empresa:mock',
-          campoAppId: 'campo-app-erp-241',
-          campoErpId: 'empresa:mock:campo:241',
-          loteAppId: 'lote-app-erp-724',
-          loteErpId: 'empresa:mock:lote:724',
-          actividadAppId: 'actividad-app-girasol',
-          actividadErpId: 'empresa:mock:actividad:48',
-          destinoVenta: 'Puerto Quequen',
-          destinoVentaManual: false,
-          precioVentaEstimado: 315,
-          precioVentaManual: false,
-          hectareasPlanificadas: 60,
-          rindeEstimado: 2.4,
-          gastosComercialesEstimados: 2520,
-          protocoloId: 'protocolo-girasol-media',
-          ingresoBrutoEstimado: 45360,
-          ingresoNetoEstimado: 42840,
-          costoProduccionEstimado: 31200,
-          margenBrutoEstimado: 11640,
-          estado: 'borrador',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-    },
-  ],
+  estadiosReferencia: [],
+  serviciosApp: [],
+  cultivosErp: [],
+  protocolos: [],
+  planificaciones: [],
+  sincronizadoEn: '',
 };
 
 export default function App() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
-  const [email, setEmail] = useState('demo@agroapp.local');
-  const [rol, setRol] = useState<RolUsuario>('operador_campo');
-  const [campoSeleccionadoId, setCampoSeleccionadoId] = useState(planificacionDemo.camposApp[0]?.id || '');
-  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState(planificacionDemo.lotesApp[0]?.id || '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [campoSeleccionadoId, setCampoSeleccionadoId] = useState('');
+  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState('');
   const [milimetros, setMilimetros] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [tituloObservacion, setTituloObservacion] = useState('');
@@ -185,7 +106,7 @@ export default function App() {
   const [guardandoObservacion, setGuardandoObservacion] = useState(false);
   const [pendientesOffline, setPendientesOffline] = useState(0);
   const [sincronizandoOffline, setSincronizandoOffline] = useState(false);
-  const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionDemo);
+  const [planificacionOperativa, setPlanificacionOperativa] = useState<PlanificacionSnapshot>(planificacionVacia);
   const [fichaLote, setFichaLote] = useState<FichaLoteOperativoResponse | null>(null);
   const [cargandoFichaLote, setCargandoFichaLote] = useState(false);
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
@@ -194,17 +115,11 @@ export default function App() {
   useEffect(() => {
     async function cargarDatosOperativos() {
       if (!sesion) {
-        setPlanificacionOperativa(planificacionDemo);
+        setPlanificacionOperativa(planificacionVacia);
         return;
       }
 
       setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-
-      if (sesion.origen === 'demo' || sesion.token === 'demo-mobile-token') {
-        setPlanificacionOperativa(planificacionDemo);
-        setErrorPlanificacion(null);
-        return;
-      }
 
       setCargandoPlanificacion(true);
       try {
@@ -214,7 +129,7 @@ export default function App() {
         setLoteSeleccionadoId(snapshot.lotesApp[0]?.id || '');
         setErrorPlanificacion(null);
       } catch (error) {
-        setPlanificacionOperativa(planificacionDemo);
+        setPlanificacionOperativa(planificacionVacia);
         setErrorPlanificacion(error instanceof Error ? error.message : 'No se pudieron cargar los datos operativos.');
       } finally {
         setCargandoPlanificacion(false);
@@ -226,7 +141,7 @@ export default function App() {
 
   useEffect(() => {
     async function cargarFichaLote() {
-      if (!sesion || !loteSeleccionadoId || sesion.origen === 'demo' || sesion.token === 'demo-mobile-token') {
+      if (!sesion || !loteSeleccionadoId) {
         setFichaLote(null);
         return;
       }
@@ -244,28 +159,28 @@ export default function App() {
     void cargarFichaLote();
   }, [loteSeleccionadoId, sesion]);
 
-  function entrarModoDemo() {
-    // Mobile mantiene el mismo contrato de sesion que web/backend mientras no haya API disponible.
-    setSesion({
-      token: 'demo-mobile-token',
-      usuario: { id: 'demo-mobile', email, nombre: 'Usuario Demo', rol },
-      origen: 'demo',
-      permisos: obtenerPermisosRol(rol),
-    });
+  async function iniciarSesion() {
+    try {
+      setSesion(await loginUsuario(email.trim().toLowerCase(), password));
+      setPassword('');
+    } catch (error) {
+      Alert.alert('Login', error instanceof Error ? error.message : 'No se pudo iniciar sesion.');
+    }
   }
 
   if (sesion) {
     const sesionActiva = sesion;
     const esAdmin = sesion.permisos.includes('erp:configurar');
     const datosOperativos = planificacionOperativa;
-    const planificacionActiva = datosOperativos.planificaciones[0] || planificacionDemo.planificaciones[0];
-    const protocoloActivo = datosOperativos.protocolos[0] || planificacionDemo.protocolos[0];
-    const margenBruto = planificacionActiva.lineas.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
-    const hectareas = planificacionActiva.lineas.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
+    const planificacionActiva = datosOperativos.planificaciones[0];
+    const protocoloActivo = datosOperativos.protocolos[0];
+    const lineasPlanificacion = planificacionActiva?.lineas || [];
+    const margenBruto = lineasPlanificacion.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
+    const hectareas = lineasPlanificacion.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
     const campoSeleccionado = datosOperativos.camposApp.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposApp[0];
     const lotesDelCampo = datosOperativos.lotesApp.filter((lote) => lote.campoAppId === campoSeleccionado?.id);
     const loteSeleccionado = lotesDelCampo.find((lote) => lote.id === loteSeleccionadoId) || lotesDelCampo[0];
-    const lineaSeleccionada = planificacionActiva.lineas.find((linea) => linea.loteAppId === loteSeleccionado?.id);
+    const lineaSeleccionada = lineasPlanificacion.find((linea) => linea.loteAppId === loteSeleccionado?.id);
     const actividadSeleccionada = datosOperativos.actividadesApp?.find((actividad) => actividad.id === lineaSeleccionada?.actividadAppId);
     const protocoloSeleccionado = datosOperativos.protocolos.find((protocolo) => protocolo.id === lineaSeleccionada?.protocoloId) || protocoloActivo;
 
@@ -313,20 +228,8 @@ export default function App() {
 
       setGuardandoPrecipitacion(true);
       try {
-        if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
-          await guardarRegistroLocal({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            tipo: 'precipitacion',
-            payload,
-            creadoEn: new Date().toISOString(),
-            sincronizado: false,
-          });
-          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-          Alert.alert('Precipitaciones', 'Registro guardado como pendiente mobile.');
-        } else {
-          await crearPrecipitacion(payload, sesionActiva.token);
-          Alert.alert('Precipitaciones', 'Precipitacion enviada al backend.');
-        }
+        await crearPrecipitacion(payload, sesionActiva.token);
+        Alert.alert('Precipitaciones', 'Precipitacion enviada al backend.');
 
         setMilimetros('');
         setObservaciones('');
@@ -385,47 +288,32 @@ export default function App() {
 
       setGuardandoObservacion(true);
       try {
-        if (sesionActiva.origen === 'demo' || sesionActiva.token === 'demo-mobile-token') {
-          const adjuntosLocales = await prepararAdjuntosLocalesPendientes(adjuntosSeleccionados);
+        const adjuntoSubido = fotoSeleccionada
+          ? await crearUrlSubidaAdjuntoObservacion({
+            nombreArchivo: nombreFoto,
+            mimeType: mimeFoto,
+            tamanioBytes: tamanioFoto,
+          }, sesionActiva.token)
+          : null;
 
-          await guardarRegistroLocal({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            tipo: 'observacion',
-            payload,
-            adjuntosLocales,
-            creadoEn: new Date().toISOString(),
-            sincronizado: false,
-          });
-          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-          Alert.alert('Observaciones', 'Observacion guardada como pendiente mobile.');
-        } else {
-          const adjuntoSubido = fotoSeleccionada
-            ? await crearUrlSubidaAdjuntoObservacion({
+        if (fotoSeleccionada && adjuntoSubido) {
+          await subirArchivoAFirmaSupabase(adjuntoSubido.signedUploadUrl, fotoSeleccionada.uri, mimeFoto);
+        }
+
+        await crearObservacion({
+          ...payload,
+          adjuntos: fotoSeleccionada && adjuntoSubido
+            ? [{
+              storageBucket: adjuntoSubido.storageBucket,
+              storagePath: adjuntoSubido.storagePath,
               nombreArchivo: nombreFoto,
               mimeType: mimeFoto,
               tamanioBytes: tamanioFoto,
-            }, sesionActiva.token)
-            : null;
-
-          if (fotoSeleccionada && adjuntoSubido) {
-            await subirArchivoAFirmaSupabase(adjuntoSubido.signedUploadUrl, fotoSeleccionada.uri, mimeFoto);
-          }
-
-          await crearObservacion({
-            ...payload,
-            adjuntos: fotoSeleccionada && adjuntoSubido
-              ? [{
-                storageBucket: adjuntoSubido.storageBucket,
-                storagePath: adjuntoSubido.storagePath,
-                nombreArchivo: nombreFoto,
-                mimeType: mimeFoto,
-                tamanioBytes: tamanioFoto,
-                estado: 'disponible',
-              }]
-              : undefined,
-          }, sesionActiva.token);
-          Alert.alert('Observaciones', 'Observacion enviada al backend.');
-        }
+              estado: 'disponible',
+            }]
+            : undefined,
+        }, sesionActiva.token);
+        Alert.alert('Observaciones', 'Observacion enviada al backend.');
 
         setTituloObservacion('');
         setDescripcionObservacion('');
@@ -510,22 +398,21 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.card}>
           <Text style={styles.title}>Panel mobile</Text>
-          <Text style={styles.subtitle}>Sesion demo activa para {sesion.usuario.email}</Text>
+          <Text style={styles.subtitle}>Sesion activa para {sesion.usuario.email}</Text>
           <Text style={styles.note}>Rol: {sesion.usuario.rol}</Text>
           {cargandoPlanificacion && <Text style={styles.note}>Cargando campos y lotes asignados...</Text>}
           {errorPlanificacion && <Text style={styles.errorText}>{errorPlanificacion}</Text>}
           {esAdmin ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Empresas ERP</Text>
-              <Text style={styles.note}>Seleccion demo: 1 empresa AGRO</Text>
-              <Text style={styles.note}>x-company: 1</Text>
+              <Text style={styles.note}>Gestiona empresas y sincronizacion desde web.</Text>
             </View>
           ) : (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Mi trabajo</Text>
               <Text style={styles.note}>Campos asignados: {datosOperativos.camposApp.length}</Text>
               <Text style={styles.note}>Lotes disponibles: {datosOperativos.lotesApp.length}</Text>
-              <Text style={styles.note}>Campania actual: 19/20</Text>
+              <Text style={styles.note}>Planificaciones disponibles: {datosOperativos.planificaciones.length}</Text>
               <Text style={styles.note}>Actividades disponibles: {datosOperativos.actividadesApp?.length || 0}</Text>
               <Text style={styles.note}>Insumos de referencia: {datosOperativos.insumosApp?.length || 0}</Text>
               <Text style={styles.note}>Accion permitida: cargar registros de campo</Text>
@@ -533,17 +420,17 @@ export default function App() {
           )}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Planificacion agricola</Text>
-            <Text style={styles.note}>Campania: 19/20</Text>
-            <Text style={styles.note}>Estado: {planificacionActiva.estado}</Text>
+            <Text style={styles.note}>Campania: {planificacionActiva?.campaniaErpId || 'Sin planificacion'}</Text>
+            <Text style={styles.note}>Estado: {planificacionActiva?.estado || 'Sin datos'}</Text>
             <Text style={styles.note}>Hectareas planificadas: {hectareas}</Text>
             <Text style={styles.note}>Margen bruto estimado: USD {margenBruto}</Text>
             <Text style={styles.note}>Mobile inicia como consulta; la edicion avanzada queda en web para el MVP.</Text>
           </View>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Protocolos productivos</Text>
-            <Text style={styles.note}>Protocolo sugerido: {protocoloActivo.nombre}</Text>
-            <Text style={styles.note}>Descripcion: {protocoloActivo.descripcion}</Text>
-            <Text style={styles.note}>Costo estimado: USD {protocoloActivo.costoEstimadoPorHa} / ha</Text>
+            <Text style={styles.note}>Protocolo sugerido: {protocoloActivo?.nombre || 'Sin protocolo'}</Text>
+            <Text style={styles.note}>Descripcion: {protocoloActivo?.descripcion || 'Sin datos'}</Text>
+            <Text style={styles.note}>Costo estimado: USD {protocoloActivo?.costoEstimadoPorHa || 0} / ha</Text>
           </View>
           {!esAdmin && (
             <>
@@ -558,7 +445,7 @@ export default function App() {
                     <Text style={styles.note}>Precio: USD {lineaSeleccionada.precioVentaEstimado} / tn</Text>
                     <Text style={styles.note}>Rinde estimado: {lineaSeleccionada.rindeEstimado} tn/ha</Text>
                     <Text style={styles.note}>Gastos comerciales: USD {lineaSeleccionada.gastosComercialesEstimados}</Text>
-                    <Text style={styles.note}>Protocolo: {protocoloSeleccionado.nombre}</Text>
+                    <Text style={styles.note}>Protocolo: {protocoloSeleccionado?.nombre || 'Sin protocolo'}</Text>
                     <Text style={styles.note}>Margen bruto: USD {lineaSeleccionada.margenBrutoEstimado}</Text>
                   </>
                 ) : (
@@ -707,22 +594,16 @@ export default function App() {
     <View style={styles.page}>
       <View style={styles.card}>
         <Text style={styles.title}>Iniciar sesion</Text>
-        <Text style={styles.subtitle}>Agro App - mobile demo</Text>
+        <Text style={styles.subtitle}>Agro App mobile</Text>
         <TextInput style={styles.input} placeholder="Correo" autoCapitalize="none" value={email} onChangeText={setEmail} />
-        <TextInput style={styles.input} placeholder="Contrasena" secureTextEntry />
+        <TextInput style={styles.input} placeholder="Contrasena" secureTextEntry value={password} onChangeText={setPassword} />
         <View style={styles.buttonSpacing}>
-          <Button
-            title={`Rol: ${rol === 'admin' ? 'Admin' : rol === 'planificador' ? 'Planificador' : 'Operador de campo'}`}
-            onPress={() => setRol(rol === 'admin' ? 'planificador' : rol === 'planificador' ? 'operador_campo' : 'admin')}
-          />
-        </View>
-        <View style={styles.buttonSpacing}>
-          <Button title="Entrar en modo demo" onPress={entrarModoDemo} />
+          <Button title="Ingresar" onPress={iniciarSesion} />
         </View>
         <View style={styles.buttonSpacing}>
           <Button title="Continuar con Microsoft" onPress={() => {}} />
         </View>
-        <Text style={styles.note}>Pantalla local de prueba. La autenticacion real se conecta despues con backend y Microsoft.</Text>
+        <Text style={styles.note}>Ingresa con un usuario creado por el administrador.</Text>
       </View>
     </View>
   );

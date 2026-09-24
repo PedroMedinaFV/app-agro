@@ -94,15 +94,8 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
 export type SesionUsuario = {
   token: string;
   usuario: Usuario & { rol: RolUsuario; clienteId?: string };
-  origen: 'demo' | 'email' | 'microsoft';
+  origen: 'email' | 'microsoft' | 'interno';
   permisos: Permiso[];
-};
-
-export type LoginDemoRequest = {
-  email?: string;
-  nombre?: string;
-  rol?: RolUsuario;
-  clienteId?: string;
 };
 
 export type LoginEmailRequest = {
