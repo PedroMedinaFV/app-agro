@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlanificacionSnapshot, ProtocoloProductivoResumen, SesionUsuario } from '@agro/tipos';
 import { obtenerPlanificacionesResumen, obtenerPlanificacionSnapshot } from '../../services/api';
-import { resumirPlanificacionLocal } from '../../utils/planificacion/ayudantesPlanificacion';
+import { resumirPlanificacionLocal } from '../../utils/planificacion/helpersPlanificacion';
 import { ModoCargaPlanificacion, planificacionVacia, resumenPlanificacionVacio } from './estadoPlanificacion';
 
 type OpcionesRefresco = {

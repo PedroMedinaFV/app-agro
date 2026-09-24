@@ -64,7 +64,6 @@ import {
   EspecieApp,
   InsumoApp,
   LoteApp,
-  LoginDemoRequest,
   LoginEmailRequest,
   NotificacionUsuarioResumen,
   ObservacionesResponse,
@@ -82,13 +81,6 @@ import {
 } from '@agro/tipos';
 import { CachedGet, invalidarCache, obtenerConCache, request } from './apiClient';
 import { startBackendActivity } from '../utils/backendActivity';
-
-export async function loginDemo(datos: LoginDemoRequest): Promise<SesionUsuario> {
-  return request<SesionUsuario>('/auth/demo', {
-    method: 'POST',
-    body: JSON.stringify(datos),
-  });
-}
 
 export async function loginEmail(datos: LoginEmailRequest): Promise<SesionUsuario> {
   return request<SesionUsuario>('/auth/login', {

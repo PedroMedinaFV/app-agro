@@ -10,8 +10,8 @@ import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas, obtenerTiposInsumoErpImportados } from '../services/api';
-import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/ayudantesPadrones';
-import { construirFilasInsumos } from '../utils/padrones/filasInsumosServicios';
+import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/helpersPadrones';
+import { construirFilasInsumos } from '../utils/padrones/helpersInsumosServicios';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -131,7 +131,7 @@ export function InsumosAppScreen({
 
     return {
       id: `insumo-app-${Date.now()}`,
-      clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || '',
       empresaErpId: 'global',
       nombre: '',
       codigoInterno: '',
@@ -243,7 +243,7 @@ export function InsumosAppScreen({
     setModoModal('editar');
     setInsumoEnEdicion(insumoPropio || {
       id: crearIdInsumoAppDesdeErp(insumoErp),
-      clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || '',
       empresaErpId: 'global',
       insumoErpId: insumoErp.erpId,
       nombre: limpiarTextoVisible(insumoErp.nombre),

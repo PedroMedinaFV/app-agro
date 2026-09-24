@@ -33,7 +33,7 @@ import {
   normalizarCodigo,
   obtenerMimeArchivoGeografico,
   obtenerTipoArchivoGeografico,
-} from '../utils/lotes/ayudantesLotes';
+} from '../utils/lotes/helpersLotes';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -153,7 +153,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
     setModoFormulario('crear');
     setCampoSeleccionadoClave(campoSugerido.clave);
-    setLoteEnEdicion(crearLoteNuevo(sesion.usuario.clienteId || 'cliente-demo', campoSugerido.campoAppId || ''));
+    setLoteEnEdicion(crearLoteNuevo(sesion.usuario.clienteId || '', campoSugerido.campoAppId || ''));
   }
 
   function editarLote(lote: LoteApp) {
@@ -188,7 +188,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     setCampoSeleccionadoClave(campoClave);
     setLoteEnEdicion({
       id: `lote-app-${Date.now()}`,
-      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || '',
       campoAppId: '',
       loteErpId: undefined,
       nombre: lote.nombre,
@@ -330,7 +330,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       const respuesta = await guardarArchivoGeograficoLote(loteArchivosGeograficos.id, {
         archivo: {
           id: crearIdArchivoGeografico(),
-          clienteId: sesion.usuario.clienteId || 'cliente-demo',
+          clienteId: sesion.usuario.clienteId || '',
           loteAppId: loteArchivosGeograficos.id,
           nombreArchivo: archivoGeograficoSeleccionado.name,
           tipo,
@@ -398,7 +398,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     const ahora = new Date().toISOString();
     const campoPreparado: CampoApp = {
       id: crearIdCampoDesdeErp(campoErp.erpId),
-      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || '',
       empresaErpId: campoErp.empresaErpId,
       campoErpId: campoErp.erpId,
       nombre: campoErp.nombre,

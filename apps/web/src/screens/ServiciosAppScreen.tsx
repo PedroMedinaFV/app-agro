@@ -10,8 +10,8 @@ import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados, obtenerTiposServicioErpImportados } from '../services/api';
-import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/ayudantesPadrones';
-import { construirFilasLabores } from '../utils/padrones/filasInsumosServicios';
+import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/helpersPadrones';
+import { construirFilasLabores } from '../utils/padrones/helpersInsumosServicios';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -131,7 +131,7 @@ export function ServiciosAppScreen({
 
     return {
       id: `labor-ref-${Date.now()}`,
-      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || '',
       codigo: '',
       nombre: '',
       idTipoServicio: tiposServicioDisponibles[0]?.idTipoServicio,
@@ -241,7 +241,7 @@ export function ServiciosAppScreen({
     setModoModal('editar');
     setLaborEnEdicion(laborPropia || {
       id: crearIdLaborDesdeErp(servicioErp),
-      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || '',
       empresaErpId: 'global',
       servicioErpId: servicioErp.erpId,
       idServicio: servicioErp.idServicio,

@@ -139,7 +139,7 @@ export function PreciosReferenciaScreen({
 
     return {
       id: `precio-referencia-${Date.now()}`,
-      clienteId: planificacion.preciosReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.preciosReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || '',
       empresaErpId: especie?.empresaErpId,
       especieAppId: especie?.especieAppId,
       especieErpId: especie?.especieErpId,

@@ -8,25 +8,25 @@ import {
   sincronizarPadronesErp,
   SincronizacionErpResultado,
 } from '../services/api';
-import { snapshotFallback } from '../data/demoData';
+import { snapshotVacio } from '../data/snapshotVacio';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
-export function useErpDemo(
+export function useErp(
   sesion: SesionUsuario | null,
   puedeConfigurarErp: boolean,
   notificar?: Notificar,
   onSincronizacionCompletada?: () => Promise<void> | void,
 ) {
-  const [snapshot, setSnapshot] = useState<ErpSnapshot>(snapshotFallback);
-  const [erpEstado, setErpEstado] = useState('Datos ERP locales');
-  const [empresasDisponibles, setEmpresasDisponibles] = useState<ErpEmpresa[]>(snapshotFallback.empresas);
-  const [empresasSeleccionadas, setEmpresasSeleccionadas] = useState<string[]>(['empresa:1']);
+  const [snapshot, setSnapshot] = useState<ErpSnapshot>(snapshotVacio);
+  const [erpEstado, setErpEstado] = useState('Sin datos ERP cargados');
+  const [empresasDisponibles, setEmpresasDisponibles] = useState<ErpEmpresa[]>([]);
+  const [empresasSeleccionadas, setEmpresasSeleccionadas] = useState<string[]>([]);
   const [guardandoEmpresas, setGuardandoEmpresas] = useState(false);
   const [sincronizandoPadrones, setSincronizandoPadrones] = useState(false);
   const [ultimoResultadoSync, setUltimoResultadoSync] = useState<SincronizacionErpResultado['resultado'] | null>(null);
   const [historialSincronizaciones, setHistorialSincronizaciones] = useState<SincronizacionErpHistorialItem[]>([]);
-  const [estadoEmpresas, setEstadoEmpresas] = useState('Seleccion local para modo demo.');
+  const [estadoEmpresas, setEstadoEmpresas] = useState('Sin empresas ERP cargadas.');
 
   async function cargarHistorialSincronizaciones() {
     if (!sesion || !puedeConfigurarErp) {
@@ -56,11 +56,11 @@ export function useErpDemo(
         }
         setErpEstado('Datos ERP desde backend');
       } catch (error) {
-        setSnapshot(snapshotFallback);
+        setSnapshot(snapshotVacio);
         if (!puedeConfigurarErp) {
-          setEmpresasDisponibles(snapshotFallback.empresas);
+          setEmpresasDisponibles([]);
         }
-        setErpEstado('API ERP no disponible. Usando mock local.');
+        setErpEstado('API ERP no disponible.');
       }
     }
 
@@ -73,8 +73,15 @@ export function useErpDemo(
         return;
       }
 
+      if (!sesion.usuario.clienteId) {
+        setEmpresasDisponibles([]);
+        setEmpresasSeleccionadas([]);
+        setEstadoEmpresas('La sesion no tiene cliente asignado.');
+        return;
+      }
+
       try {
-        const respuesta = await obtenerEmpresasErpAdmin(sesion.usuario.clienteId || 'cliente-demo', sesion.token);
+        const respuesta = await obtenerEmpresasErpAdmin(sesion.usuario.clienteId, sesion.token);
         setEmpresasDisponibles(respuesta.empresas);
         setEmpresasSeleccionadas(respuesta.seleccionadas.map((seleccion) => seleccion.empresaErpId));
         setEstadoEmpresas('Empresas cargadas desde backend.');
@@ -82,7 +89,7 @@ export function useErpDemo(
       } catch (error) {
         setEmpresasDisponibles(snapshot.empresas);
         setEmpresasSeleccionadas((actuales) => actuales.length ? actuales : snapshot.empresas.slice(0, 1).map((empresa) => empresa.erpId));
-        setEstadoEmpresas('Sin base de datos disponible. Usando seleccion local de demo.');
+        setEstadoEmpresas('Sin base de datos disponible. No se cargaron empresas ERP.');
       }
     }
 
@@ -98,14 +105,15 @@ export function useErpDemo(
   }
 
   async function guardarSeleccionEmpresas() {
-    if (!sesion) {
+    if (!sesion || !sesion.usuario.clienteId) {
+      setEstadoEmpresas('La sesion no tiene cliente asignado.');
       return;
     }
 
     setGuardandoEmpresas(true);
 
     try {
-      await guardarEmpresasErpAdmin(sesion.usuario.clienteId || 'cliente-demo', empresasSeleccionadas, sesion.token);
+      await guardarEmpresasErpAdmin(sesion.usuario.clienteId, empresasSeleccionadas, sesion.token);
       setEstadoEmpresas('Seleccion guardada en backend.');
       notificar?.({
         tipo: 'success',

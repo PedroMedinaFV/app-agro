@@ -7,7 +7,6 @@ interface LoginPanelProps {
   cargando: boolean;
   onEmailLogin: (email: string, password: string) => void;
   onMicrosoftLogin: () => void;
-  onDemoLogin: () => void;
 }
 
 export function LoginPanel({
@@ -15,7 +14,6 @@ export function LoginPanel({
   cargando,
   onEmailLogin,
   onMicrosoftLogin,
-  onDemoLogin,
 }: LoginPanelProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,12 +81,8 @@ export function LoginPanel({
           </span>
         </button>
 
-        <button className="secondary full-width" onClick={onDemoLogin} disabled={cargando}>
-          Entrar demo admin
-        </button>
-
         <p className="hint">
-          Acceso demo reservado para desarrollo local. En uso real, el usuario debe estar creado previamente por un administrador.
+          El usuario debe estar creado previamente por un administrador.
         </p>
       </div>
     </div>

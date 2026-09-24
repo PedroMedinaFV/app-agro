@@ -238,7 +238,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
   }
 
   function abrirNuevaActividad() {
-    setActividadEnEdicion(crearActividadNueva(sesion.usuario.clienteId || 'cliente-demo', especiesDisponibles[0]));
+    setActividadEnEdicion(crearActividadNueva(sesion.usuario.clienteId || '', especiesDisponibles[0]));
   }
 
   function abrirEdicionActividadErp(actividadErp: ErpActividad, actividadPropia?: ActividadApp) {
@@ -246,7 +246,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
 
     setActividadEnEdicion(actividadPropia || {
       id: crearIdActividadAppDesdeErp(actividadErp),
-      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || '',
       empresaErpId: 'global',
       actividadErpId: actividadErp.erpId,
       especieErpId: actividadErp.idEspecie ? `especie:${actividadErp.idEspecie}` : undefined,

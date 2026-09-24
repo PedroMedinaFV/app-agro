@@ -11,7 +11,7 @@ import {
   calcularGastosComercialesLinea,
   obtenerSuperficieInicialLote,
   recalcularLineaPlanificacion,
-} from '../../utils/planificacion/ayudantesPlanificacion';
+} from '../../utils/planificacion/helpersPlanificacion';
 
 type ActualizarPlanificacionActiva = (mutador: (actual: PlanificacionAgricola) => PlanificacionAgricola) => void;
 

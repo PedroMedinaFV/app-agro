@@ -36,7 +36,7 @@ import {
   limpiarTextoVisible,
   normalizarTexto,
   unirActividadesPropias,
-} from '../utils/gastos/seleccionablesGastos';
+} from '../utils/gastos/helpersGastos';
 
 interface GastosComercialesScreenProps {
   sesion: SesionUsuario;
@@ -172,7 +172,7 @@ export function GastosComercialesScreen({
 
     return {
       id: `gastos-comerciales-${Date.now()}`,
-      clienteId: planificacion.gastosComercialesReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.gastosComercialesReferencia[0]?.clienteId || planificacion.planificaciones[0]?.clienteId || '',
       campaniaErpId: planificacionActiva?.campaniaErpId || campaniasDisponibles.find((campania) => campania.esActual)?.erpId || campaniasDisponibles[0]?.erpId || '',
       empresaErpId: actividad?.empresaErpId || planificacion.camposApp[0]?.empresaErpId || 'global',
       actividadAppId: actividad?.actividadAppId || '',

@@ -36,7 +36,7 @@ function obtenerEtiquetaOrigen(origen: SesionUsuario['origen']) {
     ? 'Microsoft'
     : origen === 'email'
       ? 'Email'
-      : 'Demo';
+      : 'Interno';
 }
 
 export function Layout({

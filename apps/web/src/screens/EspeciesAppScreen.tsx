@@ -125,7 +125,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
   ];
 
   function abrirNuevaEspecie() {
-    setEspecieEnEdicion(crearEspecieNueva(sesion.usuario.clienteId || 'cliente-demo'));
+    setEspecieEnEdicion(crearEspecieNueva(sesion.usuario.clienteId || ''));
   }
 
   function actualizarBorrador(cambios: Partial<EspecieApp>) {

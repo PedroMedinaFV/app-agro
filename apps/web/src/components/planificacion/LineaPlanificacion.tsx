@@ -9,7 +9,7 @@ import type {
 import { DecimalInput } from '../DecimalInput';
 import { IconButton } from '../IconButton';
 import { formatearNumero } from '../../utils/formatters';
-import { formatearCultivosAntecesores } from '../../utils/planificacion/ayudantesPlanificacion';
+import { formatearCultivosAntecesores } from '../../utils/planificacion/helpersPlanificacion';
 
 type LineaPlanificacionProps = {
   linea: PlanificacionAgricolaLinea;

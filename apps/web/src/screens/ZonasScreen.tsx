@@ -128,7 +128,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   ];
 
   function abrirNuevaZona() {
-    setZonaEnEdicion(crearZonaNueva(sesion.usuario.clienteId || 'cliente-demo'));
+    setZonaEnEdicion(crearZonaNueva(sesion.usuario.clienteId || ''));
   }
 
   function actualizarBorrador(cambios: Partial<ZonaApp>) {

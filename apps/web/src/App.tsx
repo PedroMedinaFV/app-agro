@@ -4,8 +4,8 @@ import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
 import { ToastViewport } from './components/ToastViewport';
 import { obtenerCampaniasErpImportadas, obtenerNotificaciones } from './services/api';
-import { useDemoAuth } from './hooks/useDemoAuth';
-import { useErpDemo } from './hooks/useErpDemo';
+import { useAuth } from './hooks/useAuth';
+import { useErp } from './hooks/useErp';
 import { usePlanificacion } from './hooks/usePlanificacion';
 import { useProtocolos } from './hooks/useProtocolos';
 import { useToast } from './hooks/useToast';
@@ -54,7 +54,7 @@ export function App() {
   const [vista, setVista] = useState<Vista>('inicio');
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
   const toast = useToast();
-  const auth = useDemoAuth();
+  const auth = useAuth();
   const sesion = auth.sesion;
   const [notificacionesPendientes, setNotificacionesPendientes] = useState(0);
   const [campaniasImportadas, setCampaniasImportadas] = useState<ErpCampania[]>([]);
@@ -81,7 +81,7 @@ export function App() {
       setNotificacionesPendientes(0);
     }
   }, [sesion]);
-  const erp = useErpDemo(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
+  const erp = useErp(sesion, puedeConfigurarErp, toast.notify, refrescarNotificaciones);
   const planificacionApp = usePlanificacion(sesion, erp.snapshot, toast.notify, modoCargaPlanificacion);
   const protocolosApp = useProtocolos({
     sesion,
@@ -188,7 +188,6 @@ export function App() {
         cargando={auth.cargando}
         onEmailLogin={auth.entrarConEmail}
         onMicrosoftLogin={auth.entrarConMicrosoft}
-        onDemoLogin={auth.entrarModoDemo}
       />
     );
   }

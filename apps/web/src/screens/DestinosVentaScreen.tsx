@@ -58,7 +58,7 @@ export function DestinosVentaScreen({
 
     return {
       id: `destino-venta-${Date.now()}`,
-      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.destinosReferencia[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.destinosReferencia[0]?.clienteId || '',
       destinoVenta: '',
       destinoVentaNormalizado: '',
       descripcion: '',

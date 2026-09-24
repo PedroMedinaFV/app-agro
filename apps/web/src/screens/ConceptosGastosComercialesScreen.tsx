@@ -43,7 +43,7 @@ export function ConceptosGastosComercialesScreen({
 
     return {
       id: `concepto-gasto-${Date.now()}`,
-      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.conceptosGastosComerciales[0]?.clienteId || 'cliente-demo',
+      clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.conceptosGastosComerciales[0]?.clienteId || '',
       codigo: '',
       nombre: '',
       nombreNormalizado: '',

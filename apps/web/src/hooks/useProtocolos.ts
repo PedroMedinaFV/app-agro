@@ -238,7 +238,7 @@ export function useProtocolos({ sesion, snapshot, planificacion, planificacionAc
     const actividadBase = planificacion.actividadesApp?.[0];
     const protocoloNuevo: ProtocoloProductivoDetalle = {
       id,
-      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || '',
       nombre: 'Nuevo protocolo',
       descripcion: 'Protocolo en borrador',
       campaniaErpId: planificacionActiva?.campaniaErpId || snapshot.campanias[0]?.erpId || 'campania-pendiente',
@@ -258,7 +258,7 @@ export function useProtocolos({ sesion, snapshot, planificacion, planificacionAc
       protocolos: [protocoloNuevo, ...actual.protocolos],
     }));
     setProtocoloSeleccionadoId(id);
-    setProtocolosEstado('Protocolo nuevo creado en memoria demo. Guardalo para persistir el borrador.');
+    setProtocolosEstado('Protocolo nuevo creado localmente. Guardalo para persistir el borrador.');
     notificar?.({
       tipo: 'info',
       titulo: 'Protocolo creado',
@@ -306,7 +306,7 @@ export function useProtocolos({ sesion, snapshot, planificacion, planificacionAc
       protocolos: [protocoloCopiado, ...actual.protocolos],
     }));
     setProtocoloSeleccionadoId(id);
-    setProtocolosEstado('Copia creada en memoria demo. Editala y guardala como protocolo independiente.');
+    setProtocolosEstado('Copia creada localmente. Editala y guardala como protocolo independiente.');
     notificar?.({
       tipo: 'success',
       titulo: 'Protocolo copiado',
@@ -335,7 +335,7 @@ export function useProtocolos({ sesion, snapshot, planificacion, planificacionAc
       const respuesta = await guardarProtocolo(protocoloEditado.id, {
         protocolo: protocoloParaGuardar,
         origen: 'web',
-        motivo: 'Guardado de protocolo desde demo web',
+        motivo: 'Guardado de protocolo desde web',
       }, sesion.token);
 
       setProtocolos((actual) => ({

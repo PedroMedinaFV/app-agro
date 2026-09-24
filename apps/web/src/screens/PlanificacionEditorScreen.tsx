@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
 import { Button } from '../components/Button';
@@ -23,7 +23,7 @@ import {
   normalizarTexto,
   obtenerClaveLinea,
   obtenerCodigoCampaniaAnterior,
-} from '../utils/planificacion/ayudantesPlanificacion';
+} from '../utils/planificacion/helpersPlanificacion';
 import { PlanificacionBaseProps } from './planificacionTypes';
 
 type PlanificacionEditorScreenProps = PlanificacionBaseProps & {

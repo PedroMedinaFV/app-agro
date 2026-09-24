@@ -231,7 +231,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     const zonaSugerida = zonasDisponibles.find((zona) => zona.empresaErpId === empresaErpId);
 
     setCampoEnEdicion({
-      ...crearCampoNuevo(sesion.usuario.clienteId || 'cliente-demo', empresaErpId),
+      ...crearCampoNuevo(sesion.usuario.clienteId || '', empresaErpId),
       zonaAppId: zonaSugerida?.zonaAppId,
       zonaErpId: zonaSugerida?.zonaErpId,
     });

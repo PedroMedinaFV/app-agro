@@ -21,7 +21,7 @@ import {
   anexarDestinoSiNoExiste,
   limpiarTextoVisible,
   normalizarTexto,
-} from '../../utils/planificacion/ayudantesPlanificacion';
+} from '../../utils/planificacion/helpersPlanificacion';
 import type { NotificarPlanificacion } from './estadoPlanificacion';
 
 type UseGuardadoPadronesPlanificacionParams = {
@@ -135,22 +135,22 @@ export function useGuardadoPadronesPlanificacion({
 
       return true;
     } catch (error) {
-      const gastoDemo = { ...gasto, updatedAt: new Date().toISOString() };
+      const gastoLocal = { ...gasto, updatedAt: new Date().toISOString() };
 
       setPlanificacion((actual) => {
-        const existe = actual.gastosComercialesReferencia.some((item) => item.id === gastoDemo.id);
+        const existe = actual.gastosComercialesReferencia.some((item) => item.id === gastoLocal.id);
 
         return {
           ...actual,
           gastosComercialesReferencia: existe
-            ? actual.gastosComercialesReferencia.map((item) => (item.id === gastoDemo.id ? gastoDemo : item))
-            : [gastoDemo, ...actual.gastosComercialesReferencia],
+            ? actual.gastosComercialesReferencia.map((item) => (item.id === gastoLocal.id ? gastoLocal : item))
+            : [gastoLocal, ...actual.gastosComercialesReferencia],
         };
       });
-      setPlanificacionEstado('API de gastos comerciales no disponible. Gasto guardado en memoria demo.');
+      setPlanificacionEstado('API de gastos comerciales no disponible. Gasto guardado localmente.');
       notificar?.({
         tipo: 'info',
-        titulo: 'Gastos guardados en demo',
+        titulo: 'Gastos guardados localmente',
         mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
       });
 
@@ -198,7 +198,7 @@ export function useGuardadoPadronesPlanificacion({
       return true;
     } catch (error) {
       const nombre = limpiarTextoVisible(concepto.nombre);
-      const conceptoDemo: ConceptoGastoComercial = {
+      const conceptoLocal: ConceptoGastoComercial = {
         ...concepto,
         codigo: normalizarTexto(concepto.codigo || nombre),
         nombre,
@@ -209,19 +209,19 @@ export function useGuardadoPadronesPlanificacion({
       };
 
       setPlanificacion((actual) => {
-        const existe = actual.conceptosGastosComerciales.some((item) => item.id === conceptoDemo.id);
+        const existe = actual.conceptosGastosComerciales.some((item) => item.id === conceptoLocal.id);
 
         return {
           ...actual,
           conceptosGastosComerciales: existe
-            ? actual.conceptosGastosComerciales.map((item) => (item.id === conceptoDemo.id ? conceptoDemo : item))
-            : [conceptoDemo, ...actual.conceptosGastosComerciales],
+            ? actual.conceptosGastosComerciales.map((item) => (item.id === conceptoLocal.id ? conceptoLocal : item))
+            : [conceptoLocal, ...actual.conceptosGastosComerciales],
         };
       });
-      setPlanificacionEstado('API de conceptos no disponible. Concepto guardado en memoria demo.');
+      setPlanificacionEstado('API de conceptos no disponible. Concepto guardado localmente.');
       notificar?.({
         tipo: 'info',
-        titulo: 'Concepto guardado en demo',
+        titulo: 'Concepto guardado localmente',
         mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
       });
 
@@ -269,7 +269,7 @@ export function useGuardadoPadronesPlanificacion({
       return true;
     } catch (error) {
       const destinoVenta = limpiarTextoVisible(destino.destinoVenta);
-      const destinoDemo: DestinoApp = {
+      const destinoLocal: DestinoApp = {
         ...destino,
         destinoVenta,
         destinoVentaNormalizado: normalizarTexto(destinoVenta),
@@ -279,19 +279,19 @@ export function useGuardadoPadronesPlanificacion({
       };
 
       setPlanificacion((actual) => {
-        const existe = actual.destinosReferencia.some((item) => item.id === destinoDemo.id);
+        const existe = actual.destinosReferencia.some((item) => item.id === destinoLocal.id);
 
         return {
           ...actual,
           destinosReferencia: existe
-            ? actual.destinosReferencia.map((item) => (item.id === destinoDemo.id ? destinoDemo : item))
-            : [destinoDemo, ...actual.destinosReferencia],
+            ? actual.destinosReferencia.map((item) => (item.id === destinoLocal.id ? destinoLocal : item))
+            : [destinoLocal, ...actual.destinosReferencia],
         };
       });
-      setPlanificacionEstado('API de destinos no disponible. Destino guardado en memoria demo.');
+      setPlanificacionEstado('API de destinos no disponible. Destino guardado localmente.');
       notificar?.({
         tipo: 'info',
-        titulo: 'Destino guardado en demo',
+        titulo: 'Destino guardado localmente',
         mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
       });
 
@@ -339,7 +339,7 @@ export function useGuardadoPadronesPlanificacion({
       return true;
     } catch (error) {
       const nombre = limpiarTextoVisible(labor.nombre);
-      const laborDemo: ServicioApp = {
+      const laborLocal: ServicioApp = {
         ...labor,
         codigo: normalizarTexto(labor.codigo || nombre),
         nombre,
@@ -351,19 +351,19 @@ export function useGuardadoPadronesPlanificacion({
       };
 
       setPlanificacion((actual) => {
-        const existe = actual.serviciosApp.some((item) => item.id === laborDemo.id);
+        const existe = actual.serviciosApp.some((item) => item.id === laborLocal.id);
 
         return {
           ...actual,
           serviciosApp: existe
-            ? actual.serviciosApp.map((item) => (item.id === laborDemo.id ? laborDemo : item))
-            : [laborDemo, ...actual.serviciosApp],
+            ? actual.serviciosApp.map((item) => (item.id === laborLocal.id ? laborLocal : item))
+            : [laborLocal, ...actual.serviciosApp],
         };
       });
-      setPlanificacionEstado('API de labores no disponible. Labor guardada en memoria demo.');
+      setPlanificacionEstado('API de labores no disponible. Labor guardada localmente.');
       notificar?.({
         tipo: 'info',
-        titulo: 'Labor guardada en demo',
+        titulo: 'Labor guardada localmente',
         mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
       });
 
@@ -412,7 +412,7 @@ export function useGuardadoPadronesPlanificacion({
       return true;
     } catch (error) {
       const nombre = limpiarTextoVisible(insumo.nombre);
-      const insumoDemo: InsumoApp = {
+      const insumoLocal: InsumoApp = {
         ...insumo,
         nombre,
         codigoInterno: normalizarTexto(insumo.codigoInterno || nombre),
@@ -425,19 +425,19 @@ export function useGuardadoPadronesPlanificacion({
 
       setPlanificacion((actual) => {
         const insumosActuales = actual.insumosApp || [];
-        const existe = insumosActuales.some((item) => item.id === insumoDemo.id);
+        const existe = insumosActuales.some((item) => item.id === insumoLocal.id);
 
         return {
           ...actual,
           insumosApp: existe
-            ? insumosActuales.map((item) => (item.id === insumoDemo.id ? insumoDemo : item))
-            : [insumoDemo, ...insumosActuales],
+            ? insumosActuales.map((item) => (item.id === insumoLocal.id ? insumoLocal : item))
+            : [insumoLocal, ...insumosActuales],
         };
       });
-      setPlanificacionEstado('API de insumos no disponible. Insumo guardado en memoria demo.');
+      setPlanificacionEstado('API de insumos no disponible. Insumo guardado localmente.');
       notificar?.({
         tipo: 'info',
-        titulo: 'Insumo guardado en demo',
+        titulo: 'Insumo guardado localmente',
         mensaje: 'Cuando la base este disponible, esta accion se guardara con auditoria real.',
       });
 

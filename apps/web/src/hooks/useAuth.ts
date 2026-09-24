@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { obtenerPermisosRol, SesionUsuario } from '@agro/tipos';
-import { loginDemo, loginEmail, loginMicrosoft } from '../services/api';
+import { SesionUsuario } from '@agro/tipos';
+import { loginEmail, loginMicrosoft } from '../services/api';
 import { startBackendActivity } from '../utils/backendActivity';
 
 const microsoftClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
@@ -61,7 +61,7 @@ async function intercambiarCodigoMicrosoft(code: string, codeVerifier: string) {
   return contenido.id_token;
 }
 
-export function useDemoAuth() {
+export function useAuth() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(() => leerSesionPersistida());
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -73,28 +73,6 @@ export function useDemoAuth() {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
   }, [sesion]);
-
-  async function entrarModoDemo() {
-    setCargando(true);
-    setError('');
-    const finishBackendActivity = startBackendActivity('Iniciando sesion...');
-
-    try {
-      setSesion(await loginDemo({ email: 'demo@agroapp.local', nombre: 'Usuario Demo', rol: 'admin' }));
-    } catch (error) {
-      // Fallback intencional: permite validar la UI aunque la API no este levantada.
-      setError('API no disponible. Usando sesion demo local.');
-      setSesion({
-        token: 'demo-local-token',
-        usuario: { id: 'demo-local', email: 'demo@agroapp.local', nombre: 'Usuario Demo', rol: 'admin' },
-        origen: 'demo',
-        permisos: obtenerPermisosRol('admin'),
-      });
-    } finally {
-      finishBackendActivity();
-      setCargando(false);
-    }
-  }
 
   async function entrarConEmail(email: string, password: string) {
     const emailLimpio = email.trim().toLowerCase();
@@ -213,7 +191,6 @@ export function useDemoAuth() {
     sesion,
     error,
     cargando,
-    entrarModoDemo,
     entrarConEmail,
     entrarConMicrosoft,
     cerrarSesion,

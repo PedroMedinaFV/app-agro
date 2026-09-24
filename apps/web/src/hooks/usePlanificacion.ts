@@ -15,7 +15,7 @@ import {
   obtenerClavesDuplicadas,
   resumirPlanificacionLocal,
   tieneLineasDuplicadasEnPlanificacion,
-} from '../utils/planificacion/ayudantesPlanificacion';
+} from '../utils/planificacion/helpersPlanificacion';
 import {
   ModoCargaPlanificacion,
   NotificarPlanificacion,
@@ -227,7 +227,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
     const id = `planificacion-${Date.now()}`;
     const nuevaPlanificacion: PlanificacionAgricola = {
       id,
-      clienteId: sesion.usuario.clienteId || 'cliente-demo',
+      clienteId: sesion.usuario.clienteId || '',
       campaniaErpId: datos.campaniaErpId,
       nombre,
       descripcion,
@@ -415,7 +415,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
 
       const respuesta = await cerrarPlanificacion(planificacionObjetivo.id, {
         origen: 'web',
-        motivo: 'Cierre de planificacion desde demo web',
+        motivo: 'Cierre de planificacion desde web',
       }, sesion.token);
 
       setPlanificacion((actual) => ({
