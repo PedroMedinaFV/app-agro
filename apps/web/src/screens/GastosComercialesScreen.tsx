@@ -28,6 +28,15 @@ import {
   obtenerPuertosErpImportados,
   obtenerZonasErpImportadas,
 } from '../services/api';
+import {
+  construirActividadesSeleccionables,
+  construirCamposSeleccionables,
+  construirZonasSeleccionables,
+  formatearFecha,
+  limpiarTextoVisible,
+  normalizarTexto,
+  unirActividadesPropias,
+} from '../utils/gastos/seleccionablesGastos';
 
 interface GastosComercialesScreenProps {
   sesion: SesionUsuario;
@@ -38,56 +47,6 @@ interface GastosComercialesScreenProps {
   guardarGastoComercial: (gasto: GastosComercialesReferencia) => Promise<boolean>;
   formatearUsd: (valor: number) => string;
   leerNumero: (valor: string) => number;
-}
-
-type ActividadSeleccionable = {
-  clave: string;
-  nombre: string;
-  empresaErpId?: string;
-  actividadAppId?: string;
-  actividadErpId?: string;
-  especieErpId?: string;
-  codigo?: string;
-  origen: 'agro' | 'erp';
-  erp?: ErpActividad;
-};
-
-type ZonaSeleccionable = {
-  clave: string;
-  nombre: string;
-  codigo?: string;
-  zonaAppId?: string;
-  zonaErpId?: string;
-  idZona?: number;
-  origen: 'agro' | 'erp';
-};
-
-type CampoSeleccionable = {
-  clave: string;
-  nombre: string;
-  codigo?: string;
-  empresaErpId: string;
-  campoAppId?: string;
-  campoErpId?: string;
-  zonaAppId?: string;
-  zonaErpId?: string;
-  idZona?: number;
-  origen: 'agro' | 'erp';
-};
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarTexto(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function formatearFecha(valor: string) {
-  return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(valor));
 }
 
 export function GastosComercialesScreen({
@@ -114,15 +73,10 @@ export function GastosComercialesScreen({
   const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
   const [puertosErp, setPuertosErp] = useState<ErpPuerto[]>([]);
   const modalAbierto = Boolean(gastoEnEdicion);
-  const actividadesPropias = useMemo(() => {
-    const porId = new Map((planificacion.actividadesApp || []).map((actividad) => [actividad.id, actividad]));
-
-    for (const actividad of actividadesPropiasCreadas) {
-      porId.set(actividad.id, actividad);
-    }
-
-    return Array.from(porId.values());
-  }, [actividadesPropiasCreadas, planificacion.actividadesApp]);
+  const actividadesPropias = useMemo(
+    () => unirActividadesPropias(planificacion.actividadesApp || [], actividadesPropiasCreadas),
+    [actividadesPropiasCreadas, planificacion.actividadesApp],
+  );
   const zonas = planificacion.zonasApp || [];
   const campos = planificacion.camposApp;
   const conceptosGastos = useMemo(
@@ -131,94 +85,21 @@ export function GastosComercialesScreen({
   );
   const campaniasDisponibles = campaniasErp.length ? campaniasErp : campanias;
   const planificacionActiva = planificacion.planificaciones[0];
-  const especiesErpPorId = useMemo(() => new Map(especiesErp.map((especie) => [especie.idEspecie, especie])), [especiesErp]);
-  const actividadesPropiasErpIds = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter(Boolean)), [actividadesPropias]);
-  const actividades = useMemo<ActividadSeleccionable[]>(() => {
-    const propias = actividadesPropias.map((actividad) => ({
-      clave: `agro:${actividad.id}`,
-      nombre: actividad.nombre,
-      empresaErpId: actividad.empresaErpId,
-      actividadAppId: actividad.id,
-      actividadErpId: actividad.actividadErpId,
-      especieErpId: actividad.especieErpId,
-      codigo: actividad.codigoInterno,
-      origen: 'agro' as const,
-    }));
-    const erp = actividadesErp
-      .filter((actividad) => !actividadesPropiasErpIds.has(actividad.erpId))
-      .map((actividad) => ({
-        clave: `erp:${actividad.erpId}`,
-        nombre: actividad.descripcion,
-        empresaErpId: actividad.empresaErpId,
-        actividadErpId: actividad.erpId,
-        especieErpId: actividad.idEspecie ? especiesErpPorId.get(actividad.idEspecie)?.erpId : undefined,
-        codigo: actividad.codigo,
-        origen: 'erp' as const,
-        erp: actividad,
-      }));
-
-    return [...propias, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [actividadesErp, actividadesPropias, actividadesPropiasErpIds, especiesErpPorId]);
+  const actividades = useMemo(
+    () => construirActividadesSeleccionables(actividadesPropias, actividadesErp, especiesErp),
+    [actividadesErp, actividadesPropias, especiesErp],
+  );
   const actividadesPorClave = useMemo(() => new Map(actividades.map((actividad) => [actividad.clave, actividad])), [actividades]);
   const actividadesPropiasPorId = useMemo(() => new Map(actividadesPropias.map((actividad) => [actividad.id, actividad])), [actividadesPropias]);
-  const zonasPropiasErpIds = useMemo(() => new Set(zonas.map((zona) => zona.zonaErpId).filter(Boolean)), [zonas]);
   const zonasPropiasPorErpId = useMemo(() => new Map(zonas.filter((zona) => zona.zonaErpId).map((zona) => [zona.zonaErpId, zona])), [zonas]);
-  const camposPropiosErpIds = useMemo(() => new Set(campos.map((campo) => campo.campoErpId).filter(Boolean)), [campos]);
   const camposPropiosPorErpId = useMemo(() => new Map(campos.filter((campo) => campo.campoErpId).map((campo) => [campo.campoErpId, campo])), [campos]);
-  const zonasDisponibles = useMemo<ZonaSeleccionable[]>(() => {
-    const propias = zonas.map((zona) => ({
-      clave: `agro:${zona.id}`,
-      nombre: zona.nombre,
-      codigo: zona.codigoInterno,
-      zonaAppId: zona.id,
-      zonaErpId: zona.zonaErpId,
-      origen: 'agro' as const,
-    }));
-    const erp = zonasErp
-      .filter((zona) => !zonasPropiasErpIds.has(zona.erpId))
-      .map((zona) => ({
-        clave: `erp:${zona.erpId}`,
-        nombre: zona.nombre,
-        codigo: zona.codigo,
-        zonaErpId: zona.erpId,
-        idZona: zona.idZona,
-        origen: 'erp' as const,
-      }));
-
-    return [...propias, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [zonas, zonasErp, zonasPropiasErpIds]);
+  const zonasDisponibles = useMemo(() => construirZonasSeleccionables(zonas, zonasErp), [zonas, zonasErp]);
   const zonasPorClave = useMemo(() => new Map(zonasDisponibles.map((zona) => [zona.clave, zona])), [zonasDisponibles]);
-  const camposDisponibles = useMemo<CampoSeleccionable[]>(() => {
+  const camposDisponibles = useMemo(() => {
     const zonaSeleccionada = zonaSeleccionadaClave ? zonasPorClave.get(zonaSeleccionadaClave) : undefined;
-    const propios = campos
-      .filter((campo) => !zonaSeleccionada || campo.zonaAppId === zonaSeleccionada.zonaAppId || campo.zonaErpId === zonaSeleccionada.zonaErpId)
-      .map((campo) => ({
-        clave: `agro:${campo.id}`,
-        nombre: campo.nombre,
-        codigo: campo.codigoInterno,
-        empresaErpId: campo.empresaErpId,
-        campoAppId: campo.id,
-        campoErpId: campo.campoErpId,
-        zonaAppId: campo.zonaAppId,
-        zonaErpId: campo.zonaErpId,
-        origen: 'agro' as const,
-      }));
-    const erp = camposErp
-      .filter((campo) => !camposPropiosErpIds.has(campo.erpId))
-      .filter((campo) => !zonaSeleccionada?.idZona || campo.idZona === zonaSeleccionada.idZona)
-      .map((campo) => ({
-        clave: `erp:${campo.erpId}`,
-        nombre: campo.nombre,
-        codigo: campo.codigo,
-        empresaErpId: campo.empresaErpId,
-        campoErpId: campo.erpId,
-        zonaErpId: campo.idZona ? `zona:${campo.idZona}` : undefined,
-        idZona: campo.idZona,
-        origen: 'erp' as const,
-      }));
 
-    return [...propios, ...erp].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [campos, camposErp, camposPropiosErpIds, zonaSeleccionadaClave, zonasPorClave]);
+    return construirCamposSeleccionables(campos, camposErp, zonaSeleccionada);
+  }, [campos, camposErp, zonaSeleccionadaClave, zonasPorClave]);
   const camposPorClave = useMemo(() => new Map(camposDisponibles.map((campo) => [campo.clave, campo])), [camposDisponibles]);
 
   useEffect(() => {
