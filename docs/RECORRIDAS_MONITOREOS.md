@@ -190,7 +190,8 @@ Las pantallas de monitoreo deben mantenerse pequenas y separadas:
 Regla:
 
 - no agregar mas logica de negocio a `MonitoreosScreen`;
-- el proximo cambio funcional debe extraer hook/componentes antes de crecer la pantalla.
+- `MonitoreosScreen` ya quedo como composicion;
+- el proximo cambio funcional debe modularizar `ObservacionesScreen` y conectar `SelectorRecorrida`.
 
 ## Validaciones pendientes
 
@@ -205,8 +206,8 @@ Regla:
 
 ## Proximos pasos recomendados
 
-1. Modularizar `MonitoreosScreen` y `ObservacionesScreen` antes de seguir agregando comportamiento.
-2. Crear `SelectorRecorrida` reutilizable.
+1. Modularizar `ObservacionesScreen`.
+2. Conectar `SelectorRecorrida` reutilizable en observaciones.
 3. Agregar detalle de recorrida con observaciones vinculadas.
 4. Preparar contrato mobile/offline para recorridas.
 5. Conectar recorrido con mapa/KML cuando este listo el visor geografico.
