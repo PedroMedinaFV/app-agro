@@ -485,11 +485,34 @@ Criterio de aceptacion MVP extendido:
 - se puede simular una orden desde planificacion/protocolo;
 - no se envia a ALBOR hasta validar endpoint real y reglas contables/operativas.
 
+## Sprint 9 - Diseno tecnico NDVI y mapas operativos
+
+Objetivo:
+
+- dejar definido el modulo independiente de NDVI como base geoespacial y operativa, sin mezclarlo con planificacion economica.
+
+Incluye:
+
+- [x] documento tecnico `docs/DISENO_TECNICO_NDVI.md`;
+- [x] alcance MVP y fases posteriores;
+- [x] modelo propuesto `LoteMapaNdvi`;
+- [x] relacion con KML/KMZ de lotes;
+- [x] propuesta de endpoints;
+- [x] reglas de permisos, auditoria y storage;
+- [x] estrategia web/mobile para visualizacion inicial.
+
+Criterio de aceptacion:
+
+- [x] NDVI queda tratado como modulo propio;
+- [x] el primer paso tecnico depende de geometria de lote confiable;
+- [x] la carga manual/importada queda priorizada antes de automatizar proveedores satelitales;
+- [x] mobile queda como consumidor liviano de ultimo NDVI y alertas.
+
 ## Fuera del MVP inicial
 
 Quedan para version posterior:
 
-- NDVI e imagenes satelitales;
+- automatizacion completa de NDVI e imagenes satelitales;
 - prescripciones;
 - mapas de rinde;
 - clima por WhatsApp;

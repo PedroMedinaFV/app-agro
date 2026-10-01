@@ -8,64 +8,65 @@ datasource db {
 }
 
 model Usuario {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  nombre      String?
-  password    String?
-  microsoftId String?   @unique
-  rol         String    @default("operador_campo")
-  cliente     Cliente?  @relation(fields: [clienteId], references: [id])
-  clienteId   String?
+  id                 String                @id @default(uuid())
+  email              String                @unique
+  nombre             String?
+  password           String?
+  microsoftId        String?               @unique
+  rol                String                @default("operador_campo")
+  cliente            Cliente?              @relation(fields: [clienteId], references: [id])
+  clienteId          String?
   camposErpAsignados UsuarioCampoErp[]
-  notificaciones NotificacionUsuario[]
-  precipitaciones PrecipitacionCampo[]
-  observaciones ObservacionCampo[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  notificaciones     NotificacionUsuario[]
+  precipitaciones    PrecipitacionCampo[]
+  observaciones      ObservacionCampo[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
 }
 
 model Cliente {
-  id               String            @id @default(uuid())
-  nombre           String
-  activo           Boolean           @default(true)
-  usuarios         Usuario[]
-  integracionesErp IntegracionErp[]
-  camposErpAsignados UsuarioCampoErp[]
-  empresasErpAsignadas ClienteEmpresaErp[]
-  zonasApp ZonaApp[]
-  camposApp CampoApp[]
-  lotesApp LoteApp[]
-  loteArchivosGeograficos LoteArchivoGeografico[]
-  especiesApp EspecieApp[]
-  actividadesApp ActividadApp[]
-  insumosApp InsumoApp[]
-  estadiosReferencia EstadioFenologicoReferencia[]
-  serviciosApp ServicioApp[]
-  protocolosProductivos ProtocoloProductivo[]
-  planificacionesAgricolas PlanificacionAgricola[]
-  preciosApp PrecioApp[]
-  destinosApp DestinoApp[]
-  conceptosGastosComerciales ConceptoGastoComercialApp[]
+  id                          String                        @id @default(uuid())
+  nombre                      String
+  activo                      Boolean                       @default(true)
+  usuarios                    Usuario[]
+  integracionesErp            IntegracionErp[]
+  camposErpAsignados          UsuarioCampoErp[]
+  empresasErpAsignadas        ClienteEmpresaErp[]
+  zonasApp                    ZonaApp[]
+  camposApp                   CampoApp[]
+  lotesApp                    LoteApp[]
+  loteArchivosGeograficos     LoteArchivoGeografico[]
+  mapasNdvi                   LoteMapaNdvi[]
+  especiesApp                 EspecieApp[]
+  actividadesApp              ActividadApp[]
+  insumosApp                  InsumoApp[]
+  estadiosReferencia          EstadioFenologicoReferencia[]
+  serviciosApp                ServicioApp[]
+  protocolosProductivos       ProtocoloProductivo[]
+  planificacionesAgricolas    PlanificacionAgricola[]
+  preciosApp                  PrecioApp[]
+  destinosApp                 DestinoApp[]
+  conceptosGastosComerciales  ConceptoGastoComercialApp[]
   gastosComercialesReferencia GastoComercialApp[]
-  vinculacionesErpSugeridas VinculacionErpSugerida[]
-  notificaciones NotificacionUsuario[]
-  precipitaciones PrecipitacionCampo[]
-  observaciones ObservacionCampo[]
-  observacionAdjuntos ObservacionAdjunto[]
-  auditoriaEventos AuditoriaEvento[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  vinculacionesErpSugeridas   VinculacionErpSugerida[]
+  notificaciones              NotificacionUsuario[]
+  precipitaciones             PrecipitacionCampo[]
+  observaciones               ObservacionCampo[]
+  observacionAdjuntos         ObservacionAdjunto[]
+  auditoriaEventos            AuditoriaEvento[]
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
 }
 
 model UsuarioCampoErp {
-  id           String    @id @default(uuid())
-  cliente     Cliente   @relation(fields: [clienteId], references: [id])
-  clienteId    String
-  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
-  usuarioId    String
-  campoErpId   String
-  asignadoPor  String?
-  createdAt    DateTime  @default(now())
+  id          String   @id @default(uuid())
+  cliente     Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId   String
+  campoErpId  String
+  asignadoPor String?
+  createdAt   DateTime @default(now())
 
   @@unique([clienteId, usuarioId, campoErpId])
   @@index([clienteId])
@@ -74,43 +75,43 @@ model UsuarioCampoErp {
 }
 
 model IntegracionErp {
-  id                  String    @id @default(uuid())
-  cliente             Cliente   @relation(fields: [clienteId], references: [id])
-  clienteId           String
-  baseUrl             String?
-  authMode            String    @default("mock")
-  apiKeyHeader        String    @default("x-api-key")
-  apiKeyCifrada       String?
-  bearerTokenCifrado  String?
-  usernameCifrado     String?
-  passwordCifrada     String?
-  timeoutMs           Int       @default(15000)
-  activo              Boolean   @default(true)
-  ultimoTestOk        Boolean?
-  ultimoTestEn        DateTime?
-  ultimoSyncEn        DateTime?
-  configuradoPor      String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  cliente            Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId          String
+  baseUrl            String?
+  authMode           String    @default("mock")
+  apiKeyHeader       String    @default("x-api-key")
+  apiKeyCifrada      String?
+  bearerTokenCifrado String?
+  usernameCifrado    String?
+  passwordCifrada    String?
+  timeoutMs          Int       @default(15000)
+  activo             Boolean   @default(true)
+  ultimoTestOk       Boolean?
+  ultimoTestEn       DateTime?
+  ultimoSyncEn       DateTime?
+  configuradoPor     String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@unique([clienteId])
   @@index([activo])
 }
 
 model ErpSincronizacion {
-  id                String   @id @default(uuid())
-  clienteId         String
-  usuarioId         String?
-  estado            String   @default("en_proceso")
-  itemsSolicitados  Json
-  itemsEjecutados   Json
-  resultado         Json?
-  error             String?
-  iniciadoEn        DateTime @default(now())
-  finalizadoEn      DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  detalles          ErpSincronizacionDetalle[]
+  id               String                     @id @default(uuid())
+  clienteId        String
+  usuarioId        String?
+  estado           String                     @default("en_proceso")
+  itemsSolicitados Json
+  itemsEjecutados  Json
+  resultado        Json?
+  error            String?
+  iniciadoEn       DateTime                   @default(now())
+  finalizadoEn     DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  detalles         ErpSincronizacionDetalle[]
 
   @@index([clienteId])
   @@index([usuarioId])
@@ -119,16 +120,16 @@ model ErpSincronizacion {
 }
 
 model ErpSincronizacionDetalle {
-  id                String   @id @default(uuid())
-  sincronizacion    ErpSincronizacion @relation(fields: [sincronizacionId], references: [id])
-  sincronizacionId  String
-  empresaErpId      String
-  padron            String
-  registros         Int      @default(0)
-  omitidos          Int      @default(0)
-  estado            String   @default("completada")
-  error             String?
-  createdAt         DateTime @default(now())
+  id               String            @id @default(uuid())
+  sincronizacion   ErpSincronizacion @relation(fields: [sincronizacionId], references: [id])
+  sincronizacionId String
+  empresaErpId     String
+  padron           String
+  registros        Int               @default(0)
+  omitidos         Int               @default(0)
+  estado           String            @default("completada")
+  error            String?
+  createdAt        DateTime          @default(now())
 
   @@index([sincronizacionId])
   @@index([empresaErpId])
@@ -137,24 +138,24 @@ model ErpSincronizacionDetalle {
 }
 
 model ErpCampo {
-  id             String    @id @default(uuid())
-  empresaErpId   String
-  erpId          String    @unique
-  idCampo        Int
-  idZona         Int?
-  idSubZona      Int?
-  codigo         String
-  nombre         String
-  paisCodigo     String?
-  sociedad       String?
+  id              String    @id @default(uuid())
+  empresaErpId    String
+  erpId           String    @unique
+  idCampo         Int
+  idZona          Int?
+  idSubZona       Int?
+  codigo          String
+  nombre          String
+  paisCodigo      String?
+  sociedad        String?
   admiteGanaderia Boolean?
-  domicilio      String?
-  codigoSima     Int?
-  idLocalidad    Int?
-  activo         Boolean   @default(true)
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
-  lotes          ErpLote[]
+  domicilio       String?
+  codigoSima      Int?
+  idLocalidad     Int?
+  activo          Boolean   @default(true)
+  actualizadoEn   DateTime
+  importadoEn     DateTime  @default(now())
+  lotes           ErpLote[]
 
   @@index([codigo])
   @@index([activo])
@@ -177,25 +178,25 @@ model ErpZona {
 }
 
 model ErpLote {
-  id             String         @id @default(uuid())
-  empresaErpId   String
-  erpId          String         @unique
-  idLote         Int
-  idCampo        Int
-  campoErpId     String
-  campo          ErpCampo       @relation(fields: [campoErpId], references: [erpId])
-  codigo         String
-  nombre         String
-  cultivoCodigo  String?
-  cultivoNombre  String?
-  areaHectareas  Float
+  id                   String   @id @default(uuid())
+  empresaErpId         String
+  erpId                String   @unique
+  idLote               Int
+  idCampo              Int
+  campoErpId           String
+  campo                ErpCampo @relation(fields: [campoErpId], references: [erpId])
+  codigo               String
+  nombre               String
+  cultivoCodigo        String?
+  cultivoNombre        String?
+  areaHectareas        Float
   hectareasProductivas Float?
-  admiteGanaderia Boolean?
-  admiteLecheria  Boolean?
-  codigoSima     Int?
-  activo         Boolean        @default(true)
-  actualizadoEn  DateTime
-  importadoEn    DateTime       @default(now())
+  admiteGanaderia      Boolean?
+  admiteLecheria       Boolean?
+  codigoSima           Int?
+  activo               Boolean  @default(true)
+  actualizadoEn        DateTime
+  importadoEn          DateTime @default(now())
 
   @@index([idLote])
   @@index([idCampo])
@@ -206,18 +207,18 @@ model ErpLote {
 }
 
 model ErpActividad {
-  id                String    @id @default(uuid())
-  empresaErpId      String
-  erpId             String    @unique
-  idActividad       Int
-  codigo            String
-  descripcion       String
-  activo            Boolean
+  id                        String   @id @default(uuid())
+  empresaErpId              String
+  erpId                     String   @unique
+  idActividad               Int
+  codigo                    String
+  descripcion               String
+  activo                    Boolean
   habilitadoExportacionCrea Boolean
-  idEspecie         Int?
-  idTipoActividad   Int?
-  actualizadoEn     DateTime
-  importadoEn       DateTime  @default(now())
+  idEspecie                 Int?
+  idTipoActividad           Int?
+  actualizadoEn             DateTime
+  importadoEn               DateTime @default(now())
 
   @@index([idActividad])
   @@index([idTipoActividad])
@@ -226,17 +227,17 @@ model ErpActividad {
 }
 
 model ErpEspecie {
-  id             String    @id @default(uuid())
-  empresaErpId   String
-  erpId          String    @unique
-  idEspecie      Int
-  codigo         String
-  nombre         String
-  activo         Boolean
-  codigoCot      String?
-  codigoAfip     Int?
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
+  id            String   @id @default(uuid())
+  empresaErpId  String
+  erpId         String   @unique
+  idEspecie     Int
+  codigo        String
+  nombre        String
+  activo        Boolean
+  codigoCot     String?
+  codigoAfip    Int?
+  actualizadoEn DateTime
+  importadoEn   DateTime @default(now())
 
   @@index([idEspecie])
   @@index([codigo])
@@ -245,17 +246,17 @@ model ErpEspecie {
 }
 
 model ErpEmpresa {
-  id             String    @id @default(uuid())
-  erpId          String    @unique
-  idEmpresa      Int
-  codigo         String
-  nombre         String
-  activo         Boolean
-  cuit           String?
-  razonSocial    String?
-  email          String?
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
+  id            String   @id @default(uuid())
+  erpId         String   @unique
+  idEmpresa     Int
+  codigo        String
+  nombre        String
+  activo        Boolean
+  cuit          String?
+  razonSocial   String?
+  email         String?
+  actualizadoEn DateTime
+  importadoEn   DateTime @default(now())
 
   @@index([idEmpresa])
   @@index([codigo])
@@ -263,16 +264,16 @@ model ErpEmpresa {
 }
 
 model ErpCampania {
-  id             String    @id @default(uuid())
-  empresaErpId   String
-  erpId          String    @unique
-  idCampania     Int
-  codigo         String
-  nombre         String
-  activo         Boolean
-  esActual       Boolean
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
+  id            String   @id @default(uuid())
+  empresaErpId  String
+  erpId         String   @unique
+  idCampania    Int
+  codigo        String
+  nombre        String
+  activo        Boolean
+  esActual      Boolean
+  actualizadoEn DateTime
+  importadoEn   DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idCampania])
@@ -282,33 +283,33 @@ model ErpCampania {
 }
 
 model ErpCultivo {
-  id                       String    @id @default(uuid())
-  empresaErpId             String
-  erpId                    String    @unique
-  idCultivo                Int
-  codigo                   String
-  nombre                   String
-  idCampo                  Int
-  campoErpId               String
-  idLote                   Int
-  loteErpId                String
-  idActividad              Int?
-  actividadErpId           String?
-  idEspecie                Int?
-  especieErpId             String?
-  idCampania               Int?
-  campaniaErpId            String?
-  hectareas                Float
-  hectareasSembradas       Float
-  hectareasCosechadas      Float
-  idPuerto                 Int?
-  distanciaPuerto          Float?
-  idPersonalResponsable    Int?
-  esAgriculturaIntensiva   Boolean
-  socioEnFuncionAportes    Boolean
-  activo                   Boolean
-  actualizadoEn            DateTime
-  importadoEn              DateTime  @default(now())
+  id                     String   @id @default(uuid())
+  empresaErpId           String
+  erpId                  String   @unique
+  idCultivo              Int
+  codigo                 String
+  nombre                 String
+  idCampo                Int
+  campoErpId             String
+  idLote                 Int
+  loteErpId              String
+  idActividad            Int?
+  actividadErpId         String?
+  idEspecie              Int?
+  especieErpId           String?
+  idCampania             Int?
+  campaniaErpId          String?
+  hectareas              Float
+  hectareasSembradas     Float
+  hectareasCosechadas    Float
+  idPuerto               Int?
+  distanciaPuerto        Float?
+  idPersonalResponsable  Int?
+  esAgriculturaIntensiva Boolean
+  socioEnFuncionAportes  Boolean
+  activo                 Boolean
+  actualizadoEn          DateTime
+  importadoEn            DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idCultivo])
@@ -319,29 +320,29 @@ model ErpCultivo {
 }
 
 model ErpInsumo {
-  id                      String    @id @default(uuid())
-  empresaErpId            String
-  erpId                   String    @unique
-  idInsumo                Int
-  idUnidadMedida          Int?
-  idTipoInsumo            Int?
-  idCategoriaInsumo       Int?
-  codigo                  String
-  nombre                  String
-  activo                  Boolean
-  controlaStock           Boolean
-  esInsumoGenerico        Boolean
-  controlaPorLote         Boolean
-  precioUnitario          Float?
-  precioUnitarioVenta     Float?
-  unidadesBulto           Float?
-  idMonedaPrecioUnitario  Int?
-  idMonedaPrecioVenta     Int?
-  idCuentaContable        Int?
-  idInsumoBanda           Int?
-  idInsumoEstandar        Int?
-  actualizadoEn           DateTime
-  importadoEn             DateTime  @default(now())
+  id                     String   @id @default(uuid())
+  empresaErpId           String
+  erpId                  String   @unique
+  idInsumo               Int
+  idUnidadMedida         Int?
+  idTipoInsumo           Int?
+  idCategoriaInsumo      Int?
+  codigo                 String
+  nombre                 String
+  activo                 Boolean
+  controlaStock          Boolean
+  esInsumoGenerico       Boolean
+  controlaPorLote        Boolean
+  precioUnitario         Float?
+  precioUnitarioVenta    Float?
+  unidadesBulto          Float?
+  idMonedaPrecioUnitario Int?
+  idMonedaPrecioVenta    Int?
+  idCuentaContable       Int?
+  idInsumoBanda          Int?
+  idInsumoEstandar       Int?
+  actualizadoEn          DateTime
+  importadoEn            DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idInsumo])
@@ -353,19 +354,19 @@ model ErpInsumo {
 }
 
 model ErpTipoInsumo {
-  id                 String   @id @default(uuid())
-  empresaErpId       String
-  erpId              String   @unique
-  idTipoInsumo       Int
-  codigo             String
-  codigoCot          String?
-  codigoSima         Int?
-  descripcion        String
-  activo             Boolean
-  usaPadronEstandar  Boolean
-  idCuentaContable   Int?
-  actualizadoEn      DateTime
-  importadoEn        DateTime @default(now())
+  id                String   @id @default(uuid())
+  empresaErpId      String
+  erpId             String   @unique
+  idTipoInsumo      Int
+  codigo            String
+  codigoCot         String?
+  codigoSima        Int?
+  descripcion       String
+  activo            Boolean
+  usaPadronEstandar Boolean
+  idCuentaContable  Int?
+  actualizadoEn     DateTime
+  importadoEn       DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idTipoInsumo])
@@ -375,23 +376,23 @@ model ErpTipoInsumo {
 }
 
 model ErpServicio {
-  id                    String    @id @default(uuid())
-  empresaErpId          String
-  erpId                 String    @unique
-  idServicio            Int
-  idTipoServicio        Int?
-  codigo                String
-  descripcion           String
-  descripcionAbreviada  String?
-  idUnidadMedida        Int?
-  idMoneda              Int?
-  precioUnitario        Float?
-  idMonedaPersonal      Int?
-  importePersonal       Float?
-  activo                Boolean
-  imputaDosis           Boolean
-  actualizadoEn         DateTime
-  importadoEn           DateTime  @default(now())
+  id                   String   @id @default(uuid())
+  empresaErpId         String
+  erpId                String   @unique
+  idServicio           Int
+  idTipoServicio       Int?
+  codigo               String
+  descripcion          String
+  descripcionAbreviada String?
+  idUnidadMedida       Int?
+  idMoneda             Int?
+  precioUnitario       Float?
+  idMonedaPersonal     Int?
+  importePersonal      Float?
+  activo               Boolean
+  imputaDosis          Boolean
+  actualizadoEn        DateTime
+  importadoEn          DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idServicio])
@@ -403,20 +404,20 @@ model ErpServicio {
 }
 
 model ErpTipoServicio {
-  id                  String   @id @default(uuid())
-  empresaErpId        String
-  erpId               String   @unique
-  idTipoServicio      Int
-  codigo              String
-  descripcion         String
-  exigeInsumo         Boolean
-  disponibleOt        Boolean
-  disponibleCompras   Boolean
-  disponibleVentas    Boolean
-  categoria           String?
-  idCuentaContable    Int?
-  actualizadoEn       DateTime
-  importadoEn         DateTime @default(now())
+  id                String   @id @default(uuid())
+  empresaErpId      String
+  erpId             String   @unique
+  idTipoServicio    Int
+  codigo            String
+  descripcion       String
+  exigeInsumo       Boolean
+  disponibleOt      Boolean
+  disponibleCompras Boolean
+  disponibleVentas  Boolean
+  categoria         String?
+  idCuentaContable  Int?
+  actualizadoEn     DateTime
+  importadoEn       DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idTipoServicio])
@@ -425,16 +426,16 @@ model ErpTipoServicio {
 }
 
 model ErpMoneda {
-  id             String    @id @default(uuid())
-  empresaErpId   String
-  erpId          String    @unique
-  idMoneda       Int
-  codigo         String
-  nombre         String
-  simbolo        String?
-  activo         Boolean
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
+  id            String   @id @default(uuid())
+  empresaErpId  String
+  erpId         String   @unique
+  idMoneda      Int
+  codigo        String
+  nombre        String
+  simbolo       String?
+  activo        Boolean
+  actualizadoEn DateTime
+  importadoEn   DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idMoneda])
@@ -444,16 +445,16 @@ model ErpMoneda {
 }
 
 model ErpUnidadMedida {
-  id                    String    @id @default(uuid())
-  empresaErpId          String
-  erpId                 String    @unique
-  idUnidadMedida        Int
-  codigo                String
-  codigoSifen           String?
-  descripcion           String
-  activo                Boolean
-  actualizadoEn         DateTime
-  importadoEn           DateTime  @default(now())
+  id             String   @id @default(uuid())
+  empresaErpId   String
+  erpId          String   @unique
+  idUnidadMedida Int
+  codigo         String
+  codigoSifen    String?
+  descripcion    String
+  activo         Boolean
+  actualizadoEn  DateTime
+  importadoEn    DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idUnidadMedida])
@@ -462,15 +463,15 @@ model ErpUnidadMedida {
 }
 
 model ErpPuerto {
-  id             String    @id @default(uuid())
-  empresaErpId   String
-  erpId          String    @unique
-  idPuerto       Int
-  codigo         String
-  nombre         String
-  activo         Boolean
-  actualizadoEn  DateTime
-  importadoEn    DateTime  @default(now())
+  id            String   @id @default(uuid())
+  empresaErpId  String
+  erpId         String   @unique
+  idPuerto      Int
+  codigo        String
+  nombre        String
+  activo        Boolean
+  actualizadoEn DateTime
+  importadoEn   DateTime @default(now())
 
   @@index([empresaErpId])
   @@index([idPuerto])
@@ -480,12 +481,12 @@ model ErpPuerto {
 }
 
 model ClienteEmpresaErp {
-  id           String    @id @default(uuid())
-  cliente      Cliente   @relation(fields: [clienteId], references: [id])
+  id           String   @id @default(uuid())
+  cliente      Cliente  @relation(fields: [clienteId], references: [id])
   clienteId    String
   empresaErpId String
   asignadoPor  String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   @@unique([clienteId, empresaErpId])
   @@index([clienteId])
@@ -493,18 +494,18 @@ model ClienteEmpresaErp {
 }
 
 model ZonaApp {
-  id                String   @id @default(uuid())
-  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  id                String                @id @default(uuid())
+  cliente           Cliente               @relation(fields: [clienteId], references: [id])
   clienteId         String
   empresaErpId      String
   zonaErpId         String?
   nombre            String
   codigoInterno     String?
-  estadoVinculacion String   @default("provisorio")
+  estadoVinculacion String                @default("provisorio")
   createdBy         String?
   updatedBy         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
   campos            CampoApp[]
   protocolos        ProtocoloProductivo[]
 
@@ -515,26 +516,27 @@ model ZonaApp {
 }
 
 model CampoApp {
-  id                String   @id @default(uuid())
-  cliente           Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId         String
-  empresaErpId      String
-  campoErpId        String?
-  zonaApp ZonaApp? @relation(fields: [zonaAppId], references: [id])
-  zonaAppId String?
-  zonaErpId         String?
-  nombre            String
-  codigoInterno     String?
-  estadoVinculacion String   @default("provisorio")
-  createdBy         String?
-  updatedBy         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  lotes             LoteApp[]
-  protocolos        ProtocoloProductivo[]
-  precipitaciones   PrecipitacionCampo[]
-  observaciones     ObservacionCampo[]
+  id                  String                       @id @default(uuid())
+  cliente             Cliente                      @relation(fields: [clienteId], references: [id])
+  clienteId           String
+  empresaErpId        String
+  campoErpId          String?
+  zonaApp             ZonaApp?                     @relation(fields: [zonaAppId], references: [id])
+  zonaAppId           String?
+  zonaErpId           String?
+  nombre              String
+  codigoInterno       String?
+  estadoVinculacion   String                       @default("provisorio")
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  lotes               LoteApp[]
+  protocolos          ProtocoloProductivo[]
+  precipitaciones     PrecipitacionCampo[]
+  observaciones       ObservacionCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
+  mapasNdvi           LoteMapaNdvi[]
 
   @@index([clienteId])
   @@index([empresaErpId])
@@ -544,25 +546,26 @@ model CampoApp {
 }
 
 model LoteApp {
-  id                String   @id @default(uuid())
-  cliente           Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId         String
-  campo             CampoApp @relation(fields: [campoAppId], references: [id])
-  campoAppId String
-  loteErpId         String?
-  nombre            String
-  codigoInterno     String?
-  superficieTotal   Float
+  id                   String                       @id @default(uuid())
+  cliente              Cliente                      @relation(fields: [clienteId], references: [id])
+  clienteId            String
+  campo                CampoApp                     @relation(fields: [campoAppId], references: [id])
+  campoAppId           String
+  loteErpId            String?
+  nombre               String
+  codigoInterno        String?
+  superficieTotal      Float
   superficieProductiva Float
-  estadoVinculacion String   @default("provisorio")
-  createdBy         String?
-  updatedBy         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  precipitaciones   PrecipitacionCampo[]
-  observaciones     ObservacionCampo[]
-  lineasPlanificacion PlanificacionAgricolaLinea[]
-  archivosGeograficos LoteArchivoGeografico[]
+  estadoVinculacion    String                       @default("provisorio")
+  createdBy            String?
+  updatedBy            String?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  precipitaciones      PrecipitacionCampo[]
+  observaciones        ObservacionCampo[]
+  lineasPlanificacion  PlanificacionAgricolaLinea[]
+  archivosGeograficos  LoteArchivoGeografico[]
+  mapasNdvi            LoteMapaNdvi[]
 
   @@index([clienteId])
   @@index([campoAppId])
@@ -592,32 +595,77 @@ model LoteArchivoGeografico {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
+  @@unique([clienteId, storageBucket, storagePath])
   @@index([clienteId])
   @@index([loteAppId])
   @@index([estado])
-  @@unique([clienteId, storageBucket, storagePath])
+}
+
+model LoteMapaNdvi {
+  id                    String    @id @default(uuid())
+  cliente               Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  loteApp               LoteApp   @relation(fields: [loteAppId], references: [id], onDelete: Cascade)
+  loteAppId             String
+  loteErpId             String?
+  campoApp              CampoApp  @relation(fields: [campoAppId], references: [id])
+  campoAppId            String
+  campoErpId            String?
+  campaniaErpId         String?
+  fechaImagen           DateTime
+  fechaProcesamiento    DateTime?
+  proveedor             String
+  origen                String
+  resolucionMetros      Float?
+  nubosidadPorcentaje   Float?
+  ndviPromedio          Float?
+  ndviMinimo            Float?
+  ndviMaximo            Float?
+  ndviDesvio            Float?
+  superficieAnalizadaHa Float?
+  storageBucket         String?
+  storagePathRaster     String?
+  storagePathPreview    String?
+  storagePathTiles      String?
+  bboxGeoJson           Json?
+  metadata              Json?
+  estado                String    @default("pendiente_procesamiento")
+  activo                Boolean   @default(true)
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([clienteId, storageBucket, storagePathRaster])
+  @@index([clienteId])
+  @@index([loteAppId])
+  @@index([campoAppId])
+  @@index([fechaImagen])
+  @@index([estado])
+  @@index([clienteId, loteAppId, fechaImagen])
 }
 
 model PrecipitacionCampo {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  usuario               Usuario? @relation(fields: [usuarioId], references: [id])
-  usuarioId             String?
-  campoApp    CampoApp @relation(fields: [campoAppId], references: [id])
-  campoAppId  String
-  campoErpId            String?
-  loteApp     LoteApp? @relation(fields: [loteAppId], references: [id])
-  loteAppId   String?
-  loteErpId             String?
-  registroMovilId       String?
-  milimetros            Float
-  fechaEvento           DateTime
-  observaciones         String?
-  origen                String
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id              String   @id @default(uuid())
+  cliente         Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId       String
+  usuario         Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId       String?
+  campoApp        CampoApp @relation(fields: [campoAppId], references: [id])
+  campoAppId      String
+  campoErpId      String?
+  loteApp         LoteApp? @relation(fields: [loteAppId], references: [id])
+  loteAppId       String?
+  loteErpId       String?
+  registroMovilId String?
+  milimetros      Float
+  fechaEvento     DateTime
+  observaciones   String?
+  origen          String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@unique([clienteId, registroMovilId])
   @@index([clienteId])
   @@index([usuarioId])
   @@index([campoAppId])
@@ -625,33 +673,33 @@ model PrecipitacionCampo {
   @@index([registroMovilId])
   @@index([fechaEvento])
   @@index([origen])
-  @@unique([clienteId, registroMovilId])
 }
 
 model ObservacionCampo {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  usuario               Usuario? @relation(fields: [usuarioId], references: [id])
-  usuarioId             String?
-  campoApp              CampoApp @relation(fields: [campoAppId], references: [id])
-  campoAppId            String
-  campoErpId            String?
-  loteApp               LoteApp? @relation(fields: [loteAppId], references: [id])
-  loteAppId             String?
-  loteErpId             String?
-  registroMovilId       String?
-  titulo                String
-  descripcion           String
-  severidad             String   @default("media")
-  latitud               Float?
-  longitud              Float?
-  fechaEvento           DateTime
-  origen                String
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  adjuntos              ObservacionAdjunto[]
+  id              String               @id @default(uuid())
+  cliente         Cliente              @relation(fields: [clienteId], references: [id])
+  clienteId       String
+  usuario         Usuario?             @relation(fields: [usuarioId], references: [id])
+  usuarioId       String?
+  campoApp        CampoApp             @relation(fields: [campoAppId], references: [id])
+  campoAppId      String
+  campoErpId      String?
+  loteApp         LoteApp?             @relation(fields: [loteAppId], references: [id])
+  loteAppId       String?
+  loteErpId       String?
+  registroMovilId String?
+  titulo          String
+  descripcion     String
+  severidad       String               @default("media")
+  latitud         Float?
+  longitud        Float?
+  fechaEvento     DateTime
+  origen          String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  adjuntos        ObservacionAdjunto[]
 
+  @@unique([clienteId, registroMovilId])
   @@index([clienteId])
   @@index([usuarioId])
   @@index([campoAppId])
@@ -660,24 +708,23 @@ model ObservacionCampo {
   @@index([severidad])
   @@index([fechaEvento])
   @@index([origen])
-  @@unique([clienteId, registroMovilId])
 }
 
 model ObservacionAdjunto {
-  id              String   @id @default(uuid())
-  cliente         Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId       String
-  observacion     ObservacionCampo @relation(fields: [observacionId], references: [id], onDelete: Cascade)
-  observacionId   String
-  storageBucket   String
-  storagePath     String
-  nombreArchivo   String
-  mimeType        String
-  tamanioBytes    Int
-  checksumSha256  String?
-  estado          String   @default("disponible")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String           @id @default(uuid())
+  cliente        Cliente          @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  observacion    ObservacionCampo @relation(fields: [observacionId], references: [id], onDelete: Cascade)
+  observacionId  String
+  storageBucket  String
+  storagePath    String
+  nombreArchivo  String
+  mimeType       String
+  tamanioBytes   Int
+  checksumSha256 String?
+  estado         String           @default("disponible")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@unique([clienteId, storageBucket, storagePath])
   @@index([clienteId])
@@ -687,20 +734,20 @@ model ObservacionAdjunto {
 }
 
 model EspecieApp {
-  id                String   @id @default(uuid())
-  cliente           Cliente  @relation(fields: [clienteId], references: [id])
+  id                String         @id @default(uuid())
+  cliente           Cliente        @relation(fields: [clienteId], references: [id])
   clienteId         String
   empresaErpId      String
   especieErpId      String?
   nombre            String
   codigoInterno     String?
-  estadoVinculacion String   @default("provisorio")
+  estadoVinculacion String         @default("provisorio")
   createdBy         String?
   updatedBy         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   actividades       ActividadApp[]
-  preciosApp PrecioApp[]
+  preciosApp        PrecioApp[]
 
   @@index([clienteId])
   @@index([empresaErpId])
@@ -709,29 +756,29 @@ model EspecieApp {
 }
 
 model ActividadApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String
-  actividadErpId        String?
-  especieApp  EspecieApp? @relation(fields: [especieAppId], references: [id])
-  especieAppId String?
-  especieErpId          String?
-  nombre                String
-  codigoInterno         String?
-  tipoGrano             String?
-  tipoCultivo           String?
-  epocaSiembra          String?
-  estadoVinculacion     String   @default("provisorio")
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  protocolos            ProtocoloProductivo[]
-  lineasPlanificacion   PlanificacionAgricolaLinea[]
-  destinosApp           DestinoApp[]
-  preciosApp            PrecioApp[]
-  gastosReferencia      GastoComercialApp[]
+  id                  String                       @id @default(uuid())
+  cliente             Cliente                      @relation(fields: [clienteId], references: [id])
+  clienteId           String
+  empresaErpId        String
+  actividadErpId      String?
+  especieApp          EspecieApp?                  @relation(fields: [especieAppId], references: [id])
+  especieAppId        String?
+  especieErpId        String?
+  nombre              String
+  codigoInterno       String?
+  tipoGrano           String?
+  tipoCultivo         String?
+  epocaSiembra        String?
+  estadoVinculacion   String                       @default("provisorio")
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  protocolos          ProtocoloProductivo[]
+  lineasPlanificacion PlanificacionAgricolaLinea[]
+  destinosApp         DestinoApp[]
+  preciosApp          PrecioApp[]
+  gastosReferencia    GastoComercialApp[]
 
   @@index([clienteId])
   @@index([empresaErpId])
@@ -741,24 +788,24 @@ model ActividadApp {
 }
 
 model InsumoApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String
-  insumoErpId           String?
-  nombre                String
-  codigoInterno         String?
-  idTipoInsumo          Int?
-  tipo                  String?
-  unidad                String
+  id                     String            @id @default(uuid())
+  cliente                Cliente           @relation(fields: [clienteId], references: [id])
+  clienteId              String
+  empresaErpId           String
+  insumoErpId            String?
+  nombre                 String
+  codigoInterno          String?
+  idTipoInsumo           Int?
+  tipo                   String?
+  unidad                 String
   precioUnitarioEstimado Float?
-  moneda                String?
-  estadoVinculacion     String   @default("provisorio")
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  insumosProtocolo      ProtocoloInsumo[]
+  moneda                 String?
+  estadoVinculacion      String            @default("provisorio")
+  createdBy              String?
+  updatedBy              String?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  insumosProtocolo       ProtocoloInsumo[]
 
   @@index([clienteId])
   @@index([empresaErpId])
@@ -768,20 +815,20 @@ model InsumoApp {
 }
 
 model EstadioFenologicoReferencia {
-  id                String   @id @default(uuid())
-  cliente           Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId         String
-  idEstadio         Int
-  actividadErpId    String?
-  codigo            String
-  nombre            String
-  ordenCronologico  Int
-  empresaErpId      String?
-  activo            Boolean  @default(true)
-  origen            String   @default("semilla")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  etapas            ProtocoloEtapa[]
+  id               String           @id @default(uuid())
+  cliente          Cliente          @relation(fields: [clienteId], references: [id])
+  clienteId        String
+  idEstadio        Int
+  actividadErpId   String?
+  codigo           String
+  nombre           String
+  ordenCronologico Int
+  empresaErpId     String?
+  activo           Boolean          @default(true)
+  origen           String           @default("semilla")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  etapas           ProtocoloEtapa[]
 
   @@unique([clienteId, idEstadio])
   @@index([clienteId])
@@ -792,30 +839,30 @@ model EstadioFenologicoReferencia {
 }
 
 model ServicioApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String?
-  servicioErpId         String?
-  idServicio            Int?
-  idTipoServicio        Int?
-  codigo                String
-  nombre                String
-  descripcionAbreviada  String?
-  idUnidadMedida        Int?
-  idMoneda              Int?
-  unidadSugerida        String
-  costoUnitarioSugerido Float?
-  imputaDosis           Boolean?
-  estadoVinculacion     String   @default("provisorio")
-  activo                Boolean  @default(true)
-  origen                String   @default("semilla")
+  id                          String           @id @default(uuid())
+  cliente                     Cliente          @relation(fields: [clienteId], references: [id])
+  clienteId                   String
+  empresaErpId                String?
+  servicioErpId               String?
+  idServicio                  Int?
+  idTipoServicio              Int?
+  codigo                      String
+  nombre                      String
+  descripcionAbreviada        String?
+  idUnidadMedida              Int?
+  idMoneda                    Int?
+  unidadSugerida              String
+  costoUnitarioSugerido       Float?
+  imputaDosis                 Boolean?
+  estadoVinculacion           String           @default("provisorio")
+  activo                      Boolean          @default(true)
+  origen                      String           @default("semilla")
   fechaUltimaActualizacionErp DateTime?
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  labores               ProtocoloLabor[]
+  createdBy                   String?
+  updatedBy                   String?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @updatedAt
+  labores                     ProtocoloLabor[]
 
   @@unique([clienteId, codigo])
   @@unique([clienteId, servicioErpId])
@@ -828,31 +875,31 @@ model ServicioApp {
 }
 
 model ProtocoloProductivo {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  nombre                String
-  descripcion           String
-  protocoloOrigenId     String?
-  empresaErpId          String?
-  campaniaErpId         String
-  actividadApp ActividadApp @relation(fields: [actividadAppId], references: [id])
-  actividadAppId String
-  actividadErpId        String?
-  tipoFecha             String
-  fechaSiembra          DateTime?
-  zonaApp     ZonaApp? @relation(fields: [zonaAppId], references: [id])
-  zonaAppId   String?
-  campoApp    CampoApp? @relation(fields: [campoAppId], references: [id])
-  campoAppId  String?
-  costoEstimadoPorHa    Float    @default(0)
-  activo                Boolean  @default(true)
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  etapas                ProtocoloEtapa[]
-  lineasPlanificacion   PlanificacionAgricolaLinea[]
+  id                  String                       @id @default(uuid())
+  cliente             Cliente                      @relation(fields: [clienteId], references: [id])
+  clienteId           String
+  nombre              String
+  descripcion         String
+  protocoloOrigenId   String?
+  empresaErpId        String?
+  campaniaErpId       String
+  actividadApp        ActividadApp                 @relation(fields: [actividadAppId], references: [id])
+  actividadAppId      String
+  actividadErpId      String?
+  tipoFecha           String
+  fechaSiembra        DateTime?
+  zonaApp             ZonaApp?                     @relation(fields: [zonaAppId], references: [id])
+  zonaAppId           String?
+  campoApp            CampoApp?                    @relation(fields: [campoAppId], references: [id])
+  campoAppId          String?
+  costoEstimadoPorHa  Float                        @default(0)
+  activo              Boolean                      @default(true)
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  etapas              ProtocoloEtapa[]
+  lineasPlanificacion PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
   @@index([campaniaErpId])
@@ -864,22 +911,22 @@ model ProtocoloProductivo {
 }
 
 model ProtocoloEtapa {
-  id                    String   @id @default(uuid())
-  protocolo             ProtocoloProductivo @relation(fields: [protocoloId], references: [id])
-  protocoloId           String
-  estadioReferencia     EstadioFenologicoReferencia? @relation(fields: [estadioReferenciaId], references: [id])
-  estadioReferenciaId   String?
-  estadioCodigo         String?
-  orden                 Int
-  nombre                String
-  descripcion           String?
-  fechaObjetivo         DateTime?
-  diasDesdeSiembra      Int?
-  observaciones         String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  labores               ProtocoloLabor[]
-  insumos               ProtocoloInsumo[]
+  id                  String                       @id @default(uuid())
+  protocolo           ProtocoloProductivo          @relation(fields: [protocoloId], references: [id])
+  protocoloId         String
+  estadioReferencia   EstadioFenologicoReferencia? @relation(fields: [estadioReferenciaId], references: [id])
+  estadioReferenciaId String?
+  estadioCodigo       String?
+  orden               Int
+  nombre              String
+  descripcion         String?
+  fechaObjetivo       DateTime?
+  diasDesdeSiembra    Int?
+  observaciones       String?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  labores             ProtocoloLabor[]
+  insumos             ProtocoloInsumo[]
 
   @@unique([protocoloId, estadioReferenciaId])
   @@index([protocoloId])
@@ -888,21 +935,21 @@ model ProtocoloEtapa {
 }
 
 model ProtocoloLabor {
-  id                    String   @id @default(uuid())
-  etapa                 ProtocoloEtapa @relation(fields: [etapaId], references: [id])
-  etapaId               String
-  servicioApp           ServicioApp? @relation(fields: [servicioAppId], references: [id])
-  servicioAppId         String?
-  indiceAplicacion      Float
-  nombre                String
-  descripcion           String?
-  unidad                String
-  cantidadPorHa         Float
-  costoUnitario         Float
-  costoPorHa            Float
-  momentoEstimado       String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id               String         @id @default(uuid())
+  etapa            ProtocoloEtapa @relation(fields: [etapaId], references: [id])
+  etapaId          String
+  servicioApp      ServicioApp?   @relation(fields: [servicioAppId], references: [id])
+  servicioAppId    String?
+  indiceAplicacion Float
+  nombre           String
+  descripcion      String?
+  unidad           String
+  cantidadPorHa    Float
+  costoUnitario    Float
+  costoPorHa       Float
+  momentoEstimado  String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@index([etapaId])
   @@index([servicioAppId])
@@ -910,22 +957,22 @@ model ProtocoloLabor {
 }
 
 model ProtocoloInsumo {
-  id                    String   @id @default(uuid())
-  etapa                 ProtocoloEtapa @relation(fields: [etapaId], references: [id])
-  etapaId               String
-  indiceAplicacion      Float
-  insumoApp   InsumoApp @relation(fields: [insumoAppId], references: [id])
-  insumoAppId String
-  insumoErpId           String?
-  nombre                String
-  tipo                  String?
-  unidad                String
-  dosisPorHa            Float
+  id                     String         @id @default(uuid())
+  etapa                  ProtocoloEtapa @relation(fields: [etapaId], references: [id])
+  etapaId                String
+  indiceAplicacion       Float
+  insumoApp              InsumoApp      @relation(fields: [insumoAppId], references: [id])
+  insumoAppId            String
+  insumoErpId            String?
+  nombre                 String
+  tipo                   String?
+  unidad                 String
+  dosisPorHa             Float
   precioUnitarioEstimado Float
-  costoPorHa            Float
-  momentoEstimado       String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  costoPorHa             Float
+  momentoEstimado        String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   @@index([etapaId])
   @@index([insumoAppId])
@@ -934,23 +981,23 @@ model ProtocoloInsumo {
 }
 
 model PlanificacionAgricola {
-  id              String   @id @default(uuid())
-  cliente         Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId       String
-  campaniaErpId   String
-  nombre          String
-  descripcion     String?
-  estado          String   @default("borrador")
-  escenarioOriginal Boolean @default(false)
+  id                      String                       @id @default(uuid())
+  cliente                 Cliente                      @relation(fields: [clienteId], references: [id])
+  clienteId               String
+  campaniaErpId           String
+  nombre                  String
+  descripcion             String?
+  estado                  String                       @default("borrador")
+  escenarioOriginal       Boolean                      @default(false)
   escenarioBloqueadoPorId String?
-  cerradaPor      String?
-  cerradaAt       DateTime?
-  motivoCierre    String?
-  createdBy       String?
-  updatedBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lineas          PlanificacionAgricolaLinea[]
+  cerradaPor              String?
+  cerradaAt               DateTime?
+  motivoCierre            String?
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+  lineas                  PlanificacionAgricolaLinea[]
 
   @@index([clienteId])
   @@index([campaniaErpId])
@@ -960,40 +1007,40 @@ model PlanificacionAgricola {
 }
 
 model PlanificacionAgricolaLinea {
-  id                          String   @id @default(uuid())
-  planificacion               PlanificacionAgricola @relation(fields: [planificacionId], references: [id])
-  planificacionId             String
-  empresaErpId                String
-  campoApp          CampoApp @relation(fields: [campoAppId], references: [id])
-  campoAppId        String
-  campoErpId                  String?
-  loteApp           LoteApp @relation(fields: [loteAppId], references: [id])
-  loteAppId         String
-  loteErpId                   String?
-  actividadApp      ActividadApp @relation(fields: [actividadAppId], references: [id])
-  actividadAppId    String
-  actividadErpId              String?
-  cultivoErpId                String?
-  destinoReferenciaId         String?
-  destinoVenta                String
-  destinoVentaManual          Boolean  @default(false)
-  precioReferenciaId          String?
-  precioVentaEstimado         Float
-  precioVentaManual           Boolean  @default(false)
-  hectareasPlanificadas       Float
-  rindeEstimado               Float
+  id                            String                @id @default(uuid())
+  planificacion                 PlanificacionAgricola @relation(fields: [planificacionId], references: [id])
+  planificacionId               String
+  empresaErpId                  String
+  campoApp                      CampoApp              @relation(fields: [campoAppId], references: [id])
+  campoAppId                    String
+  campoErpId                    String?
+  loteApp                       LoteApp               @relation(fields: [loteAppId], references: [id])
+  loteAppId                     String
+  loteErpId                     String?
+  actividadApp                  ActividadApp          @relation(fields: [actividadAppId], references: [id])
+  actividadAppId                String
+  actividadErpId                String?
+  cultivoErpId                  String?
+  destinoReferenciaId           String?
+  destinoVenta                  String
+  destinoVentaManual            Boolean               @default(false)
+  precioReferenciaId            String?
+  precioVentaEstimado           Float
+  precioVentaManual             Boolean               @default(false)
+  hectareasPlanificadas         Float
+  rindeEstimado                 Float
   gastosComercialesReferenciaId String?
-  gastosComercialesEstimados  Float
-  protocolo                   ProtocoloProductivo? @relation(fields: [protocoloId], references: [id])
-  protocoloId                 String?
-  ingresoBrutoEstimado        Float
-  ingresoNetoEstimado         Float
-  costoProduccionEstimado     Float
-  margenBrutoEstimado         Float
-  margenBrutoActualizado      Float?
-  estado                      String   @default("borrador")
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
+  gastosComercialesEstimados    Float
+  protocolo                     ProtocoloProductivo?  @relation(fields: [protocoloId], references: [id])
+  protocoloId                   String?
+  ingresoBrutoEstimado          Float
+  ingresoNetoEstimado           Float
+  costoProduccionEstimado       Float
+  margenBrutoEstimado           Float
+  margenBrutoActualizado        Float?
+  estado                        String                @default("borrador")
+  createdAt                     DateTime              @default(now())
+  updatedAt                     DateTime              @updatedAt
 
   @@unique([planificacionId, campoAppId, loteAppId, actividadAppId])
   @@index([planificacionId])
@@ -1005,59 +1052,59 @@ model PlanificacionAgricolaLinea {
 }
 
 model DestinoApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String?
-  zonaErpId             String?
-  campoAppId  String?
-  campoErpId            String?
-  actividadApp ActividadApp? @relation(fields: [actividadAppId], references: [id])
-  actividadAppId String?
-  actividadErpId        String?
-  especieErpId          String?
-  cultivoErpId          String?
-  destinoVenta          String
+  id                      String        @id @default(uuid())
+  cliente                 Cliente       @relation(fields: [clienteId], references: [id])
+  clienteId               String
+  empresaErpId            String?
+  zonaErpId               String?
+  campoAppId              String?
+  campoErpId              String?
+  actividadApp            ActividadApp? @relation(fields: [actividadAppId], references: [id])
+  actividadAppId          String?
+  actividadErpId          String?
+  especieErpId            String?
+  cultivoErpId            String?
+  destinoVenta            String
   destinoVentaNormalizado String
-  descripcion           String?
-  activo                Boolean  @default(true)
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  descripcion             String?
+  activo                  Boolean       @default(true)
+  createdBy               String?
+  updatedBy               String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
+  @@unique([clienteId, destinoVentaNormalizado])
   @@index([clienteId])
   @@index([empresaErpId])
   @@index([campoAppId])
   @@index([actividadAppId])
   @@index([actividadErpId])
   @@index([activo])
-  @@unique([clienteId, destinoVentaNormalizado])
 }
 
 model PrecioApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String?
-  actividadApp ActividadApp? @relation(fields: [actividadAppId], references: [id])
+  id             String        @id @default(uuid())
+  cliente        Cliente       @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  empresaErpId   String?
+  actividadApp   ActividadApp? @relation(fields: [actividadAppId], references: [id])
   actividadAppId String?
-  actividadErpId        String?
-  especieApp  EspecieApp? @relation(fields: [especieAppId], references: [id])
-  especieAppId String?
-  especieErpId          String?
-  cultivoErpId          String?
-  destinoVenta          String
-  valor                 Float
-  moneda                String
-  unidad                String
-  fuente                String
-  observaciones         String?
-  activo                Boolean  @default(true)
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  actividadErpId String?
+  especieApp     EspecieApp?   @relation(fields: [especieAppId], references: [id])
+  especieAppId   String?
+  especieErpId   String?
+  cultivoErpId   String?
+  destinoVenta   String
+  valor          Float
+  moneda         String
+  unidad         String
+  fuente         String
+  observaciones  String?
+  activo         Boolean       @default(true)
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([clienteId])
   @@index([actividadAppId])
@@ -1090,26 +1137,26 @@ model ConceptoGastoComercialApp {
 }
 
 model GastoComercialApp {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  campaniaErpId         String
-  empresaErpId          String
-  zonaAppId   String?
-  zonaErpId             String?
-  campoAppId  String?
-  campoErpId            String?
-  actividadApp ActividadApp @relation(fields: [actividadAppId], references: [id])
+  id             String       @id @default(uuid())
+  cliente        Cliente      @relation(fields: [clienteId], references: [id])
+  clienteId      String
+  campaniaErpId  String
+  empresaErpId   String
+  zonaAppId      String?
+  zonaErpId      String?
+  campoAppId     String?
+  campoErpId     String?
+  actividadApp   ActividadApp @relation(fields: [actividadAppId], references: [id])
   actividadAppId String
-  actividadErpId        String?
-  destinoVenta          String?
-  descripcion           String
-  items                 Json
-  activo                Boolean  @default(true)
-  createdBy             String?
-  updatedBy             String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  actividadErpId String?
+  destinoVenta   String?
+  descripcion    String
+  items          Json
+  activo         Boolean      @default(true)
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([clienteId])
   @@index([campaniaErpId])
@@ -1122,23 +1169,23 @@ model GastoComercialApp {
 }
 
 model VinculacionErpSugerida {
-  id                    String   @id @default(uuid())
-  cliente               Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId             String
-  empresaErpId          String
-  entidadTipo           String
+  id                     String                @id @default(uuid())
+  cliente                Cliente               @relation(fields: [clienteId], references: [id])
+  clienteId              String
+  empresaErpId           String
+  entidadTipo            String
   entidadPlanificacionId String
-  entidadErpId          String
-  entidadErpSnapshot    Json
-  puntajeCoincidencia   Float
-  criterioCoincidencia  Json
-  estado                String   @default("pendiente")
-  revisadaPor           String?
-  revisadaAt            DateTime?
-  motivoResolucion      String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  notificaciones        NotificacionUsuario[]
+  entidadErpId           String
+  entidadErpSnapshot     Json
+  puntajeCoincidencia    Float
+  criterioCoincidencia   Json
+  estado                 String                @default("pendiente")
+  revisadaPor            String?
+  revisadaAt             DateTime?
+  motivoResolucion       String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  notificaciones         NotificacionUsuario[]
 
   @@unique([clienteId, entidadTipo, entidadPlanificacionId, entidadErpId])
   @@index([clienteId])
@@ -1151,22 +1198,22 @@ model VinculacionErpSugerida {
 }
 
 model NotificacionUsuario {
-  id                      String   @id @default(uuid())
-  cliente                 Cliente  @relation(fields: [clienteId], references: [id])
-  clienteId               String
-  usuario                 Usuario? @relation(fields: [usuarioId], references: [id])
-  usuarioId               String?
-  tipo                    String
-  titulo                  String
-  mensaje                 String
-  prioridad               String   @default("normal")
-  estado                  String   @default("pendiente")
-  vinculacionSugerida     VinculacionErpSugerida? @relation(fields: [vinculacionSugeridaId], references: [id])
-  vinculacionSugeridaId   String?
-  leidaAt                 DateTime?
-  resueltaAt              DateTime?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                    String                  @id @default(uuid())
+  cliente               Cliente                 @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  usuario               Usuario?                @relation(fields: [usuarioId], references: [id])
+  usuarioId             String?
+  tipo                  String
+  titulo                String
+  mensaje               String
+  prioridad             String                  @default("normal")
+  estado                String                  @default("pendiente")
+  vinculacionSugerida   VinculacionErpSugerida? @relation(fields: [vinculacionSugeridaId], references: [id])
+  vinculacionSugeridaId String?
+  leidaAt               DateTime?
+  resueltaAt            DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   @@index([clienteId])
   @@index([usuarioId])
@@ -1178,21 +1225,21 @@ model NotificacionUsuario {
 }
 
 model AuditoriaEvento {
-  id              String   @id @default(uuid())
-  cliente         Cliente? @relation(fields: [clienteId], references: [id])
-  clienteId       String?
-  usuarioId       String?
-  entidad         String
-  entidadId       String
-  accion          String
-  origen          String
-  motivo          String?
-  valoresAntes    Json?
-  valoresDespues  Json?
-  metadata        Json?
-  ip              String?
-  userAgent       String?
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid())
+  cliente        Cliente? @relation(fields: [clienteId], references: [id])
+  clienteId      String?
+  usuarioId      String?
+  entidad        String
+  entidadId      String
+  accion         String
+  origen         String
+  motivo         String?
+  valoresAntes   Json?
+  valoresDespues Json?
+  metadata       Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
 
   @@index([clienteId])
   @@index([usuarioId])

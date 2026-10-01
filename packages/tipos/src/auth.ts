@@ -24,6 +24,9 @@ export type Permiso =
   | 'precipitaciones:leer'
   | 'observaciones:crear'
   | 'observaciones:leer'
+  | 'ndvi:leer'
+  | 'ndvi:gestionar'
+  | 'ndvi:procesar'
   | 'auditoria:leer';
 
 export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
@@ -49,6 +52,9 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'precipitaciones:leer',
     'observaciones:crear',
     'observaciones:leer',
+    'ndvi:leer',
+    'ndvi:gestionar',
+    'ndvi:procesar',
     'auditoria:leer',
   ],
   planificador: [
@@ -64,6 +70,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'padrones-base:gestionar',
     'precipitaciones:leer',
     'observaciones:leer',
+    'ndvi:leer',
   ],
   responsable_compras: [
     'erp:leer',
@@ -88,6 +95,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     'precipitaciones:leer',
     'observaciones:crear',
     'observaciones:leer',
+    'ndvi:leer',
   ],
 };
 
