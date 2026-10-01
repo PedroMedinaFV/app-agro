@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { ProtocoloModal } from '../components/protocolos/ProtocoloModal';
 import { obtenerCampaniasErpImportadas } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 
 interface ProtocolosScreenProps {
   sesion: SesionUsuario;
@@ -204,7 +205,7 @@ export function ProtocolosScreen({
               key: 'actualizado',
               label: 'Actualizado',
               width: 'minmax(106px, 0.65fr)',
-              render: (protocolo) => new Date(protocolo.updatedAt).toLocaleDateString('es-AR'),
+              render: (protocolo) => formatearFecha(protocolo.updatedAt),
             },
             {
               key: 'acciones',

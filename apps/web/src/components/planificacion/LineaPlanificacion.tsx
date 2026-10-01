@@ -8,7 +8,7 @@ import type {
 } from '@agro/tipos';
 import { DecimalInput } from '../DecimalInput';
 import { IconButton } from '../IconButton';
-import { formatearNumero } from '../../utils/formatters';
+import { formatearFecha, formatearNumero } from '../../utils/formatters';
 import { formatearCultivosAntecesores } from '../../utils/planificacion/helpersPlanificacion';
 
 type LineaPlanificacionProps = {
@@ -89,7 +89,7 @@ export function LineaPlanificacion({
               <option key={item.id} value={item.id}>{item.nombre}</option>
             ))}
           </select>
-          <span>{protocolo ? `${formatearUsd(protocolo.costoEstimadoPorHa)} / ha - act. ${new Date(protocolo.updatedAt).toLocaleDateString('es-AR')}` : 'Selecciona protocolo para definir actividad'}</span>
+          <span>{protocolo ? `${formatearUsd(protocolo.costoEstimadoPorHa)} / ha - act. ${formatearFecha(protocolo.updatedAt)}` : 'Selecciona protocolo para definir actividad'}</span>
           {lineaDuplicada && <span className="cell-error">Actividad duplicada para este lote</span>}
         </div>
 
