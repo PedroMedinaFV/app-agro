@@ -550,7 +550,8 @@ Pendientes tecnicos:
 
 - [ ] aplicar migracion en base local/ambiente;
 - [x] modularizar `MonitoreosScreen`;
-- [ ] modularizar la seleccion de recorrida en `ObservacionesScreen`;
+- [x] modularizar `ObservacionesScreen`;
+- [x] reutilizar `SelectorRecorrida` en observaciones;
 - [ ] agregar tests de servicio backend para validaciones de campo/lote/estado;
 - [ ] definir si `cancelada` queda habilitado en MVP o solo como estado reservado.
 
@@ -587,6 +588,6 @@ Cerrar el primer corte de Sprint 10:
 1. aplicar migracion de recorridas en base local;
 2. validar crear/cerrar recorrida desde web;
 3. validar observacion asociada a recorrida;
-4. modularizar `ObservacionesScreen`;
-5. agregar detalle de recorrida con observaciones vinculadas;
-6. preparar contrato mobile/offline para recorridas.
+4. agregar detalle de recorrida con observaciones vinculadas;
+5. preparar contrato mobile/offline para recorridas;
+6. validar flujo completo con migracion aplicada.

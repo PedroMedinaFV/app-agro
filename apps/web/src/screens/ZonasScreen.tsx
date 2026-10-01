@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import { guardarZonaApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -112,7 +113,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       detalle: zona.codigoInterno || 'Sin codigo interno',
       origen: 'Agro App',
       estado: zona.estadoVinculacion === 'provisorio' ? 'Provisorio' : 'Vinculado ERP',
-      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(zona.updatedAt || zona.createdAt)),
+      actualizado: formatearFecha(zona.updatedAt || zona.createdAt),
       accion: 'editar' as const,
       zonaPropia: zona,
     })),

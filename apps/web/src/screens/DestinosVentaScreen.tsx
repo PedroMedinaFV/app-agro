@@ -9,6 +9,7 @@ import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerDestinosVenta } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -157,7 +158,7 @@ export function DestinosVentaScreen({
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(190px, 1.4fr)', render: (destino) => destino.descripcion || 'Sin descripcion' },
             { key: 'origen', label: 'Origen', width: 'minmax(88px, 0.5fr)', render: (destino) => <OriginBadge origen={destino.origen === 'erp' ? 'ERP' : 'Agro App'} /> },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (destino) => <em>{destino.activo ? 'Activo' : 'Inactivo'}</em> },
-            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (destino) => new Intl.DateTimeFormat('es-AR').format(new Date(destino.updatedAt || destino.createdAt)) },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (destino) => formatearFecha(destino.updatedAt || destino.createdAt) },
             {
               key: 'acciones',
               label: 'Acciones',

@@ -44,6 +44,7 @@ import {
   obtenerZonasErpImportadas,
   obtenerZonasApp,
 } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -78,10 +79,6 @@ type VinculacionesPadronesScreenProps = {
   notificar?: Notificar;
   onVinculacionesActualizadas?: () => Promise<void> | void;
 };
-
-function formatearFecha(fecha?: string) {
-  return fecha ? new Intl.DateTimeFormat('es-AR').format(new Date(fecha)) : '-';
-}
 
 export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificacion, notificar, onVinculacionesActualizadas }: VinculacionesPadronesScreenProps) {
   const [zonas, setZonas] = useState<ZonaApp[]>([]);

@@ -7,6 +7,7 @@ import {
   ErpZona,
   ZonaApp,
 } from '@agro/tipos';
+import { formatearFecha } from '../formatters';
 
 export type ActividadSeleccionable = {
   clave: string;
@@ -52,10 +53,6 @@ export function normalizarTexto(valor: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
-}
-
-export function formatearFecha(valor: string) {
-  return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(valor));
 }
 
 export function unirActividadesPropias(actividadesBase: ActividadApp[], actividadesCreadas: ActividadApp[]) {

@@ -25,6 +25,31 @@ export function formatearMoneda(valor: number, moneda = 'USD') {
   }
 }
 
+export function formatearFecha(valor?: string) {
+  if (!valor) return '-';
+
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(fecha);
+}
+
+export function formatearFechaHora(valor?: string) {
+  if (!valor) return '-';
+
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(fecha);
+}
+
 export function leerNumero(valor: string) {
   const numero = Number(valor.replace(',', '.'));
 

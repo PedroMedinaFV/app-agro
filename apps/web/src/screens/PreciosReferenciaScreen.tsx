@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerEspeciesApp, obtenerEspeciesErpImportadas, obtenerPuertosErpImportados } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -125,10 +126,6 @@ export function PreciosReferenciaScreen({
 
     cargarPadronesReales().catch(() => undefined);
   }, [sesion.token]);
-
-  function formatearFecha(valor: string) {
-    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(valor));
-  }
 
   function crearBorradorPrecio(): PrecioReferencia {
     const ahora = new Date().toISOString();

@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { Panel } from '../components/Panel';
+import { formatearFechaHora } from '../utils/formatters';
 
 type SincronizacionItem = {
   id: PadronErpSincronizable;
@@ -40,10 +41,6 @@ const itemsDisponibles: SincronizacionItem[] = [
   { id: 'puertos', label: 'Puertos', descripcion: 'Puertos/destinos comerciales del ERP.' },
 ];
 const padronesErpSincronizables = itemsDisponibles.map((item) => item.id);
-
-function formatearFecha(fecha?: string) {
-  return fecha ? new Date(fecha).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-}
 
 export function SincronizacionErpScreen({
   puedeConfigurarErp,
@@ -133,7 +130,7 @@ export function SincronizacionErpScreen({
       </Panel>
 
       {ultimoResultadoSync && (
-        <Panel title="Ultimo resultado" description={`Sincronizado: ${formatearFecha(ultimoResultadoSync.sincronizadoEn)}`}>
+        <Panel title="Ultimo resultado" description={`Sincronizado: ${formatearFechaHora(ultimoResultadoSync.sincronizadoEn)}`}>
           <div className="company-summary">
             {resumen.map(([label, valor]) => (
               <article key={label}>
@@ -156,7 +153,7 @@ export function SincronizacionErpScreen({
               key: 'inicio',
               label: 'Inicio',
               width: 'minmax(112px, 0.9fr)',
-              render: (sync) => formatearFecha(sync.iniciadoEn),
+              render: (sync) => formatearFechaHora(sync.iniciadoEn),
             },
             {
               key: 'estado',
@@ -191,7 +188,7 @@ export function SincronizacionErpScreen({
       </Panel>
 
       {syncSeleccionada && (
-        <Panel title="Detalle por empresa y padron" description={`Corrida iniciada: ${formatearFecha(syncSeleccionada.iniciadoEn)}`}>
+        <Panel title="Detalle por empresa y padron" description={`Corrida iniciada: ${formatearFechaHora(syncSeleccionada.iniciadoEn)}`}>
           <DataTable
             rows={syncSeleccionada.detalles}
             getRowKey={(detalle) => detalle.id}

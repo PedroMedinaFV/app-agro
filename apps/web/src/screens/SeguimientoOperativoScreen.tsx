@@ -20,6 +20,7 @@ import {
   obtenerPlanificacionSnapshot,
   obtenerPrecipitaciones,
 } from '../services/api';
+import { formatearFechaHora } from '../utils/formatters';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -28,15 +29,8 @@ type SeguimientoOperativoScreenProps = {
   notificar?: Notificar;
 };
 
-function formatearFecha(valor: string | undefined) {
-  if (!valor) {
-    return 'Sin fecha';
-  }
-
-  return new Intl.DateTimeFormat('es-AR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(valor));
+function describirFecha(valor: string | undefined) {
+  return valor ? formatearFechaHora(valor) : 'Sin fecha';
 }
 
 function formatearNdvi(valor: number | undefined) {
@@ -314,7 +308,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
             <article>
               <h3>Actividad reciente</h3>
               <p><strong>Lluvias 30 dias:</strong> {fichaLote.precipitaciones.milimetrosUltimos30Dias.toFixed(1)} mm</p>
-              <p><strong>Ultima lluvia:</strong> {formatearFecha(fichaLote.precipitaciones.ultimoEvento)}</p>
+              <p><strong>Ultima lluvia:</strong> {describirFecha(fichaLote.precipitaciones.ultimoEvento)}</p>
               <p><strong>Observaciones altas:</strong> {fichaLote.observaciones.cantidadAlta}</p>
             </article>
 
@@ -325,7 +319,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
               ) : ultimoNdvi ? (
                 <>
                   <p><strong>Estado:</strong> {obtenerEstadoNdvi(ultimoNdvi)}</p>
-                  <p><strong>Fecha imagen:</strong> {formatearFecha(ultimoNdvi.fechaImagen)}</p>
+                  <p><strong>Fecha imagen:</strong> {describirFecha(ultimoNdvi.fechaImagen)}</p>
                   <p><strong>Promedio:</strong> {formatearNdvi(ultimoNdvi.ndviPromedio)}</p>
                   <p><strong>Rango:</strong> {formatearNdvi(ultimoNdvi.ndviMinimo)} / {formatearNdvi(ultimoNdvi.ndviMaximo)}</p>
                   <p><strong>Proveedor:</strong> {ultimoNdvi.proveedor}</p>
@@ -348,7 +342,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
           getRowKey={(observacion) => observacion.id}
           emptyMessage="No hay observaciones para los filtros seleccionados."
           columns={[
-            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.8fr)', render: (observacion) => formatearFecha(observacion.fechaEvento) },
+            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.8fr)', render: (observacion) => describirFecha(observacion.fechaEvento) },
             { key: 'campo', label: 'Campo', width: 'minmax(160px, 1fr)', render: (observacion) => <strong>{camposPorId.get(observacion.campoAppId)?.nombre || observacion.campoAppId}</strong> },
             { key: 'lote', label: 'Lote', width: 'minmax(130px, 0.8fr)', render: (observacion) => observacion.loteAppId ? lotesPorId.get(observacion.loteAppId)?.nombre || observacion.loteAppId : 'Campo completo' },
             { key: 'titulo', label: 'Titulo', width: 'minmax(190px, 1.4fr)', render: (observacion) => <><strong>{observacion.titulo}</strong><span>{observacion.descripcion}</span></> },
@@ -375,7 +369,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
           getRowKey={(precipitacion) => precipitacion.id}
           emptyMessage="No hay precipitaciones para los filtros seleccionados."
           columns={[
-            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.8fr)', render: (precipitacion) => formatearFecha(precipitacion.fechaEvento) },
+            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.8fr)', render: (precipitacion) => describirFecha(precipitacion.fechaEvento) },
             { key: 'campo', label: 'Campo', width: 'minmax(160px, 1fr)', render: (precipitacion) => <strong>{camposPorId.get(precipitacion.campoAppId)?.nombre || precipitacion.campoAppId}</strong> },
             { key: 'lote', label: 'Lote', width: 'minmax(130px, 0.8fr)', render: (precipitacion) => precipitacion.loteAppId ? lotesPorId.get(precipitacion.loteAppId)?.nombre || precipitacion.loteAppId : 'Campo completo' },
             { key: 'mm', label: 'Mm', width: 'minmax(70px, 0.4fr)', render: (precipitacion) => `${precipitacion.milimetros.toFixed(1)} mm` },

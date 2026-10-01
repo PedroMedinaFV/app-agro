@@ -45,6 +45,8 @@ Los inputs deben adaptar el formato de backend al formato HTML esperado.
 - `type="date"` debe recibir `YYYY-MM-DD`, aunque backend devuelva ISO completo.
 - decimales deben permitir punto y coma desde teclado numerico.
 - enteros relativos deben permitir valores negativos cuando el negocio lo requiera.
+- las fechas visibles deben formatearse desde `utils/formatters.ts` con `formatearFecha` o `formatearFechaHora`;
+- evitar `new Intl.DateTimeFormat(...)` duplicado en pantallas o componentes, salvo componentes especializados como `FechaInput`.
 
 ## UX durante requests
 
@@ -76,10 +78,10 @@ Checklist minimo antes de agregar una segunda feature sobre la misma pantalla:
 
 Para `Monitoreos` y `Observaciones`, el proximo trabajo debe ser extraer:
 
-- `useRecorridas`;
-- `FormularioRecorrida`;
-- `TablaRecorridas`;
-- `SelectorRecorrida`;
-- `useObservaciones`;
-- `FormularioObservacion`;
-- `TablaObservaciones`.
+- [x] `useRecorridas`;
+- [x] `FormularioRecorrida`;
+- [x] `TablaRecorridas`;
+- [x] `SelectorRecorrida`;
+- [x] `useObservaciones`;
+- [x] `FormularioObservacion`;
+- [x] `TablaObservaciones`.

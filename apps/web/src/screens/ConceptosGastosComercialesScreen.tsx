@@ -7,6 +7,7 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
+import { formatearFecha } from '../utils/formatters';
 
 function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
@@ -143,7 +144,7 @@ export function ConceptosGastosComercialesScreen({
             { key: 'unidad', label: 'Unidad', width: 'minmax(86px, 0.55fr)', render: (concepto) => concepto.unidadCalculo },
             { key: 'descripcion', label: 'Descripcion', width: 'minmax(180px, 1.3fr)', render: (concepto) => concepto.descripcion || 'Sin descripcion' },
             { key: 'estado', label: 'Estado', width: 'minmax(86px, 0.55fr)', render: (concepto) => <em>{concepto.activo ? 'Activo' : 'Inactivo'}</em> },
-            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (concepto) => new Intl.DateTimeFormat('es-AR').format(new Date(concepto.updatedAt || concepto.createdAt)) },
+            { key: 'actualizado', label: 'Actualizado', width: 'minmax(110px, 0.7fr)', render: (concepto) => formatearFecha(concepto.updatedAt || concepto.createdAt) },
             {
               key: 'acciones',
               label: 'Acciones',

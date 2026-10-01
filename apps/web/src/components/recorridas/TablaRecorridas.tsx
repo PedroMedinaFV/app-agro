@@ -2,9 +2,9 @@ import type { CampoApp, LoteApp, RecorridaCampo } from '@agro/tipos';
 import { DataTable } from '../DataTable';
 import { IconButton } from '../IconButton';
 import {
-  formatearFechaRecorrida,
   obtenerEtiquetaObjetivoRecorrida,
 } from '../../utils/recorridas/helpersRecorridas';
+import { formatearFecha } from '../../utils/formatters';
 import type { FiltroEstadoRecorrida } from '../../hooks/useRecorridas';
 
 type TablaRecorridasProps = {
@@ -79,7 +79,7 @@ export function TablaRecorridas({
             key: 'inicio',
             label: 'Inicio',
             width: 'minmax(110px, 0.7fr)',
-            render: (recorrida) => formatearFechaRecorrida(recorrida.fechaInicio),
+            render: (recorrida) => formatearFecha(recorrida.fechaInicio),
           },
           {
             key: 'campo',

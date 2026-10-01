@@ -5,6 +5,7 @@ import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { Panel } from '../components/Panel';
 import { generarSugerenciasVinculacion, obtenerNotificaciones, resolverNotificacionVinculacion } from '../services/api';
+import { formatearFechaHora } from '../utils/formatters';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -12,16 +13,6 @@ interface NotificacionesScreenProps {
   sesion: SesionUsuario;
   notificar?: Notificar;
   onCantidadPendienteChange?: (cantidad: number) => void;
-}
-
-function formatearFecha(fecha: string) {
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(fecha));
 }
 
 function obtenerDetalleSugerencia(notificacion: NotificacionUsuarioResumen) {
@@ -139,7 +130,7 @@ export function NotificacionesScreen({ sesion, notificar, onCantidadPendienteCha
             { key: 'titulo', label: 'Notificacion', width: 'minmax(220px, 1.3fr)', render: (notificacion) => <><strong>{notificacion.titulo}</strong><span>{notificacion.mensaje}</span></> },
             { key: 'prioridad', label: 'Prioridad', width: 'minmax(95px, 0.5fr)', render: (notificacion) => notificacion.prioridad },
             { key: 'detalle', label: 'Detalle', width: 'minmax(180px, 0.9fr)', render: obtenerDetalleSugerencia },
-            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.7fr)', render: (notificacion) => formatearFecha(notificacion.createdAt) },
+            { key: 'fecha', label: 'Fecha', width: 'minmax(130px, 0.7fr)', render: (notificacion) => formatearFechaHora(notificacion.createdAt) },
             {
               key: 'acciones',
               label: 'Acciones',

@@ -37,19 +37,6 @@ export function crearFormularioRecorridaInicial(campoAppId = ''): FormularioReco
   };
 }
 
-export function formatearFechaRecorrida(valor?: string) {
-  if (!valor) return '-';
-
-  const fecha = new Date(valor);
-  if (Number.isNaN(fecha.getTime())) return '-';
-
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(fecha);
-}
-
 export function obtenerEtiquetaObjetivoRecorrida(objetivo: ObjetivoRecorridaCampo) {
   return objetivosRecorrida.find((item) => item.valor === objetivo)?.etiqueta || objetivo;
 }

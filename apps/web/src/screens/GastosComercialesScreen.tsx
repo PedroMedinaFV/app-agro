@@ -28,11 +28,11 @@ import {
   obtenerPuertosErpImportados,
   obtenerZonasErpImportadas,
 } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 import {
   construirActividadesSeleccionables,
   construirCamposSeleccionables,
   construirZonasSeleccionables,
-  formatearFecha,
   limpiarTextoVisible,
   normalizarTexto,
   unirActividadesPropias,

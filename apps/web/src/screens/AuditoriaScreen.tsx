@@ -5,21 +5,12 @@ import { DataTable } from '../components/DataTable';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { obtenerAuditoriaEventos } from '../services/api';
+import { formatearFechaHora } from '../utils/formatters';
 
 type AuditoriaScreenProps = {
   sesion: SesionUsuario;
   notificar?: (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje: string }) => void;
 };
-
-function formatearFecha(fecha: string) {
-  return new Date(fecha).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function formatearJson(valor: unknown) {
   if (valor === undefined || valor === null) {
@@ -189,7 +180,7 @@ export function AuditoriaScreen({ sesion, notificar }: AuditoriaScreenProps) {
                 key: 'fecha',
                 label: 'Fecha',
                 width: 'minmax(116px, 0.75fr)',
-                render: (evento) => formatearFecha(evento.createdAt),
+                render: (evento) => formatearFechaHora(evento.createdAt),
               },
               {
                 key: 'usuario',

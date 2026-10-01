@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
 import { guardarEspecieApp, obtenerEspeciesErpImportadas, obtenerEspeciesApp } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
@@ -109,7 +110,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
       detalle: especie.codigoInterno || 'Sin codigo interno',
       origen: 'Agro App',
       estado: especie.estadoVinculacion === 'provisorio' ? 'Provisoria' : 'Vinculada ERP',
-      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.updatedAt || especie.createdAt)),
+      actualizado: formatearFecha(especie.updatedAt || especie.createdAt),
       accion: 'editar' as const,
       especiePropia: especie,
     })),
@@ -119,7 +120,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
       detalle: `${especie.codigo} - ALBOR #${especie.idEspecie}`,
       origen: 'ERP',
       estado: especiesVinculadas.has(especie.erpId) ? 'Vinculada' : 'Disponible',
-      actualizado: new Intl.DateTimeFormat('es-AR').format(new Date(especie.actualizadoEn)),
+      actualizado: formatearFecha(especie.actualizadoEn),
       accion: 'importada' as const,
     })),
   ];

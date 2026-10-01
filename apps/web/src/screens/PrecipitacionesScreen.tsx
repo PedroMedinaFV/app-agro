@@ -10,6 +10,7 @@ import {
   obtenerPlanificacionSnapshot,
   obtenerPrecipitaciones,
 } from '../services/api';
+import { formatearFecha } from '../utils/formatters';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -31,20 +32,6 @@ function fechaActualIso() {
   ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
 
   return ahora.toISOString().slice(0, 10);
-}
-
-function formatearFecha(valor: string) {
-  const fecha = new Date(valor);
-
-  if (Number.isNaN(fecha.getTime())) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(fecha);
 }
 
 function crearFormularioInicial(campoAppId = ''): FormularioPrecipitacion {
