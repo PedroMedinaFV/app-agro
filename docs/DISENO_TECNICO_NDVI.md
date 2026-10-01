@@ -439,24 +439,24 @@ Empezar con carga manual/importada y modelo listo para proveedor. Automatizar pr
 
 ### Fase 0 - Diseño y contratos
 
-- [ ] Agregar documento técnico.
-- [ ] Definir tipos compartidos.
-- [ ] Definir migración Prisma.
-- [ ] Definir permisos.
+- [x] Agregar documento técnico.
+- [x] Definir tipos compartidos.
+- [x] Definir migración Prisma.
+- [x] Definir permisos.
 
 ### Fase 1 - Base persistente
 
-- [ ] Crear tabla `LoteMapaNdvi`.
-- [ ] Crear endpoints de consulta.
-- [ ] Integrar auditoría.
-- [ ] Validar alcance por usuario.
+- [x] Crear tabla `LoteMapaNdvi`.
+- [x] Crear endpoints de consulta.
+- [x] Integrar auditoría para alta/actualizacion manual de metadata.
+- [x] Validar alcance por usuario.
 
 ### Fase 2 - Carga manual
 
 - [ ] Crear upload-url.
-- [ ] Registrar metadata.
+- [x] Registrar metadata.
 - [ ] Guardar preview.
-- [ ] Mostrar último NDVI en ficha de lote web.
+- [x] Mostrar último NDVI en ficha de lote web.
 
 ### Fase 3 - Mobile operativo
 

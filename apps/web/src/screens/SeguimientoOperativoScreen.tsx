@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type {
   CampoApp,
   FichaLoteOperativoResponse,
+  LoteMapaNdvi,
   LoteApp,
   ObservacionCampo,
   PrecipitacionCampo,
@@ -14,6 +15,7 @@ import { Panel } from '../components/Panel';
 import {
   crearUrlLecturaAdjuntoObservacion,
   obtenerFichaLoteOperativo,
+  obtenerUltimoMapaNdviLote,
   obtenerObservaciones,
   obtenerPlanificacionSnapshot,
   obtenerPrecipitaciones,
@@ -37,6 +39,43 @@ function formatearFecha(valor: string | undefined) {
   }).format(new Date(valor));
 }
 
+function formatearNdvi(valor: number | undefined) {
+  if (valor === undefined) {
+    return '-';
+  }
+
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(valor);
+}
+
+function obtenerEstadoNdvi(mapa: LoteMapaNdvi | null) {
+  if (!mapa) {
+    return 'Sin NDVI';
+  }
+
+  if (mapa.estado !== 'procesado') {
+    return mapa.estado;
+  }
+
+  const promedio = mapa.ndviPromedio;
+
+  if (promedio === undefined) {
+    return 'Procesado';
+  }
+
+  if (promedio < 0.35) {
+    return 'Bajo';
+  }
+
+  if (promedio < 0.6) {
+    return 'Medio';
+  }
+
+  return 'Alto';
+}
+
 function dentroDelRango(fechaIso: string, desde: string, hasta: string) {
   const fecha = new Date(fechaIso).getTime();
   const minimo = desde ? new Date(`${desde}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
@@ -51,6 +90,8 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
   const [observaciones, setObservaciones] = useState<ObservacionCampo[]>([]);
   const [precipitaciones, setPrecipitaciones] = useState<PrecipitacionCampo[]>([]);
   const [fichaLote, setFichaLote] = useState<FichaLoteOperativoResponse | null>(null);
+  const [ultimoNdvi, setUltimoNdvi] = useState<LoteMapaNdvi | null>(null);
+  const [cargandoNdvi, setCargandoNdvi] = useState(false);
   const [estado, setEstado] = useState('Cargando seguimiento operativo.');
   const [filtroCampoId, setFiltroCampoId] = useState('');
   const [filtroLoteId, setFiltroLoteId] = useState('');
@@ -76,7 +117,7 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
       setEstado('Seguimiento cargado desde backend.');
 
       if (loteInicial) {
-        setFichaLote(await obtenerFichaLoteOperativo(loteInicial, sesion.token));
+        await cargarFichaOperativa(loteInicial);
       }
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo cargar el seguimiento operativo.';
@@ -124,15 +165,37 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
   const totalMm = precipitacionesFiltradas.reduce((total, precipitacion) => total + precipitacion.milimetros, 0);
   const adjuntos = observacionesFiltradas.reduce((total, observacion) => total + (observacion.adjuntos?.length || 0), 0);
 
+  async function cargarFichaOperativa(loteAppId: string) {
+    setCargandoNdvi(true);
+    setUltimoNdvi(null);
+
+    try {
+      const [ficha, ndvi] = await Promise.all([
+        obtenerFichaLoteOperativo(loteAppId, sesion.token),
+        obtenerUltimoMapaNdviLote(loteAppId, sesion.token).catch((error) => {
+          const mensaje = error instanceof Error ? error.message : 'No se pudo cargar el ultimo NDVI.';
+          notificar?.({ tipo: 'info', titulo: 'NDVI no disponible', mensaje });
+          return null;
+        }),
+      ]);
+
+      setFichaLote(ficha);
+      setUltimoNdvi(ndvi);
+    } finally {
+      setCargandoNdvi(false);
+    }
+  }
+
   async function seleccionarLote(loteAppId: string) {
     setFiltroLoteId(loteAppId);
     if (!loteAppId) {
       setFichaLote(null);
+      setUltimoNdvi(null);
       return;
     }
 
     try {
-      setFichaLote(await obtenerFichaLoteOperativo(loteAppId, sesion.token));
+      await cargarFichaOperativa(loteAppId);
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo cargar la ficha del lote.';
       notificar?.({ tipo: 'error', titulo: 'No se cargo la ficha', mensaje });
@@ -253,6 +316,27 @@ export function SeguimientoOperativoScreen({ sesion, notificar }: SeguimientoOpe
               <p><strong>Lluvias 30 dias:</strong> {fichaLote.precipitaciones.milimetrosUltimos30Dias.toFixed(1)} mm</p>
               <p><strong>Ultima lluvia:</strong> {formatearFecha(fichaLote.precipitaciones.ultimoEvento)}</p>
               <p><strong>Observaciones altas:</strong> {fichaLote.observaciones.cantidadAlta}</p>
+            </article>
+
+            <article>
+              <h3>Ultimo NDVI</h3>
+              {cargandoNdvi ? (
+                <p>Cargando NDVI...</p>
+              ) : ultimoNdvi ? (
+                <>
+                  <p><strong>Estado:</strong> {obtenerEstadoNdvi(ultimoNdvi)}</p>
+                  <p><strong>Fecha imagen:</strong> {formatearFecha(ultimoNdvi.fechaImagen)}</p>
+                  <p><strong>Promedio:</strong> {formatearNdvi(ultimoNdvi.ndviPromedio)}</p>
+                  <p><strong>Rango:</strong> {formatearNdvi(ultimoNdvi.ndviMinimo)} / {formatearNdvi(ultimoNdvi.ndviMaximo)}</p>
+                  <p><strong>Proveedor:</strong> {ultimoNdvi.proveedor}</p>
+                  {ultimoNdvi.storagePathPreview && <p><strong>Preview:</strong> disponible</p>}
+                </>
+              ) : (
+                <>
+                  <p>Sin mapa NDVI disponible para este lote.</p>
+                  <p className="hint">Primero se debe cargar o importar una escena NDVI procesada.</p>
+                </>
+              )}
             </article>
           </div>
         </Panel>

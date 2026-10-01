@@ -38,3 +38,18 @@ export type MapasNdviLoteResponse = {
   ultimo?: LoteMapaNdvi;
   historial: LoteMapaNdvi[];
 };
+
+export type GuardarMapaNdviRequest = {
+  mapa: Omit<LoteMapaNdvi, 'id' | 'clienteId' | 'loteAppId' | 'loteErpId' | 'campoAppId' | 'campoErpId' | 'createdAt' | 'updatedAt'> & {
+    id?: string;
+    activo?: boolean;
+  };
+  motivo?: string;
+  origen: 'web' | 'mobile' | 'api';
+};
+
+export type GuardarMapaNdviResponse = {
+  mapa: LoteMapaNdvi;
+  auditado: boolean;
+  mensaje: string;
+};

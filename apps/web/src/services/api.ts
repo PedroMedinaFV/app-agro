@@ -33,6 +33,8 @@ import {
   GuardarCampoAppResponse,
   GuardarLoteAppRequest,
   GuardarLoteAppResponse,
+  GuardarMapaNdviRequest,
+  GuardarMapaNdviResponse,
   GuardarArchivoGeograficoLoteRequest,
   GuardarArchivoGeograficoLoteResponse,
   ArchivosGeograficosLoteResponse,
@@ -63,6 +65,7 @@ import {
   AuditoriaEventosResponse,
   EspecieApp,
   InsumoApp,
+  LoteMapaNdvi,
   LoteApp,
   LoginEmailRequest,
   NotificacionUsuarioResumen,
@@ -364,6 +367,17 @@ export async function obtenerPlanificacionSnapshot(token?: string, opciones: { f
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {
   return request<FichaLoteOperativoResponse>(`/operativo/lotes/${loteAppId}/ficha`, {}, token);
+}
+
+export async function obtenerUltimoMapaNdviLote(loteAppId: string, token?: string): Promise<LoteMapaNdvi | null> {
+  return request<LoteMapaNdvi | null>(`/ndvi/lotes/${loteAppId}/ultimo`, {}, token);
+}
+
+export async function guardarMapaNdviLote(loteAppId: string, datos: GuardarMapaNdviRequest, token?: string): Promise<GuardarMapaNdviResponse> {
+  return request<GuardarMapaNdviResponse>(`/ndvi/lotes/${loteAppId}`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
 }
 
 export async function guardarPlanificacion(id: string, datos: GuardarPlanificacionRequest, token?: string): Promise<GuardarPlanificacionResponse> {

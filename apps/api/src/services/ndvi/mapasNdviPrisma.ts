@@ -1,9 +1,13 @@
-import type { LoteMapaNdvi, MapasNdviLoteResponse } from '@agro/tipos';
+import { randomUUID } from 'node:crypto';
+import type { GuardarMapaNdviRequest, GuardarMapaNdviResponse, LoteMapaNdvi, MapasNdviLoteResponse } from '@agro/tipos';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { obtenerCamposAsignados } from '../usuarios/asignacionCampos';
+import { registrarAuditoria } from '../planificacion/auditoria';
 
 type UsuarioOperacion = {
   id?: string;
+  email?: string;
   rol?: string;
   clienteId?: string;
 };
@@ -51,6 +55,32 @@ function crearErrorValidacion(message: string, statusCode = 400) {
   error.statusCode = statusCode;
 
   return error;
+}
+
+function esOrigenMapaNdvi(valor: string): valor is LoteMapaNdvi['origen'] {
+  return valor === 'manual' || valor === 'proveedor_api' || valor === 'importacion' || valor === 'proceso_interno';
+}
+
+function esEstadoMapaNdvi(valor: string): valor is LoteMapaNdvi['estado'] {
+  return valor === 'pendiente_procesamiento' || valor === 'procesado' || valor === 'rechazado' || valor === 'archivado';
+}
+
+function validarNumeroOpcional(valor: number | undefined, campo: string, minimo?: number, maximo?: number) {
+  if (valor === undefined) {
+    return;
+  }
+
+  if (!Number.isFinite(valor)) {
+    throw crearErrorValidacion(`${campo} debe ser numerico.`);
+  }
+
+  if (minimo !== undefined && valor < minimo) {
+    throw crearErrorValidacion(`${campo} debe ser mayor o igual a ${minimo}.`);
+  }
+
+  if (maximo !== undefined && valor > maximo) {
+    throw crearErrorValidacion(`${campo} debe ser menor o igual a ${maximo}.`);
+  }
 }
 
 function mapearMapaNdvi(row: MapaNdviRow): LoteMapaNdvi {
@@ -189,4 +219,185 @@ export async function obtenerMapaNdviPorId(mapaNdviId: string, usuario: UsuarioO
   await validarAlcanceCampo(usuario, mapa.campoErpId);
 
   return mapearMapaNdvi(mapa);
+}
+
+export async function guardarMapaNdviLote(
+  loteAppId: string,
+  request: GuardarMapaNdviRequest,
+  usuario: UsuarioOperacion,
+): Promise<GuardarMapaNdviResponse> {
+  const lote = await obtenerLoteParaNdvi(loteAppId, usuario);
+  const mapa = request.mapa;
+  const id = mapa.id || randomUUID();
+  const fechaImagen = new Date(mapa.fechaImagen);
+  const fechaProcesamiento = mapa.fechaProcesamiento ? new Date(mapa.fechaProcesamiento) : null;
+
+  if (Number.isNaN(fechaImagen.getTime())) {
+    throw crearErrorValidacion('La fecha de imagen NDVI no es valida.');
+  }
+
+  if (fechaImagen.getTime() > Date.now()) {
+    throw crearErrorValidacion('La fecha de imagen NDVI no puede ser futura.');
+  }
+
+  if (fechaProcesamiento && Number.isNaN(fechaProcesamiento.getTime())) {
+    throw crearErrorValidacion('La fecha de procesamiento NDVI no es valida.');
+  }
+
+  if (!mapa.proveedor.trim()) {
+    throw crearErrorValidacion('El proveedor NDVI es obligatorio.');
+  }
+
+  if (!esOrigenMapaNdvi(mapa.origen)) {
+    throw crearErrorValidacion('El origen NDVI no es valido.');
+  }
+
+  if (!esEstadoMapaNdvi(mapa.estado)) {
+    throw crearErrorValidacion('El estado NDVI no es valido.');
+  }
+
+  validarNumeroOpcional(mapa.resolucionMetros, 'La resolucion', 0);
+  validarNumeroOpcional(mapa.nubosidadPorcentaje, 'La nubosidad', 0, 100);
+  validarNumeroOpcional(mapa.ndviPromedio, 'El NDVI promedio', -1, 1);
+  validarNumeroOpcional(mapa.ndviMinimo, 'El NDVI minimo', -1, 1);
+  validarNumeroOpcional(mapa.ndviMaximo, 'El NDVI maximo', -1, 1);
+  validarNumeroOpcional(mapa.ndviDesvio, 'El desvio NDVI', 0);
+  validarNumeroOpcional(mapa.superficieAnalizadaHa, 'La superficie analizada', 0);
+
+  if (mapa.ndviMinimo !== undefined && mapa.ndviMaximo !== undefined && mapa.ndviMinimo > mapa.ndviMaximo) {
+    throw crearErrorValidacion('El NDVI minimo no puede ser mayor al maximo.');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const existentes = await tx.$queryRaw<MapaNdviRow[]>`
+      SELECT *
+      FROM "LoteMapaNdvi"
+      WHERE "id" = ${id}
+        AND "clienteId" = ${usuario.clienteId}
+      LIMIT 1
+    `;
+    const existente = existentes[0];
+
+    if (existente) {
+      await tx.$executeRaw`
+        UPDATE "LoteMapaNdvi"
+        SET
+          "campaniaErpId" = ${mapa.campaniaErpId || null},
+          "fechaImagen" = ${fechaImagen},
+          "fechaProcesamiento" = ${fechaProcesamiento},
+          "proveedor" = ${mapa.proveedor.trim()},
+          "origen" = ${mapa.origen},
+          "resolucionMetros" = ${mapa.resolucionMetros ?? null},
+          "nubosidadPorcentaje" = ${mapa.nubosidadPorcentaje ?? null},
+          "ndviPromedio" = ${mapa.ndviPromedio ?? null},
+          "ndviMinimo" = ${mapa.ndviMinimo ?? null},
+          "ndviMaximo" = ${mapa.ndviMaximo ?? null},
+          "ndviDesvio" = ${mapa.ndviDesvio ?? null},
+          "superficieAnalizadaHa" = ${mapa.superficieAnalizadaHa ?? null},
+          "storageBucket" = ${mapa.storageBucket || null},
+          "storagePathRaster" = ${mapa.storagePathRaster || null},
+          "storagePathPreview" = ${mapa.storagePathPreview || null},
+          "storagePathTiles" = ${mapa.storagePathTiles || null},
+          "bboxGeoJson" = ${mapa.bboxGeoJson === undefined ? Prisma.JsonNull : mapa.bboxGeoJson as Prisma.InputJsonValue},
+          "metadata" = ${mapa.metadata === undefined ? Prisma.JsonNull : mapa.metadata as Prisma.InputJsonValue},
+          "estado" = ${mapa.estado},
+          "activo" = ${mapa.activo ?? true},
+          "updatedBy" = ${usuario.id || null},
+          "updatedAt" = NOW()
+        WHERE "id" = ${id}
+          AND "clienteId" = ${usuario.clienteId}
+      `;
+    } else {
+      await tx.$executeRaw`
+        INSERT INTO "LoteMapaNdvi" (
+          "id",
+          "clienteId",
+          "loteAppId",
+          "loteErpId",
+          "campoAppId",
+          "campoErpId",
+          "campaniaErpId",
+          "fechaImagen",
+          "fechaProcesamiento",
+          "proveedor",
+          "origen",
+          "resolucionMetros",
+          "nubosidadPorcentaje",
+          "ndviPromedio",
+          "ndviMinimo",
+          "ndviMaximo",
+          "ndviDesvio",
+          "superficieAnalizadaHa",
+          "storageBucket",
+          "storagePathRaster",
+          "storagePathPreview",
+          "storagePathTiles",
+          "bboxGeoJson",
+          "metadata",
+          "estado",
+          "activo",
+          "createdBy",
+          "updatedBy"
+        )
+        VALUES (
+          ${id},
+          ${usuario.clienteId},
+          ${loteAppId},
+          ${lote.loteErpId},
+          ${lote.campoAppId},
+          ${lote.campoErpId},
+          ${mapa.campaniaErpId || null},
+          ${fechaImagen},
+          ${fechaProcesamiento},
+          ${mapa.proveedor.trim()},
+          ${mapa.origen},
+          ${mapa.resolucionMetros ?? null},
+          ${mapa.nubosidadPorcentaje ?? null},
+          ${mapa.ndviPromedio ?? null},
+          ${mapa.ndviMinimo ?? null},
+          ${mapa.ndviMaximo ?? null},
+          ${mapa.ndviDesvio ?? null},
+          ${mapa.superficieAnalizadaHa ?? null},
+          ${mapa.storageBucket || null},
+          ${mapa.storagePathRaster || null},
+          ${mapa.storagePathPreview || null},
+          ${mapa.storagePathTiles || null},
+          ${mapa.bboxGeoJson === undefined ? Prisma.JsonNull : mapa.bboxGeoJson as Prisma.InputJsonValue},
+          ${mapa.metadata === undefined ? Prisma.JsonNull : mapa.metadata as Prisma.InputJsonValue},
+          ${mapa.estado},
+          ${mapa.activo ?? true},
+          ${usuario.id || null},
+          ${usuario.id || null}
+        )
+      `;
+    }
+
+    const guardados = await tx.$queryRaw<MapaNdviRow[]>`
+      SELECT *
+      FROM "LoteMapaNdvi"
+      WHERE "id" = ${id}
+        AND "clienteId" = ${usuario.clienteId}
+      LIMIT 1
+    `;
+    const guardado = mapearMapaNdvi(guardados[0]);
+
+    await registrarAuditoria(tx, {
+      clienteId: usuario.clienteId || '',
+      usuario,
+      entidad: 'LoteMapaNdvi',
+      entidadId: id,
+      accion: existente ? 'actualizar' : 'crear',
+      origen: request.origen,
+      motivo: request.motivo,
+      valoresAntes: existente ? mapearMapaNdvi(existente) : undefined,
+      valoresDespues: guardado,
+      metadata: { loteAppId, proveedor: guardado.proveedor } as Prisma.InputJsonValue,
+    });
+
+    return {
+      mapa: guardado,
+      auditado: true,
+      mensaje: existente ? 'Mapa NDVI actualizado con auditoria.' : 'Mapa NDVI registrado con auditoria.',
+    };
+  });
 }
