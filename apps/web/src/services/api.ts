@@ -23,6 +23,9 @@ import {
   CrearPrecipitacionResponse,
   CrearObservacionRequest,
   CrearObservacionResponse,
+  CrearRecorridaCampoRequest,
+  CrearRecorridaCampoResponse,
+  CerrarRecorridaCampoRequest,
   CrearUrlLecturaAdjuntoResponse,
   CrearUrlSubidaAdjuntoRequest,
   CrearUrlSubidaAdjuntoResponse,
@@ -74,6 +77,8 @@ import {
   PlanificacionesResumenResponse,
   PlanificacionSnapshot,
   PrecipitacionesResponse,
+  RecorridaCampoDetalleResponse,
+  RecorridasCampoResponse,
   ProtocolosSnapshot,
   ResolverNotificacionVinculacionRequest,
   ResolverNotificacionVinculacionResponse,
@@ -714,6 +719,28 @@ export async function crearPrecipitacion(datos: CrearPrecipitacionRequest, token
 
 export async function obtenerObservaciones(token?: string): Promise<ObservacionesResponse> {
   return request<ObservacionesResponse>('/observaciones', {}, token);
+}
+
+export async function obtenerRecorridasCampo(token?: string): Promise<RecorridasCampoResponse> {
+  return request<RecorridasCampoResponse>('/recorridas', {}, token);
+}
+
+export async function obtenerRecorridaCampoDetalle(id: string, token?: string): Promise<RecorridaCampoDetalleResponse> {
+  return request<RecorridaCampoDetalleResponse>(`/recorridas/${id}`, {}, token);
+}
+
+export async function crearRecorridaCampo(datos: CrearRecorridaCampoRequest, token?: string): Promise<CrearRecorridaCampoResponse> {
+  return request<CrearRecorridaCampoResponse>('/recorridas', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
+}
+
+export async function cerrarRecorridaCampo(id: string, datos: CerrarRecorridaCampoRequest, token?: string): Promise<CrearRecorridaCampoResponse> {
+  return request<CrearRecorridaCampoResponse>(`/recorridas/${id}/cerrar`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  }, token);
 }
 
 export async function crearObservacion(datos: CrearObservacionRequest, token?: string): Promise<CrearObservacionResponse> {

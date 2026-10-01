@@ -56,6 +56,7 @@ export type ObservacionCampo = {
   campoErpId?: string;
   loteAppId?: string;
   loteErpId?: string;
+  recorridaId?: string;
   registroMovilId?: string;
   titulo: string;
   descripcion: string;
@@ -72,6 +73,7 @@ export type ObservacionCampo = {
 export type CrearObservacionRequest = {
   campoAppId: string;
   loteAppId?: string;
+  recorridaId?: string;
   registroMovilId?: string;
   titulo: string;
   descripcion: string;

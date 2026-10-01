@@ -11,7 +11,7 @@ import { useProtocolos } from './hooks/useProtocolos';
 import { useToast } from './hooks/useToast';
 import { formatearUsd, leerNumero } from './utils/formatters';
 
-type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'auditoria' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
+type Vista = 'inicio' | 'notificaciones' | 'sincronizacion-erp' | 'usuarios' | 'auditoria' | 'campos' | 'lotes' | 'planificacion' | 'protocolos' | 'precios' | 'gastos' | 'seguimiento-operativo' | 'precipitaciones' | 'observaciones' | 'monitoreos' | 'padrones-conceptos-gastos' | 'padrones-destinos' | 'padrones-labores' | 'padrones-insumos' | 'padrones-zonas' | 'padrones-especies' | 'padrones-actividades' | 'padrones-vinculaciones' | 'empresas-erp';
 
 const HomeScreen = lazy(() => import('./screens/HomeScreen').then((modulo) => ({ default: modulo.HomeScreen })));
 const NotificacionesScreen = lazy(() => import('./screens/NotificacionesScreen').then((modulo) => ({ default: modulo.NotificacionesScreen })));
@@ -21,6 +21,7 @@ const PreciosReferenciaScreen = lazy(() => import('./screens/PreciosReferenciaSc
 const GastosComercialesScreen = lazy(() => import('./screens/GastosComercialesScreen').then((modulo) => ({ default: modulo.GastosComercialesScreen })));
 const PrecipitacionesScreen = lazy(() => import('./screens/PrecipitacionesScreen').then((modulo) => ({ default: modulo.PrecipitacionesScreen })));
 const ObservacionesScreen = lazy(() => import('./screens/ObservacionesScreen').then((modulo) => ({ default: modulo.ObservacionesScreen })));
+const MonitoreosScreen = lazy(() => import('./screens/MonitoreosScreen').then((modulo) => ({ default: modulo.MonitoreosScreen })));
 const SeguimientoOperativoScreen = lazy(() => import('./screens/SeguimientoOperativoScreen').then((modulo) => ({ default: modulo.SeguimientoOperativoScreen })));
 const UsuariosAdminScreen = lazy(() => import('./screens/UsuariosAdminScreen').then((modulo) => ({ default: modulo.UsuariosAdminScreen })));
 const AuditoriaScreen = lazy(() => import('./screens/AuditoriaScreen').then((modulo) => ({ default: modulo.AuditoriaScreen })));
@@ -142,6 +143,8 @@ export function App() {
       ? 'Precipitaciones'
     : vista === 'observaciones'
       ? 'Observaciones'
+    : vista === 'monitoreos'
+      ? 'Monitoreos'
     : vista === 'planificacion'
       ? 'Planificacion agricola'
       : vista === 'protocolos'
@@ -175,6 +178,8 @@ export function App() {
       ? 'Carga y consulta de lluvias por campo asignado'
     : vista === 'observaciones'
       ? 'Observaciones operativas generadas desde web y mobile'
+    : vista === 'monitoreos'
+      ? 'Recorridas de campo y seguimiento de hallazgos'
     : vista === 'planificacion'
       ? planificacionApp.planificacionEstado
       : vista === 'protocolos'
@@ -358,6 +363,10 @@ export function App() {
 
       {vista === 'observaciones' && (
         <ObservacionesScreen sesion={sesion} notificar={toast.notify} />
+      )}
+
+      {vista === 'monitoreos' && (
+        <MonitoreosScreen sesion={sesion} notificar={toast.notify} />
       )}
 
       {vista === 'usuarios' && (

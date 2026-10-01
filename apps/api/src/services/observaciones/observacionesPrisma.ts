@@ -27,6 +27,7 @@ type ObservacionRow = {
   campoErpId: string | null;
   loteAppId: string | null;
   loteErpId: string | null;
+  recorridaId: string | null;
   registroMovilId: string | null;
   titulo: string;
   descripcion: string;
@@ -65,6 +66,14 @@ type LoteRow = {
   clienteId: string;
   campoAppId: string;
   loteErpId: string | null;
+};
+
+type RecorridaRow = {
+  id: string;
+  clienteId: string;
+  campoAppId: string;
+  loteAppId: string | null;
+  estado: string;
 };
 
 function crearErrorValidacion(message: string, statusCode = 400) {
@@ -111,6 +120,7 @@ function mapearObservacion(row: ObservacionRow, adjuntos: AdjuntoObservacion[] =
     campoErpId: row.campoErpId || undefined,
     loteAppId: row.loteAppId || undefined,
     loteErpId: row.loteErpId || undefined,
+    recorridaId: row.recorridaId || undefined,
     registroMovilId: row.registroMovilId || undefined,
     titulo: row.titulo,
     descripcion: row.descripcion,
@@ -276,6 +286,28 @@ async function validarRequestObservacion(clienteId: string, request: CrearObserv
     throw crearErrorValidacion('El lote seleccionado no pertenece al campo indicado.', 403);
   }
 
+  const recorrida = request.recorridaId
+    ? await prisma.$queryRaw<RecorridaRow[]>`
+      SELECT "id", "clienteId", "campoAppId", "loteAppId", "estado"
+      FROM "RecorridaCampo"
+      WHERE "id" = ${request.recorridaId}
+      LIMIT 1
+    `
+    : [];
+
+  if (request.recorridaId && (
+    !recorrida[0]
+    || recorrida[0].clienteId !== clienteId
+    || recorrida[0].campoAppId !== request.campoAppId
+    || (recorrida[0].loteAppId && recorrida[0].loteAppId !== request.loteAppId)
+  )) {
+    throw crearErrorValidacion('La recorrida seleccionada no pertenece al campo o lote indicado.', 403);
+  }
+
+  if (recorrida[0] && (recorrida[0].estado === 'cerrada' || recorrida[0].estado === 'cancelada')) {
+    throw crearErrorValidacion('No se pueden agregar observaciones a una recorrida cerrada o cancelada.');
+  }
+
   return {
     campo: campo[0],
     lote: lote[0],
@@ -389,6 +421,7 @@ export async function crearObservacionPersistida(
         "campoErpId",
         "loteAppId",
         "loteErpId",
+        "recorridaId",
         "registroMovilId",
         "titulo",
         "descripcion",
@@ -407,6 +440,7 @@ export async function crearObservacionPersistida(
         ${validacion.campo.campoErpId},
         ${request.loteAppId || null},
         ${validacion.lote?.loteErpId || null},
+        ${request.recorridaId || null},
         ${request.registroMovilId || null},
         ${titulo},
         ${descripcion},
@@ -451,6 +485,31 @@ export async function crearObservacionPersistida(
       `
       : [];
     const observacion = mapearObservacion(creado[0], adjuntosCreados.map(mapearAdjunto));
+
+    if (request.recorridaId) {
+      await tx.$executeRaw`
+        UPDATE "RecorridaCampo"
+        SET
+          "cantidadObservaciones" = (
+            SELECT COUNT(*)::int
+            FROM "ObservacionCampo"
+            WHERE "recorridaId" = ${request.recorridaId}
+          ),
+          "severidadMaxima" = (
+            SELECT CASE
+              WHEN COUNT(*) FILTER (WHERE "severidad" = 'alta') > 0 THEN 'alta'
+              WHEN COUNT(*) FILTER (WHERE "severidad" = 'media') > 0 THEN 'media'
+              WHEN COUNT(*) FILTER (WHERE "severidad" = 'baja') > 0 THEN 'baja'
+              ELSE NULL
+            END
+            FROM "ObservacionCampo"
+            WHERE "recorridaId" = ${request.recorridaId}
+          ),
+          "updatedAt" = NOW()
+        WHERE "id" = ${request.recorridaId}
+          AND "clienteId" = ${clienteId}
+      `;
+    }
 
     await registrarAuditoria(tx, {
       clienteId,

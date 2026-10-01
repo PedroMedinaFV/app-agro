@@ -20,6 +20,7 @@ model Usuario {
   notificaciones     NotificacionUsuario[]
   precipitaciones    PrecipitacionCampo[]
   observaciones      ObservacionCampo[]
+  recorridasCampo    RecorridaCampo[]
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
 }
@@ -53,6 +54,7 @@ model Cliente {
   precipitaciones             PrecipitacionCampo[]
   observaciones               ObservacionCampo[]
   observacionAdjuntos         ObservacionAdjunto[]
+  recorridasCampo             RecorridaCampo[]
   auditoriaEventos            AuditoriaEvento[]
   createdAt                   DateTime                      @default(now())
   updatedAt                   DateTime                      @updatedAt
@@ -535,6 +537,7 @@ model CampoApp {
   protocolos          ProtocoloProductivo[]
   precipitaciones     PrecipitacionCampo[]
   observaciones       ObservacionCampo[]
+  recorridasCampo     RecorridaCampo[]
   lineasPlanificacion PlanificacionAgricolaLinea[]
   mapasNdvi           LoteMapaNdvi[]
 
@@ -563,6 +566,7 @@ model LoteApp {
   updatedAt            DateTime                     @updatedAt
   precipitaciones      PrecipitacionCampo[]
   observaciones        ObservacionCampo[]
+  recorridasCampo      RecorridaCampo[]
   lineasPlanificacion  PlanificacionAgricolaLinea[]
   archivosGeograficos  LoteArchivoGeografico[]
   mapasNdvi            LoteMapaNdvi[]
@@ -687,6 +691,8 @@ model ObservacionCampo {
   loteApp         LoteApp?             @relation(fields: [loteAppId], references: [id])
   loteAppId       String?
   loteErpId       String?
+  recorrida       RecorridaCampo?      @relation(fields: [recorridaId], references: [id])
+  recorridaId     String?
   registroMovilId String?
   titulo          String
   descripcion     String
@@ -704,10 +710,45 @@ model ObservacionCampo {
   @@index([usuarioId])
   @@index([campoAppId])
   @@index([loteAppId])
+  @@index([recorridaId])
   @@index([registroMovilId])
   @@index([severidad])
   @@index([fechaEvento])
   @@index([origen])
+}
+
+model RecorridaCampo {
+  id                    String    @id @default(uuid())
+  cliente               Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId             String
+  usuario               Usuario?  @relation(fields: [usuarioId], references: [id])
+  usuarioId             String?
+  campoApp              CampoApp  @relation(fields: [campoAppId], references: [id])
+  campoAppId            String
+  campoErpId            String?
+  loteApp               LoteApp?  @relation(fields: [loteAppId], references: [id])
+  loteAppId             String?
+  loteErpId             String?
+  campaniaErpId         String?
+  titulo                String
+  objetivo              String
+  estado                String    @default("en_curso")
+  fechaInicio           DateTime
+  fechaCierre           DateTime?
+  observaciones         String?
+  origen                String
+  cantidadObservaciones Int       @default(0)
+  severidadMaxima       String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  observacionesCampo    ObservacionCampo[]
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([campoAppId])
+  @@index([loteAppId])
+  @@index([estado])
+  @@index([fechaInicio])
 }
 
 model ObservacionAdjunto {
