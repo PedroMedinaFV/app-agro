@@ -15,6 +15,32 @@ Cada nueva funcionalidad debe separarse por responsabilidad:
 - `data`: datos demo, seeds frontend o fallbacks locales.
 - `utils`: funciones puras de formato, calculo o transformacion.
 
+## Regla de tamano y escalabilidad
+
+Una pantalla no debe crecer indefinidamente. Cuando una `screen` supera aproximadamente 350-450 lineas o mezcla carga de datos, filtros, formulario, tabla y reglas de negocio, debe partirse antes de agregar nuevas funcionalidades.
+
+Patron recomendado:
+
+- `screens/ModuloScreen.tsx`: compone la pantalla y conecta piezas.
+- `hooks/useModulo.ts`: carga de datos, guardado, filtros y handlers.
+- `components/modulo/FormularioModulo.tsx`: formulario principal.
+- `components/modulo/TablaModulo.tsx`: listado, columnas y acciones.
+- `components/modulo/SelectorModulo.tsx`: selector reutilizable por otras pantallas.
+- `utils/modulo/helpersModulo.ts`: funciones puras del dominio.
+
+Regla practica:
+
+- si una funcion necesita estado o API, va al hook;
+- si una funcion transforma/calcula sin efectos, va a `utils`;
+- si un bloque JSX se repite o supera una responsabilidad clara, va a `components`;
+- la `screen` no debe contener reglas de negocio largas.
+
+Nombres:
+
+- usar nombres en espanol o mixtos amigables cuando mejoren legibilidad del equipo;
+- preferir `helpersLotes`, `helpersPlanificacion`, `useRecorridas`, `TablaRecorridas`;
+- evitar sufijos historicos como `Demo` cuando la funcionalidad ya es real.
+
 ## Criterio para crear una screen
 
 Usar `screens` cuando el componente representa una vista navegable o una seccion principal del producto.

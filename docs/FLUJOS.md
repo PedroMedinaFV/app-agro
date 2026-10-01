@@ -192,6 +192,45 @@ Pendiente de hardening mobile:
 - guardar una copia persistente del archivo dentro del sandbox de la app para no depender de URIs temporales del sistema operativo;
 - reintentar adjuntos individualmente y mostrar detalle por foto pendiente.
 
+## Recorridas y monitoreos
+
+1. El usuario ingresa a `Monitoreos`.
+2. La web lista recorridas dentro del alcance de la sesion.
+3. El usuario crea una recorrida para un campo y, opcionalmente, para un lote.
+4. La recorrida queda en estado `en_curso`.
+5. En `Observaciones`, el usuario selecciona campo/lote.
+6. La pantalla ofrece recorridas abiertas compatibles con ese campo/lote.
+7. El usuario carga una observacion con severidad, descripcion, ubicacion opcional y adjuntos.
+8. Backend valida que la recorrida pertenezca al mismo cliente, campo y lote.
+9. Backend persiste la observacion y actualiza contador/severidad maxima de la recorrida.
+10. El usuario cierra la recorrida al finalizar el monitoreo.
+11. Una recorrida cerrada no acepta nuevas observaciones.
+
+Endpoints iniciales:
+
+- `GET /recorridas`: lista recorridas del cliente, filtradas por alcance de campos para operador.
+- `GET /recorridas/:id`: devuelve recorrida y observaciones vinculadas.
+- `POST /recorridas`: crea recorrida.
+- `POST /recorridas/:id/cerrar`: cierra recorrida.
+- `POST /observaciones`: acepta `recorridaId` opcional.
+
+Validaciones iniciales:
+
+- el campo debe pertenecer al cliente de la sesion;
+- si se informa lote, debe pertenecer al campo seleccionado;
+- un operador de campo solo puede ver/crear recorridas sobre campos asignados;
+- una observacion no puede vincularse a recorrida cerrada o cancelada;
+- si la recorrida tiene lote, la observacion debe estar en ese mismo lote;
+- toda creacion y cierre de recorrida registra auditoria.
+
+Mobile esperado:
+
+- listar recorridas abiertas del operador;
+- crear recorrida offline;
+- asociar observaciones/fotos a recorrida;
+- sincronizar con idempotencia;
+- cerrar recorrida cuando vuelva conectividad.
+
 ## Precipitaciones por campo asignado
 
 1. El usuario operativo inicia sesion desde mobile.

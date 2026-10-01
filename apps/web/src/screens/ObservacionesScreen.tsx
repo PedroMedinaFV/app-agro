@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CampoApp, FichaLoteOperativoResponse, LoteApp, ObservacionCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
+import type { CampoApp, FichaLoteOperativoResponse, LoteApp, ObservacionCampo, RecorridaCampo, SesionUsuario, SeveridadObservacion } from '@agro/tipos';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
@@ -12,6 +12,7 @@ import {
   obtenerFichaLoteOperativo,
   obtenerObservaciones,
   obtenerPlanificacionSnapshot,
+  obtenerRecorridasCampo,
   subirArchivoAFirmaSupabase,
 } from '../services/api';
 
@@ -25,6 +26,7 @@ type ObservacionesScreenProps = {
 type FormularioObservacion = {
   campoAppId: string;
   loteAppId: string;
+  recorridaId: string;
   titulo: string;
   descripcion: string;
   severidad: SeveridadObservacion;
@@ -51,6 +53,7 @@ function crearFormularioInicial(campoAppId = ''): FormularioObservacion {
   return {
     campoAppId,
     loteAppId: '',
+    recorridaId: '',
     titulo: '',
     descripcion: '',
     severidad: 'media',
@@ -70,6 +73,7 @@ function describirCoordenadas(observacion: ObservacionCampo) {
 
 export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenProps) {
   const [observaciones, setObservaciones] = useState<ObservacionCampo[]>([]);
+  const [recorridas, setRecorridas] = useState<RecorridaCampo[]>([]);
   const [campos, setCampos] = useState<CampoApp[]>([]);
   const [lotes, setLotes] = useState<LoteApp[]>([]);
   const [estado, setEstado] = useState('Cargando observaciones.');
@@ -85,12 +89,14 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
 
   async function cargarDatos() {
     try {
-      const [respuestaObservaciones, respuestaPlanificacion] = await Promise.all([
+      const [respuestaObservaciones, respuestaPlanificacion, respuestaRecorridas] = await Promise.all([
         obtenerObservaciones(sesion.token),
         obtenerPlanificacionSnapshot(sesion.token),
+        obtenerRecorridasCampo(sesion.token),
       ]);
 
       setObservaciones(respuestaObservaciones.observaciones);
+      setRecorridas(respuestaRecorridas.recorridas);
       setCampos(respuestaPlanificacion.camposApp);
       setLotes(respuestaPlanificacion.lotesApp);
       setFormulario((actual) => (
@@ -112,7 +118,15 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
 
   const camposPorId = useMemo(() => new Map(campos.map((campo) => [campo.id, campo])), [campos]);
   const lotesPorId = useMemo(() => new Map(lotes.map((lote) => [lote.id, lote])), [lotes]);
+  const recorridasPorId = useMemo(() => new Map(recorridas.map((recorrida) => [recorrida.id, recorrida])), [recorridas]);
   const lotesDelCampo = lotes.filter((lote) => lote.campoAppId === formulario.campoAppId);
+  const recorridasAbiertasCompatibles = recorridas.filter((recorrida) => {
+    const estaAbierta = recorrida.estado === 'en_curso' || recorrida.estado === 'borrador';
+    const coincideCampo = recorrida.campoAppId === formulario.campoAppId;
+    const coincideLote = !recorrida.loteAppId || recorrida.loteAppId === formulario.loteAppId;
+
+    return estaAbierta && coincideCampo && coincideLote;
+  });
   const lotesFiltro = filtroCampoId ? lotes.filter((lote) => lote.campoAppId === filtroCampoId) : lotes;
   const puedeCrear = sesion.permisos.includes('observaciones:crear');
   const observacionesAltas = observaciones.filter((observacion) => observacion.severidad === 'alta').length;
@@ -122,6 +136,7 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
     return observaciones.filter((observacion) => {
       const campo = camposPorId.get(observacion.campoAppId);
       const lote = observacion.loteAppId ? lotesPorId.get(observacion.loteAppId) : undefined;
+      const recorrida = observacion.recorridaId ? recorridasPorId.get(observacion.recorridaId) : undefined;
       const coincideCampo = !filtroCampoId || observacion.campoAppId === filtroCampoId;
       const coincideLote = !filtroLoteId || observacion.loteAppId === filtroLoteId;
       const coincideSeveridad = filtroSeveridad === 'todas' || observacion.severidad === filtroSeveridad;
@@ -129,17 +144,21 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
         || observacion.titulo.toLocaleLowerCase('es').includes(texto)
         || observacion.descripcion.toLocaleLowerCase('es').includes(texto)
         || campo?.nombre.toLocaleLowerCase('es').includes(texto)
-        || lote?.nombre.toLocaleLowerCase('es').includes(texto);
+        || lote?.nombre.toLocaleLowerCase('es').includes(texto)
+        || recorrida?.titulo.toLocaleLowerCase('es').includes(texto);
 
       return coincideCampo && coincideLote && coincideSeveridad && coincideTexto;
     });
-  }, [camposPorId, filtroCampoId, filtroLoteId, filtroSeveridad, filtroTexto, lotesPorId, observaciones]);
+  }, [camposPorId, filtroCampoId, filtroLoteId, filtroSeveridad, filtroTexto, lotesPorId, observaciones, recorridasPorId]);
 
   function actualizarFormulario(cambios: Partial<FormularioObservacion>) {
     setFormulario((actual) => ({
       ...actual,
       ...cambios,
       loteAppId: Object.prototype.hasOwnProperty.call(cambios, 'campoAppId') ? '' : cambios.loteAppId ?? actual.loteAppId,
+      recorridaId: Object.prototype.hasOwnProperty.call(cambios, 'campoAppId') || Object.prototype.hasOwnProperty.call(cambios, 'loteAppId')
+        ? ''
+        : cambios.recorridaId ?? actual.recorridaId,
     }));
   }
 
@@ -174,6 +193,7 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
       const respuesta = await crearObservacion({
         campoAppId: formulario.campoAppId,
         loteAppId: formulario.loteAppId || undefined,
+        recorridaId: formulario.recorridaId || undefined,
         titulo: formulario.titulo,
         descripcion: formulario.descripcion,
         severidad: formulario.severidad,
@@ -194,6 +214,22 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
       }, sesion.token);
 
       setObservaciones((actual) => [respuesta.observacion, ...actual]);
+      if (formulario.recorridaId) {
+        setRecorridas((actual) => actual.map((recorrida) => (
+          recorrida.id === formulario.recorridaId
+            ? {
+              ...recorrida,
+              cantidadObservaciones: recorrida.cantidadObservaciones + 1,
+              severidadMaxima: recorrida.severidadMaxima === 'alta' || respuesta.observacion.severidad === 'alta'
+                ? 'alta'
+                : recorrida.severidadMaxima === 'media' || respuesta.observacion.severidad === 'media'
+                  ? 'media'
+                  : 'baja',
+              updatedAt: respuesta.observacion.updatedAt,
+            }
+            : recorrida
+        )));
+      }
       setFormulario(crearFormularioInicial(formulario.campoAppId));
       setArchivoAdjunto(null);
       notificar?.({ tipo: 'success', titulo: 'Observacion registrada', mensaje: respuesta.mensaje });
@@ -281,6 +317,22 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               <option value="baja">Baja</option>
               <option value="media">Media</option>
               <option value="alta">Alta</option>
+            </select>
+          </label>
+
+          <label>
+            Recorrida
+            <select
+              value={formulario.recorridaId}
+              disabled={!puedeCrear || guardando || !formulario.campoAppId}
+              onChange={(event) => actualizarFormulario({ recorridaId: event.target.value })}
+            >
+              <option value="">Sin recorrida</option>
+              {recorridasAbiertasCompatibles.map((recorrida) => (
+                <option key={recorrida.id} value={recorrida.id}>
+                  {recorrida.titulo}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -435,6 +487,16 @@ export function ObservacionesScreen({ sesion, notificar }: ObservacionesScreenPr
               label: 'Titulo',
               width: 'minmax(170px, 1.1fr)',
               render: (observacion) => <><strong>{observacion.titulo}</strong><span>{observacion.descripcion}</span></>,
+            },
+            {
+              key: 'recorrida',
+              label: 'Recorrida',
+              width: 'minmax(150px, 0.9fr)',
+              render: (observacion) => {
+                const recorrida = observacion.recorridaId ? recorridasPorId.get(observacion.recorridaId) : undefined;
+
+                return recorrida ? <><strong>{recorrida.titulo}</strong><span>{recorrida.estado.replace('_', ' ')}</span></> : 'Sin recorrida';
+              },
             },
             {
               key: 'ubicacion',

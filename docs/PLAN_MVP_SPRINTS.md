@@ -508,6 +508,52 @@ Criterio de aceptacion:
 - [x] la carga manual/importada queda priorizada antes de automatizar proveedores satelitales;
 - [x] mobile queda como consumidor liviano de ultimo NDVI y alertas.
 
+## Sprint 10 - Recorridas y monitoreos operativos
+
+Estado: iniciado.
+
+Objetivo:
+
+- agrupar el trabajo de campo en recorridas/monitoreos que puedan contener observaciones, fotos, severidad y contexto georreferenciado.
+
+Incluye:
+
+- [x] documento funcional/tecnico `docs/RECORRIDAS_MONITOREOS.md`;
+- [x] contrato compartido `RecorridaCampo`;
+- [x] permisos `recorridas:crear`, `recorridas:leer` y `recorridas:cerrar`;
+- [x] tabla `RecorridaCampo`;
+- [x] relacion opcional `ObservacionCampo.recorridaId`;
+- [x] endpoints backend para listar, crear, ver detalle y cerrar recorridas;
+- [x] auditoria al crear y cerrar recorridas;
+- [x] pantalla web inicial `Monitoreos`;
+- [x] alta web de recorridas por campo/lote;
+- [x] cierre web de recorridas;
+- [x] seleccion de recorrida abierta desde carga de observaciones;
+- [x] contador de hallazgos y severidad maxima en recorrida;
+- mobile: listar recorridas abiertas del operador;
+- mobile: crear/cerrar recorrida offline;
+- mobile: asociar observaciones a recorrida durante sincronizacion;
+- vista de detalle de recorrida con observaciones vinculadas;
+- integracion futura con mapas/KML y NDVI.
+
+Criterio de aceptacion:
+
+- [ ] se puede crear una recorrida desde web;
+- [ ] se puede cargar una observacion asociada a recorrida;
+- [ ] una recorrida cerrada no acepta nuevas observaciones;
+- [ ] un operador solo ve recorridas de campos asignados;
+- [ ] el detalle muestra observaciones vinculadas;
+- [ ] mobile puede trabajar recorridas offline y sincronizarlas;
+- [ ] la ficha operativa de lote muestra recorridas recientes.
+
+Pendientes tecnicos:
+
+- [ ] aplicar migracion en base local/ambiente;
+- [ ] modularizar `MonitoreosScreen`;
+- [ ] modularizar la seleccion de recorrida en `ObservacionesScreen`;
+- [ ] agregar tests de servicio backend para validaciones de campo/lote/estado;
+- [ ] definir si `cancelada` queda habilitado en MVP o solo como estado reservado.
+
 ## Fuera del MVP inicial
 
 Quedan para version posterior:
@@ -536,10 +582,11 @@ Quedan para version posterior:
 
 ## Proximo paso recomendado
 
-Cerrar Sprint 1:
+Cerrar el primer corte de Sprint 10:
 
-1. seleccionar empresas AGRO desde la web;
-2. correr `erp:sync` solo para esas empresas;
-3. validar conteos por padron;
-4. crear una pantalla de estado de sincronizacion;
-5. comenzar a poblar padrones propios vinculados a ERP para que planificacion use datos reales.
+1. aplicar migracion de recorridas en base local;
+2. validar crear/cerrar recorrida desde web;
+3. validar observacion asociada a recorrida;
+4. modularizar `MonitoreosScreen` y `ObservacionesScreen`;
+5. agregar detalle de recorrida con observaciones vinculadas;
+6. preparar contrato mobile/offline para recorridas.

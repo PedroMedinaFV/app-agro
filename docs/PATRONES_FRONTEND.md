@@ -56,3 +56,30 @@ La carga de datos de una pantalla debe diferenciar entre:
 - carga diferida para edicion;
 - guardado;
 - sincronizacion ERP.
+
+## Nuevos modulos operativos
+
+Cada nuevo modulo operativo debe nacer documentado y modularizado.
+
+Checklist minimo antes de agregar una segunda feature sobre la misma pantalla:
+
+- contrato en `packages/tipos`;
+- endpoint y servicio backend;
+- cliente API web/mobile;
+- documento en `docs`;
+- `screen` chica;
+- hook de estado/carga;
+- componentes de formulario/listado;
+- validacion de permisos en backend;
+- auditoria si modifica datos;
+- build web/API validado.
+
+Para `Monitoreos` y `Observaciones`, el proximo trabajo debe ser extraer:
+
+- `useRecorridas`;
+- `FormularioRecorrida`;
+- `TablaRecorridas`;
+- `SelectorRecorrida`;
+- `useObservaciones`;
+- `FormularioObservacion`;
+- `TablaObservaciones`.
