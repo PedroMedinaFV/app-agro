@@ -393,132 +393,139 @@ export async function cerrarPlanificacionPersistida(
   request: CerrarPlanificacionRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<CerrarPlanificacionResponse> {
-  return prisma.$transaction(async (tx) => {
-    const existente = await tx.planificacionAgricola.findUnique({
-      where: { id },
-      include: incluirPlanificacion,
-    });
+  return prisma.$transaction((tx) => cerrarPlanificacionEnTransaccion(tx, id, request, usuario));
+}
 
-    if (!existente) {
-      throw crearErrorValidacion('No existe la planificacion a cerrar.', 404);
-    }
+export async function cerrarPlanificacionEnTransaccion(
+  tx: Prisma.TransactionClient,
+  id: string,
+  request: CerrarPlanificacionRequest,
+  usuario?: UsuarioAuditoria,
+): Promise<CerrarPlanificacionResponse> {
+  const existente = await tx.planificacionAgricola.findUnique({
+    where: { id },
+    include: incluirPlanificacion,
+  });
 
-    if (existente.estado === 'cerrada') {
-      throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
-    }
+  if (!existente) {
+    throw crearErrorValidacion('No existe la planificacion a cerrar.', 404);
+  }
 
-    const planificacionExistente = mapearPlanificacion(existente);
-    await validarPlanificacionParaCierre(planificacionExistente, tx);
-    const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente);
+  if (existente.estado === 'cerrada') {
+    throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
+  }
 
-    const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
-      where: {
-        clienteId: existente.clienteId,
-        campaniaErpId: existente.campaniaErpId,
-        id: { not: id },
-        estado: { not: 'deshabilitada' },
-      },
-      include: incluirPlanificacion,
-    });
+  const planificacionExistente = mapearPlanificacion(existente);
+  await validarPlanificacionParaCierre(planificacionExistente, tx);
+  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente);
 
-    await tx.planificacionAgricola.updateMany({
-      where: {
-        clienteId: existente.clienteId,
-        campaniaErpId: existente.campaniaErpId,
-        id: { not: id },
-        estado: { not: 'deshabilitada' },
-      },
+  const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
+    where: {
+      clienteId: existente.clienteId,
+      campaniaErpId: existente.campaniaErpId,
+      id: { not: id },
+      estado: { not: 'deshabilitada' },
+    },
+    include: incluirPlanificacion,
+  });
+
+  await tx.planificacionAgricola.updateMany({
+    where: {
+      clienteId: existente.clienteId,
+      campaniaErpId: existente.campaniaErpId,
+      id: { not: id },
+      estado: { not: 'deshabilitada' },
+    },
+    data: {
+      estado: 'deshabilitada',
+      escenarioOriginal: false,
+      escenarioBloqueadoPorId: id,
+      updatedBy: usuario?.id,
+    },
+  });
+
+  for (const linea of planificacionCongelada.lineas) {
+    await tx.planificacionAgricolaLinea.update({
+      where: { id: linea.id },
       data: {
-        estado: 'deshabilitada',
-        escenarioOriginal: false,
-        escenarioBloqueadoPorId: id,
-        updatedBy: usuario?.id,
+        empresaErpId: linea.empresaErpId,
+        campoAppId: linea.campoAppId,
+        campoErpId: linea.campoErpId,
+        loteAppId: linea.loteAppId,
+        loteErpId: linea.loteErpId,
+        actividadAppId: linea.actividadAppId,
+        actividadErpId: linea.actividadErpId,
+        cultivoErpId: linea.cultivoErpId,
+        destinoReferenciaId: linea.destinoReferenciaId,
+        destinoVenta: linea.destinoVenta,
+        destinoVentaManual: linea.destinoVentaManual,
+        precioReferenciaId: linea.precioReferenciaId,
+        precioVentaEstimado: linea.precioVentaEstimado,
+        precioVentaManual: linea.precioVentaManual,
+        hectareasPlanificadas: linea.hectareasPlanificadas,
+        rindeEstimado: linea.rindeEstimado,
+        gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
+        gastosComercialesEstimados: linea.gastosComercialesEstimados,
+        protocoloId: linea.protocoloId,
+        ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
+        ingresoNetoEstimado: linea.ingresoNetoEstimado,
+        costoProduccionEstimado: linea.costoProduccionEstimado,
+        margenBrutoEstimado: linea.margenBrutoEstimado,
+        margenBrutoActualizado: linea.margenBrutoActualizado,
+        estado: linea.estado,
       },
     });
+  }
 
-    for (const linea of planificacionCongelada.lineas) {
-      await tx.planificacionAgricolaLinea.update({
-        where: { id: linea.id },
-        data: {
-          empresaErpId: linea.empresaErpId,
-          campoAppId: linea.campoAppId,
-          campoErpId: linea.campoErpId,
-          loteAppId: linea.loteAppId,
-          loteErpId: linea.loteErpId,
-          actividadAppId: linea.actividadAppId,
-          actividadErpId: linea.actividadErpId,
-          cultivoErpId: linea.cultivoErpId,
-          destinoReferenciaId: linea.destinoReferenciaId,
-          destinoVenta: linea.destinoVenta,
-          destinoVentaManual: linea.destinoVentaManual,
-          precioReferenciaId: linea.precioReferenciaId,
-          precioVentaEstimado: linea.precioVentaEstimado,
-          precioVentaManual: linea.precioVentaManual,
-          hectareasPlanificadas: linea.hectareasPlanificadas,
-          rindeEstimado: linea.rindeEstimado,
-          gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
-          gastosComercialesEstimados: linea.gastosComercialesEstimados,
-          protocoloId: linea.protocoloId,
-          ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
-          ingresoNetoEstimado: linea.ingresoNetoEstimado,
-          costoProduccionEstimado: linea.costoProduccionEstimado,
-          margenBrutoEstimado: linea.margenBrutoEstimado,
-          margenBrutoActualizado: linea.margenBrutoActualizado,
-          estado: linea.estado,
-        },
-      });
-    }
+  const cerrada = await tx.planificacionAgricola.update({
+    where: { id },
+    data: {
+      estado: 'cerrada',
+      escenarioOriginal: true,
+      escenarioBloqueadoPorId: null,
+      cerradaPor: usuario?.id,
+      cerradaAt: new Date(),
+      motivoCierre: request.motivo,
+      updatedBy: usuario?.id,
+    },
+    include: incluirPlanificacion,
+  });
+  const planificacionMapeada = mapearPlanificacion(cerrada);
 
-    const cerrada = await tx.planificacionAgricola.update({
-      where: { id },
-      data: {
-        estado: 'cerrada',
-        escenarioOriginal: true,
-        escenarioBloqueadoPorId: null,
-        cerradaPor: usuario?.id,
-        cerradaAt: new Date(),
-        motivoCierre: request.motivo,
-        updatedBy: usuario?.id,
-      },
-      include: incluirPlanificacion,
-    });
-    const planificacionMapeada = mapearPlanificacion(cerrada);
+  await registrarAuditoria(tx, {
+    clienteId: existente.clienteId,
+    usuario,
+    entidad: 'PlanificacionAgricola',
+    entidadId: id,
+    accion: 'cerrar',
+    origen: request.origen,
+    motivo: request.motivo,
+    valoresAntes: mapearPlanificacion(existente),
+    valoresDespues: planificacionMapeada,
+  });
 
+  if (escenariosADeshabilitar.length > 0) {
     await registrarAuditoria(tx, {
       clienteId: existente.clienteId,
       usuario,
       entidad: 'PlanificacionAgricola',
       entidadId: id,
-      accion: 'cerrar',
+      accion: 'deshabilitar_escenarios_alternativos',
       origen: request.origen,
-      motivo: request.motivo,
-      valoresAntes: mapearPlanificacion(existente),
-      valoresDespues: planificacionMapeada,
+      motivo: request.motivo || 'Cierre de escenario original de campania.',
+      valoresAntes: escenariosADeshabilitar.map(mapearPlanificacion),
+      valoresDespues: {
+        escenarioOriginalId: id,
+        escenariosDeshabilitados: escenariosADeshabilitar.map((escenario) => escenario.id),
+      },
     });
+  }
 
-    if (escenariosADeshabilitar.length > 0) {
-      await registrarAuditoria(tx, {
-        clienteId: existente.clienteId,
-        usuario,
-        entidad: 'PlanificacionAgricola',
-        entidadId: id,
-        accion: 'deshabilitar_escenarios_alternativos',
-        origen: request.origen,
-        motivo: request.motivo || 'Cierre de escenario original de campania.',
-        valoresAntes: escenariosADeshabilitar.map(mapearPlanificacion),
-        valoresDespues: {
-          escenarioOriginalId: id,
-          escenariosDeshabilitados: escenariosADeshabilitar.map((escenario) => escenario.id),
-        },
-      });
-    }
-
-    return {
-      planificacion: planificacionMapeada,
-      auditado: true,
-      mensaje: escenariosADeshabilitar.length > 0
-        ? `Planificacion cerrada como escenario original. Se deshabilitaron ${escenariosADeshabilitar.length} escenario(s) alternativo(s).`
-        : 'Planificacion cerrada como escenario original y bloqueada para edicion.',
-    };
-  });
+  return {
+    planificacion: planificacionMapeada,
+    auditado: true,
+    mensaje: escenariosADeshabilitar.length > 0
+      ? `Planificacion cerrada como escenario original. Se deshabilitaron ${escenariosADeshabilitar.length} escenario(s) alternativo(s).`
+      : 'Planificacion cerrada como escenario original y bloqueada para edicion.',
+  };
 }
