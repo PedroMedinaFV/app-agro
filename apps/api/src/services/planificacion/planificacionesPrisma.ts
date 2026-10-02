@@ -294,98 +294,106 @@ export async function guardarPlanificacionPersistida(
   const planificacion = { ...request.planificacion, id };
   await validarPlanificacion(planificacion);
 
-  return prisma.$transaction(async (tx) => {
-    const existente = await tx.planificacionAgricola.findUnique({
-      where: { id },
-      include: incluirPlanificacion,
-    });
-
-    if (existente?.estado === 'cerrada' || existente?.estado === 'deshabilitada') {
-      await registrarAuditoria(tx, {
-        clienteId: existente.clienteId,
-        usuario,
-        entidad: 'PlanificacionAgricola',
-        entidadId: id,
-        accion: 'bloquear_edicion',
-        origen: request.origen,
-        motivo: request.motivo || `Intento de modificar planificacion ${existente.estado}.`,
-        valoresAntes: mapearPlanificacion(existente),
-      });
-
-      throw crearErrorValidacion('La planificacion esta cerrada o deshabilitada y no puede modificarse.', 409);
-    }
-
-    const escenarioOriginalCerrado = await tx.planificacionAgricola.findFirst({
-      where: {
-        clienteId: planificacion.clienteId,
-        campaniaErpId: planificacion.campaniaErpId,
-        estado: 'cerrada',
-        escenarioOriginal: true,
-        id: { not: id },
-      },
-    });
-
-    if (escenarioOriginalCerrado) {
-      throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original. No se pueden crear ni editar otros escenarios activos.', 409);
-    }
-
-    await tx.planificacionAgricola.upsert({
-      where: { id },
-      update: {
-        campaniaErpId: planificacion.campaniaErpId,
-        nombre: planificacion.nombre,
-        descripcion: planificacion.descripcion,
-        estado: planificacion.estado,
-        escenarioOriginal: false,
-        escenarioBloqueadoPorId: null,
-        updatedBy: usuario?.id,
-      },
-      create: {
-        id,
-        clienteId: planificacion.clienteId,
-        campaniaErpId: planificacion.campaniaErpId,
-        nombre: planificacion.nombre,
-        descripcion: planificacion.descripcion,
-        estado: planificacion.estado,
-        escenarioOriginal: false,
-        escenarioBloqueadoPorId: null,
-        createdBy: usuario?.id,
-        updatedBy: usuario?.id,
-      },
-    });
-
-    await reemplazarLineas(tx, planificacion);
-
-    const completo = await tx.planificacionAgricola.findUniqueOrThrow({
-      where: { id },
-      include: incluirPlanificacion,
-    });
-    const planificacionMapeada = mapearPlanificacion(completo);
-
-    await registrarAuditoria(tx, {
-      clienteId: planificacion.clienteId,
-      usuario,
-      entidad: 'PlanificacionAgricola',
-      entidadId: id,
-      accion: existente ? 'actualizar' : 'crear',
-      origen: request.origen,
-      motivo: request.motivo,
-      valoresAntes: existente ? resumirPlanificacionAuditoria(mapearPlanificacion(existente)) : undefined,
-      valoresDespues: resumirPlanificacionAuditoria(planificacionMapeada),
-      metadata: {
-        detalle: 'Las lineas se guardan en tabla PlanificacionAgricolaLinea y se audita un resumen para evitar payloads masivos.',
-      },
-    });
-
-    return {
-      planificacion: planificacionMapeada,
-      auditado: true,
-      mensaje: 'Planificacion guardada con auditoria.',
-    };
-  }, {
+  return prisma.$transaction((tx) => guardarPlanificacionEnTransaccion(tx, id, request, usuario), {
     maxWait: 10000,
     timeout: TIMEOUT_TRANSACCION_PLANIFICACION_MS,
   });
+}
+
+export async function guardarPlanificacionEnTransaccion(
+  tx: Prisma.TransactionClient,
+  id: string,
+  request: GuardarPlanificacionRequest,
+  usuario?: UsuarioAuditoria,
+): Promise<GuardarPlanificacionResponse> {
+  const planificacion = { ...request.planificacion, id };
+  const existente = await tx.planificacionAgricola.findUnique({
+    where: { id },
+    include: incluirPlanificacion,
+  });
+
+  if (existente?.estado === 'cerrada' || existente?.estado === 'deshabilitada') {
+    await registrarAuditoria(tx, {
+      clienteId: existente.clienteId,
+      usuario,
+      entidad: 'PlanificacionAgricola',
+      entidadId: id,
+      accion: 'bloquear_edicion',
+      origen: request.origen,
+      motivo: request.motivo || `Intento de modificar planificacion ${existente.estado}.`,
+      valoresAntes: mapearPlanificacion(existente),
+    });
+
+    throw crearErrorValidacion('La planificacion esta cerrada o deshabilitada y no puede modificarse.', 409);
+  }
+
+  const escenarioOriginalCerrado = await tx.planificacionAgricola.findFirst({
+    where: {
+      clienteId: planificacion.clienteId,
+      campaniaErpId: planificacion.campaniaErpId,
+      estado: 'cerrada',
+      escenarioOriginal: true,
+      id: { not: id },
+    },
+  });
+
+  if (escenarioOriginalCerrado) {
+    throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original. No se pueden crear ni editar otros escenarios activos.', 409);
+  }
+
+  await tx.planificacionAgricola.upsert({
+    where: { id },
+    update: {
+      campaniaErpId: planificacion.campaniaErpId,
+      nombre: planificacion.nombre,
+      descripcion: planificacion.descripcion,
+      estado: planificacion.estado,
+      escenarioOriginal: false,
+      escenarioBloqueadoPorId: null,
+      updatedBy: usuario?.id,
+    },
+    create: {
+      id,
+      clienteId: planificacion.clienteId,
+      campaniaErpId: planificacion.campaniaErpId,
+      nombre: planificacion.nombre,
+      descripcion: planificacion.descripcion,
+      estado: planificacion.estado,
+      escenarioOriginal: false,
+      escenarioBloqueadoPorId: null,
+      createdBy: usuario?.id,
+      updatedBy: usuario?.id,
+    },
+  });
+
+  await reemplazarLineas(tx, planificacion);
+
+  const completo = await tx.planificacionAgricola.findUniqueOrThrow({
+    where: { id },
+    include: incluirPlanificacion,
+  });
+  const planificacionMapeada = mapearPlanificacion(completo);
+
+  await registrarAuditoria(tx, {
+    clienteId: planificacion.clienteId,
+    usuario,
+    entidad: 'PlanificacionAgricola',
+    entidadId: id,
+    accion: existente ? 'actualizar' : 'crear',
+    origen: request.origen,
+    motivo: request.motivo,
+    valoresAntes: existente ? resumirPlanificacionAuditoria(mapearPlanificacion(existente)) : undefined,
+    valoresDespues: resumirPlanificacionAuditoria(planificacionMapeada),
+    metadata: {
+      detalle: 'Las lineas se guardan en tabla PlanificacionAgricolaLinea y se audita un resumen para evitar payloads masivos.',
+    },
+  });
+
+  return {
+    planificacion: planificacionMapeada,
+    auditado: true,
+    mensaje: 'Planificacion guardada con auditoria.',
+  };
 }
 
 export async function cerrarPlanificacionPersistida(
