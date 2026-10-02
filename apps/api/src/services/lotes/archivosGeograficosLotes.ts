@@ -48,18 +48,18 @@ type GeoJsonFeatureCollection = {
   features: GeoJsonFeature[];
 };
 
-function crearErrorValidacion(message: string, statusCode = 400) {
+export function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
 
   return error;
 }
 
-function limpiarTextoVisible(valor: string) {
+export function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
 
-function obtenerConfigStorage() {
+export function obtenerConfigStorage() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -76,7 +76,7 @@ function obtenerConfigStorage() {
   };
 }
 
-function obtenerTipoArchivo(nombreArchivo: string, mimeType: string): 'kml' | 'kmz' {
+export function obtenerTipoArchivo(nombreArchivo: string, mimeType: string): 'kml' | 'kmz' {
   const extension = path.extname(nombreArchivo).toLowerCase();
 
   if (extension === '.kml' || mimeType === 'application/vnd.google-earth.kml+xml') {
@@ -90,7 +90,7 @@ function obtenerTipoArchivo(nombreArchivo: string, mimeType: string): 'kml' | 'k
   throw crearErrorValidacion('Solo se permiten archivos KML o KMZ.');
 }
 
-function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
+export function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
   const { maxBytes } = obtenerConfigStorage();
   const mimeType = datos.mimeType.trim().toLowerCase();
   const nombreArchivo = limpiarTextoVisible(datos.nombreArchivo);
@@ -123,7 +123,7 @@ function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
   return { nombreArchivo, mimeType, tipo };
 }
 
-function encodeStoragePath(storagePath: string) {
+export function encodeStoragePath(storagePath: string) {
   return storagePath.split('/').map(encodeURIComponent).join('/');
 }
 
@@ -169,7 +169,7 @@ async function descargarSupabaseStorage(bucket: string, storagePath: string) {
   return Buffer.from(await respuesta.arrayBuffer());
 }
 
-function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unknown>) {
+export function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unknown>) {
   const rawUrl = String(data.signedURL || data.signedUrl || data.url || '');
 
   if (!rawUrl) {
@@ -179,11 +179,11 @@ function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unk
   return rawUrl.startsWith('http') ? rawUrl : `${supabaseUrl}${rawUrl}`;
 }
 
-function limpiarXml(valor: string) {
+export function limpiarXml(valor: string) {
   return valor.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
 }
 
-function leerCoordenadasKml(contenido: string) {
+export function leerCoordenadasKml(contenido: string) {
   return limpiarXml(contenido)
     .trim()
     .split(/\s+/)
@@ -202,7 +202,7 @@ function leerCoordenadasKml(contenido: string) {
     .filter((coordenada): coordenada is [number, number] | [number, number, number] => Boolean(coordenada));
 }
 
-function cerrarAnillo(coordenadas: Array<[number, number] | [number, number, number]>) {
+export function cerrarAnillo(coordenadas: Array<[number, number] | [number, number, number]>) {
   if (coordenadas.length < 3) {
     return coordenadas;
   }
@@ -217,7 +217,7 @@ function cerrarAnillo(coordenadas: Array<[number, number] | [number, number, num
   return [...coordenadas, primera];
 }
 
-function extraerBloques(kml: string, etiqueta: string) {
+export function extraerBloques(kml: string, etiqueta: string) {
   const bloques: string[] = [];
   const regex = new RegExp(`<${etiqueta}\\b[^>]*>([\\s\\S]*?)<\\/${etiqueta}>`, 'gi');
   let match = regex.exec(kml);
@@ -230,13 +230,13 @@ function extraerBloques(kml: string, etiqueta: string) {
   return bloques;
 }
 
-function extraerPrimerTexto(bloque: string, etiqueta: string) {
+export function extraerPrimerTexto(bloque: string, etiqueta: string) {
   const match = new RegExp(`<${etiqueta}\\b[^>]*>([\\s\\S]*?)<\\/${etiqueta}>`, 'i').exec(bloque);
 
   return match ? limpiarXml(match[1]).trim() : undefined;
 }
 
-function parsearKmlAGeoJson(kml: string): GeoJsonFeatureCollection {
+export function parsearKmlAGeoJson(kml: string): GeoJsonFeatureCollection {
   const features: GeoJsonFeature[] = [];
   const placemarks = extraerBloques(kml, 'Placemark');
   const contenedores = placemarks.length ? placemarks : [kml];
@@ -304,7 +304,7 @@ function parsearKmlAGeoJson(kml: string): GeoJsonFeatureCollection {
   return { type: 'FeatureCollection', features };
 }
 
-function extraerKmlDesdeKmz(buffer: Buffer) {
+export function extraerKmlDesdeKmz(buffer: Buffer) {
   const firmaEocd = 0x06054b50;
   const firmaCentral = 0x02014b50;
   const firmaLocal = 0x04034b50;
@@ -368,7 +368,7 @@ function extraerKmlDesdeKmz(buffer: Buffer) {
   throw crearErrorValidacion('El archivo KMZ no contiene un KML.');
 }
 
-function calcularAreaAnilloHa(coordenadas: Array<[number, number] | [number, number, number]>) {
+export function calcularAreaAnilloHa(coordenadas: Array<[number, number] | [number, number, number]>) {
   if (coordenadas.length < 4) {
     return 0;
   }
@@ -389,7 +389,7 @@ function calcularAreaAnilloHa(coordenadas: Array<[number, number] | [number, num
   return Math.abs(area / 2) / 10000;
 }
 
-function calcularSuperficieGeoJsonHa(geoJson: GeoJsonFeatureCollection) {
+export function calcularSuperficieGeoJsonHa(geoJson: GeoJsonFeatureCollection) {
   return geoJson.features.reduce((total, feature) => {
     if (feature.geometry.type !== 'Polygon') {
       return total;

@@ -23,14 +23,14 @@ type AdjuntoLecturaRow = {
   campoErpId: string | null;
 };
 
-function crearErrorValidacion(message: string, statusCode = 400) {
+export function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
 
   return error;
 }
 
-function obtenerConfigStorage() {
+export function obtenerConfigStorage() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -48,7 +48,7 @@ function obtenerConfigStorage() {
   };
 }
 
-function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
+export function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
   const { maxBytes } = obtenerConfigStorage();
   const mimeType = datos.mimeType.trim().toLowerCase();
   const nombreArchivo = datos.nombreArchivo.trim().replace(/\s+/g, ' ');
@@ -73,7 +73,7 @@ function validarArchivo(datos: CrearUrlSubidaAdjuntoRequest) {
   return { nombreArchivo, mimeType };
 }
 
-function obtenerExtensionSegura(nombreArchivo: string, mimeType: string) {
+export function obtenerExtensionSegura(nombreArchivo: string, mimeType: string) {
   const extensionOriginal = path.extname(nombreArchivo).toLowerCase().replace('.', '');
   const extensionPorMime: Record<string, string> = {
     'image/jpeg': 'jpg',
@@ -86,7 +86,7 @@ function obtenerExtensionSegura(nombreArchivo: string, mimeType: string) {
   return extensionPorMime[mimeType] || extensionOriginal || 'bin';
 }
 
-function encodeStoragePath(storagePath: string) {
+export function encodeStoragePath(storagePath: string) {
   return storagePath.split('/').map(encodeURIComponent).join('/');
 }
 
@@ -114,7 +114,7 @@ async function llamarSupabaseStorage<T>(pathStorageApi: string, body: unknown): 
   return contenido as T;
 }
 
-function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unknown>) {
+export function normalizarSignedUploadUrl(supabaseUrl: string, data: Record<string, unknown>) {
   const rawUrl = String(data.signedURL || data.signedUrl || data.url || '');
 
   if (!rawUrl) {
