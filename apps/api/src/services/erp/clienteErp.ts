@@ -38,7 +38,7 @@ import { mapearRespuestaSistemaEmpresas } from './mappers/sistemaEmpresas';
 import { obtenerSnapshotErpMock } from './mockErp';
 import { listarEmpresasErpCliente } from './empresasCliente';
 
-function deduplicarZonasDeSnapshot<T extends { idZona: number; erpId: string; empresaErpId: string }>(
+export function deduplicarZonasDeSnapshot<T extends { idZona: number; erpId: string; empresaErpId: string }>(
   zonas: T[],
   campos: Array<{ idZona?: number }>,
 ) {
@@ -60,7 +60,7 @@ function deduplicarZonasDeSnapshot<T extends { idZona: number; erpId: string; em
   return Array.from(zonasPorId.values()).sort((a, b) => a.idZona - b.idZona);
 }
 
-function deduplicarPorErpId<T extends { erpId: string }>(registros: T[]) {
+export function deduplicarPorErpId<T extends { erpId: string }>(registros: T[]) {
   const registrosPorId = new Map<string, T>();
 
   for (const registro of registros) {
@@ -72,7 +72,7 @@ function deduplicarPorErpId<T extends { erpId: string }>(registros: T[]) {
   return Array.from(registrosPorId.values());
 }
 
-function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
+export function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
   const seleccionados = new Set(items?.length ? items : padronesErpSincronizables);
 
   if (seleccionados.has('cultivos')) {
@@ -109,7 +109,7 @@ function expandirPadronesSolicitados(items?: PadronErpSincronizable[]) {
   return seleccionados;
 }
 
-function crearRespuestaVacia<T>(): ErpRespuestaPaginada<T> {
+export function crearRespuestaVacia<T>(): ErpRespuestaPaginada<T> {
   return {
     succeeded: true,
     message: null,
@@ -126,12 +126,12 @@ function crearRespuestaVacia<T>(): ErpRespuestaPaginada<T> {
 
 let tokenLoginCache: { clave: string; token: string; expiraEn: number } | null = null;
 
-function crearHeadersConToken(configuracion: ConfiguracionErp, token: string): Record<string, string> {
+export function crearHeadersConToken(configuracion: ConfiguracionErp, token: string): Record<string, string> {
   const valor = configuracion.tokenPrefix ? `${configuracion.tokenPrefix} ${token}` : token;
   return { [configuracion.tokenHeader]: valor };
 }
 
-function crearHeadersAutenticacion(configuracion: ConfiguracionErp, tokenLogin?: string): Record<string, string> {
+export function crearHeadersAutenticacion(configuracion: ConfiguracionErp, tokenLogin?: string): Record<string, string> {
   if (configuracion.authMode === 'apiKey') {
     return { [configuracion.apiKeyHeader]: configuracion.apiKey || '' };
   }
@@ -152,7 +152,7 @@ function crearHeadersAutenticacion(configuracion: ConfiguracionErp, tokenLogin?:
   return {};
 }
 
-function obtenerIdEmpresaHeader(empresaErpId: string) {
+export function obtenerIdEmpresaHeader(empresaErpId: string) {
   return empresaErpId.replace(/^empresa:/, '');
 }
 
@@ -170,7 +170,7 @@ async function fetchConTimeout(url: string, init: RequestInit, timeoutMs: number
   }
 }
 
-async function leerErrorSeguro(respuesta: Response) {
+export async function leerErrorSeguro(respuesta: Response) {
   const texto = await respuesta.text().catch(() => '');
 
   if (!texto) {
@@ -184,11 +184,11 @@ async function leerErrorSeguro(respuesta: Response) {
     .slice(0, 500);
 }
 
-function construirUrl(baseUrl: string, path: string) {
+export function construirUrl(baseUrl: string, path: string) {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
 }
 
-function construirUrlConQuery(baseUrl: string, path: string, query?: Record<string, string | number | boolean>) {
+export function construirUrlConQuery(baseUrl: string, path: string, query?: Record<string, string | number | boolean>) {
   const url = new URL(construirUrl(baseUrl, path));
 
   for (const [clave, valor] of Object.entries(query || {})) {
@@ -198,7 +198,7 @@ function construirUrlConQuery(baseUrl: string, path: string, query?: Record<stri
   return url.toString();
 }
 
-function extraerTokenLogin(body: unknown): { token?: string; expiraEn?: number } {
+export function extraerTokenLogin(body: unknown): { token?: string; expiraEn?: number } {
   if (!body || typeof body !== 'object') {
     return {};
   }
