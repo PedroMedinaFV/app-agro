@@ -74,6 +74,7 @@ Checklist minimo antes de agregar una segunda feature sobre la misma pantalla:
 - componentes de formulario/listado;
 - validacion de permisos en backend;
 - auditoria si modifica datos;
+- tests automaticos para reglas, hooks o servicios de mayor riesgo;
 - build web/API validado.
 
 Para `Monitoreos` y `Observaciones`, el proximo trabajo debe ser extraer:
@@ -85,3 +86,18 @@ Para `Monitoreos` y `Observaciones`, el proximo trabajo debe ser extraer:
 - [x] `useObservaciones`;
 - [x] `FormularioObservacion`;
 - [x] `TablaObservaciones`.
+
+## Reutilizacion obligatoria
+
+Antes de crear un componente, hook, helper o cliente nuevo, revisar si ya existe una pieza reutilizable.
+
+Reglas:
+
+- no crear `fetch` directo desde screens o hooks si puede ir en `services/api.ts`;
+- no duplicar formateadores de fecha, moneda o numero fuera de `utils/formatters.ts`;
+- no copiar tablas o estados vacios si `DataTable`, `Panel`, `PageHeader` o componentes base cubren el caso;
+- no repetir filtros, normalizaciones o calculos de dominio dentro de JSX si pueden vivir en `utils`;
+- no crear tipos locales cuando el dato cruza API, web o mobile: deben ir a `packages/tipos`;
+- si aparece una segunda copia de una regla, extraer helper o componente compartido.
+
+La modularizacion no debe hacerse por estetica. Debe usarse para reducir duplicacion real, aislar responsabilidades y facilitar tests.

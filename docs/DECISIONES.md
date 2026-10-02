@@ -34,6 +34,16 @@ Mientras la base PostgreSQL y Microsoft Entra ID no esten disponibles, usamos un
 
 Los tipos que cruzan web, mobile y backend viven en `packages/tipos`. Esto reduce divergencias entre clientes y API a medida que crecen las pantallas.
 
+## Tests y modularizacion como criterio de cierre
+
+Una feature no se considera cerrada solo porque compile o se vea funcionando manualmente.
+
+Cada feature nueva debe sumar tests automaticos proporcionales al riesgo del cambio. Para features existentes, cada modificacion relevante debe mejorar el bloque de tests del modulo tocado, especialmente si afecta permisos, alcance por cliente/campo, planificacion, sincronizacion ERP, mobile offline, auditoria o calculos economicos.
+
+Tambien es obligatorio revisar reutilizacion antes de agregar codigo nuevo. Se deben preferir contratos compartidos, componentes base, hooks, helpers, servicios backend, middleware y clientes HTTP existentes. La duplicacion solo se acepta como paso transitorio chico y documentado; cuando aparece una segunda copia de una regla o patron, se debe extraer una pieza comun.
+
+La guia operativa queda en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
+
 ## Snapshot ERP separado del modelo operativo
 
 Los datos importados del ERP se guardan en tablas `Erp*` separadas. Esto evita confundir datos maestros externos con datos operativos propios de Agro App y deja abierta la sincronizacion futura hacia el ERP.

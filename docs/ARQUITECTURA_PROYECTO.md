@@ -546,8 +546,12 @@ Regla de negocio acordada:
 9. Crear componentes en `apps/web/src/components/<modulo>/`.
 10. Crear screen en `apps/web/src/screens/<Modulo>Screen.tsx`.
 11. Registrar vista en `App.tsx` y `Layout.tsx`.
-12. Documentar el flujo en `docs/`.
-13. Ejecutar build.
+12. Reutilizar componentes, hooks, helpers, middleware y servicios existentes antes de crear variantes nuevas.
+13. Agregar tests automaticos proporcionales al riesgo de la feature.
+14. Documentar el flujo en `docs/`.
+15. Ejecutar build.
+
+La guia obligatoria para tests, reutilizacion y modularizacion queda en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 
 ## Convenciones De Nombres
 
@@ -697,3 +701,5 @@ Si el cambio toca Prisma:
 - regenerar Prisma Client si corresponde;
 - validar que API compile;
 - probar endpoint relacionado.
+
+Ademas del build, cada feature nueva o cambio relevante debe sumar tests automaticos en las capas de mayor riesgo. Si una validacion queda manual de forma temporal, debe quedar documentada junto con el motivo.
