@@ -12,6 +12,7 @@ export type {
 export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
 export * from './erp';
 export * from './planificacion';
+export * from './planificacionHelpers';
 export * from './precipitacion';
 export * from './observacion';
 export * from './operativo';

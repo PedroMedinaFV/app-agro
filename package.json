@@ -10,7 +10,8 @@
     "dev": "pnpm -r run dev",
     "dev:all": "pnpm dev",
     "build": "pnpm -r run build",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "test": "pnpm --filter agro-app-api build && node --test \"tests/*.test.js\""
   },
   "devDependencies": {
     "typescript": "^5.5.4"
