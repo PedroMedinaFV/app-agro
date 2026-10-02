@@ -13,6 +13,12 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
 import { obtenerCamposAsignados } from '../usuarios/asignacionCampos';
+import {
+  crearErrorValidacion,
+  limpiarTextoVisible,
+  validarCierreRecorrida,
+  validarDatosBasicosRecorrida,
+} from './validacionesRecorridas';
 
 type UsuarioOperacion = UsuarioAuditoria & {
   rol?: string;
@@ -73,25 +79,6 @@ type ObservacionRow = {
   createdAt: Date;
   updatedAt: Date;
 };
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function esObjetivo(valor: string): valor is ObjetivoRecorridaCampo {
-  return ['monitoreo_general', 'plagas', 'malezas', 'enfermedades', 'emergencia', 'cosecha', 'otro'].includes(valor);
-}
-
-function esEstadoInicial(valor: string): valor is Extract<EstadoRecorridaCampo, 'borrador' | 'en_curso'> {
-  return valor === 'borrador' || valor === 'en_curso';
-}
 
 function mapearRecorrida(row: RecorridaRow): RecorridaCampo {
   return {
@@ -252,30 +239,7 @@ export async function crearRecorridaCampoPersistida(
     throw crearErrorValidacion('Sesion sin cliente asociado.', 401);
   }
 
-  if (!['web', 'mobile', 'api'].includes(request.origen)) {
-    throw crearErrorValidacion('El origen de la recorrida no es valido.');
-  }
-
-  const titulo = limpiarTextoVisible(request.titulo);
-  if (!titulo) {
-    throw crearErrorValidacion('La recorrida debe tener titulo.');
-  }
-
-  const objetivo = request.objetivo || 'monitoreo_general';
-  if (!esObjetivo(objetivo)) {
-    throw crearErrorValidacion('El objetivo de la recorrida no es valido.');
-  }
-
-  const estado = request.estado || 'en_curso';
-  if (!esEstadoInicial(estado)) {
-    throw crearErrorValidacion('El estado inicial de la recorrida no es valido.');
-  }
-
-  const fechaInicio = new Date(request.fechaInicio);
-  if (Number.isNaN(fechaInicio.getTime())) {
-    throw crearErrorValidacion('La fecha de inicio no es valida.');
-  }
-
+  const datosBasicos = validarDatosBasicosRecorrida(request);
   const { campo, lote } = await validarCampoLote(clienteId, request.campoAppId, request.loteAppId, usuario);
   const id = randomUUID();
 
@@ -307,11 +271,11 @@ export async function crearRecorridaCampoPersistida(
         ${request.loteAppId || null},
         ${lote?.loteErpId || null},
         ${request.campaniaErpId || null},
-        ${titulo},
-        ${objetivo},
-        ${estado},
-        ${fechaInicio},
-        ${request.observaciones ? limpiarTextoVisible(request.observaciones) : null},
+        ${datosBasicos.titulo},
+        ${datosBasicos.objetivo},
+        ${datosBasicos.estado},
+        ${datosBasicos.fechaInicio},
+        ${datosBasicos.observaciones},
         ${request.origen},
         NOW()
       )
@@ -356,16 +320,8 @@ export async function cerrarRecorridaCampoPersistida(id: string, request: Cerrar
     throw crearErrorValidacion('Recorrida no encontrada.', 404);
   }
 
-  if (existente.estado === 'cerrada' || existente.estado === 'cancelada') {
-    throw crearErrorValidacion('La recorrida ya no se puede cerrar.');
-  }
-
   await validarCampoLote(usuario.clienteId, existente.campoAppId, existente.loteAppId || undefined, usuario);
-
-  const fechaCierre = request.fechaCierre ? new Date(request.fechaCierre) : new Date();
-  if (Number.isNaN(fechaCierre.getTime())) {
-    throw crearErrorValidacion('La fecha de cierre no es valida.');
-  }
+  const fechaCierre = validarCierreRecorrida(existente.estado as EstadoRecorridaCampo, request.fechaCierre);
 
   return prisma.$transaction(async (tx) => {
     const actualizado = await tx.$queryRaw<RecorridaRow[]>`

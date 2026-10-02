@@ -10,6 +10,10 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { obtenerCamposAsignados } from '../usuarios/asignacionCampos';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  validarDatosBasicosPrecipitacion,
+} from './validacionesPrecipitaciones';
 
 type UsuarioOperacion = UsuarioAuditoria & {
   rol?: string;
@@ -44,17 +48,6 @@ type LoteRow = {
   campoAppId: string;
   loteErpId: string | null;
 };
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
 
 function mapearPrecipitacion(row: PrecipitacionRow): PrecipitacionCampo {
   return {
@@ -96,26 +89,7 @@ async function validarAlcanceCampo(usuario: UsuarioOperacion, campo: CampoRow) {
 }
 
 async function validarRequestPrecipitacion(clienteId: string, request: CrearPrecipitacionRequest, usuario: UsuarioOperacion) {
-  if (!['web', 'mobile', 'api'].includes(request.origen)) {
-    throw crearErrorValidacion('El origen de la precipitacion no es valido.');
-  }
-
-  if (!request.campoAppId) {
-    throw crearErrorValidacion('La precipitacion debe tener campo.');
-  }
-
-  if (!Number.isFinite(request.milimetros) || request.milimetros <= 0) {
-    throw crearErrorValidacion('Los milimetros deben ser mayores a cero.');
-  }
-
-  if (request.milimetros > 1000) {
-    throw crearErrorValidacion('Los milimetros informados superan el maximo permitido para una carga manual.');
-  }
-
-  const fechaEvento = new Date(request.fechaEvento);
-  if (Number.isNaN(fechaEvento.getTime())) {
-    throw crearErrorValidacion('La fecha del evento no es valida.');
-  }
+  const datosBasicos = validarDatosBasicosPrecipitacion(request);
 
   const campo = await prisma.$queryRaw<CampoRow[]>`
     SELECT "id", "clienteId", "campoErpId"
@@ -146,7 +120,8 @@ async function validarRequestPrecipitacion(clienteId: string, request: CrearPrec
   return {
     campo: campo[0],
     lote: lote[0],
-    fechaEvento,
+    fechaEvento: datosBasicos.fechaEvento,
+    observaciones: datosBasicos.observaciones,
   };
 }
 
@@ -188,7 +163,6 @@ export async function crearPrecipitacionPersistida(
 
   const validacion = await validarRequestPrecipitacion(clienteId, request, usuario);
   const id = randomUUID();
-  const observaciones = request.observaciones ? limpiarTextoVisible(request.observaciones) : null;
 
   return prisma.$transaction(async (tx) => {
     if (request.registroMovilId) {
@@ -245,7 +219,7 @@ export async function crearPrecipitacionPersistida(
         ${request.registroMovilId || null},
         ${request.milimetros},
         ${validacion.fechaEvento},
-        ${observaciones},
+        ${validacion.observaciones},
         ${request.origen},
         NOW()
       )
