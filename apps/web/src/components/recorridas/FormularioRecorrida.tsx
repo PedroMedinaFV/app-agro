@@ -1,15 +1,16 @@
 import type { CampoApp, LoteApp, ObjetivoRecorridaCampo } from '@agro/tipos';
 import { Button } from '../Button';
 import { FechaInput } from '../FechaInput';
-import { FormularioRecorrida, objetivosRecorrida } from '../../utils/recorridas/helpersRecorridas';
+import { objetivosRecorrida } from '../../utils/recorridas/helpersRecorridas';
+import type { FormularioRecorrida as FormularioRecorridaValores } from '../../utils/recorridas/helpersRecorridas';
 
 type FormularioRecorridaProps = {
-  formulario: FormularioRecorrida;
+  formulario: FormularioRecorridaValores;
   campos: CampoApp[];
   lotesDelCampo: LoteApp[];
   puedeCrear: boolean;
   guardando: boolean;
-  onChange: (cambios: Partial<FormularioRecorrida>) => void;
+  onChange: (cambios: Partial<FormularioRecorridaValores>) => void;
   onGuardar: () => void;
 };
 
