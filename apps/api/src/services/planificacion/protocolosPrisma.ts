@@ -17,15 +17,13 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from './auditoria';
 import { asegurarEstadiosReferenciaSemilla } from './estadiosReferenciaPrisma';
+import {
+  aplicarCostosDesdePadrones,
+  crearErrorValidacion,
+  validarProtocolo,
+} from './validacionesProtocolos';
 
 const TIMEOUT_TRANSACCION_PROTOCOLO_MS = 60000;
-
-function crearErrorValidacion(message: string) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = 400;
-
-  return error;
-}
 
 function serializarFecha(fecha?: Date | string | null) {
   if (!fecha) {
@@ -37,73 +35,6 @@ function serializarFecha(fecha?: Date | string | null) {
 
 function parsearFecha(fecha?: string) {
   return fecha ? new Date(fecha) : undefined;
-}
-
-function validarFechasProtocolo(protocolo: ProtocoloProductivoDetalle) {
-  const etapasSiembra = protocolo.etapas.filter((etapa) => ['siembra', 'siembra directa'].includes(etapa.nombre.trim().toLowerCase()));
-
-  if (protocolo.tipoFecha === 'relativa_siembra') {
-    for (const etapa of protocolo.etapas) {
-      if (!Number.isInteger(etapa.diasDesdeSiembra)) {
-        throw crearErrorValidacion('Las etapas relativas a siembra deben tener diasDesdeSiembra entero. Puede ser negativo.');
-      }
-    }
-
-    if (etapasSiembra.length && !protocolo.fechaSiembra) {
-      throw crearErrorValidacion('La fecha de siembra es obligatoria si el protocolo relativo tiene etapa Siembra o Siembra directa.');
-    }
-
-    for (const etapa of etapasSiembra) {
-      if (etapa.diasDesdeSiembra !== 0) {
-        throw crearErrorValidacion('La etapa Siembra o Siembra directa debe tener diasDesdeSiembra igual a 0.');
-      }
-    }
-  }
-
-  if (protocolo.tipoFecha === 'absoluta') {
-    for (const etapa of protocolo.etapas) {
-      if (!etapa.fechaObjetivo) {
-        throw crearErrorValidacion('Las etapas absolutas deben tener fechaObjetivo.');
-      }
-    }
-  }
-}
-
-function validarItemsProtocolo(protocolo: ProtocoloProductivoDetalle) {
-  for (const etapa of protocolo.etapas) {
-    if (!etapa.estadioReferenciaId) {
-      throw crearErrorValidacion('Cada etapa del protocolo debe tener un estadio.');
-    }
-
-    for (const labor of etapa.labores) {
-      if (!Number.isFinite(labor.indiceAplicacion) || labor.indiceAplicacion < 0 || labor.indiceAplicacion > 1) {
-        throw crearErrorValidacion('El indice de aplicacion de labores debe estar entre 0 y 1.');
-      }
-    }
-
-    for (const insumo of etapa.insumos) {
-      if (!Number.isFinite(insumo.indiceAplicacion) || insumo.indiceAplicacion < 0 || insumo.indiceAplicacion > 1) {
-        throw crearErrorValidacion('El indice de aplicacion de insumos debe estar entre 0 y 1.');
-      }
-    }
-  }
-}
-
-function validarProtocolo(protocolo: ProtocoloProductivoDetalle) {
-  if (!protocolo.clienteId) {
-    throw crearErrorValidacion('El protocolo debe tener clienteId.');
-  }
-
-  if (!protocolo.campaniaErpId) {
-    throw crearErrorValidacion('El protocolo debe tener campaniaErpId.');
-  }
-
-  if (!protocolo.actividadAppId) {
-    throw crearErrorValidacion('El protocolo debe tener actividadAppId.');
-  }
-
-  validarFechasProtocolo(protocolo);
-  validarItemsProtocolo(protocolo);
 }
 
 async function normalizarCostosDesdePadrones(
@@ -128,47 +59,7 @@ async function normalizarCostosDesdePadrones(
   const servicioPorId = new Map(servicios.map((servicio) => [servicio.id, servicio]));
   const insumoPorId = new Map(insumos.map((insumo) => [insumo.id, insumo]));
 
-  return {
-    ...protocolo,
-    etapas: protocolo.etapas.map((etapa) => ({
-      ...etapa,
-      labores: etapa.labores.map((labor) => {
-        const servicio = labor.servicioAppId ? servicioPorId.get(labor.servicioAppId) : undefined;
-
-        if (!servicio) {
-          return { ...labor, costoPorHa: calcularCostoLaborProtocolo(labor) };
-        }
-
-        const actualizado = {
-          ...labor,
-          nombre: servicio.nombre,
-          descripcion: servicio.descripcionAbreviada || undefined,
-          unidad: servicio.unidadSugerida,
-          costoUnitario: servicio.costoUnitarioSugerido ?? 0,
-        };
-
-        return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
-      }),
-      insumos: etapa.insumos.map((insumo) => {
-        const insumoApp = insumoPorId.get(insumo.insumoAppId);
-
-        if (!insumoApp) {
-          return { ...insumo, costoPorHa: calcularCostoInsumoProtocolo(insumo) };
-        }
-
-        const actualizado = {
-          ...insumo,
-          insumoErpId: insumoApp.insumoErpId || undefined,
-          nombre: insumoApp.nombre,
-          tipo: insumoApp.tipo || undefined,
-          unidad: insumoApp.unidad,
-          precioUnitarioEstimado: insumoApp.precioUnitarioEstimado ?? 0,
-        };
-
-        return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
-      }),
-    })),
-  };
+  return aplicarCostosDesdePadrones(protocolo, servicioPorId, insumoPorId);
 }
 
 type ProtocoloPrisma = Prisma.ProtocoloProductivoGetPayload<{
