@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  congelarLineaPlanificacionParaCierre,
+  congelarPlanificacionParaCierre,
+  extraerSupuestosCongeladosLinea,
   recalcularLineaPlanificacionPersistida,
   validarCabeceraPlanificacion,
   validarLineasPlanificacion,
@@ -129,4 +132,88 @@ test('recalcularLineaPlanificacionPersistida recalcula bruto, neto y margen pres
   assert.equal(recalculada.ingresoNetoEstimado, 5400);
   assert.equal(recalculada.margenBrutoEstimado, 3900);
   assert.equal(recalculada.margenBrutoActualizado, 999);
+});
+
+test('congelarLineaPlanificacionParaCierre marca la linea cerrada y recalcula importes desde supuestos copiados', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    estado: 'aprobada',
+    hectareasPlanificadas: 20,
+    rindeEstimado: 4,
+    precioVentaEstimado: 250,
+    gastosComercialesEstimados: 1200,
+    costoProduccionEstimado: 5000,
+    ingresoBrutoEstimado: 1,
+    ingresoNetoEstimado: 1,
+    margenBrutoEstimado: 1,
+  }));
+
+  assert.equal(congelada.estado, 'cerrada');
+  assert.equal(congelada.ingresoBrutoEstimado, 20000);
+  assert.equal(congelada.ingresoNetoEstimado, 18800);
+  assert.equal(congelada.margenBrutoEstimado, 13800);
+  assert.equal(congelada.margenBrutoActualizado, 13800);
+});
+
+test('congelarPlanificacionParaCierre convierte el escenario en original y cierra todas las lineas', () => {
+  const congelada = congelarPlanificacionParaCierre(crearPlanificacion({
+    estado: 'aprobada',
+    escenarioOriginal: false,
+    escenarioBloqueadoPorId: 'otro-plan',
+    lineas: [
+      crearLinea({ id: 'linea-1', estado: 'aprobada' }),
+      crearLinea({ id: 'linea-2', loteAppId: 'lote-2', actividadAppId: 'actividad-2', estado: 'en_revision' }),
+    ],
+  }));
+
+  assert.equal(congelada.estado, 'cerrada');
+  assert.equal(congelada.escenarioOriginal, true);
+  assert.equal(congelada.escenarioBloqueadoPorId, undefined);
+  assert.deepEqual(congelada.lineas.map((linea) => linea.estado), ['cerrada', 'cerrada']);
+});
+
+test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que no debe cambiar por padrones futuros', () => {
+  const linea = congelarLineaPlanificacionParaCierre(crearLinea({
+    campoErpId: 'empresa:1:campo:10',
+    loteErpId: 'empresa:1:lote:20',
+    actividadErpId: 'actividad:30',
+    cultivoErpId: 'empresa:1:cultivo:40',
+    destinoReferenciaId: 'destino-1',
+    destinoVenta: 'Puerto Norte',
+    precioReferenciaId: 'precio-1',
+    precioVentaEstimado: 210,
+    precioVentaManual: false,
+    hectareasPlanificadas: 15,
+    rindeEstimado: 3.2,
+    gastosComercialesReferenciaId: 'gasto-1',
+    gastosComercialesEstimados: 780,
+    protocoloId: 'protocolo-1',
+    costoProduccionEstimado: 2400,
+  }));
+
+  assert.deepEqual(extraerSupuestosCongeladosLinea(linea), {
+    empresaErpId: 'empresa-1',
+    campoAppId: 'campo-1',
+    campoErpId: 'empresa:1:campo:10',
+    loteAppId: 'lote-1',
+    loteErpId: 'empresa:1:lote:20',
+    actividadAppId: 'actividad-1',
+    actividadErpId: 'actividad:30',
+    cultivoErpId: 'empresa:1:cultivo:40',
+    destinoReferenciaId: 'destino-1',
+    destinoVenta: 'Puerto Norte',
+    destinoVentaManual: false,
+    precioReferenciaId: 'precio-1',
+    precioVentaEstimado: 210,
+    precioVentaManual: false,
+    hectareasPlanificadas: 15,
+    rindeEstimado: 3.2,
+    gastosComercialesReferenciaId: 'gasto-1',
+    gastosComercialesEstimados: 780,
+    protocoloId: 'protocolo-1',
+    ingresoBrutoEstimado: 10080,
+    ingresoNetoEstimado: 9300,
+    costoProduccionEstimado: 2400,
+    margenBrutoEstimado: 6900,
+    margenBrutoActualizado: 6900,
+  });
 });

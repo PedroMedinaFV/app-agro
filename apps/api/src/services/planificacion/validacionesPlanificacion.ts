@@ -26,6 +26,80 @@ export function recalcularLineaPlanificacionPersistida(linea: PlanificacionAgric
   };
 }
 
+export type SupuestosLineaPlanificacionCongelada = Pick<
+  PlanificacionAgricolaLinea,
+  | 'empresaErpId'
+  | 'campoAppId'
+  | 'campoErpId'
+  | 'loteAppId'
+  | 'loteErpId'
+  | 'actividadAppId'
+  | 'actividadErpId'
+  | 'cultivoErpId'
+  | 'destinoReferenciaId'
+  | 'destinoVenta'
+  | 'destinoVentaManual'
+  | 'precioReferenciaId'
+  | 'precioVentaEstimado'
+  | 'precioVentaManual'
+  | 'hectareasPlanificadas'
+  | 'rindeEstimado'
+  | 'gastosComercialesReferenciaId'
+  | 'gastosComercialesEstimados'
+  | 'protocoloId'
+  | 'ingresoBrutoEstimado'
+  | 'ingresoNetoEstimado'
+  | 'costoProduccionEstimado'
+  | 'margenBrutoEstimado'
+  | 'margenBrutoActualizado'
+>;
+
+export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLinea): SupuestosLineaPlanificacionCongelada {
+  return {
+    empresaErpId: linea.empresaErpId,
+    campoAppId: linea.campoAppId,
+    campoErpId: linea.campoErpId,
+    loteAppId: linea.loteAppId,
+    loteErpId: linea.loteErpId,
+    actividadAppId: linea.actividadAppId,
+    actividadErpId: linea.actividadErpId,
+    cultivoErpId: linea.cultivoErpId,
+    destinoReferenciaId: linea.destinoReferenciaId,
+    destinoVenta: linea.destinoVenta,
+    destinoVentaManual: linea.destinoVentaManual,
+    precioReferenciaId: linea.precioReferenciaId,
+    precioVentaEstimado: linea.precioVentaEstimado,
+    precioVentaManual: linea.precioVentaManual,
+    hectareasPlanificadas: linea.hectareasPlanificadas,
+    rindeEstimado: linea.rindeEstimado,
+    gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
+    gastosComercialesEstimados: linea.gastosComercialesEstimados,
+    protocoloId: linea.protocoloId,
+    ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
+    ingresoNetoEstimado: linea.ingresoNetoEstimado,
+    costoProduccionEstimado: linea.costoProduccionEstimado,
+    margenBrutoEstimado: linea.margenBrutoEstimado,
+    margenBrutoActualizado: linea.margenBrutoActualizado,
+  };
+}
+
+export function congelarLineaPlanificacionParaCierre(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
+  return {
+    ...recalcularLineaPlanificacionPersistida(linea),
+    estado: 'cerrada',
+  };
+}
+
+export function congelarPlanificacionParaCierre(planificacion: PlanificacionAgricola): PlanificacionAgricola {
+  return {
+    ...planificacion,
+    estado: 'cerrada',
+    escenarioOriginal: true,
+    escenarioBloqueadoPorId: undefined,
+    lineas: planificacion.lineas.map(congelarLineaPlanificacionParaCierre),
+  };
+}
+
 export function validarCabeceraPlanificacion(planificacion: PlanificacionAgricola) {
   if (!planificacion.clienteId) {
     throw crearErrorValidacion('La planificacion debe tener clienteId.');

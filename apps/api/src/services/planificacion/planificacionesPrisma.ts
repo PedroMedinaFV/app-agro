@@ -12,6 +12,7 @@ import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from './auditoria';
 import {
   crearErrorValidacion,
+  congelarPlanificacionParaCierre,
   LoteSuperficieValidacion,
   recalcularLineaPlanificacionPersistida,
   validarCabeceraPlanificacion,
@@ -406,7 +407,9 @@ export async function cerrarPlanificacionPersistida(
       throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
     }
 
-    await validarPlanificacionParaCierre(mapearPlanificacion(existente), tx);
+    const planificacionExistente = mapearPlanificacion(existente);
+    await validarPlanificacionParaCierre(planificacionExistente, tx);
+    const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente);
 
     const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
       where: {
@@ -432,6 +435,39 @@ export async function cerrarPlanificacionPersistida(
         updatedBy: usuario?.id,
       },
     });
+
+    for (const linea of planificacionCongelada.lineas) {
+      await tx.planificacionAgricolaLinea.update({
+        where: { id: linea.id },
+        data: {
+          empresaErpId: linea.empresaErpId,
+          campoAppId: linea.campoAppId,
+          campoErpId: linea.campoErpId,
+          loteAppId: linea.loteAppId,
+          loteErpId: linea.loteErpId,
+          actividadAppId: linea.actividadAppId,
+          actividadErpId: linea.actividadErpId,
+          cultivoErpId: linea.cultivoErpId,
+          destinoReferenciaId: linea.destinoReferenciaId,
+          destinoVenta: linea.destinoVenta,
+          destinoVentaManual: linea.destinoVentaManual,
+          precioReferenciaId: linea.precioReferenciaId,
+          precioVentaEstimado: linea.precioVentaEstimado,
+          precioVentaManual: linea.precioVentaManual,
+          hectareasPlanificadas: linea.hectareasPlanificadas,
+          rindeEstimado: linea.rindeEstimado,
+          gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
+          gastosComercialesEstimados: linea.gastosComercialesEstimados,
+          protocoloId: linea.protocoloId,
+          ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
+          ingresoNetoEstimado: linea.ingresoNetoEstimado,
+          costoProduccionEstimado: linea.costoProduccionEstimado,
+          margenBrutoEstimado: linea.margenBrutoEstimado,
+          margenBrutoActualizado: linea.margenBrutoActualizado,
+          estado: linea.estado,
+        },
+      });
+    }
 
     const cerrada = await tx.planificacionAgricola.update({
       where: { id },
