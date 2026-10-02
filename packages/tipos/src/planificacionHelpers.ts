@@ -4,6 +4,9 @@ import type {
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionAgricolaResumen,
+  ProtocoloInsumo,
+  ProtocoloLabor,
+  ProtocoloProductivoDetalle,
   ProtocoloProductivoResumen,
 } from './planificacion';
 
@@ -149,4 +152,21 @@ export function recalcularLineaPlanificacion(
     margenBrutoEstimado: margenBruto,
     margenBrutoActualizado: margenBruto,
   };
+}
+
+export function calcularCostoLaborProtocolo(labor: Pick<ProtocoloLabor, 'cantidadPorHa' | 'costoUnitario' | 'indiceAplicacion'>) {
+  return labor.cantidadPorHa * labor.costoUnitario * labor.indiceAplicacion;
+}
+
+export function calcularCostoInsumoProtocolo(insumo: Pick<ProtocoloInsumo, 'dosisPorHa' | 'precioUnitarioEstimado' | 'indiceAplicacion'>) {
+  return insumo.dosisPorHa * insumo.precioUnitarioEstimado * insumo.indiceAplicacion;
+}
+
+export function calcularCostoProtocolo(protocolo: Pick<ProtocoloProductivoDetalle, 'etapas'>) {
+  return protocolo.etapas.reduce((total, etapa) => {
+    const costoLabores = etapa.labores.reduce((subtotal, labor) => subtotal + calcularCostoLaborProtocolo(labor), 0);
+    const costoInsumos = etapa.insumos.reduce((subtotal, insumo) => subtotal + calcularCostoInsumoProtocolo(insumo), 0);
+
+    return total + costoLabores + costoInsumos;
+  }, 0);
 }

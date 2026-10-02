@@ -2,6 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   calcularGastosComercialesLinea,
+  calcularCostoInsumoProtocolo,
+  calcularCostoLaborProtocolo,
+  calcularCostoProtocolo,
   calcularResumenPlanificacion,
   lineaPlanificacionEstaCompleta,
   obtenerClavesDuplicadas,
@@ -122,4 +125,44 @@ test('recalcularLineaPlanificacion recalcula ingreso neto, costo y margen con pr
   assert.equal(linea.costoProduccionEstimado, 1500);
   assert.equal(linea.margenBrutoEstimado, 3900);
   assert.equal(linea.margenBrutoActualizado, 3900);
+});
+
+test('calcularCostoLaborProtocolo multiplica cantidad, costo unitario e indice', () => {
+  assert.equal(calcularCostoLaborProtocolo({
+    cantidadPorHa: 2,
+    costoUnitario: 50,
+    indiceAplicacion: 0.5,
+  }), 50);
+});
+
+test('calcularCostoInsumoProtocolo multiplica dosis, precio e indice', () => {
+  assert.equal(calcularCostoInsumoProtocolo({
+    dosisPorHa: 3,
+    precioUnitarioEstimado: 40,
+    indiceAplicacion: 0.25,
+  }), 30);
+});
+
+test('calcularCostoProtocolo suma labores e insumos de todas las etapas', () => {
+  const costo = calcularCostoProtocolo({
+    etapas: [
+      {
+        labores: [
+          { cantidadPorHa: 2, costoUnitario: 50, indiceAplicacion: 1 },
+          { cantidadPorHa: 1, costoUnitario: 80, indiceAplicacion: 0.5 },
+        ],
+        insumos: [
+          { dosisPorHa: 3, precioUnitarioEstimado: 40, indiceAplicacion: 0.25 },
+        ],
+      },
+      {
+        labores: [],
+        insumos: [
+          { dosisPorHa: 1.5, precioUnitarioEstimado: 20, indiceAplicacion: 1 },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(costo, 200);
 });

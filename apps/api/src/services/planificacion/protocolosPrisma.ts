@@ -1,3 +1,8 @@
+import {
+  calcularCostoInsumoProtocolo,
+  calcularCostoLaborProtocolo,
+  calcularCostoProtocolo,
+} from '@agro/tipos';
 import type {
   CopiarProtocoloRequest,
   GuardarProtocoloRequest,
@@ -84,23 +89,6 @@ function validarItemsProtocolo(protocolo: ProtocoloProductivoDetalle) {
   }
 }
 
-function calcularCostoProtocolo(protocolo: ProtocoloProductivoDetalle) {
-  return protocolo.etapas.reduce((total, etapa) => {
-    const costoLabores = etapa.labores.reduce((subtotal, labor) => subtotal + calcularCostoLabor(labor), 0);
-    const costoInsumos = etapa.insumos.reduce((subtotal, insumo) => subtotal + calcularCostoInsumo(insumo), 0);
-
-    return total + costoLabores + costoInsumos;
-  }, 0);
-}
-
-function calcularCostoLabor(labor: ProtocoloLabor) {
-  return labor.cantidadPorHa * labor.costoUnitario * labor.indiceAplicacion;
-}
-
-function calcularCostoInsumo(insumo: ProtocoloInsumo) {
-  return insumo.dosisPorHa * insumo.precioUnitarioEstimado * insumo.indiceAplicacion;
-}
-
 function validarProtocolo(protocolo: ProtocoloProductivoDetalle) {
   if (!protocolo.clienteId) {
     throw crearErrorValidacion('El protocolo debe tener clienteId.');
@@ -148,7 +136,7 @@ async function normalizarCostosDesdePadrones(
         const servicio = labor.servicioAppId ? servicioPorId.get(labor.servicioAppId) : undefined;
 
         if (!servicio) {
-          return { ...labor, costoPorHa: calcularCostoLabor(labor) };
+          return { ...labor, costoPorHa: calcularCostoLaborProtocolo(labor) };
         }
 
         const actualizado = {
@@ -159,13 +147,13 @@ async function normalizarCostosDesdePadrones(
           costoUnitario: servicio.costoUnitarioSugerido ?? 0,
         };
 
-        return { ...actualizado, costoPorHa: calcularCostoLabor(actualizado) };
+        return { ...actualizado, costoPorHa: calcularCostoLaborProtocolo(actualizado) };
       }),
       insumos: etapa.insumos.map((insumo) => {
         const insumoApp = insumoPorId.get(insumo.insumoAppId);
 
         if (!insumoApp) {
-          return { ...insumo, costoPorHa: calcularCostoInsumo(insumo) };
+          return { ...insumo, costoPorHa: calcularCostoInsumoProtocolo(insumo) };
         }
 
         const actualizado = {
@@ -177,7 +165,7 @@ async function normalizarCostosDesdePadrones(
           precioUnitarioEstimado: insumoApp.precioUnitarioEstimado ?? 0,
         };
 
-        return { ...actualizado, costoPorHa: calcularCostoInsumo(actualizado) };
+        return { ...actualizado, costoPorHa: calcularCostoInsumoProtocolo(actualizado) };
       }),
     })),
   };
@@ -306,7 +294,7 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
     unidad: labor.unidad,
     cantidadPorHa: labor.cantidadPorHa,
     costoUnitario: labor.costoUnitario,
-    costoPorHa: calcularCostoLabor(labor),
+    costoPorHa: calcularCostoLaborProtocolo(labor),
     momentoEstimado: labor.momentoEstimado,
   })));
   const insumos = protocolo.etapas.flatMap((etapa) => etapa.insumos.map((insumo) => ({
@@ -320,7 +308,7 @@ async function reemplazarEtapas(tx: Prisma.TransactionClient, protocolo: Protoco
     unidad: insumo.unidad,
     dosisPorHa: insumo.dosisPorHa,
     precioUnitarioEstimado: insumo.precioUnitarioEstimado,
-    costoPorHa: calcularCostoInsumo(insumo),
+    costoPorHa: calcularCostoInsumoProtocolo(insumo),
     momentoEstimado: insumo.momentoEstimado,
   })));
 
