@@ -7,26 +7,13 @@ import type {
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararConceptoGastoComercial,
+  validarConceptoGastoComercial,
+} from './validacionesConceptosGastos';
 
 type ConceptoPrisma = Prisma.ConceptoGastoComercialAppGetPayload<Record<string, never>>;
-
-function normalizarTexto(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
 
 function mapearConcepto(concepto: ConceptoPrisma): ConceptoGastoComercial {
   return {
@@ -52,50 +39,13 @@ export async function obtenerConceptosGastosComercialesPersistidos(clienteId: st
   return conceptos.map(mapearConcepto);
 }
 
-function prepararConcepto(concepto: ConceptoGastoComercial): ConceptoGastoComercial {
-  const nombre = limpiarTextoVisible(concepto.nombre);
-  const codigoBase = concepto.codigo ? concepto.codigo : nombre;
-
-  return {
-    ...concepto,
-    codigo: normalizarTexto(codigoBase),
-    nombre,
-    nombreNormalizado: normalizarTexto(nombre),
-    unidadCalculo: concepto.unidadCalculo || 'Tn',
-    descripcion: concepto.descripcion ? limpiarTextoVisible(concepto.descripcion) : undefined,
-    activo: concepto.activo,
-  };
-}
-
-function validarConcepto(concepto: ConceptoGastoComercial, usuario?: UsuarioAuditoria) {
-  if (!concepto.clienteId) {
-    throw crearErrorValidacion('El concepto debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== concepto.clienteId) {
-    throw crearErrorValidacion('No se puede modificar un concepto de otro cliente.', 403);
-  }
-
-  if (!concepto.nombre.trim()) {
-    throw crearErrorValidacion('El concepto debe tener nombre.');
-  }
-
-  if (!concepto.codigo.trim()) {
-    throw crearErrorValidacion('El concepto debe tener codigo.');
-  }
-
-  if (concepto.unidadCalculo !== 'Tn' && concepto.unidadCalculo !== 'Ha') {
-    throw crearErrorValidacion('La unidad de calculo del concepto debe ser Tn o Ha.');
-  }
-}
-
 export async function guardarConceptoGastoComercialPersistido(
   id: string,
   request: GuardarConceptoGastoComercialRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarConceptoGastoComercialResponse> {
-  const concepto = prepararConcepto({ ...request.concepto, id });
-  validarConcepto(concepto, usuario);
+  const concepto = prepararConceptoGastoComercial({ ...request.concepto, id });
+  validarConceptoGastoComercial(concepto, usuario);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.conceptoGastoComercialApp.findUnique({ where: { id } });

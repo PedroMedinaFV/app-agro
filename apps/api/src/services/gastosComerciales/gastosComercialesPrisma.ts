@@ -7,17 +7,11 @@ import type {
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
+import {
+  crearErrorValidacion,
+  prepararGastoComercial,
+  validarGastoComercial,
+} from './validacionesGastosComerciales';
 
 type GastoPrisma = Prisma.GastoComercialAppGetPayload<Record<string, never>>;
 
@@ -62,73 +56,6 @@ function mapearGasto(gasto: GastoPrisma): GastosComercialesReferencia {
   };
 }
 
-function validarItem(item: GastoComercialItemReferencia, indice: number) {
-  if (!item.conceptoGastoComercialId.trim()) {
-    throw crearErrorValidacion(`El item ${indice + 1} debe seleccionar concepto de gasto comercial.`);
-  }
-
-  if (!item.conceptoNombre.trim()) {
-    throw crearErrorValidacion(`El item ${indice + 1} debe conservar el nombre del concepto.`);
-  }
-
-  if (item.valorPorTonelada < 0) {
-    throw crearErrorValidacion(`El item ${indice + 1} no puede tener valor negativo.`);
-  }
-
-  if (item.unidadCalculo !== 'Tn' && item.unidadCalculo !== 'Ha') {
-    throw crearErrorValidacion(`El item ${indice + 1} debe tener unidad Tn o Ha.`);
-  }
-
-  if (!item.moneda.trim()) {
-    throw crearErrorValidacion(`El item ${indice + 1} debe tener moneda.`);
-  }
-}
-
-function validarGasto(gasto: GastosComercialesReferencia) {
-  if (!gasto.clienteId) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener clienteId.');
-  }
-
-  if (!gasto.empresaErpId) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener empresaErpId.');
-  }
-
-  if (!gasto.campaniaErpId) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener campaniaErpId.');
-  }
-
-  if (!gasto.actividadAppId) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener actividadAppId.');
-  }
-
-  if (!gasto.descripcion.trim()) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener descripcion.');
-  }
-
-  if (!gasto.items.length) {
-    throw crearErrorValidacion('Los gastos comerciales deben tener al menos un item.');
-  }
-
-  gasto.items.forEach(validarItem);
-}
-
-function prepararGasto(gasto: GastosComercialesReferencia): GastosComercialesReferencia {
-  return {
-    ...gasto,
-    destinoVenta: gasto.destinoVenta ? limpiarTextoVisible(gasto.destinoVenta) : undefined,
-    campaniaErpId: limpiarTextoVisible(gasto.campaniaErpId),
-    descripcion: limpiarTextoVisible(gasto.descripcion),
-    items: gasto.items.map((item) => ({
-      ...item,
-      conceptoGastoComercialId: limpiarTextoVisible(item.conceptoGastoComercialId),
-      conceptoNombre: limpiarTextoVisible(item.conceptoNombre),
-      unidadCalculo: item.unidadCalculo || 'Tn',
-      moneda: limpiarTextoVisible(item.moneda).toUpperCase(),
-      observaciones: item.observaciones ? limpiarTextoVisible(item.observaciones) : undefined,
-    })),
-  };
-}
-
 export async function obtenerGastosComercialesPersistidos(clienteId: string): Promise<GastosComercialesReferencia[]> {
   const gastos = await prisma.gastoComercialApp.findMany({
     where: { clienteId },
@@ -143,11 +70,11 @@ export async function guardarGastoComercialPersistido(
   request: GuardarGastosComercialesReferenciaRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarGastosComercialesReferenciaResponse> {
-  const gasto = prepararGasto({ ...request.gasto, id });
+  const gasto = prepararGastoComercial({ ...request.gasto, id });
   if (usuario?.clienteId) {
     gasto.clienteId = usuario.clienteId;
   }
-  validarGasto(gasto);
+  validarGastoComercial(gasto);
 
   return prisma.$transaction(async (tx) => {
     const existente = await tx.gastoComercialApp.findUnique({ where: { id } });
