@@ -2,26 +2,13 @@ import type { GuardarServicioAppRequest, GuardarServicioAppResponse, ServicioApp
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararServicioApp,
+  validarServicioAppBasico,
+} from '../planificacion/validacionesPadronesApp';
 
 type ServicioPrisma = Prisma.ServicioAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearServicio(servicio: ServicioPrisma): ServicioApp {
   return {
@@ -48,45 +35,8 @@ function mapearServicio(servicio: ServicioPrisma): ServicioApp {
   };
 }
 
-function prepararServicio(servicio: ServicioApp): ServicioApp {
-  const nombre = limpiarTextoVisible(servicio.nombre);
-
-  return {
-    ...servicio,
-    empresaErpId: 'global',
-    codigo: normalizarCodigo(servicio.codigo || nombre),
-    nombre,
-    descripcionAbreviada: servicio.descripcionAbreviada ? limpiarTextoVisible(servicio.descripcionAbreviada) : undefined,
-    unidadSugerida: limpiarTextoVisible(servicio.unidadSugerida || 'Ha'),
-    estadoVinculacion: servicio.servicioErpId ? 'vinculado_erp' : 'provisorio',
-    origen: servicio.servicioErpId ? 'erp' : 'provisorio',
-  };
-}
-
 async function validarServicio(servicio: ServicioApp, usuario?: UsuarioAuditoria) {
-  if (!servicio.clienteId) {
-    throw crearErrorValidacion('La labor debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== servicio.clienteId) {
-    throw crearErrorValidacion('No se puede modificar una labor de otro cliente.', 403);
-  }
-
-  if (!servicio.codigo.trim()) {
-    throw crearErrorValidacion('La labor debe tener codigo.');
-  }
-
-  if (!servicio.nombre.trim()) {
-    throw crearErrorValidacion('La labor debe tener nombre.');
-  }
-
-  if (!servicio.unidadSugerida.trim()) {
-    throw crearErrorValidacion('La labor debe tener unidad sugerida.');
-  }
-
-  if (servicio.costoUnitarioSugerido !== undefined && servicio.costoUnitarioSugerido < 0) {
-    throw crearErrorValidacion('El costo sugerido no puede ser negativo.');
-  }
+  validarServicioAppBasico(servicio, usuario);
 
   if (servicio.idMoneda !== undefined) {
     const monedasImportadas = await prisma.erpMoneda.count();
@@ -137,7 +87,7 @@ export async function guardarServicioAppPersistido(
   request: GuardarServicioAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarServicioAppResponse> {
-  const servicio = prepararServicio({ ...request.servicio, id });
+  const servicio = prepararServicioApp({ ...request.servicio, id });
   await validarServicio(servicio, usuario);
 
   return prisma.$transaction(async (tx) => {

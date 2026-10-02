@@ -5,12 +5,19 @@ const {
   obtenerIdZonaDesdeErpId,
   prepararCampoApp,
   prepararEspecieApp,
+  prepararActividadApp,
+  prepararInsumoApp,
   prepararLoteApp,
+  prepararServicioApp,
   prepararZonaApp,
   validarCampoAppBasico,
   validarEspecieAppBasica,
+  validarActividadAppBasica,
+  validarInsumoAppBasico,
   validarLoteAppBasico,
+  validarServicioAppBasico,
   validarZonaAppBasica,
+  obtenerIdEspecieDesdeErpId,
 } = require('../apps/api/dist/services/planificacion/validacionesPadronesApp');
 
 function capturarError(fn) {
@@ -71,6 +78,59 @@ function crearEspecie(overrides = {}) {
     empresaErpId: 'empresa-1',
     nombre: '  Maíz   temprano  ',
     estadoVinculacion: 'provisorio',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function crearActividad(overrides = {}) {
+  return {
+    id: 'actividad-1',
+    clienteId: 'cliente-1',
+    empresaErpId: 'empresa-1',
+    especieAppId: 'especie-1',
+    nombre: '  Soja   primera  ',
+    tipoGrano: 'gruesa',
+    tipoCultivo: 'primera',
+    epocaSiembra: 'verano',
+    estadoVinculacion: 'provisorio',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function crearInsumo(overrides = {}) {
+  return {
+    id: 'insumo-1',
+    clienteId: 'cliente-1',
+    empresaErpId: 'empresa-1',
+    nombre: '  Herbicida   Ñ  ',
+    tipo: '  Herbicida   residual  ',
+    unidad: ' l ',
+    moneda: ' usd ',
+    precioUnitarioEstimado: 12.5,
+    estadoVinculacion: 'provisorio',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function crearServicio(overrides = {}) {
+  return {
+    id: 'servicio-1',
+    clienteId: 'cliente-1',
+    empresaErpId: 'empresa-1',
+    codigo: '',
+    nombre: '  Pulverización   terrestre  ',
+    descripcionAbreviada: '  Aplicación   contratada  ',
+    unidadSugerida: '',
+    costoUnitarioSugerido: 18,
+    estadoVinculacion: 'provisorio',
+    activo: true,
+    origen: 'provisorio',
     createdAt: '2026-10-01T00:00:00.000Z',
     updatedAt: '2026-10-01T00:00:00.000Z',
     ...overrides,
@@ -170,6 +230,93 @@ test('validarEspecieAppBasica exige cliente, nombre y alcance por cliente', () =
   assert.throws(() => validarEspecieAppBasica(crearEspecie({ nombre: '   ' })), /nombre/);
 
   const error = capturarError(() => validarEspecieAppBasica(crearEspecie(), { clienteId: 'cliente-2' }));
+  assert.match(error.message, /otro cliente/);
+  assert.equal(error.statusCode, 403);
+});
+
+test('prepararActividadApp normaliza codigo, omite catalogos vacios y marca vinculacion ERP', () => {
+  const preparada = prepararActividadApp(crearActividad({
+    actividadErpId: 'global:actividad:7',
+    codigoInterno: ' soja   ñ ',
+    tipoGrano: '',
+    tipoCultivo: '',
+    epocaSiembra: '',
+  }));
+
+  assert.equal(preparada.empresaErpId, 'global');
+  assert.equal(preparada.nombre, 'Soja primera');
+  assert.equal(preparada.codigoInterno, 'SOJA N');
+  assert.equal(preparada.tipoGrano, undefined);
+  assert.equal(preparada.tipoCultivo, undefined);
+  assert.equal(preparada.epocaSiembra, undefined);
+  assert.equal(preparada.estadoVinculacion, 'vinculado_erp');
+});
+
+test('validarActividadAppBasica exige especie y catalogos validos', () => {
+  assert.doesNotThrow(() => validarActividadAppBasica(crearActividad(), { clienteId: 'cliente-1' }));
+  assert.throws(() => validarActividadAppBasica(crearActividad({ clienteId: '' })), /clienteId/);
+  assert.throws(() => validarActividadAppBasica(crearActividad({ nombre: '   ' })), /nombre/);
+  assert.throws(() => validarActividadAppBasica(crearActividad({ especieAppId: undefined, especieErpId: undefined })), /asociada a una especie/);
+  assert.throws(() => validarActividadAppBasica(crearActividad({ tipoGrano: 'mixta' })), /tipo de grano/);
+  assert.throws(() => validarActividadAppBasica(crearActividad({ tipoCultivo: 'tercera' })), /tipo de cultivo/);
+  assert.throws(() => validarActividadAppBasica(crearActividad({ epocaSiembra: 'otono' })), /epoca de siembra/);
+
+  const error = capturarError(() => validarActividadAppBasica(crearActividad(), { clienteId: 'cliente-2' }));
+  assert.match(error.message, /otro cliente/);
+  assert.equal(error.statusCode, 403);
+});
+
+test('obtenerIdEspecieDesdeErpId extrae id numerico de claves ERP de especie', () => {
+  assert.equal(obtenerIdEspecieDesdeErpId('global:especie:12'), 12);
+  assert.equal(obtenerIdEspecieDesdeErpId('especie-sin-id'), undefined);
+});
+
+test('prepararInsumoApp normaliza codigo, tipo, unidad, moneda y estado ERP', () => {
+  const preparado = prepararInsumoApp(crearInsumo({ insumoErpId: 'global:insumo:4' }));
+
+  assert.equal(preparado.empresaErpId, 'global');
+  assert.equal(preparado.nombre, 'Herbicida Ñ');
+  assert.equal(preparado.codigoInterno, 'HERBICIDA N');
+  assert.equal(preparado.tipo, 'Herbicida residual');
+  assert.equal(preparado.unidad, 'l');
+  assert.equal(preparado.moneda, 'USD');
+  assert.equal(preparado.estadoVinculacion, 'vinculado_erp');
+});
+
+test('validarInsumoAppBasico exige cliente, empresa, nombre, unidad y precio no negativo', () => {
+  assert.doesNotThrow(() => validarInsumoAppBasico(crearInsumo(), { clienteId: 'cliente-1' }));
+  assert.throws(() => validarInsumoAppBasico(crearInsumo({ clienteId: '' })), /clienteId/);
+  assert.throws(() => validarInsumoAppBasico(crearInsumo({ empresaErpId: '' })), /empresaErpId/);
+  assert.throws(() => validarInsumoAppBasico(crearInsumo({ nombre: '   ' })), /nombre/);
+  assert.throws(() => validarInsumoAppBasico(crearInsumo({ unidad: '   ' })), /unidad/);
+  assert.throws(() => validarInsumoAppBasico(crearInsumo({ precioUnitarioEstimado: -0.01 })), /precio estimado/);
+
+  const error = capturarError(() => validarInsumoAppBasico(crearInsumo(), { clienteId: 'cliente-2' }));
+  assert.match(error.message, /otro cliente/);
+  assert.equal(error.statusCode, 403);
+});
+
+test('prepararServicioApp normaliza codigo, descripcion, unidad, origen y vinculacion', () => {
+  const preparado = prepararServicioApp(crearServicio({ servicioErpId: 'global:servicio:8' }));
+
+  assert.equal(preparado.empresaErpId, 'global');
+  assert.equal(preparado.codigo, 'PULVERIZACION TERRESTRE');
+  assert.equal(preparado.nombre, 'Pulverización terrestre');
+  assert.equal(preparado.descripcionAbreviada, 'Aplicación contratada');
+  assert.equal(preparado.unidadSugerida, 'Ha');
+  assert.equal(preparado.estadoVinculacion, 'vinculado_erp');
+  assert.equal(preparado.origen, 'erp');
+});
+
+test('validarServicioAppBasico exige cliente, codigo, nombre, unidad y costo no negativo', () => {
+  assert.doesNotThrow(() => validarServicioAppBasico(prepararServicioApp(crearServicio()), { clienteId: 'cliente-1' }));
+  assert.throws(() => validarServicioAppBasico(crearServicio({ clienteId: '' })), /clienteId/);
+  assert.throws(() => validarServicioAppBasico(crearServicio({ codigo: '' })), /codigo/);
+  assert.throws(() => validarServicioAppBasico(crearServicio({ codigo: 'LAB', nombre: '   ' })), /nombre/);
+  assert.throws(() => validarServicioAppBasico(crearServicio({ codigo: 'LAB', unidadSugerida: '   ' })), /unidad sugerida/);
+  assert.throws(() => validarServicioAppBasico(crearServicio({ codigo: 'LAB', unidadSugerida: 'Ha', costoUnitarioSugerido: -1 })), /costo sugerido/);
+
+  const error = capturarError(() => validarServicioAppBasico(prepararServicioApp(crearServicio()), { clienteId: 'cliente-2' }));
   assert.match(error.message, /otro cliente/);
   assert.equal(error.statusCode, 403);
 });

@@ -9,34 +9,14 @@ import type {
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  obtenerIdEspecieDesdeErpId,
+  prepararActividadApp,
+  validarActividadAppBasica,
+} from '../planificacion/validacionesPadronesApp';
 
 type ActividadPrisma = Prisma.ActividadAppGetPayload<Record<string, never>>;
-
-const TIPOS_GRANO_VALIDOS = new Set<TipoGranoActividad>(['fina', 'gruesa']);
-const TIPOS_CULTIVO_VALIDOS = new Set<TipoCultivoActividad>(['primera', 'segunda']);
-const EPOCAS_SIEMBRA_VALIDAS = new Set<EpocaSiembraActividad>(['invierno', 'verano']);
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
-
-function normalizarOmitirVacio<T extends string>(valor: T | undefined) {
-  return valor && valor.trim() ? valor : undefined;
-}
 
 function mapearActividad(actividad: ActividadPrisma): ActividadApp {
   return {
@@ -57,49 +37,8 @@ function mapearActividad(actividad: ActividadPrisma): ActividadApp {
   };
 }
 
-function prepararActividad(actividad: ActividadApp): ActividadApp {
-  const nombre = limpiarTextoVisible(actividad.nombre);
-
-  return {
-    ...actividad,
-    empresaErpId: 'global',
-    nombre,
-    codigoInterno: actividad.codigoInterno ? normalizarCodigo(actividad.codigoInterno) : normalizarCodigo(nombre),
-    tipoGrano: normalizarOmitirVacio(actividad.tipoGrano),
-    tipoCultivo: normalizarOmitirVacio(actividad.tipoCultivo),
-    epocaSiembra: normalizarOmitirVacio(actividad.epocaSiembra),
-    estadoVinculacion: actividad.actividadErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarActividad(actividad: ActividadApp, usuario?: UsuarioAuditoria) {
-  if (!actividad.clienteId) {
-    throw crearErrorValidacion('La actividad debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== actividad.clienteId) {
-    throw crearErrorValidacion('No se puede modificar una actividad de otro cliente.', 403);
-  }
-
-  if (!actividad.nombre.trim()) {
-    throw crearErrorValidacion('La actividad debe tener nombre.');
-  }
-
-  if (!actividad.especieAppId && !actividad.especieErpId) {
-    throw crearErrorValidacion('La actividad debe estar asociada a una especie.');
-  }
-
-  if (actividad.tipoGrano && !TIPOS_GRANO_VALIDOS.has(actividad.tipoGrano)) {
-    throw crearErrorValidacion('El tipo de grano de la actividad no es valido.');
-  }
-
-  if (actividad.tipoCultivo && !TIPOS_CULTIVO_VALIDOS.has(actividad.tipoCultivo)) {
-    throw crearErrorValidacion('El tipo de cultivo de la actividad no es valido.');
-  }
-
-  if (actividad.epocaSiembra && !EPOCAS_SIEMBRA_VALIDAS.has(actividad.epocaSiembra)) {
-    throw crearErrorValidacion('La epoca de siembra de la actividad no es valida.');
-  }
+  validarActividadAppBasica(actividad, usuario);
 
   const especieApp = actividad.especieAppId
     ? await prisma.especieApp.findUnique({ where: { id: actividad.especieAppId } })
@@ -137,12 +76,6 @@ async function validarActividad(actividad: ActividadApp, usuario?: UsuarioAudito
   }
 }
 
-function obtenerIdEspecieDesdeErpId(especieErpId: string) {
-  const match = especieErpId.match(/especie:(\d+)$/);
-
-  return match ? Number(match[1]) : undefined;
-}
-
 export async function obtenerActividadesAppPersistidas(clienteId: string): Promise<ActividadApp[]> {
   const actividades = await prisma.actividadApp.findMany({
     where: { clienteId },
@@ -157,7 +90,7 @@ export async function guardarActividadAppPersistida(
   request: GuardarActividadAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarActividadAppResponse> {
-  const actividad = prepararActividad({ ...request.actividad, id });
+  const actividad = prepararActividadApp({ ...request.actividad, id });
   await validarActividad(actividad, usuario);
 
   return prisma.$transaction(async (tx) => {

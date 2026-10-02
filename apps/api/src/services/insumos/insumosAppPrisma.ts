@@ -2,26 +2,13 @@ import type { GuardarInsumoAppRequest, GuardarInsumoAppResponse, InsumoApp } fro
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararInsumoApp,
+  validarInsumoAppBasico,
+} from '../planificacion/validacionesPadronesApp';
 
 type InsumoPrisma = Prisma.InsumoAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearInsumo(insumo: InsumoPrisma): InsumoApp {
   return {
@@ -42,47 +29,8 @@ function mapearInsumo(insumo: InsumoPrisma): InsumoApp {
   };
 }
 
-function prepararInsumo(insumo: InsumoApp): InsumoApp {
-  const nombre = limpiarTextoVisible(insumo.nombre);
-  const codigoInterno = insumo.codigoInterno ? normalizarCodigo(insumo.codigoInterno) : normalizarCodigo(nombre);
-
-  return {
-    ...insumo,
-    empresaErpId: 'global',
-    nombre,
-    codigoInterno,
-    idTipoInsumo: insumo.idTipoInsumo,
-    tipo: insumo.tipo ? limpiarTextoVisible(insumo.tipo) : undefined,
-    unidad: limpiarTextoVisible(insumo.unidad || 'Unid'),
-    moneda: limpiarTextoVisible(insumo.moneda || 'USD').toUpperCase(),
-    estadoVinculacion: insumo.insumoErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarInsumo(insumo: InsumoApp, usuario?: UsuarioAuditoria) {
-  if (!insumo.clienteId) {
-    throw crearErrorValidacion('El insumo debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== insumo.clienteId) {
-    throw crearErrorValidacion('No se puede modificar un insumo de otro cliente.', 403);
-  }
-
-  if (!insumo.empresaErpId) {
-    throw crearErrorValidacion('El insumo debe tener empresaErpId.');
-  }
-
-  if (!insumo.nombre.trim()) {
-    throw crearErrorValidacion('El insumo debe tener nombre.');
-  }
-
-  if (!insumo.unidad.trim()) {
-    throw crearErrorValidacion('El insumo debe tener unidad.');
-  }
-
-  if (insumo.precioUnitarioEstimado !== undefined && insumo.precioUnitarioEstimado < 0) {
-    throw crearErrorValidacion('El precio estimado no puede ser negativo.');
-  }
+  validarInsumoAppBasico(insumo, usuario);
 
   if (insumo.moneda) {
     const monedasImportadas = await prisma.erpMoneda.count();
@@ -136,7 +84,7 @@ export async function guardarInsumoAppPersistido(
   request: GuardarInsumoAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarInsumoAppResponse> {
-  const insumo = prepararInsumo({ ...request.insumo, id });
+  const insumo = prepararInsumoApp({ ...request.insumo, id });
   await validarInsumo(insumo, usuario);
 
   return prisma.$transaction(async (tx) => {
