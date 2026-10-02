@@ -30,18 +30,18 @@ type SugerenciaDetectada = {
   motivo: string;
 };
 
-function limpiarTextoVisible(valor: string) {
+export function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
 
-function normalizarParaComparar(valor: string) {
+export function normalizarParaComparar(valor: string) {
   return limpiarTextoVisible(valor)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
 }
 
-function calcularPuntaje(codigoOrigen: string, nombreOrigen: string, codigoCandidato: string, nombreCandidato: string) {
+export function calcularPuntaje(codigoOrigen: string, nombreOrigen: string, codigoCandidato: string, nombreCandidato: string) {
   if (codigoOrigen && codigoOrigen === codigoCandidato) return 100;
   if (nombreOrigen && nombreOrigen === nombreCandidato) return 90;
   if (codigoOrigen && codigoOrigen === nombreCandidato) return 75;
@@ -55,13 +55,13 @@ function calcularPuntaje(codigoOrigen: string, nombreOrigen: string, codigoCandi
   return coincidencias > 0 ? Math.min(50, coincidencias * 20) : 0;
 }
 
-function describirPuntaje(puntaje: number) {
+export function describirPuntaje(puntaje: number) {
   if (puntaje >= 90) return 'coincidencia fuerte por codigo o nombre';
   if (puntaje >= 60) return 'coincidencia media por similitud';
   return 'coincidencia baja';
 }
 
-function buscarMejorCandidato(
+export function buscarMejorCandidato(
   entidad: { codigo?: string | null; nombre: string },
   candidatos: CandidatoErp[],
 ) {
@@ -83,28 +83,28 @@ function buscarMejorCandidato(
     .sort((a, b) => b.puntaje - a.puntaje || a.candidato.nombre.localeCompare(b.candidato.nombre, 'es'))[0];
 }
 
-function obtenerIdDesdeErpId(erpId: string | null | undefined, prefijo: 'zona' | 'especie') {
+export function obtenerIdDesdeErpId(erpId: string | null | undefined, prefijo: 'zona' | 'especie') {
   const match = erpId?.match(new RegExp(`${prefijo}:(\\d+)$`));
 
   return match ? Number(match[1]) : undefined;
 }
 
-function toJsonValue(valor: unknown) {
+export function toJsonValue(valor: unknown) {
   return JSON.parse(JSON.stringify(valor)) as Prisma.InputJsonValue;
 }
 
-function crearErrorValidacion(message: string, statusCode = 400) {
+export function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
 
   return error;
 }
 
-function zonaErpIdDesdeIdZona(idZona: number | null | undefined) {
+export function zonaErpIdDesdeIdZona(idZona: number | null | undefined) {
   return idZona ? `zona:${idZona}` : undefined;
 }
 
-function especieErpIdDesdeIdEspecie(idEspecie: number | null | undefined) {
+export function especieErpIdDesdeIdEspecie(idEspecie: number | null | undefined) {
   return idEspecie ? `especie:${idEspecie}` : undefined;
 }
 
