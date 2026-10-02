@@ -3,6 +3,11 @@ import { AsignacionCampoUsuario, AsignarCamposUsuarioInput } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria } from '../planificacion/auditoria';
+import {
+  camposAsignadosPorDefecto,
+  crearErrorValidacion,
+  rolTieneTodosLosCampos,
+} from './validacionesUsuarios';
 
 type UsuarioAutorizado = {
   sub: string;
@@ -30,23 +35,10 @@ function mapearAsignacion(row: UsuarioCampoErpRow): AsignacionCampoUsuario {
   };
 }
 
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-export function camposAsignadosPorDefecto(usuario: UsuarioAutorizado) {
-  if (usuario.rol === 'admin' || usuario.rol === 'planificador' || usuario.rol === 'responsable_compras') {
-    return null;
-  }
-
-  return [];
-}
+export { camposAsignadosPorDefecto };
 
 export async function obtenerCamposAsignados(usuario: UsuarioAutorizado) {
-  if (usuario.rol === 'admin' || usuario.rol === 'planificador' || usuario.rol === 'responsable_compras') {
+  if (rolTieneTodosLosCampos(usuario.rol)) {
     return null;
   }
 

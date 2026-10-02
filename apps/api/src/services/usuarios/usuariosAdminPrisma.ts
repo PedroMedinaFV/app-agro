@@ -9,6 +9,12 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../../prisma';
 import { listarAsignacionesUsuario } from './asignacionCampos';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  normalizarRol,
+  validarPasswordTemporal,
+  validarUsuarioRequest,
+} from './validacionesUsuarios';
 
 type UsuarioAdminRow = {
   id: string;
@@ -21,29 +27,6 @@ type UsuarioAdminRow = {
   createdAt: Date;
   updatedAt: Date;
 };
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarEmail(email: string) {
-  return limpiarTextoVisible(email).toLowerCase();
-}
-
-function normalizarRol(rol: string): RolUsuario {
-  if (rol === 'admin' || rol === 'planificador' || rol === 'responsable_compras' || rol === 'operador_campo') {
-    return rol;
-  }
-
-  return 'operador_campo';
-}
 
 async function mapearUsuario(usuario: UsuarioAdminRow): Promise<UsuarioAdminResumen> {
   const clienteId = usuario.clienteId || '';
@@ -60,21 +43,6 @@ async function mapearUsuario(usuario: UsuarioAdminRow): Promise<UsuarioAdminResu
     camposAsignados: asignaciones.map((asignacion) => asignacion.campoErpId),
     createdAt: usuario.createdAt.toISOString(),
     updatedAt: usuario.updatedAt.toISOString(),
-  };
-}
-
-function validarUsuarioRequest(request: GuardarUsuarioAdminRequest) {
-  const email = normalizarEmail(request.email);
-
-  if (!email || !email.includes('@')) {
-    throw crearErrorValidacion('El usuario debe tener un email valido.');
-  }
-
-  return {
-    email,
-    nombre: request.nombre ? limpiarTextoVisible(request.nombre) : null,
-    rol: normalizarRol(request.rol),
-    passwordTemporal: request.passwordTemporal?.trim() || undefined,
   };
 }
 
@@ -126,11 +94,8 @@ export async function guardarUsuarioAdmin(
       throw crearErrorValidacion('Ya existe un usuario con ese email.', 409);
     }
 
-    if (datos.passwordTemporal && datos.passwordTemporal.length < 8) {
-      throw crearErrorValidacion('La contrasena temporal debe tener al menos 8 caracteres.');
-    }
-
-    const passwordHash = datos.passwordTemporal ? await bcrypt.hash(datos.passwordTemporal, 10) : undefined;
+    const passwordTemporal = validarPasswordTemporal(datos.passwordTemporal);
+    const passwordHash = passwordTemporal ? await bcrypt.hash(passwordTemporal, 10) : undefined;
     const guardado = await tx.usuario.upsert({
       where: { id },
       update: {
