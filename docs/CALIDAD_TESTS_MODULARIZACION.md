@@ -30,6 +30,40 @@ Si una capa queda sin test automatico por limitacion tecnica momentanea, debe qu
 - como se valido manualmente;
 - que test debe agregarse despues.
 
+## Documentacion de tests
+
+Cada modulo debe documentar sus tests relevantes en el documento funcional/tecnico correspondiente o en una seccion de este documento si todavia no tiene doc propio.
+
+El objetivo no es repetir el codigo del test, sino dejar claro que comportamiento protege. La documentacion debe permitir que una persona nueva entienda rapidamente:
+
+- que regla se esta validando;
+- por que importa;
+- que entrada o escenario se usa;
+- que resultado se espera;
+- donde vive el test automatico.
+
+Formato recomendado:
+
+| Test | Archivo | Valida | Escenario | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| `nombre del test` | `ruta/al/test` | Regla protegida | Datos o flujo probado | Resultado observable |
+
+Ejemplo:
+
+| Test | Archivo | Valida | Escenario | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| `rechaza observacion fuera del campo asignado` | `apps/api/src/services/observaciones/*.test.ts` | Alcance por campo del operador | Usuario operador intenta crear observacion sobre lote no asignado | Backend responde error de permisos y no persiste nada |
+| `calcula margen bruto de linea` | `apps/web/src/utils/planificacion/*.test.ts` | Formula economica de planificacion | Hectareas, rinde, precio, costo productivo y gastos comerciales conocidos | Margen bruto coincide con el valor esperado |
+| `no duplica pendiente offline al reintentar` | `apps/mobile/src/services/*.test.ts` | Idempotencia mobile/offline | Registro con `registroMovilId` se sincroniza dos veces | El backend conserva un solo registro sincronizado |
+
+Cuando se agrega un test por bug corregido, documentar el caso con una descripcion concreta del problema que evita. Ejemplo: "evita que un operador vea observaciones de otro cliente" es mejor que "test de permisos".
+
+Los tests triviales no necesitan documentacion individual. Si un helper tiene muchos casos pequenos, se puede documentar el grupo:
+
+| Test | Archivo | Valida | Escenario | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| `formatters` | `apps/web/src/utils/formatters.test.ts` | Formato de fecha, moneda y numeros | Valores validos, vacios y decimales con coma | La UI muestra formatos consistentes sin duplicar logica |
+
 ## Casos que siempre requieren tests
 
 No se debe cerrar una feature sin tests cuando toca:
