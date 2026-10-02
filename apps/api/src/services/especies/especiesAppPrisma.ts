@@ -2,26 +2,13 @@ import type { EspecieApp, GuardarEspecieAppRequest, GuardarEspecieAppResponse } 
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararEspecieApp,
+  validarEspecieAppBasica,
+} from '../planificacion/validacionesPadronesApp';
 
 type EspeciePrisma = Prisma.EspecieAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearEspecie(especie: EspeciePrisma): EspecieApp {
   return {
@@ -37,30 +24,8 @@ function mapearEspecie(especie: EspeciePrisma): EspecieApp {
   };
 }
 
-function prepararEspecie(especie: EspecieApp): EspecieApp {
-  const nombre = limpiarTextoVisible(especie.nombre);
-
-  return {
-    ...especie,
-    empresaErpId: 'global',
-    nombre,
-    codigoInterno: especie.codigoInterno ? normalizarCodigo(especie.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: especie.especieErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarEspecie(especie: EspecieApp, usuario?: UsuarioAuditoria) {
-  if (!especie.clienteId) {
-    throw crearErrorValidacion('La especie debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== especie.clienteId) {
-    throw crearErrorValidacion('No se puede modificar una especie de otro cliente.', 403);
-  }
-
-  if (!especie.nombre.trim()) {
-    throw crearErrorValidacion('La especie debe tener nombre.');
-  }
+  validarEspecieAppBasica(especie, usuario);
 
   if (especie.especieErpId) {
     const especieErp = await prisma.erpEspecie.findUnique({ where: { erpId: especie.especieErpId } });
@@ -97,7 +62,7 @@ export async function guardarEspecieAppPersistida(
   request: GuardarEspecieAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarEspecieAppResponse> {
-  const especie = prepararEspecie({ ...request.especie, id });
+  const especie = prepararEspecieApp({ ...request.especie, id });
   await validarEspecie(especie, usuario);
 
   return prisma.$transaction(async (tx) => {

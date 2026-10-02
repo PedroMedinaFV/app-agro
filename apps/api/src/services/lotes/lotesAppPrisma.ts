@@ -2,26 +2,13 @@ import type { GuardarLoteAppRequest, GuardarLoteAppResponse, LoteApp } from '@ag
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararLoteApp,
+  validarLoteAppBasico,
+} from '../planificacion/validacionesPadronesApp';
 
 type LotePrisma = Prisma.LoteAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearLote(lote: LotePrisma): LoteApp {
   return {
@@ -39,47 +26,8 @@ function mapearLote(lote: LotePrisma): LoteApp {
   };
 }
 
-function prepararLote(lote: LoteApp): LoteApp {
-  const nombre = limpiarTextoVisible(lote.nombre);
-
-  return {
-    ...lote,
-    nombre,
-    codigoInterno: lote.codigoInterno ? normalizarCodigo(lote.codigoInterno) : normalizarCodigo(nombre),
-    superficieTotal: Number(lote.superficieTotal),
-    superficieProductiva: Number(lote.superficieProductiva),
-    estadoVinculacion: lote.loteErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarLote(lote: LoteApp, usuario?: UsuarioAuditoria) {
-  if (!lote.clienteId) {
-    throw crearErrorValidacion('El lote debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== lote.clienteId) {
-    throw crearErrorValidacion('No se puede modificar un lote de otro cliente.', 403);
-  }
-
-  if (!lote.campoAppId) {
-    throw crearErrorValidacion('El lote debe estar asociado a un campo propio de Agro App.');
-  }
-
-  if (!lote.nombre.trim()) {
-    throw crearErrorValidacion('El lote debe tener nombre.');
-  }
-
-  if (!Number.isFinite(lote.superficieTotal) || lote.superficieTotal < 0) {
-    throw crearErrorValidacion('La superficie total debe ser mayor o igual a cero.');
-  }
-
-  if (!Number.isFinite(lote.superficieProductiva) || lote.superficieProductiva < 0) {
-    throw crearErrorValidacion('La superficie productiva debe ser mayor o igual a cero.');
-  }
-
-  if (lote.superficieProductiva > lote.superficieTotal) {
-    throw crearErrorValidacion('La superficie productiva no puede superar la superficie total.');
-  }
+  validarLoteAppBasico(lote, usuario);
 
   const campo = await prisma.campoApp.findUnique({ where: { id: lote.campoAppId } });
 
@@ -126,7 +74,7 @@ export async function guardarLoteAppPersistido(
   request: GuardarLoteAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarLoteAppResponse> {
-  const lote = prepararLote({ ...request.lote, id });
+  const lote = prepararLoteApp({ ...request.lote, id });
   await validarLote(lote, usuario);
 
   return prisma.$transaction(async (tx) => {

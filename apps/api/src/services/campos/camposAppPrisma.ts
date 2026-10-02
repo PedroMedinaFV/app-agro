@@ -2,26 +2,14 @@ import type { CampoApp, GuardarCampoAppRequest, GuardarCampoAppResponse } from '
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  obtenerIdZonaDesdeErpId,
+  prepararCampoApp,
+  validarCampoAppBasico,
+} from '../planificacion/validacionesPadronesApp';
 
 type CampoPrisma = Prisma.CampoAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearCampo(campo: CampoPrisma): CampoApp {
   return {
@@ -39,33 +27,8 @@ function mapearCampo(campo: CampoPrisma): CampoApp {
   };
 }
 
-function prepararCampo(campo: CampoApp): CampoApp {
-  const nombre = limpiarTextoVisible(campo.nombre);
-
-  return {
-    ...campo,
-    nombre,
-    codigoInterno: campo.codigoInterno ? normalizarCodigo(campo.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: campo.campoErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarCampo(campo: CampoApp, usuario?: UsuarioAuditoria) {
-  if (!campo.clienteId) {
-    throw crearErrorValidacion('El campo debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== campo.clienteId) {
-    throw crearErrorValidacion('No se puede modificar un campo de otro cliente.', 403);
-  }
-
-  if (!campo.empresaErpId) {
-    throw crearErrorValidacion('El campo debe tener empresaErpId.');
-  }
-
-  if (!campo.nombre.trim()) {
-    throw crearErrorValidacion('El campo debe tener nombre.');
-  }
+  validarCampoAppBasico(campo, usuario);
 
   const zonaApp = campo.zonaAppId
     ? await prisma.zonaApp.findUnique({ where: { id: campo.zonaAppId } })
@@ -111,12 +74,6 @@ async function validarCampo(campo: CampoApp, usuario?: UsuarioAuditoria) {
   }
 }
 
-function obtenerIdZonaDesdeErpId(zonaErpId: string) {
-  const match = zonaErpId.match(/zona:(\d+)$/);
-
-  return match ? Number(match[1]) : undefined;
-}
-
 export async function obtenerCamposAppPersistidos(clienteId: string): Promise<CampoApp[]> {
   const campos = await prisma.campoApp.findMany({
     where: { clienteId },
@@ -131,7 +88,7 @@ export async function guardarCampoAppPersistido(
   request: GuardarCampoAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarCampoAppResponse> {
-  const campo = prepararCampo({ ...request.campo, id });
+  const campo = prepararCampoApp({ ...request.campo, id });
   await validarCampo(campo, usuario);
 
   return prisma.$transaction(async (tx) => {

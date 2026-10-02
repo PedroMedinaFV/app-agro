@@ -2,26 +2,13 @@ import type { GuardarZonaAppRequest, GuardarZonaAppResponse, ZonaApp } from '@ag
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';
+import {
+  crearErrorValidacion,
+  prepararZonaApp,
+  validarZonaAppBasica,
+} from '../planificacion/validacionesPadronesApp';
 
 type ZonaPrisma = Prisma.ZonaAppGetPayload<Record<string, never>>;
-
-function crearErrorValidacion(message: string, statusCode = 400) {
-  const error = new Error(message) as Error & { statusCode?: number };
-  error.statusCode = statusCode;
-
-  return error;
-}
-
-function limpiarTextoVisible(valor: string) {
-  return valor.trim().replace(/\s+/g, ' ');
-}
-
-function normalizarCodigo(valor: string) {
-  return limpiarTextoVisible(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-}
 
 function mapearZona(zona: ZonaPrisma): ZonaApp {
   return {
@@ -37,34 +24,8 @@ function mapearZona(zona: ZonaPrisma): ZonaApp {
   };
 }
 
-function prepararZona(zona: ZonaApp): ZonaApp {
-  const nombre = limpiarTextoVisible(zona.nombre);
-
-  return {
-    ...zona,
-    empresaErpId: 'global',
-    nombre,
-    codigoInterno: zona.codigoInterno ? normalizarCodigo(zona.codigoInterno) : normalizarCodigo(nombre),
-    estadoVinculacion: zona.zonaErpId ? 'vinculado_erp' : 'provisorio',
-  };
-}
-
 async function validarZona(zona: ZonaApp, usuario?: UsuarioAuditoria) {
-  if (!zona.clienteId) {
-    throw crearErrorValidacion('La zona debe tener clienteId.');
-  }
-
-  if (usuario?.clienteId && usuario.clienteId !== zona.clienteId) {
-    throw crearErrorValidacion('No se puede modificar una zona de otro cliente.', 403);
-  }
-
-  if (!zona.nombre.trim()) {
-    throw crearErrorValidacion('La zona debe tener nombre.');
-  }
-
-  if (!['provisorio', 'vinculado_erp'].includes(zona.estadoVinculacion)) {
-    throw crearErrorValidacion('El estado de vinculacion de la zona no es valido.');
-  }
+  validarZonaAppBasica(zona, usuario);
 
   if (zona.zonaErpId) {
     const zonaErp = await prisma.erpZona.findUnique({ where: { erpId: zona.zonaErpId } });
@@ -101,7 +62,7 @@ export async function guardarZonaAppPersistida(
   request: GuardarZonaAppRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarZonaAppResponse> {
-  const zona = prepararZona({ ...request.zona, id });
+  const zona = prepararZonaApp({ ...request.zona, id });
   await validarZona(zona, usuario);
 
   return prisma.$transaction(async (tx) => {
