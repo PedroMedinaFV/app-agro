@@ -18,23 +18,38 @@ type RequestConUsuario = {
   };
 };
 
+type ListarEventosAuditoriaFn = typeof listarEventosAuditoria;
+
+export async function resolverConsultaAuditoria(
+  request: RequestConUsuario,
+  listarEventos: ListarEventosAuditoriaFn = listarEventosAuditoria,
+): Promise<{ status: number; body: AuditoriaEventosResponse | { error: string } }> {
+  if (!request.user?.clienteId) {
+    return {
+      status: 403,
+      body: { error: 'No se pudo determinar el cliente para consultar auditoria.' },
+    };
+  }
+
+  const respuesta: AuditoriaEventosResponse = await listarEventos({
+    clienteId: request.user.clienteId,
+    entidad: request.query.entidad,
+    accion: request.query.accion,
+    usuarioId: request.query.usuarioId,
+    limite: request.query.limite ? Number(request.query.limite) : undefined,
+  });
+
+  return {
+    status: 200,
+    body: respuesta,
+  };
+}
+
 router.get('/', async (req, res, next) => {
   try {
-    const request = req as RequestConUsuario;
+    const respuesta = await resolverConsultaAuditoria(req as RequestConUsuario);
 
-    if (!request.user?.clienteId) {
-      return res.status(403).json({ error: 'No se pudo determinar el cliente para consultar auditoria.' });
-    }
-
-    const respuesta: AuditoriaEventosResponse = await listarEventosAuditoria({
-      clienteId: request.user.clienteId,
-      entidad: request.query.entidad,
-      accion: request.query.accion,
-      usuarioId: request.query.usuarioId,
-      limite: request.query.limite ? Number(request.query.limite) : undefined,
-    });
-
-    res.json(respuesta);
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
