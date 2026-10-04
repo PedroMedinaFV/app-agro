@@ -82,7 +82,15 @@ type RecorridaRow = {
   estado: string;
 };
 
-function mapearAdjunto(row: ObservacionAdjuntoRow): AdjuntoObservacion {
+type ValidarAlcanceCampoObservacionDeps = {
+  obtenerCamposAsignados: typeof obtenerCamposAsignados;
+};
+
+const depsValidarAlcanceCampoObservacion: ValidarAlcanceCampoObservacionDeps = {
+  obtenerCamposAsignados,
+};
+
+export function mapearAdjuntoObservacion(row: ObservacionAdjuntoRow): AdjuntoObservacion {
   return {
     id: row.id,
     observacionId: row.observacionId,
@@ -98,7 +106,7 @@ function mapearAdjunto(row: ObservacionAdjuntoRow): AdjuntoObservacion {
   };
 }
 
-function mapearObservacion(row: ObservacionRow, adjuntos: AdjuntoObservacion[] = []): ObservacionCampo {
+export function mapearObservacionCampo(row: ObservacionRow, adjuntos: AdjuntoObservacion[] = []): ObservacionCampo {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -122,12 +130,16 @@ function mapearObservacion(row: ObservacionRow, adjuntos: AdjuntoObservacion[] =
   };
 }
 
-async function validarAlcanceCampo(usuario: UsuarioOperacion, campo: CampoRow) {
+export async function validarAlcanceCampoObservacion(
+  usuario: UsuarioOperacion,
+  campo: CampoRow,
+  deps: ValidarAlcanceCampoObservacionDeps = depsValidarAlcanceCampoObservacion,
+) {
   if (usuario.rol === 'admin') {
     return;
   }
 
-  const camposAsignados = await obtenerCamposAsignados({
+  const camposAsignados = await deps.obtenerCamposAsignados({
     sub: usuario.id || '',
     rol: usuario.rol,
     clienteId: usuario.clienteId,
@@ -156,7 +168,7 @@ async function validarRequestObservacion(clienteId: string, request: CrearObserv
     throw crearErrorValidacion('El campo seleccionado no pertenece al cliente.', 403);
   }
 
-  await validarAlcanceCampo(usuario, campo[0]);
+  await validarAlcanceCampoObservacion(usuario, campo[0]);
 
   const lote = request.loteAppId
     ? await prisma.$queryRaw<LoteRow[]>`
@@ -237,12 +249,12 @@ export async function obtenerObservacionesPersistidas(
 
   for (const adjunto of adjuntos) {
     const existentes = adjuntosPorObservacion.get(adjunto.observacionId) || [];
-    existentes.push(mapearAdjunto(adjunto));
+    existentes.push(mapearAdjuntoObservacion(adjunto));
     adjuntosPorObservacion.set(adjunto.observacionId, existentes);
   }
 
   return {
-    observaciones: registros.map((registro) => mapearObservacion(registro, adjuntosPorObservacion.get(registro.id) || [])),
+    observaciones: registros.map((registro) => mapearObservacionCampo(registro, adjuntosPorObservacion.get(registro.id) || [])),
   };
 }
 
@@ -281,7 +293,7 @@ export async function crearObservacionPersistida(
         `;
 
         return {
-          observacion: mapearObservacion(existenteMovil[0], adjuntosExistentes.map(mapearAdjunto)),
+          observacion: mapearObservacionCampo(existenteMovil[0], adjuntosExistentes.map(mapearAdjuntoObservacion)),
           auditado: true,
           mensaje: 'Observacion ya sincronizada previamente.',
         };
@@ -369,7 +381,7 @@ export async function crearObservacionPersistida(
         RETURNING *
       `
       : [];
-    const observacion = mapearObservacion(creado[0], adjuntosCreados.map(mapearAdjunto));
+    const observacion = mapearObservacionCampo(creado[0], adjuntosCreados.map(mapearAdjuntoObservacion));
 
     if (request.recorridaId) {
       await tx.$executeRaw`
