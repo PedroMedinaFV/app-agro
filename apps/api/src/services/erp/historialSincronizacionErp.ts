@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { padronesErpSincronizables } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { listarEmpresasErpCliente } from './empresasCliente';
+import { expandirPadronesSolicitados } from './clienteErp';
 
 type SincronizacionRow = {
   id: string;
@@ -41,41 +42,11 @@ type ConteoEmpresa = {
 
 const padronesPorEmpresa = new Set<PadronErpSincronizable>(['campos', 'lotes', 'cultivos']);
 
-function normalizarItems(items?: PadronErpSincronizable[]) {
-  const seleccionados = new Set(items?.length ? items : padronesErpSincronizables);
-
-  if (seleccionados.has('cultivos')) {
-    seleccionados.add('campanias');
-    seleccionados.add('actividades');
-    seleccionados.add('especies');
-    seleccionados.add('lotes');
-  }
-
-  if (seleccionados.has('lotes')) {
-    seleccionados.add('campos');
-  }
-
-  if (seleccionados.has('campos')) {
-    seleccionados.add('lotes');
-    seleccionados.add('zonas');
-  }
-
-  if (seleccionados.has('insumos') || seleccionados.has('servicios')) {
-    seleccionados.add('unidadesMedida');
-  }
-
-  if (seleccionados.has('insumos')) {
-    seleccionados.add('tiposInsumo');
-  }
-
-  if (seleccionados.has('servicios')) {
-    seleccionados.add('tiposServicio');
-  }
-
-  return Array.from(seleccionados);
+export function normalizarItemsSincronizacionErp(items?: PadronErpSincronizable[]) {
+  return Array.from(expandirPadronesSolicitados(items));
 }
 
-function asegurarPadrones(items: unknown): PadronErpSincronizable[] {
+export function asegurarPadronesSincronizacionErp(items: unknown): PadronErpSincronizable[] {
   if (!Array.isArray(items)) {
     return [];
   }
@@ -85,7 +56,7 @@ function asegurarPadrones(items: unknown): PadronErpSincronizable[] {
   );
 }
 
-function mapearDetalle(row: DetalleRow) {
+export function mapearDetalleSincronizacionErp(row: DetalleRow) {
   return {
     id: row.id,
     sincronizacionId: row.sincronizacionId,
@@ -99,25 +70,25 @@ function mapearDetalle(row: DetalleRow) {
   };
 }
 
-function mapearSincronizacion(row: SincronizacionRow, detalles: DetalleRow[]): SincronizacionErpHistorialItem {
+export function mapearSincronizacionErp(row: SincronizacionRow, detalles: DetalleRow[]): SincronizacionErpHistorialItem {
   return {
     id: row.id,
     clienteId: row.clienteId,
     usuarioId: row.usuarioId || undefined,
     estado: row.estado as EstadoSincronizacionErp,
-    itemsSolicitados: asegurarPadrones(row.itemsSolicitados),
-    itemsEjecutados: asegurarPadrones(row.itemsEjecutados),
+    itemsSolicitados: asegurarPadronesSincronizacionErp(row.itemsSolicitados),
+    itemsEjecutados: asegurarPadronesSincronizacionErp(row.itemsEjecutados),
     resultado: row.resultado || undefined,
     error: row.error || undefined,
     iniciadoEn: row.iniciadoEn.toISOString(),
     finalizadoEn: row.finalizadoEn?.toISOString(),
-    detalles: detalles.map(mapearDetalle),
+    detalles: detalles.map(mapearDetalleSincronizacionErp),
   };
 }
 
 export async function iniciarSincronizacionErpHistorial(clienteId: string, usuarioId: string | undefined, items?: PadronErpSincronizable[]) {
   const itemsSolicitados = items?.length ? items : padronesErpSincronizables;
-  const itemsEjecutados = normalizarItems(items);
+  const itemsEjecutados = normalizarItemsSincronizacionErp(items);
   const sincronizacionId = randomUUID();
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
     INSERT INTO "ErpSincronizacion" ("id", "clienteId", "usuarioId", "estado", "itemsSolicitados", "itemsEjecutados", "updatedAt")
@@ -284,7 +255,7 @@ export async function listarHistorialSincronizacionesErp(clienteId: string, limi
 
   return {
     sincronizaciones: sincronizaciones.map((sincronizacion) =>
-      mapearSincronizacion(sincronizacion, detallesPorSync.get(sincronizacion.id) || []),
+      mapearSincronizacionErp(sincronizacion, detallesPorSync.get(sincronizacion.id) || []),
     ),
   };
 }
