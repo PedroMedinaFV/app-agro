@@ -49,7 +49,15 @@ type LoteRow = {
   loteErpId: string | null;
 };
 
-function mapearPrecipitacion(row: PrecipitacionRow): PrecipitacionCampo {
+type ValidarAlcanceCampoPrecipitacionDeps = {
+  obtenerCamposAsignados: typeof obtenerCamposAsignados;
+};
+
+const depsValidarAlcanceCampoPrecipitacion: ValidarAlcanceCampoPrecipitacionDeps = {
+  obtenerCamposAsignados,
+};
+
+export function mapearPrecipitacionCampo(row: PrecipitacionRow): PrecipitacionCampo {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -68,12 +76,16 @@ function mapearPrecipitacion(row: PrecipitacionRow): PrecipitacionCampo {
   };
 }
 
-async function validarAlcanceCampo(usuario: UsuarioOperacion, campo: CampoRow) {
+export async function validarAlcanceCampoPrecipitacion(
+  usuario: UsuarioOperacion,
+  campo: CampoRow,
+  deps: ValidarAlcanceCampoPrecipitacionDeps = depsValidarAlcanceCampoPrecipitacion,
+) {
   if (usuario.rol === 'admin') {
     return;
   }
 
-  const camposAsignados = await obtenerCamposAsignados({
+  const camposAsignados = await deps.obtenerCamposAsignados({
     sub: usuario.id || '',
     rol: usuario.rol,
     clienteId: usuario.clienteId,
@@ -102,7 +114,7 @@ async function validarRequestPrecipitacion(clienteId: string, request: CrearPrec
     throw crearErrorValidacion('El campo seleccionado no pertenece al cliente.', 403);
   }
 
-  await validarAlcanceCampo(usuario, campo[0]);
+  await validarAlcanceCampoPrecipitacion(usuario, campo[0]);
 
   const lote = request.loteAppId
     ? await prisma.$queryRaw<LoteRow[]>`
@@ -148,7 +160,7 @@ export async function obtenerPrecipitacionesPersistidas(
     LIMIT 500
   `;
 
-  return { precipitaciones: registros.map(mapearPrecipitacion) };
+  return { precipitaciones: registros.map(mapearPrecipitacionCampo) };
 }
 
 export async function crearPrecipitacionPersistida(
@@ -176,7 +188,7 @@ export async function crearPrecipitacionPersistida(
 
       if (existenteMovil[0]) {
         return {
-          precipitacion: mapearPrecipitacion(existenteMovil[0]),
+          precipitacion: mapearPrecipitacionCampo(existenteMovil[0]),
           auditado: true,
           mensaje: 'Precipitacion ya sincronizada previamente.',
         };
@@ -225,7 +237,7 @@ export async function crearPrecipitacionPersistida(
       )
       RETURNING *
     `;
-    const precipitacion = mapearPrecipitacion(creado[0]);
+    const precipitacion = mapearPrecipitacionCampo(creado[0]);
 
     await registrarAuditoria(tx, {
       clienteId,
