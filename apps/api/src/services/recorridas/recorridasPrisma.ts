@@ -80,7 +80,15 @@ type ObservacionRow = {
   updatedAt: Date;
 };
 
-function mapearRecorrida(row: RecorridaRow): RecorridaCampo {
+type ValidarAlcanceCampoRecorridaDeps = {
+  obtenerCamposAsignados: typeof obtenerCamposAsignados;
+};
+
+const depsValidarAlcanceCampoRecorrida: ValidarAlcanceCampoRecorridaDeps = {
+  obtenerCamposAsignados,
+};
+
+export function mapearRecorridaCampo(row: RecorridaRow): RecorridaCampo {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -104,7 +112,7 @@ function mapearRecorrida(row: RecorridaRow): RecorridaCampo {
   };
 }
 
-function mapearObservacion(row: ObservacionRow): RecorridaCampoDetalleResponse['observaciones'][number] {
+export function mapearObservacionRecorrida(row: ObservacionRow): RecorridaCampoDetalleResponse['observaciones'][number] {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -128,8 +136,12 @@ function mapearObservacion(row: ObservacionRow): RecorridaCampoDetalleResponse['
   };
 }
 
-async function validarAlcanceCampo(usuario: UsuarioOperacion, campo: CampoRow) {
-  const camposAsignados = await obtenerCamposAsignados({
+export async function validarAlcanceCampoRecorrida(
+  usuario: UsuarioOperacion,
+  campo: CampoRow,
+  deps: ValidarAlcanceCampoRecorridaDeps = depsValidarAlcanceCampoRecorrida,
+) {
+  const camposAsignados = await deps.obtenerCamposAsignados({
     sub: usuario.id || '',
     rol: usuario.rol,
     clienteId: usuario.clienteId,
@@ -153,7 +165,7 @@ async function validarCampoLote(clienteId: string, campoAppId: string, loteAppId
     throw crearErrorValidacion('El campo seleccionado no pertenece al cliente.', 403);
   }
 
-  await validarAlcanceCampo(usuario, campo);
+  await validarAlcanceCampoRecorrida(usuario, campo);
 
   const lotes = loteAppId
     ? await prisma.$queryRaw<LoteRow[]>`
@@ -192,7 +204,7 @@ export async function obtenerRecorridasCampoPersistidas(clienteId: string, usuar
     LIMIT 500
   `;
 
-  return { recorridas: recorridas.map(mapearRecorrida) };
+  return { recorridas: recorridas.map(mapearRecorridaCampo) };
 }
 
 export async function obtenerRecorridaCampoDetallePersistida(id: string, usuario: UsuarioOperacion): Promise<RecorridaCampoDetalleResponse> {
@@ -224,8 +236,8 @@ export async function obtenerRecorridaCampoDetallePersistida(id: string, usuario
   `;
 
   return {
-    recorrida: mapearRecorrida(recorrida),
-    observaciones: observaciones.map(mapearObservacion),
+    recorrida: mapearRecorridaCampo(recorrida),
+    observaciones: observaciones.map(mapearObservacionRecorrida),
   };
 }
 
@@ -281,7 +293,7 @@ export async function crearRecorridaCampoPersistida(
       )
       RETURNING *
     `;
-    const recorrida = mapearRecorrida(creado[0]);
+    const recorrida = mapearRecorridaCampo(creado[0]);
 
     await registrarAuditoria(tx, {
       clienteId,
@@ -335,7 +347,7 @@ export async function cerrarRecorridaCampoPersistida(id: string, request: Cerrar
         AND "clienteId" = ${usuario.clienteId}
       RETURNING *
     `;
-    const recorrida = mapearRecorrida(actualizado[0]);
+    const recorrida = mapearRecorridaCampo(actualizado[0]);
 
     await registrarAuditoria(tx, {
       clienteId: usuario.clienteId || '',
@@ -345,7 +357,7 @@ export async function cerrarRecorridaCampoPersistida(id: string, request: Cerrar
       accion: 'cerrar',
       origen: request.origen,
       motivo: 'Cierre de recorrida operativa.',
-      valoresAntes: mapearRecorrida(existente),
+      valoresAntes: mapearRecorridaCampo(existente),
       valoresDespues: recorrida,
     });
 
