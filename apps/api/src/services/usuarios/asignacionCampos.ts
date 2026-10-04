@@ -15,7 +15,7 @@ type UsuarioAutorizado = {
   clienteId?: string;
 };
 
-type UsuarioCampoErpRow = {
+export type UsuarioCampoErpRow = {
   id: string;
   clienteId: string;
   usuarioId: string;
@@ -24,7 +24,40 @@ type UsuarioCampoErpRow = {
   createdAt: Date;
 };
 
-function mapearAsignacion(row: UsuarioCampoErpRow): AsignacionCampoUsuario {
+type UsuarioAsignable = {
+  clienteId: string | null;
+};
+
+type ReemplazarAsignacionesUsuarioDeps = {
+  buscarUsuario: (usuarioId: string) => Promise<UsuarioAsignable | null>;
+  listarEmpresasCliente: (clienteId: string) => Promise<Array<{ empresaErpId: string }>>;
+  listarCamposValidos: (camposErpIds: string[], empresasErpIds: string[]) => Promise<Array<{ erpId: string }>>;
+  listarAsignaciones: (clienteId: string, usuarioId: string) => Promise<AsignacionCampoUsuario[]>;
+  ejecutarTransaccion: <T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) => Promise<T>;
+  registrarAuditoria: typeof registrarAuditoria;
+  generarId: () => string;
+};
+
+const depsReemplazarAsignacionesUsuario: ReemplazarAsignacionesUsuarioDeps = {
+  buscarUsuario: (usuarioId) => prisma.usuario.findUnique({ where: { id: usuarioId } }),
+  listarEmpresasCliente: (clienteId) => prisma.clienteEmpresaErp.findMany({
+    where: { clienteId },
+    select: { empresaErpId: true },
+  }),
+  listarCamposValidos: (camposErpIds, empresasErpIds) => prisma.erpCampo.findMany({
+    where: {
+      erpId: { in: camposErpIds },
+      empresaErpId: { in: empresasErpIds },
+    },
+    select: { erpId: true },
+  }),
+  listarAsignaciones: listarAsignacionesUsuario,
+  ejecutarTransaccion: (callback) => prisma.$transaction(callback),
+  registrarAuditoria,
+  generarId: randomUUID,
+};
+
+export function mapearAsignacionUsuarioCampo(row: UsuarioCampoErpRow): AsignacionCampoUsuario {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -67,29 +100,26 @@ export async function listarAsignacionesUsuario(clienteId: string, usuarioId: st
     ORDER BY "createdAt" DESC
   `;
 
-  return rows.map(mapearAsignacion);
+  return rows.map(mapearAsignacionUsuarioCampo);
 }
 
-export async function reemplazarAsignacionesUsuario(input: AsignarCamposUsuarioInput, asignadoPor?: string) {
-  const usuario = await prisma.usuario.findUnique({ where: { id: input.usuarioId } });
+export async function reemplazarAsignacionesUsuarioConDeps(
+  input: AsignarCamposUsuarioInput,
+  asignadoPor: string | undefined,
+  deps: ReemplazarAsignacionesUsuarioDeps = depsReemplazarAsignacionesUsuario,
+) {
+  const usuario = await deps.buscarUsuario(input.usuarioId);
 
   if (!usuario || usuario.clienteId !== input.clienteId) {
     throw crearErrorValidacion('El usuario no pertenece al cliente indicado.', 403);
   }
 
   if (input.camposErpIds.length > 0) {
-    const camposValidos = await prisma.erpCampo.findMany({
-      where: {
-        erpId: { in: input.camposErpIds },
-        empresaErpId: {
-          in: await prisma.clienteEmpresaErp.findMany({
-            where: { clienteId: input.clienteId },
-            select: { empresaErpId: true },
-          }).then((empresas) => empresas.map((empresa) => empresa.empresaErpId)),
-        },
-      },
-      select: { erpId: true },
-    });
+    const empresas = await deps.listarEmpresasCliente(input.clienteId);
+    const camposValidos = await deps.listarCamposValidos(
+      input.camposErpIds,
+      empresas.map((empresa) => empresa.empresaErpId),
+    );
     const camposValidosSet = new Set(camposValidos.map((campo) => campo.erpId));
     const camposInvalidos = input.camposErpIds.filter((campoErpId) => !camposValidosSet.has(campoErpId));
 
@@ -98,9 +128,9 @@ export async function reemplazarAsignacionesUsuario(input: AsignarCamposUsuarioI
     }
   }
 
-  const asignacionesAntes = await listarAsignacionesUsuario(input.clienteId, input.usuarioId);
+  const asignacionesAntes = await deps.listarAsignaciones(input.clienteId, input.usuarioId);
 
-  await prisma.$transaction(async (tx) => {
+  await deps.ejecutarTransaccion(async (tx) => {
     await tx.$executeRaw`
       DELETE FROM "UsuarioCampoErp"
       WHERE "clienteId" = ${input.clienteId} AND "usuarioId" = ${input.usuarioId}
@@ -109,12 +139,12 @@ export async function reemplazarAsignacionesUsuario(input: AsignarCamposUsuarioI
     for (const campoErpId of input.camposErpIds) {
       await tx.$executeRaw`
         INSERT INTO "UsuarioCampoErp" ("id", "clienteId", "usuarioId", "campoErpId", "asignadoPor")
-        VALUES (${randomUUID()}, ${input.clienteId}, ${input.usuarioId}, ${campoErpId}, ${asignadoPor || null})
+        VALUES (${deps.generarId()}, ${input.clienteId}, ${input.usuarioId}, ${campoErpId}, ${asignadoPor || null})
         ON CONFLICT ("clienteId", "usuarioId", "campoErpId") DO NOTHING
       `;
     }
 
-    await registrarAuditoria(tx, {
+    await deps.registrarAuditoria(tx, {
       clienteId: input.clienteId,
       usuario: { id: asignadoPor, clienteId: input.clienteId },
       entidad: 'UsuarioCampoErp',
@@ -128,5 +158,9 @@ export async function reemplazarAsignacionesUsuario(input: AsignarCamposUsuarioI
     });
   });
 
-  return listarAsignacionesUsuario(input.clienteId, input.usuarioId);
+  return deps.listarAsignaciones(input.clienteId, input.usuarioId);
+}
+
+export async function reemplazarAsignacionesUsuario(input: AsignarCamposUsuarioInput, asignadoPor?: string) {
+  return reemplazarAsignacionesUsuarioConDeps(input, asignadoPor);
 }
