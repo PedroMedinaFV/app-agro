@@ -31,7 +31,7 @@ function obtenerTenantId() {
   return process.env.MICROSOFT_TENANT_ID || 'common';
 }
 
-function obtenerClientId() {
+export function obtenerClientIdMicrosoft() {
   const clientId = process.env.MICROSOFT_CLIENT_ID;
 
   if (!clientId) {
@@ -90,9 +90,23 @@ function crearClavePublica(jwk: Jwk) {
   }) as string;
 }
 
-function validarIssuer(issuerConfigurado: string, issuerToken: string, tenantToken?: string) {
+export function validarIssuerMicrosoft(issuerConfigurado: string, issuerToken: string, tenantToken?: string) {
   const issuerEsperado = issuerConfigurado.replace('{tenantid}', tenantToken || '');
   return issuerToken === issuerEsperado;
+}
+
+export function extraerIdentidadMicrosoft(payload: jwt.JwtPayload): MicrosoftIdentity {
+  const email = (payload.email || payload.preferred_username || payload.upn) as string | undefined;
+
+  if (!payload.sub || !email) {
+    throw new Error('El token Microsoft no contiene usuario o email.');
+  }
+
+  return {
+    microsoftId: `${payload.tid || 'common'}:${payload.sub}`,
+    email,
+    nombre: payload.name as string | undefined,
+  };
 }
 
 export async function validarIdTokenMicrosoft(idToken: string): Promise<MicrosoftIdentity> {
@@ -114,22 +128,12 @@ export async function validarIdTokenMicrosoft(idToken: string): Promise<Microsof
   const configuracion = await obtenerConfiguracion();
   const payload = jwt.verify(idToken, crearClavePublica(jwk), {
     algorithms: ['RS256'],
-    audience: obtenerClientId(),
+    audience: obtenerClientIdMicrosoft(),
   }) as jwt.JwtPayload;
 
-  if (!payload.iss || !validarIssuer(configuracion.issuer, payload.iss, payload.tid as string | undefined)) {
+  if (!payload.iss || !validarIssuerMicrosoft(configuracion.issuer, payload.iss, payload.tid as string | undefined)) {
     throw new Error('Issuer Microsoft invalido.');
   }
 
-  const email = (payload.email || payload.preferred_username || payload.upn) as string | undefined;
-
-  if (!payload.sub || !email) {
-    throw new Error('El token Microsoft no contiene usuario o email.');
-  }
-
-  return {
-    microsoftId: `${payload.tid || 'common'}:${payload.sub}`,
-    email,
-    nombre: payload.name as string | undefined,
-  };
+  return extraerIdentidadMicrosoft(payload);
 }
