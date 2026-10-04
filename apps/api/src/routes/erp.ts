@@ -20,6 +20,24 @@ const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
 const clientesSincronizando = new Set<string>();
 
+type ResolverSincronizarErpDeps = {
+  iniciarHistorial: typeof iniciarSincronizacionErpHistorial;
+  sincronizarSnapshot: typeof sincronizarSnapshotErp;
+  asegurarPadrones: typeof asegurarPadronesPlanificacionDesdeErp;
+  finalizarHistorial: typeof finalizarSincronizacionErpHistorial;
+  fallarHistorial: typeof fallarSincronizacionErpHistorial;
+  clientesEnProceso: Set<string>;
+};
+
+const depsSincronizarErp: ResolverSincronizarErpDeps = {
+  iniciarHistorial: iniciarSincronizacionErpHistorial,
+  sincronizarSnapshot: sincronizarSnapshotErp,
+  asegurarPadrones: asegurarPadronesPlanificacionDesdeErp,
+  finalizarHistorial: finalizarSincronizacionErpHistorial,
+  fallarHistorial: fallarSincronizacionErpHistorial,
+  clientesEnProceso: clientesSincronizando,
+};
+
 function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] | null): ErpSnapshot {
   if (!camposErpIds) {
     return snapshot;
@@ -540,46 +558,58 @@ router.get('/sincronizaciones', requierePermiso('erp:sincronizar'), async (req, 
   }
 });
 
+export async function resolverSincronizarErp(
+  user: RequestConUsuario['user'],
+  body: SincronizarErpRequest,
+  deps: ResolverSincronizarErpDeps = depsSincronizarErp,
+): Promise<{ status: number; body: { error: string } | { ok: true; resultado: Awaited<ReturnType<typeof sincronizarSnapshotErp>> } }> {
+  const clienteId = user?.clienteId;
+
+  if (!clienteId) {
+    return { status: 400, body: { error: 'El usuario no tiene cliente asociado.' } };
+  }
+
+  if (deps.clientesEnProceso.has(clienteId)) {
+    return { status: 409, body: { error: 'Ya hay una sincronizacion en curso para este cliente.' } };
+  }
+
+  deps.clientesEnProceso.add(clienteId);
+
+  let historial: Awaited<ReturnType<typeof iniciarSincronizacionErpHistorial>> | null = null;
+
+  try {
+    historial = await deps.iniciarHistorial(clienteId, user?.sub, body.items);
+    const resultado = await deps.sincronizarSnapshot(clienteId, {
+      id: user?.sub,
+      clienteId,
+    }, body.items);
+    await deps.asegurarPadrones(clienteId, null);
+    await deps.finalizarHistorial(historial.id, clienteId, historial.itemsEjecutados, resultado);
+
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        resultado,
+      },
+    };
+  } catch (error) {
+    if (historial) {
+      await deps.fallarHistorial(historial.id, error);
+    }
+
+    throw error;
+  } finally {
+    deps.clientesEnProceso.delete(clienteId);
+  }
+}
+
 router.post('/sincronizar', requierePermiso('erp:sincronizar'), async (req, res, next) => {
   try {
     const user = (req as RequestConUsuario).user;
-    const clienteId = user?.clienteId;
+    const respuesta = await resolverSincronizarErp(user, req.body as SincronizarErpRequest);
 
-    if (!clienteId) {
-      return res.status(400).json({ error: 'El usuario no tiene cliente asociado.' });
-    }
-
-    if (clientesSincronizando.has(clienteId)) {
-      return res.status(409).json({ error: 'Ya hay una sincronizacion en curso para este cliente.' });
-    }
-
-    clientesSincronizando.add(clienteId);
-
-    const body = req.body as SincronizarErpRequest;
-    let historial: Awaited<ReturnType<typeof iniciarSincronizacionErpHistorial>> | null = null;
-
-    try {
-      historial = await iniciarSincronizacionErpHistorial(clienteId, user.sub, body.items);
-      const resultado = await sincronizarSnapshotErp(clienteId, {
-        id: user.sub,
-        clienteId,
-      }, body.items);
-      await asegurarPadronesPlanificacionDesdeErp(clienteId, null);
-
-      await finalizarSincronizacionErpHistorial(historial.id, clienteId, historial.itemsEjecutados, resultado);
-
-      return res.json({
-        ok: true,
-        resultado,
-      });
-    } catch (error) {
-      if (historial) {
-        await fallarSincronizacionErpHistorial(historial.id, error);
-      }
-      throw error;
-    } finally {
-      clientesSincronizando.delete(clienteId);
-    }
+    return res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
