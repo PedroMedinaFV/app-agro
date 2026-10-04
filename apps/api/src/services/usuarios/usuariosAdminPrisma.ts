@@ -1,10 +1,12 @@
 import type {
+  AsignacionCampoUsuario,
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
   RolUsuario,
   UsuarioAdminResumen,
   UsuariosAdminResponse,
 } from '@agro/tipos';
+import type { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../prisma';
 import { listarAsignacionesUsuario } from './asignacionCampos';
@@ -16,7 +18,7 @@ import {
   validarUsuarioRequest,
 } from './validacionesUsuarios';
 
-type UsuarioAdminRow = {
+export type UsuarioAdminRow = {
   id: string;
   email: string;
   nombre: string | null;
@@ -28,9 +30,31 @@ type UsuarioAdminRow = {
   updatedAt: Date;
 };
 
-async function mapearUsuario(usuario: UsuarioAdminRow): Promise<UsuarioAdminResumen> {
+type MapearUsuarioAdminDeps = {
+  listarAsignaciones: (clienteId: string, usuarioId: string) => Promise<AsignacionCampoUsuario[]>;
+};
+
+export type GuardarUsuarioAdminDeps = MapearUsuarioAdminDeps & {
+  hashPassword: (password: string) => Promise<string>;
+  registrarAuditoria: typeof registrarAuditoria;
+};
+
+const depsMapeoUsuarioAdmin: MapearUsuarioAdminDeps = {
+  listarAsignaciones: listarAsignacionesUsuario,
+};
+
+const depsGuardarUsuarioAdmin: GuardarUsuarioAdminDeps = {
+  listarAsignaciones: listarAsignacionesUsuario,
+  hashPassword: (password) => bcrypt.hash(password, 10),
+  registrarAuditoria,
+};
+
+export async function mapearUsuarioAdmin(
+  usuario: UsuarioAdminRow,
+  deps: MapearUsuarioAdminDeps = depsMapeoUsuarioAdmin,
+): Promise<UsuarioAdminResumen> {
   const clienteId = usuario.clienteId || '';
-  const asignaciones = clienteId ? await listarAsignacionesUsuario(clienteId, usuario.id) : [];
+  const asignaciones = clienteId ? await deps.listarAsignaciones(clienteId, usuario.id) : [];
 
   return {
     id: usuario.id,
@@ -53,15 +77,17 @@ export async function obtenerUsuariosAdmin(clienteId: string): Promise<UsuariosA
     WHERE "clienteId" = ${clienteId}
     ORDER BY "nombre" ASC NULLS LAST, "email" ASC
   `;
-  const usuariosMapeados = await Promise.all(usuarios.map(mapearUsuario));
+  const usuariosMapeados = await Promise.all(usuarios.map((usuario) => mapearUsuarioAdmin(usuario)));
 
   return { usuarios: usuariosMapeados };
 }
 
-export async function guardarUsuarioAdmin(
+export async function guardarUsuarioAdminEnTransaccion(
+  tx: Prisma.TransactionClient,
   id: string,
   request: GuardarUsuarioAdminRequest,
   usuario?: UsuarioAuditoria,
+  deps: GuardarUsuarioAdminDeps = depsGuardarUsuarioAdmin,
 ): Promise<GuardarUsuarioAdminResponse> {
   const clienteId = usuario?.clienteId;
 
@@ -71,70 +97,79 @@ export async function guardarUsuarioAdmin(
 
   const datos = validarUsuarioRequest(request);
 
-  return prisma.$transaction(async (tx) => {
-    const existente = await tx.$queryRaw<UsuarioAdminRow[]>`
+  const existente = await tx.$queryRaw<UsuarioAdminRow[]>`
       SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", ("password" IS NOT NULL) AS "tienePassword", "createdAt", "updatedAt"
       FROM "Usuario"
       WHERE "id" = ${id}
       LIMIT 1
     `;
 
-    if (existente[0] && existente[0].clienteId !== clienteId) {
-      throw crearErrorValidacion('No se puede modificar un usuario de otro cliente.', 403);
-    }
+  if (existente[0] && existente[0].clienteId !== clienteId) {
+    throw crearErrorValidacion('No se puede modificar un usuario de otro cliente.', 403);
+  }
 
-    const emailDuplicado = await tx.$queryRaw<UsuarioAdminRow[]>`
+  const emailDuplicado = await tx.$queryRaw<UsuarioAdminRow[]>`
       SELECT "id", "email", "nombre", "rol", "clienteId", "microsoftId", ("password" IS NOT NULL) AS "tienePassword", "createdAt", "updatedAt"
       FROM "Usuario"
       WHERE "email" = ${datos.email} AND "id" <> ${id}
       LIMIT 1
     `;
 
-    if (emailDuplicado[0]) {
-      throw crearErrorValidacion('Ya existe un usuario con ese email.', 409);
-    }
+  if (emailDuplicado[0]) {
+    throw crearErrorValidacion('Ya existe un usuario con ese email.', 409);
+  }
 
-    const passwordTemporal = validarPasswordTemporal(datos.passwordTemporal);
-    const passwordHash = passwordTemporal ? await bcrypt.hash(passwordTemporal, 10) : undefined;
-    const guardado = await tx.usuario.upsert({
-      where: { id },
-      update: {
-        email: datos.email,
-        nombre: datos.nombre,
-        rol: datos.rol,
-        ...(passwordHash ? { password: passwordHash } : {}),
-      },
-      create: {
-        id,
-        email: datos.email,
-        nombre: datos.nombre,
-        rol: datos.rol,
-        clienteId,
-        password: passwordHash,
-      },
-    });
-    const usuarioMapeado = await mapearUsuario({ ...guardado, tienePassword: Boolean(guardado.password) });
-
-    await registrarAuditoria(tx, {
+  const passwordTemporal = validarPasswordTemporal(datos.passwordTemporal);
+  const passwordHash = passwordTemporal ? await deps.hashPassword(passwordTemporal) : undefined;
+  const guardado = await tx.usuario.upsert({
+    where: { id },
+    update: {
+      email: datos.email,
+      nombre: datos.nombre,
+      rol: datos.rol,
+      ...(passwordHash ? { password: passwordHash } : {}),
+    },
+    create: {
+      id,
+      email: datos.email,
+      nombre: datos.nombre,
+      rol: datos.rol,
       clienteId,
-      usuario,
-      entidad: 'Usuario',
-      entidadId: id,
-      accion: existente[0] ? 'actualizar' : 'crear',
-      origen: 'web',
-      motivo: 'Administracion de usuario y rol.',
-      valoresAntes: existente[0] ? await mapearUsuario(existente[0]) : undefined,
-      valoresDespues: usuarioMapeado,
-      metadata: {
-        ...(usuario?.email ? { email: usuario.email } : {}),
-        passwordTemporalActualizada: Boolean(passwordHash),
-      },
-    });
-
-    return {
-      usuario: usuarioMapeado,
-      auditado: true,
-      mensaje: existente[0] ? 'Usuario actualizado con auditoria.' : 'Usuario creado con auditoria.',
-    };
+      password: passwordHash,
+    },
   });
+  const usuarioMapeado = await mapearUsuarioAdmin(
+    { ...guardado, tienePassword: Boolean(guardado.password) },
+    { listarAsignaciones: deps.listarAsignaciones },
+  );
+
+  await deps.registrarAuditoria(tx, {
+    clienteId,
+    usuario,
+    entidad: 'Usuario',
+    entidadId: id,
+    accion: existente[0] ? 'actualizar' : 'crear',
+    origen: 'web',
+    motivo: 'Administracion de usuario y rol.',
+    valoresAntes: existente[0] ? await mapearUsuarioAdmin(existente[0], { listarAsignaciones: deps.listarAsignaciones }) : undefined,
+    valoresDespues: usuarioMapeado,
+    metadata: {
+      ...(usuario?.email ? { email: usuario.email } : {}),
+      passwordTemporalActualizada: Boolean(passwordHash),
+    },
+  });
+
+  return {
+    usuario: usuarioMapeado,
+    auditado: true,
+    mensaje: existente[0] ? 'Usuario actualizado con auditoria.' : 'Usuario creado con auditoria.',
+  };
+}
+
+export async function guardarUsuarioAdmin(
+  id: string,
+  request: GuardarUsuarioAdminRequest,
+  usuario?: UsuarioAuditoria,
+): Promise<GuardarUsuarioAdminResponse> {
+  return prisma.$transaction((tx) => guardarUsuarioAdminEnTransaccion(tx, id, request, usuario));
 }
