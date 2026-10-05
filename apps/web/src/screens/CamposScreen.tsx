@@ -124,16 +124,18 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       origen: 'erp' as const,
       zonaErpId: zona.erpId,
     }));
-    const zonasDesdeAgro = zonasPropiasActuales.map((zona) => ({
-      id: zona.id,
-      empresaErpId: zona.empresaErpId,
-      nombre: zona.nombre,
-      codigo: zona.codigoInterno,
-      idZona: obtenerIdZonaDesdeErpId(zona.zonaErpId),
-      origen: 'agro' as const,
-      zonaErpId: zona.zonaErpId,
-      zonaAppId: zona.id,
-    }));
+    const zonasDesdeAgro = zonasPropiasActuales
+      .filter((zona) => !zona.zonaErpId)
+      .map((zona) => ({
+        id: zona.id,
+        empresaErpId: zona.empresaErpId,
+        nombre: zona.nombre,
+        codigo: zona.codigoInterno,
+        idZona: undefined,
+        origen: 'agro' as const,
+        zonaErpId: undefined,
+        zonaAppId: zona.id,
+      }));
 
     return [...zonasDesdeAgro, ...zonasDesdeErp].sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [zonasErp, zonasPropiasActuales]);
@@ -238,6 +240,14 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   }
 
   function obtenerClaveZona(campo: CampoApp) {
+    if (campo.zonaAppId) {
+      const zonaApp = zonasPropiasActuales.find((zona) => zona.id === campo.zonaAppId);
+
+      if (zonaApp?.zonaErpId) {
+        return `erp:${zonaApp.zonaErpId}`;
+      }
+    }
+
     if (campo.zonaAppId) {
       return `agro:${campo.zonaAppId}`;
     }
