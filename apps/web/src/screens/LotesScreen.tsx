@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
 import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
+import { MetricasLotes } from '../components/lotes/MetricasLotes';
 import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosGeograficosLote';
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
 import { TablaLotes } from '../components/lotes/TablaLotes';
@@ -135,6 +136,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const lotesErpFiltrados = filtrarLotesErp(lotesErp, camposErpPorId, empresasPorId, filtroNormalizado, campoFiltrado);
   const lotesPropiosFiltrados = filtrarLotesPropios(lotesPropios, camposPropiosPorId, filtroNormalizado, campoFiltrado);
   const filasLote = construirFilasLotes(lotesPropiosFiltrados, lotesErpFiltrados, camposPropiosPorId, camposErpPorId, lotesVinculados);
+  const metricasLotes = useMemo(() => ({
+    totalErp: lotesErp.length,
+    totalPropios: lotesPropios.length,
+    totalProvisorios: lotesPropios.filter((lote) => lote.estadoVinculacion === 'provisorio').length,
+    totalVinculados: lotesPropios.filter((lote) => lote.estadoVinculacion === 'vinculado_erp').length,
+  }), [lotesErp.length, lotesPropios]);
 
   function abrirNuevoLote() {
     const campoSugerido = camposSeleccionables[0];
@@ -487,24 +494,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
   return (
     <div className="planning-stack">
-      <section className="metrics">
-        <article>
-          <span>ERP sincronizados</span>
-          <strong>{lotesErp.length}</strong>
-        </article>
-        <article>
-          <span>Propios Agro App</span>
-          <strong>{lotesPropios.length}</strong>
-        </article>
-        <article>
-          <span>Provisorios</span>
-          <strong>{lotesPropios.filter((lote) => lote.estadoVinculacion === 'provisorio').length}</strong>
-        </article>
-        <article>
-          <span>Vinculados</span>
-          <strong>{lotesPropios.filter((lote) => lote.estadoVinculacion === 'vinculado_erp').length}</strong>
-        </article>
-      </section>
+      <MetricasLotes {...metricasLotes} />
 
       <Panel
         title="Lotes"
