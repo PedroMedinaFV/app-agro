@@ -22,6 +22,7 @@ Una pantalla no debe crecer indefinidamente. Cuando una `screen` supera aproxima
 Patron recomendado:
 
 - `screens/ModuloScreen.tsx`: compone la pantalla y conecta piezas.
+- `screens/ModuloEditorScreen.tsx`: editor dedicado cuando el formulario es grande o tiene flujo propio.
 - `hooks/useModulo.ts`: carga de datos, guardado, filtros y handlers.
 - `components/modulo/FormularioModulo.tsx`: formulario principal.
 - `components/modulo/TablaModulo.tsx`: listado, columnas y acciones.
@@ -34,6 +35,24 @@ Regla practica:
 - si una funcion transforma/calcula sin efectos, va a `utils`;
 - si un bloque JSX se repite o supera una responsabilidad clara, va a `components`;
 - la `screen` no debe contener reglas de negocio largas.
+
+## Separacion listado y formulario
+
+El listado y la creacion/edicion son responsabilidades distintas. Una pantalla de listado no debe mostrar un formulario completo embebido de manera permanente.
+
+Criterio:
+
+- usar modal para formularios chicos o medianos, con pocos campos y sin flujo interno complejo;
+- usar pantalla/editor dedicado para formularios grandes, de varias secciones, con grillas internas, calculos, carga diferida o borradores complejos;
+- mantener el listado enfocado en filtros, metricas, tabla, acciones y estados;
+- al guardar, el formulario cierra o vuelve al listado y actualiza/refresca datos;
+- al cancelar, se descarta el borrador local sin modificar el listado.
+
+Ejemplos:
+
+- `PlanificacionesResumenScreen` lista planificaciones y `PlanificacionEditorScreen` edita una planificacion.
+- Padrones simples pueden usar modal de alta/edicion.
+- Un formulario de protocolo, planificacion o gastos comerciales complejos debe vivir en editor dedicado o modal grande aislado, nunca mezclado con la tabla principal.
 
 Nombres:
 

@@ -52,6 +52,22 @@ Priorizar estas por tamano y repeticion de patrones:
 
 Los listados manuales solo deberian quedar para estructuras que no son tablas reales, por ejemplo arbol de planificacion o editor con inputs por fila.
 
+## Contrato de formularios
+
+Los formularios de creacion y edicion no deben vivir embebidos de forma permanente en la misma pantalla del listado correspondiente.
+
+- Formularios chicos o medianos: abrir en modal/popup, con borrador local y acciones explicitas de guardar/cancelar.
+- Formularios grandes, multi-seccion, con tablas internas, calculos, dependencias o carga diferida: abrir en pantalla dedicada.
+- El listado queda enfocado en filtros, metricas, tabla/cards, acciones de fila y estados de carga/error.
+- Al guardar, el modal se cierra o la pantalla vuelve al listado, se refrescan los datos y se muestra el resultado.
+- Al cancelar, se descarta el borrador local sin tocar el estado persistido.
+
+Ejemplos:
+
+- Planificacion: listado/resumen separado de `PlanificacionEditorScreen`.
+- Padrones simples: listado con alta/edicion en modal/popup.
+- Protocolos, gastos comerciales complejos o formularios que crezcan: pantalla dedicada o componente editor aislado, no formulario completo mezclado con la tabla principal.
+
 ## Primer ajuste aplicado
 
 Se mejoro `DataTable` para:
@@ -79,5 +95,7 @@ Antes de sumar nuevas pantallas:
 - [ ] No agregar logica a screens que ya superen 450 lineas sin extraer algo equivalente.
 - [ ] Toda columna de acciones debe usar key `acciones` o `accion` y `IconButton`.
 - [ ] Todo listado debe probarse en mobile angosto.
+- [ ] Ningun listado debe contener un formulario completo embebido.
+- [ ] Los formularios grandes deben ir a pantalla dedicada; los chicos o medianos a modal/popup.
 - [ ] Toda pantalla de padron debe reutilizar helpers existentes antes de crear funciones locales.
 

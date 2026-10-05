@@ -17,6 +17,24 @@ Las pantallas de listado deben cargar solo la informacion necesaria para mostrar
 
 Los editores con muchas filas, selects, calculos o estructuras anidadas deben trabajar con un borrador local.
 
+## Listado separado de creacion/edicion
+
+La pantalla de listado no debe contener el formulario completo de creacion o edicion como parte permanente del mismo layout. El listado debe mantenerse liviano: filtros, metricas, tabla, acciones y estados de carga.
+
+Regla:
+
+- formularios chicos o medianos: abrir en modal/popup;
+- formularios grandes, con muchas secciones, filas, calculos, pasos o carga diferida: abrir en pantalla dedicada;
+- el listado puede conservar el estado resumido y refrescarse al guardar, pero no debe mezclar grilla y formulario grande en el mismo flujo visual;
+- los formularios deben trabajar con borrador local y solo confirmar cambios al guardar;
+- cancelar debe volver al listado sin mutar datos globales.
+
+Ejemplos:
+
+- padrones simples como zonas, especies, destinos o conceptos: modal;
+- lotes, insumos, servicios o actividades con vinculacion y datos auxiliares: modal si el formulario sigue acotado, pantalla dedicada si crece;
+- planificacion, protocolos y gastos comerciales complejos: pantalla/editor dedicado.
+
 Flujo esperado:
 
 - el listado mantiene estado global liviano;
