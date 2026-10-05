@@ -54,7 +54,15 @@ type MapaNdviRow = {
   updatedAt: Date;
 };
 
-function mapearMapaNdvi(row: MapaNdviRow): LoteMapaNdvi {
+type ValidarAlcanceCampoNdviDeps = {
+  obtenerCamposAsignados: typeof obtenerCamposAsignados;
+};
+
+const depsValidarAlcanceCampoNdvi: ValidarAlcanceCampoNdviDeps = {
+  obtenerCamposAsignados,
+};
+
+export function mapearMapaNdvi(row: MapaNdviRow): LoteMapaNdvi {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -87,8 +95,16 @@ function mapearMapaNdvi(row: MapaNdviRow): LoteMapaNdvi {
   };
 }
 
-async function validarAlcanceCampo(usuario: UsuarioOperacion, campoErpId: string | null) {
-  const camposAsignados = await obtenerCamposAsignados({
+export function seleccionarUltimoMapaNdvi(historial: LoteMapaNdvi[]) {
+  return historial.find((mapa) => mapa.estado === 'procesado') || historial[0];
+}
+
+export async function validarAlcanceCampoNdvi(
+  usuario: UsuarioOperacion,
+  campoErpId: string | null,
+  deps = depsValidarAlcanceCampoNdvi,
+) {
+  const camposAsignados = await deps.obtenerCamposAsignados({
     sub: usuario.id || '',
     rol: usuario.rol,
     clienteId: usuario.clienteId,
@@ -122,7 +138,7 @@ async function obtenerLoteParaNdvi(loteAppId: string, usuario: UsuarioOperacion)
     throw crearErrorValidacion('Lote no encontrado.', 404);
   }
 
-  await validarAlcanceCampo(usuario, lote.campoErpId);
+  await validarAlcanceCampoNdvi(usuario, lote.campoErpId);
 
   return lote;
 }
@@ -142,7 +158,7 @@ export async function obtenerMapasNdviPorLote(
     ORDER BY "fechaImagen" DESC, "createdAt" DESC
   `;
   const historial = registros.map(mapearMapaNdvi);
-  const ultimo = historial.find((mapa) => mapa.estado === 'procesado') || historial[0];
+  const ultimo = seleccionarUltimoMapaNdvi(historial);
 
   return {
     loteAppId,
@@ -187,7 +203,7 @@ export async function obtenerMapaNdviPorId(mapaNdviId: string, usuario: UsuarioO
     throw crearErrorValidacion('Mapa NDVI no encontrado.', 404);
   }
 
-  await validarAlcanceCampo(usuario, mapa.campoErpId);
+  await validarAlcanceCampoNdvi(usuario, mapa.campoErpId);
 
   return mapearMapaNdvi(mapa);
 }
