@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
+import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, SesionUsuario } from '@agro/tipos';
 import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
 import { MetricasLotes } from '../components/lotes/MetricasLotes';
@@ -7,27 +7,21 @@ import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosG
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
 import { TablaLotes } from '../components/lotes/TablaLotes';
 import { Panel } from '../components/Panel';
+import { useArchivosGeograficosLote } from '../hooks/useArchivosGeograficosLote';
 import { useLotesDerivados } from '../hooks/useLotesDerivados';
 import {
   guardarCampoApp,
-  guardarArchivoGeograficoLote,
   guardarLoteApp,
-  crearUrlSubidaArchivoGeograficoLote,
-  obtenerArchivosGeograficosLote,
   obtenerCamposErpImportados,
   obtenerCamposApp,
   obtenerLotesErpImportados,
   obtenerLotesApp,
-  subirArchivoAFirmaSupabase,
 } from '../services/api';
 import {
-  crearIdArchivoGeografico,
   crearIdCampoDesdeErp,
   crearLoteNuevo,
   limpiarTextoVisible,
   normalizarCodigo,
-  obtenerMimeArchivoGeografico,
-  obtenerTipoArchivoGeografico,
 } from '../utils/lotes/helpersLotes';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -51,13 +45,24 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   const [loteEnEdicion, setLoteEnEdicion] = useState<LoteApp | null>(null);
   const [modoFormulario, setModoFormulario] = useState<'crear' | 'editar' | 'copiar'>('crear');
   const [lotePropioParaVincular, setLotePropioParaVincular] = useState<LoteApp | null>(null);
-  const [loteArchivosGeograficos, setLoteArchivosGeograficos] = useState<LoteApp | null>(null);
-  const [archivosGeograficos, setArchivosGeograficos] = useState<LoteArchivoGeografico[]>([]);
-  const [archivoGeograficoSeleccionado, setArchivoGeograficoSeleccionado] = useState<File | null>(null);
   const [loteErpVincularId, setLoteErpVincularId] = useState('');
   const [campoSeleccionadoClave, setCampoSeleccionadoClave] = useState('');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [filtro, setFiltro] = useState('');
+  const {
+    loteArchivosGeograficos,
+    archivosGeograficos,
+    archivoGeograficoSeleccionado,
+    guardandoArchivos,
+    abrirArchivosGeograficos,
+    cerrarArchivosGeograficos,
+    setArchivoGeograficoSeleccionado,
+    subirArchivoGeografico,
+  } = useArchivosGeograficosLote({
+    token: sesion.token,
+    clienteId: sesion.usuario.clienteId || '',
+    notificar,
+  });
 
   useEffect(() => {
     async function cargarLotes() {
@@ -243,82 +248,6 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo vincular el lote.';
       notificar?.({ tipo: 'error', titulo: 'No se vinculo el lote', mensaje });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function abrirArchivosGeograficos(lote: LoteApp) {
-    setLoteArchivosGeograficos(lote);
-    setArchivoGeograficoSeleccionado(null);
-    setArchivosGeograficos([]);
-    setGuardando(true);
-
-    try {
-      const respuesta = await obtenerArchivosGeograficosLote(lote.id, sesion.token);
-      setArchivosGeograficos(respuesta.archivos);
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los archivos geograficos.';
-      notificar?.({ tipo: 'error', titulo: 'No se cargaron archivos', mensaje });
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function subirArchivoGeografico() {
-    if (!loteArchivosGeograficos || !archivoGeograficoSeleccionado) {
-      return;
-    }
-
-    const tipo = obtenerTipoArchivoGeografico(archivoGeograficoSeleccionado);
-    const mimeType = obtenerMimeArchivoGeografico(archivoGeograficoSeleccionado);
-
-    if (!tipo) {
-      notificar?.({ tipo: 'error', titulo: 'Archivo invalido', mensaje: 'Solo se permiten archivos .kml o .kmz.' });
-      return;
-    }
-
-    setGuardando(true);
-
-    try {
-      const urlSubida = await crearUrlSubidaArchivoGeograficoLote(loteArchivosGeograficos.id, {
-        nombreArchivo: archivoGeograficoSeleccionado.name,
-        mimeType,
-        tamanioBytes: archivoGeograficoSeleccionado.size,
-      }, sesion.token);
-      const archivoParaSubir = archivoGeograficoSeleccionado.type
-        ? archivoGeograficoSeleccionado
-        : new File([archivoGeograficoSeleccionado], archivoGeograficoSeleccionado.name, { type: mimeType });
-
-      await subirArchivoAFirmaSupabase(urlSubida.signedUploadUrl, archivoParaSubir);
-
-      const ahora = new Date().toISOString();
-      const respuesta = await guardarArchivoGeograficoLote(loteArchivosGeograficos.id, {
-        archivo: {
-          id: crearIdArchivoGeografico(),
-          clienteId: sesion.usuario.clienteId || '',
-          loteAppId: loteArchivosGeograficos.id,
-          nombreArchivo: archivoGeograficoSeleccionado.name,
-          tipo,
-          mimeType,
-          tamanioBytes: archivoGeograficoSeleccionado.size,
-          storageBucket: urlSubida.storageBucket,
-          storagePath: urlSubida.storagePath,
-          estado: 'pendiente_procesamiento',
-          esPrincipal: archivosGeograficos.length === 0,
-          createdAt: ahora,
-          updatedAt: ahora,
-        },
-        origen: 'web',
-        motivo: 'Vinculacion de archivo geografico KML/KMZ al lote',
-      }, sesion.token);
-
-      setArchivosGeograficos((actuales) => [respuesta.archivo, ...actuales]);
-      setArchivoGeograficoSeleccionado(null);
-      notificar?.({ tipo: 'success', titulo: 'Archivo vinculado', mensaje: respuesta.mensaje });
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : 'No se pudo vincular el archivo geografico.';
-      notificar?.({ tipo: 'error', titulo: 'No se subio el archivo', mensaje });
     } finally {
       setGuardando(false);
     }
@@ -514,8 +443,8 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
           lote={loteArchivosGeograficos}
           archivos={archivosGeograficos}
           archivoSeleccionado={archivoGeograficoSeleccionado}
-          guardando={guardando}
-          onClose={() => { setLoteArchivosGeograficos(null); setArchivoGeograficoSeleccionado(null); }}
+          guardando={guardandoArchivos}
+          onClose={cerrarArchivosGeograficos}
           onSeleccionarArchivo={setArchivoGeograficoSeleccionado}
           onSubirArchivo={subirArchivoGeografico}
         />
