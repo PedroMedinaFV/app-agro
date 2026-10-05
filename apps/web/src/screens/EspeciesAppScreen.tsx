@@ -7,6 +7,7 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { guardarEspecieApp, obtenerEspeciesErpImportadas, obtenerEspeciesApp } from '../services/api';
 import { formatearFecha } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -63,6 +64,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
   const [estado, setEstado] = useState('Cargando especies sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const [especiePropiaParaVincular, setEspeciePropiaParaVincular] = useState<EspecieApp | null>(null);
   const [especieErpVincularId, setEspecieErpVincularId] = useState('');
 
@@ -87,7 +89,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
     cargarEspecies();
   }, [sesion.token, notificar]);
 
-  const filtroNormalizado = normalizarCodigo(filtro);
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
   const especiesVinculadas = useMemo(() => new Set(especiesPropias.map((especie) => especie.especieErpId).filter((id): id is string => Boolean(id))), [especiesPropias]);
   const especiesErpDisponiblesParaVincular = useMemo(() => especiesErp
     .filter((especie) => !especiesVinculadas.has(especie.erpId))
@@ -250,7 +252,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
 
       <Panel
         title="Especies"
-        description={estado}
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : estado}
         actions={(
           <ActionBar align="end">
             <label className="compact-field">

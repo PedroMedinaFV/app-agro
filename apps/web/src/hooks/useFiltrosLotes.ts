@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useDebouncedValue } from './useDebouncedValue';
 
 export function useFiltrosLotes() {
   const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [pagina, setPagina] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(15);
 
   const cambiarFiltro = (siguienteFiltro: string) => {
     setFiltro(siguienteFiltro);
-    setPagina(1);
   };
 
   const cambiarCampo = (siguienteCampoClave: string) => {
@@ -21,8 +22,13 @@ export function useFiltrosLotes() {
     setPagina(1);
   };
 
+  useEffect(() => {
+    setPagina(1);
+  }, [filtroAplicado]);
+
   return {
     filtro,
+    filtroAplicado,
     filtroCampoClave,
     pagina,
     filasPorPagina,

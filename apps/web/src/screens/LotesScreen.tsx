@@ -24,7 +24,7 @@ type LotesScreenProps = {
 };
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
-  const { filtro, filtroCampoClave, pagina, filasPorPagina, setFiltro, setFiltroCampoClave, setPagina, setFilasPorPagina } = useFiltrosLotes();
+  const { filtro, filtroAplicado, filtroCampoClave, pagina, filasPorPagina, setFiltro, setFiltroCampoClave, setPagina, setFilasPorPagina } = useFiltrosLotes();
   const {
     lotesErp,
     lotesErpCargando,
@@ -39,7 +39,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   } = useLotesDatos({
     token: sesion.token,
     camposPropiosIniciales: camposPropios,
-    filtro,
+    filtro: filtroAplicado,
     filtroCampoClave,
     pagina,
     filasPorPagina,
@@ -93,7 +93,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     camposErp,
     lotesPropios,
     lotesErp,
-    filtro,
+    filtro: filtroAplicado,
     filtroCampoClave,
     pagina,
     filasPorPagina,
@@ -133,7 +133,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
       <Panel
         title="Lotes"
-        description={lotesErpCargando ? `${estado} Cargando pagina ERP.` : estado}
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : lotesErpCargando ? `${estado} Cargando pagina ERP.` : estado}
         actions={(
           <FiltrosLotes
             filtro={filtro}

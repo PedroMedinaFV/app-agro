@@ -7,6 +7,7 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { guardarZonaApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { formatearFecha } from '../utils/formatters';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
@@ -63,6 +64,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   const [estado, setEstado] = useState('Cargando zonas sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const [zonaPropiaParaVincular, setZonaPropiaParaVincular] = useState<ZonaApp | null>(null);
   const [zonaErpVincularId, setZonaErpVincularId] = useState('');
 
@@ -87,7 +89,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
     cargarZonas();
   }, [sesion.token, notificar]);
 
-  const filtroNormalizado = normalizarCodigo(filtro);
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
   const zonasVinculadas = useMemo(() => new Set(zonasPropias.map((zona) => zona.zonaErpId).filter((id): id is string => Boolean(id))), [zonasPropias]);
   const zonasErpDisponiblesParaVincular = useMemo(() => zonasErp
     .filter((zona) => !zonasVinculadas.has(zona.erpId))
@@ -271,7 +273,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
 
       <Panel
         title="Zonas"
-        description={estado}
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : estado}
         actions={(
           <ActionBar align="end">
             <label className="compact-field">
