@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
 import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
@@ -7,6 +7,7 @@ import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosG
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
 import { TablaLotes } from '../components/lotes/TablaLotes';
 import { Panel } from '../components/Panel';
+import { useLotesDerivados } from '../hooks/useLotesDerivados';
 import {
   guardarCampoApp,
   guardarArchivoGeograficoLote,
@@ -20,13 +21,9 @@ import {
   subirArchivoAFirmaSupabase,
 } from '../services/api';
 import {
-  construirCamposSeleccionables,
-  construirFilasLotes,
   crearIdArchivoGeografico,
   crearIdCampoDesdeErp,
   crearLoteNuevo,
-  filtrarLotesErp,
-  filtrarLotesPropios,
   limpiarTextoVisible,
   normalizarCodigo,
   obtenerMimeArchivoGeografico,
@@ -87,61 +84,26 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     cargarLotes();
   }, [sesion.token, notificar]);
 
-  const empresasPorId = useMemo(() => new Map(empresas.map((empresa) => [empresa.erpId, empresa])), [empresas]);
-  const camposPropiosPorId = useMemo(() => new Map(camposPropiosActuales.map((campo) => [campo.id, campo])), [camposPropiosActuales]);
-  const camposErpPorId = useMemo(() => new Map(camposErp.map((campo) => [campo.erpId, campo])), [camposErp]);
-  const camposSeleccionables = useMemo(
-    () => construirCamposSeleccionables(camposPropiosActuales, camposErp),
-    [camposErp, camposPropiosActuales],
-  );
-  const camposSeleccionablesPorClave = useMemo(
-    () => new Map(camposSeleccionables.map((campo) => [campo.clave, campo])),
-    [camposSeleccionables],
-  );
-  const camposParaFiltrar = useMemo(
-    () => construirCamposSeleccionables(camposPropiosActuales, camposErp, false),
-    [camposErp, camposPropiosActuales],
-  );
-  const camposParaFiltrarPorClave = useMemo(
-    () => new Map(camposParaFiltrar.map((campo) => [campo.clave, campo])),
-    [camposParaFiltrar],
-  );
-  const lotesVinculados = useMemo(() => (
-    new Set(lotesPropios.map((lote) => lote.loteErpId).filter((loteErpId): loteErpId is string => Boolean(loteErpId)))
-  ), [lotesPropios]);
-  const lotesErpDisponiblesParaVincular = useMemo(() => {
-    if (!lotePropioParaVincular) {
-      return [];
-    }
-
-    const campoPropio = camposPropiosPorId.get(lotePropioParaVincular.campoAppId);
-
-    return lotesErp
-      .filter((lote) => !lotesVinculados.has(lote.erpId))
-      .filter((lote) => !campoPropio?.campoErpId || campoPropio.campoErpId === lote.campoErpId)
-      .sort((a, b) => a.nombre.localeCompare(b.nombre));
-  }, [camposPropiosPorId, lotePropioParaVincular, lotesErp, lotesVinculados]);
-  const lotesErpSugeridosParaVincular = useMemo(() => (
-    lotePropioParaVincular
-      ? sugerirVinculacion(
-        { codigo: lotePropioParaVincular.codigoInterno, nombre: lotePropioParaVincular.nombre },
-        lotesErpDisponiblesParaVincular,
-        (registro) => registro.codigo,
-        (registro) => registro.nombre,
-      )
-      : []
-  ), [lotePropioParaVincular, lotesErpDisponiblesParaVincular]);
-  const filtroNormalizado = normalizarCodigo(filtro);
-  const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
-  const lotesErpFiltrados = filtrarLotesErp(lotesErp, camposErpPorId, empresasPorId, filtroNormalizado, campoFiltrado);
-  const lotesPropiosFiltrados = filtrarLotesPropios(lotesPropios, camposPropiosPorId, filtroNormalizado, campoFiltrado);
-  const filasLote = construirFilasLotes(lotesPropiosFiltrados, lotesErpFiltrados, camposPropiosPorId, camposErpPorId, lotesVinculados);
-  const metricasLotes = useMemo(() => ({
-    totalErp: lotesErp.length,
-    totalPropios: lotesPropios.length,
-    totalProvisorios: lotesPropios.filter((lote) => lote.estadoVinculacion === 'provisorio').length,
-    totalVinculados: lotesPropios.filter((lote) => lote.estadoVinculacion === 'vinculado_erp').length,
-  }), [lotesErp.length, lotesPropios]);
+  const {
+    camposPropiosPorId,
+    camposErpPorId,
+    camposSeleccionables,
+    camposSeleccionablesPorClave,
+    camposParaFiltrar,
+    lotesVinculados,
+    lotesErpSugeridosParaVincular,
+    filasLote,
+    metricasLotes,
+  } = useLotesDerivados({
+    empresas,
+    camposPropios: camposPropiosActuales,
+    camposErp,
+    lotesPropios,
+    lotesErp,
+    filtro,
+    filtroCampoClave,
+    lotePropioParaVincular,
+  });
 
   function abrirNuevoLote() {
     const campoSugerido = camposSeleccionables[0];
