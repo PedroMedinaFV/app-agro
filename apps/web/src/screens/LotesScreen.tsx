@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
-import { DataTable } from '../components/DataTable';
-import { IconButton } from '../components/IconButton';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
 import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosGeograficosLote';
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
-import { OriginBadge } from '../components/OriginBadge';
+import { TablaLotes } from '../components/lotes/TablaLotes';
 import { Panel } from '../components/Panel';
 import {
   guardarCampoApp,
@@ -535,39 +533,14 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
           </ActionBar>
         )}
       >
-        <DataTable
-          rows={filasLote}
-          getRowKey={(fila) => fila.id}
-          emptyMessage="Todavia no hay lotes para el filtro seleccionado."
-          initialPageSize={25}
-          columns={[
-            { key: 'lote', label: 'Lote', width: 'minmax(190px, 1.35fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
-            { key: 'campo', label: 'Campo', width: 'minmax(150px, 1fr)', render: (fila) => fila.campo },
-            { key: 'superficie', label: 'Superficie', width: 'minmax(110px, 0.75fr)', render: (fila) => fila.superficie },
-            { key: 'origen', label: 'Origen', width: 'minmax(86px, 0.55fr)', render: (fila) => <OriginBadge origen={fila.origen} /> },
-            { key: 'estado', label: 'Estado', width: 'minmax(110px, 0.7fr)', render: (fila) => <em>{fila.estado}</em> },
-            {
-              key: 'accion',
-              label: 'Accion',
-              width: 'minmax(190px, 0.85fr)',
-              render: (fila) => fila.accion === 'editar'
-                ? (
-                  <div className="table-icon-actions">
-                    <IconButton icon="edit" label={`Editar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && editarLote(fila.lotePropio)} />
-                    <IconButton icon="copy" label={`Copiar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && copiarLote(fila.lotePropio)} />
-                    <IconButton icon="map" label={`Archivos geograficos de ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirArchivosGeograficos(fila.lotePropio)} />
-                    {fila.lotePropio?.estadoVinculacion === 'provisorio' && (
-                      <IconButton icon="link" label={`Vincular lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion} onClick={() => fila.lotePropio && abrirVinculacion(fila.lotePropio)} />
-                    )}
-                  </div>
-                )
-                : (
-                  <div className="table-icon-actions">
-                    <IconButton icon="copy" label={`Copiar lote ${fila.nombre}`} disabled={!puedeConfigurarPlanificacion || !fila.loteErp} onClick={() => fila.loteErp && copiarLoteErp(fila.loteErp)} />
-                  </div>
-                ),
-            },
-          ]}
+        <TablaLotes
+          filas={filasLote}
+          puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
+          onEditarLote={editarLote}
+          onCopiarLote={copiarLote}
+          onCopiarLoteErp={copiarLoteErp}
+          onAbrirArchivosGeograficos={abrirArchivosGeograficos}
+          onAbrirVinculacion={abrirVinculacion}
         />
       </Panel>
 
