@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, SesionUsuario } from '@agro/tipos';
+import { useState } from 'react';
+import type { CampoApp, ErpEmpresa, SesionUsuario } from '@agro/tipos';
 import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
 import { MetricasLotes } from '../components/lotes/MetricasLotes';
@@ -9,14 +9,9 @@ import { TablaLotes } from '../components/lotes/TablaLotes';
 import { Panel } from '../components/Panel';
 import { useArchivosGeograficosLote } from '../hooks/useArchivosGeograficosLote';
 import { useFormularioLote } from '../hooks/useFormularioLote';
+import { useLotesDatos } from '../hooks/useLotesDatos';
 import { useLotesDerivados } from '../hooks/useLotesDerivados';
 import { useVinculacionLote } from '../hooks/useVinculacionLote';
-import {
-  obtenerCamposErpImportados,
-  obtenerCamposApp,
-  obtenerLotesErpImportados,
-  obtenerLotesApp,
-} from '../services/api';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -29,13 +24,22 @@ type LotesScreenProps = {
 };
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
-  const [lotesErp, setLotesErp] = useState<ErpLote[]>([]);
-  const [camposErp, setCamposErp] = useState<ErpCampo[]>([]);
-  const [camposPropiosActuales, setCamposPropiosActuales] = useState<CampoApp[]>(camposPropios);
-  const [lotesPropios, setLotesPropios] = useState<LoteApp[]>([]);
-  const [estado, setEstado] = useState('Cargando lotes sincronizados.');
   const [filtroCampoClave, setFiltroCampoClave] = useState('');
   const [filtro, setFiltro] = useState('');
+  const {
+    lotesErp,
+    camposErp,
+    camposPropiosActuales,
+    lotesPropios,
+    estado,
+    setCamposPropiosActuales,
+    setLotesPropios,
+    setEstado,
+  } = useLotesDatos({
+    token: sesion.token,
+    camposPropiosIniciales: camposPropios,
+    notificar,
+  });
   const {
     loteArchivosGeograficos,
     archivosGeograficos,
@@ -67,31 +71,6 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     onEstadoChange: setEstado,
     notificar,
   });
-
-  useEffect(() => {
-    async function cargarLotes() {
-      try {
-        const [respuestaLotesErp, respuestaCamposErp, respuestaCamposPropios, respuestaLotesPropios] = await Promise.all([
-          obtenerLotesErpImportados(sesion.token),
-          obtenerCamposErpImportados(sesion.token),
-          obtenerCamposApp(sesion.token),
-          obtenerLotesApp(sesion.token),
-        ]);
-
-        setLotesErp(respuestaLotesErp.lotes);
-        setCamposErp(respuestaCamposErp.campos);
-        setCamposPropiosActuales(respuestaCamposPropios.campos);
-        setLotesPropios(respuestaLotesPropios.lotes);
-        setEstado('Lotes cargados desde Supabase.');
-      } catch (error) {
-        const mensaje = error instanceof Error ? error.message : 'No se pudieron cargar los lotes.';
-        setEstado(mensaje);
-        notificar?.({ tipo: 'error', titulo: 'No se cargaron lotes', mensaje });
-      }
-    }
-
-    cargarLotes();
-  }, [sesion.token, notificar]);
 
   const {
     camposPropiosPorId,
