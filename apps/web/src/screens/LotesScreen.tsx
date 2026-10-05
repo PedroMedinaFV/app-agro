@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico, SesionUsuario } from '@agro/tipos';
-import { ActionBar } from '../components/ActionBar';
-import { Button } from '../components/Button';
+import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
 import { ModalArchivosGeograficosLote } from '../components/lotes/ModalArchivosGeograficosLote';
 import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
@@ -511,26 +510,15 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
         title="Lotes"
         description={estado}
         actions={(
-          <ActionBar align="end">
-            <label className="compact-field">
-              Buscar
-              <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, lote, campo o empresa" />
-            </label>
-            <label className="compact-field">
-              Campo
-              <select value={filtroCampoClave} onChange={(event) => setFiltroCampoClave(event.target.value)}>
-                <option value="">Todos</option>
-                {camposParaFiltrar.map((campo) => (
-                  <option key={campo.clave} value={campo.clave}>
-                    {campo.codigo ? `${campo.codigo} - ` : ''}{campo.nombre} ({campo.origen === 'erp' ? 'ERP' : 'Agro App'})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button variant="primary" disabled={!puedeConfigurarPlanificacion} onClick={abrirNuevoLote}>
-              Nuevo lote
-            </Button>
-          </ActionBar>
+          <FiltrosLotes
+            filtro={filtro}
+            filtroCampoClave={filtroCampoClave}
+            camposParaFiltrar={camposParaFiltrar}
+            puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
+            onCambiarFiltro={setFiltro}
+            onCambiarCampo={setFiltroCampoClave}
+            onNuevoLote={abrirNuevoLote}
+          />
         )}
       >
         <TablaLotes
