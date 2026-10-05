@@ -10,9 +10,13 @@ type RequestConUsuario = Request & {
   user?: { sub?: string; email?: string; rol?: string; clienteId?: string };
 };
 
-function obtenerUsuarioOperacion(req: Request) {
-  const request = req as RequestConUsuario;
+type RequestNdvi = {
+  params: { loteAppId?: string; mapaNdviId?: string };
+  body?: unknown;
+  user?: { sub?: string; email?: string; rol?: string; clienteId?: string };
+};
 
+function obtenerUsuarioOperacion(request: RequestNdvi) {
   return {
     id: request.user?.sub,
     email: request.user?.email,
@@ -21,9 +25,56 @@ function obtenerUsuarioOperacion(req: Request) {
   };
 }
 
+type GuardarMapaNdviLoteFn = typeof guardarMapaNdviLote;
+type ObtenerMapasNdviPorLoteFn = typeof obtenerMapasNdviPorLote;
+type ObtenerUltimoMapaNdviPorLoteFn = typeof obtenerUltimoMapaNdviPorLote;
+type ObtenerMapaNdviPorIdFn = typeof obtenerMapaNdviPorId;
+
+export async function resolverGuardarMapaNdviLote(
+  request: RequestNdvi,
+  guardarMapa: GuardarMapaNdviLoteFn = guardarMapaNdviLote,
+) {
+  return {
+    status: 201,
+    body: await guardarMapa(request.params.loteAppId || '', request.body as GuardarMapaNdviRequest, obtenerUsuarioOperacion(request)),
+  };
+}
+
+export async function resolverObtenerMapasNdviPorLote(
+  request: RequestNdvi,
+  obtenerMapas: ObtenerMapasNdviPorLoteFn = obtenerMapasNdviPorLote,
+) {
+  return {
+    status: 200,
+    body: await obtenerMapas(request.params.loteAppId || '', obtenerUsuarioOperacion(request)),
+  };
+}
+
+export async function resolverObtenerUltimoMapaNdviPorLote(
+  request: RequestNdvi,
+  obtenerUltimoMapa: ObtenerUltimoMapaNdviPorLoteFn = obtenerUltimoMapaNdviPorLote,
+) {
+  return {
+    status: 200,
+    body: await obtenerUltimoMapa(request.params.loteAppId || '', obtenerUsuarioOperacion(request)),
+  };
+}
+
+export async function resolverObtenerMapaNdviPorId(
+  request: RequestNdvi,
+  obtenerMapa: ObtenerMapaNdviPorIdFn = obtenerMapaNdviPorId,
+) {
+  return {
+    status: 200,
+    body: await obtenerMapa(request.params.mapaNdviId || '', obtenerUsuarioOperacion(request)),
+  };
+}
+
 router.post('/lotes/:loteAppId', requierePermiso('ndvi:gestionar'), async (req, res, next) => {
   try {
-    res.status(201).json(await guardarMapaNdviLote(req.params.loteAppId, req.body as GuardarMapaNdviRequest, obtenerUsuarioOperacion(req)));
+    const respuesta = await resolverGuardarMapaNdviLote(req as RequestConUsuario);
+
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
@@ -31,7 +82,9 @@ router.post('/lotes/:loteAppId', requierePermiso('ndvi:gestionar'), async (req, 
 
 router.get('/lotes/:loteAppId', requierePermiso('ndvi:leer'), async (req, res, next) => {
   try {
-    res.json(await obtenerMapasNdviPorLote(req.params.loteAppId, obtenerUsuarioOperacion(req)));
+    const respuesta = await resolverObtenerMapasNdviPorLote(req as RequestConUsuario);
+
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
@@ -39,7 +92,9 @@ router.get('/lotes/:loteAppId', requierePermiso('ndvi:leer'), async (req, res, n
 
 router.get('/lotes/:loteAppId/ultimo', requierePermiso('ndvi:leer'), async (req, res, next) => {
   try {
-    res.json(await obtenerUltimoMapaNdviPorLote(req.params.loteAppId, obtenerUsuarioOperacion(req)));
+    const respuesta = await resolverObtenerUltimoMapaNdviPorLote(req as RequestConUsuario);
+
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
@@ -47,7 +102,9 @@ router.get('/lotes/:loteAppId/ultimo', requierePermiso('ndvi:leer'), async (req,
 
 router.get('/mapas/:mapaNdviId', requierePermiso('ndvi:leer'), async (req, res, next) => {
   try {
-    res.json(await obtenerMapaNdviPorId(req.params.mapaNdviId, obtenerUsuarioOperacion(req)));
+    const respuesta = await resolverObtenerMapaNdviPorId(req as RequestConUsuario);
+
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }

@@ -10,6 +10,60 @@ type RequestConUsuario = Request & {
   user?: { sub?: string; email?: string; clienteId?: string };
 };
 
+type RequestUsuarioLotes = {
+  params: { id?: string };
+  body?: unknown;
+  user?: { sub?: string; email?: string; clienteId?: string };
+};
+
+type ObtenerArchivosGeograficosLoteFn = typeof obtenerArchivosGeograficosLote;
+type CrearUrlSubidaArchivoGeograficoLoteFn = typeof crearUrlSubidaArchivoGeograficoLote;
+type GuardarArchivoGeograficoLoteFn = typeof guardarArchivoGeograficoLote;
+
+export async function resolverObtenerArchivosGeograficosLote(
+  request: RequestUsuarioLotes,
+  obtenerArchivos: ObtenerArchivosGeograficosLoteFn = obtenerArchivosGeograficosLote,
+) {
+  const clienteId = request.user?.clienteId;
+
+  if (!clienteId) {
+    return { status: 401, body: { error: 'Sesion sin cliente asociado.' } };
+  }
+
+  return {
+    status: 200,
+    body: await obtenerArchivos(request.params.id || '', clienteId),
+  };
+}
+
+export async function resolverCrearUrlSubidaArchivoGeograficoLote(
+  request: RequestUsuarioLotes,
+  crearUrlSubida: CrearUrlSubidaArchivoGeograficoLoteFn = crearUrlSubidaArchivoGeograficoLote,
+) {
+  return {
+    status: 200,
+    body: await crearUrlSubida(request.params.id || '', request.body as CrearUrlSubidaAdjuntoRequest, {
+      id: request.user?.sub,
+      clienteId: request.user?.clienteId,
+      email: request.user?.email,
+    }),
+  };
+}
+
+export async function resolverGuardarArchivoGeograficoLote(
+  request: RequestUsuarioLotes,
+  guardarArchivo: GuardarArchivoGeograficoLoteFn = guardarArchivoGeograficoLote,
+) {
+  return {
+    status: 201,
+    body: await guardarArchivo(request.params.id || '', request.body as GuardarArchivoGeograficoLoteRequest, {
+      id: request.user?.sub,
+      clienteId: request.user?.clienteId,
+      email: request.user?.email,
+    }),
+  };
+}
+
 router.get('/', requierePermiso('planificacion:configurar'), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
@@ -41,14 +95,9 @@ router.put('/:id', requierePermiso('planificacion:configurar'), async (req, res,
 
 router.get('/:id/archivos-geograficos', requierePermiso('planificacion:configurar'), async (req, res, next) => {
   try {
-    const request = req as RequestConUsuario;
-    const clienteId = request.user?.clienteId;
+    const respuesta = await resolverObtenerArchivosGeograficosLote(req as RequestConUsuario);
 
-    if (!clienteId) {
-      return res.status(401).json({ error: 'Sesion sin cliente asociado.' });
-    }
-
-    res.json(await obtenerArchivosGeograficosLote(req.params.id, clienteId));
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
@@ -56,13 +105,9 @@ router.get('/:id/archivos-geograficos', requierePermiso('planificacion:configura
 
 router.post('/:id/archivos-geograficos/upload-url', requierePermiso('planificacion:configurar'), async (req, res, next) => {
   try {
-    const request = req as RequestConUsuario;
+    const respuesta = await resolverCrearUrlSubidaArchivoGeograficoLote(req as RequestConUsuario);
 
-    res.json(await crearUrlSubidaArchivoGeograficoLote(req.params.id, req.body as CrearUrlSubidaAdjuntoRequest, {
-      id: request.user?.sub,
-      clienteId: request.user?.clienteId,
-      email: request.user?.email,
-    }));
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
@@ -70,13 +115,9 @@ router.post('/:id/archivos-geograficos/upload-url', requierePermiso('planificaci
 
 router.post('/:id/archivos-geograficos', requierePermiso('planificacion:configurar'), async (req, res, next) => {
   try {
-    const request = req as RequestConUsuario;
+    const respuesta = await resolverGuardarArchivoGeograficoLote(req as RequestConUsuario);
 
-    res.status(201).json(await guardarArchivoGeograficoLote(req.params.id, req.body as GuardarArchivoGeograficoLoteRequest, {
-      id: request.user?.sub,
-      clienteId: request.user?.clienteId,
-      email: request.user?.email,
-    }));
+    res.status(respuesta.status).json(respuesta.body);
   } catch (error) {
     next(error);
   }
