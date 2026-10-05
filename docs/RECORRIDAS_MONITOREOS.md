@@ -191,7 +191,8 @@ Regla:
 
 - no agregar mas logica de negocio a `MonitoreosScreen`;
 - `MonitoreosScreen` ya quedo como composicion;
-- el proximo cambio funcional debe modularizar `ObservacionesScreen` y conectar `SelectorRecorrida`.
+- `ObservacionesScreen` ya quedo modularizada;
+- `SelectorRecorrida` ya quedo reutilizado en observaciones.
 
 ## Validaciones pendientes
 
@@ -203,11 +204,12 @@ Regla:
 - [ ] Confirmar que una recorrida cerrada no aparece como opcion en observaciones.
 - [ ] Validar operador con campos asignados.
 - [ ] Probar observacion mobile futura con `recorridaId`.
+- [x] Agregar tests de servicio backend para validaciones de campo/lote/estado.
 
 ## Proximos pasos recomendados
 
-1. Modularizar `ObservacionesScreen`.
-2. Conectar `SelectorRecorrida` reutilizable en observaciones.
+1. Ejecutar smoke manual web de recorrida completa: crear, asociar observacion, cerrar y revisar detalle.
+2. Validar mobile/offline para crear/cerrar recorrida y sincronizar observaciones con `recorridaId`.
 3. Agregar detalle de recorrida con observaciones vinculadas.
 4. Preparar contrato mobile/offline para recorridas.
 5. Conectar recorrido con mapa/KML cuando este listo el visor geografico.

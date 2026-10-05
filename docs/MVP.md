@@ -23,6 +23,8 @@ Construir un primer MVP validable para registrar y consultar informacion product
 7. Revisar implicancias de seguridad: autenticacion, autorizacion, exposicion de datos y persistencia.
 8. Definir que eventos de auditoria genera cada alta, modificacion o cambio de estado.
 
+El checklist de corte estable y los riesgos residuales estan en `docs/ESTABILIDAD_MVP.md`.
+
 ## Bloque actual
 
 Login demo y sesion compartida:

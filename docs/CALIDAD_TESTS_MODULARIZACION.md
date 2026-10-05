@@ -2,6 +2,8 @@
 
 Este documento define reglas obligatorias para que Agro App pueda crecer sin volverse fragil. Aplica a funcionalidades nuevas y a mejoras sobre funcionalidades existentes.
 
+El estado de corte para version estable queda resumido en `docs/ESTABILIDAD_MVP.md`.
+
 ## Principio
 
 Cada feature debe entregar tres cosas juntas:

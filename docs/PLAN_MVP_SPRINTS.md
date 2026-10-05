@@ -552,7 +552,7 @@ Pendientes tecnicos:
 - [x] modularizar `MonitoreosScreen`;
 - [x] modularizar `ObservacionesScreen`;
 - [x] reutilizar `SelectorRecorrida` en observaciones;
-- [ ] agregar tests de servicio backend para validaciones de campo/lote/estado;
+- [x] agregar tests de servicio backend para validaciones de campo/lote/estado;
 - [ ] definir si `cancelada` queda habilitado en MVP o solo como estado reservado.
 
 ## Fuera del MVP inicial
