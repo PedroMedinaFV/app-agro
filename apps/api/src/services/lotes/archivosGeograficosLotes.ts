@@ -48,6 +48,15 @@ type GeoJsonFeatureCollection = {
   features: GeoJsonFeature[];
 };
 
+type ProcesamientoArchivoGeografico = {
+  geoJson: GeoJsonFeatureCollection;
+  superficieCalculadaHa: number;
+};
+
+type PrepararArchivoGeograficoDeps = {
+  procesarArchivoGeografico: typeof procesarArchivoGeografico;
+};
+
 export function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
@@ -418,7 +427,11 @@ async function procesarArchivoGeografico(archivo: Pick<LoteArchivoGeografico, 't
   };
 }
 
-function mapearArchivo(row: ArchivoGeograficoRow): LoteArchivoGeografico {
+const depsPrepararArchivoGeografico: PrepararArchivoGeograficoDeps = {
+  procesarArchivoGeografico,
+};
+
+export function mapearArchivoGeograficoLote(row: ArchivoGeograficoRow): LoteArchivoGeografico {
   return {
     id: row.id,
     clienteId: row.clienteId,
@@ -437,6 +450,54 @@ function mapearArchivo(row: ArchivoGeograficoRow): LoteArchivoGeografico {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+export async function prepararArchivoGeograficoParaGuardar(
+  loteAppId: string,
+  archivoRequest: GuardarArchivoGeograficoLoteRequest['archivo'],
+  clienteId: string,
+  deps = depsPrepararArchivoGeografico,
+) {
+  const archivoValidado = validarArchivo({
+    nombreArchivo: archivoRequest.nombreArchivo,
+    mimeType: archivoRequest.mimeType,
+    tamanioBytes: archivoRequest.tamanioBytes,
+  });
+  const archivo = {
+    ...archivoRequest,
+    clienteId,
+    loteAppId,
+    nombreArchivo: archivoValidado.nombreArchivo,
+    tipo: archivoValidado.tipo,
+    mimeType: archivoValidado.mimeType,
+    estado: archivoRequest.estado || 'pendiente_procesamiento',
+  };
+
+  if (archivo.geometriaGeoJson) {
+    return archivo;
+  }
+
+  try {
+    const procesamiento: ProcesamientoArchivoGeografico = await deps.procesarArchivoGeografico(archivo);
+
+    return {
+      ...archivo,
+      estado: 'procesado',
+      geometriaGeoJson: procesamiento.geoJson,
+      superficieCalculadaHa: Number(procesamiento.superficieCalculadaHa.toFixed(2)),
+      observaciones: archivo.observaciones || 'Archivo geografico procesado automaticamente.',
+    };
+  } catch (error) {
+    const mensaje = error instanceof Error ? error.message : 'No se pudo procesar el archivo geografico.';
+
+    return {
+      ...archivo,
+      estado: 'rechazado',
+      geometriaGeoJson: undefined,
+      superficieCalculadaHa: undefined,
+      observaciones: mensaje,
+    };
+  }
 }
 
 async function validarLote(clienteId: string, loteAppId: string) {
@@ -497,7 +558,7 @@ export async function obtenerArchivosGeograficosLote(
     ORDER BY "esPrincipal" DESC, "createdAt" DESC
   `;
 
-  return { archivos: archivos.map(mapearArchivo) };
+  return { archivos: archivos.map(mapearArchivoGeograficoLote) };
 }
 
 export async function guardarArchivoGeograficoLote(
@@ -512,45 +573,7 @@ export async function guardarArchivoGeograficoLote(
   }
 
   await validarLote(clienteId, loteAppId);
-  const archivoValidado = validarArchivo({
-    nombreArchivo: request.archivo.nombreArchivo,
-    mimeType: request.archivo.mimeType,
-    tamanioBytes: request.archivo.tamanioBytes,
-  });
-  const archivo = {
-    ...request.archivo,
-    clienteId,
-    loteAppId,
-    nombreArchivo: archivoValidado.nombreArchivo,
-    tipo: archivoValidado.tipo,
-    mimeType: archivoValidado.mimeType,
-    estado: request.archivo.estado || 'pendiente_procesamiento',
-  };
-  let archivoParaGuardar = archivo;
-
-  if (!archivo.geometriaGeoJson) {
-    try {
-      const procesamiento = await procesarArchivoGeografico(archivo);
-
-      archivoParaGuardar = {
-        ...archivo,
-        estado: 'procesado',
-        geometriaGeoJson: procesamiento.geoJson,
-        superficieCalculadaHa: Number(procesamiento.superficieCalculadaHa.toFixed(2)),
-        observaciones: archivo.observaciones || 'Archivo geografico procesado automaticamente.',
-      };
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : 'No se pudo procesar el archivo geografico.';
-
-      archivoParaGuardar = {
-        ...archivo,
-        estado: 'rechazado',
-        geometriaGeoJson: undefined,
-        superficieCalculadaHa: undefined,
-        observaciones: mensaje,
-      };
-    }
-  }
+  const archivoParaGuardar = await prepararArchivoGeograficoParaGuardar(loteAppId, request.archivo, clienteId);
 
   return prisma.$transaction(async (tx) => {
     const existentePorId = await tx.$queryRaw<ArchivoGeograficoRow[]>`
@@ -569,7 +592,7 @@ export async function guardarArchivoGeograficoLote(
       ? null
       : archivoParaGuardar.geometriaGeoJson as Prisma.InputJsonValue;
 
-    if (archivo.esPrincipal) {
+    if (archivoParaGuardar.esPrincipal) {
       await tx.$executeRaw`
         UPDATE "LoteArchivoGeografico"
         SET "esPrincipal" = false
@@ -641,7 +664,7 @@ export async function guardarArchivoGeograficoLote(
         AND "clienteId" = ${clienteId}
       LIMIT 1
     `;
-    const archivoMapeado = mapearArchivo(guardado[0]);
+    const archivoMapeado = mapearArchivoGeograficoLote(guardado[0]);
 
     await registrarAuditoria(tx, {
       clienteId,
@@ -651,7 +674,7 @@ export async function guardarArchivoGeograficoLote(
       accion: existente[0] ? 'actualizar' : 'crear',
       origen: request.origen,
       motivo: request.motivo,
-      valoresAntes: existente[0] ? mapearArchivo(existente[0]) : undefined,
+      valoresAntes: existente[0] ? mapearArchivoGeograficoLote(existente[0]) : undefined,
       valoresDespues: archivoMapeado,
     });
 
