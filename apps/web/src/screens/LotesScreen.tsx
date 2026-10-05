@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { CampoApp, ErpEmpresa, SesionUsuario } from '@agro/tipos';
 import { FiltrosLotes } from '../components/lotes/FiltrosLotes';
 import { FormularioLoteModal } from '../components/lotes/FormularioLoteModal';
@@ -8,6 +7,7 @@ import { ModalVincularLote } from '../components/lotes/ModalVincularLote';
 import { TablaLotes } from '../components/lotes/TablaLotes';
 import { Panel } from '../components/Panel';
 import { useArchivosGeograficosLote } from '../hooks/useArchivosGeograficosLote';
+import { useFiltrosLotes } from '../hooks/useFiltrosLotes';
 import { useFormularioLote } from '../hooks/useFormularioLote';
 import { useLotesDatos } from '../hooks/useLotesDatos';
 import { useLotesDerivados } from '../hooks/useLotesDerivados';
@@ -24,8 +24,7 @@ type LotesScreenProps = {
 };
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
-  const [filtroCampoClave, setFiltroCampoClave] = useState('');
-  const [filtro, setFiltro] = useState('');
+  const { filtro, filtroCampoClave, setFiltro, setFiltroCampoClave } = useFiltrosLotes();
   const {
     lotesErp,
     camposErp,
