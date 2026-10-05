@@ -2,6 +2,8 @@
 
 Este documento define patrones obligatorios para mantener la web rapida, consistente y escalable.
 
+El diagnostico de duplicacion, tablas y responsive queda en `docs/FRONTEND_REUTILIZACION_RESPONSIVE.md`.
+
 ## Listados livianos
 
 Las pantallas de listado deben cargar solo la informacion necesaria para mostrar la grilla o resumen inicial.

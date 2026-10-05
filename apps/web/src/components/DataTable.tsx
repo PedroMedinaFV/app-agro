@@ -4,6 +4,7 @@ export type DataTableColumn<T> = {
   key: string;
   label: string;
   width?: string;
+  align?: 'start' | 'center' | 'end';
   render: (row: T) => ReactNode;
 };
 
@@ -32,6 +33,7 @@ export function DataTable<T>({
   const [pageSize, setPageSize] = useState(initialPageSize);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const gridTemplateColumns = columns.map((column) => column.width || 'minmax(96px, 1fr)').join(' ');
+  const isActionColumn = (column: DataTableColumn<T>) => ['accion', 'acciones', 'actions'].includes(column.key);
   const visibleRows = useMemo(() => {
     const start = (page - 1) * pageSize;
     return rows.slice(start, start + pageSize);
@@ -51,7 +53,7 @@ export function DataTable<T>({
     <div className="data-table">
       <div className="data-table-row data-table-head" style={{ gridTemplateColumns }}>
         {columns.map((column) => (
-          <span key={column.key}>{column.label}</span>
+          <span className={column.align ? `align-${column.align}` : undefined} key={column.key}>{column.label}</span>
         ))}
       </div>
 
@@ -78,8 +80,17 @@ export function DataTable<T>({
             }
           }}
         >
-          {columns.map((column) => (
-            <div className={`data-table-cell ${column.key === 'acciones' ? 'data-table-actions' : ''}`} key={column.key} data-label={column.label}>
+          {columns.map((column, index) => (
+            <div
+              className={[
+                'data-table-cell',
+                isActionColumn(column) ? 'data-table-actions' : '',
+                column.align ? `align-${column.align}` : '',
+              ].filter(Boolean).join(' ')}
+              key={column.key}
+              data-column-index={index}
+              data-label={column.label}
+            >
               {column.render(row)}
             </div>
           ))}
