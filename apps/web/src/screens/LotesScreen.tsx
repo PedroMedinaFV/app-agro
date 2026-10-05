@@ -24,9 +24,11 @@ type LotesScreenProps = {
 };
 
 export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPlanificacion, notificar }: LotesScreenProps) {
-  const { filtro, filtroCampoClave, setFiltro, setFiltroCampoClave } = useFiltrosLotes();
+  const { filtro, filtroCampoClave, pagina, filasPorPagina, setFiltro, setFiltroCampoClave, setPagina, setFilasPorPagina } = useFiltrosLotes();
   const {
     lotesErp,
+    lotesErpCargando,
+    lotesErpTotal,
     camposErp,
     camposPropiosActuales,
     lotesPropios,
@@ -37,6 +39,10 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
   } = useLotesDatos({
     token: sesion.token,
     camposPropiosIniciales: camposPropios,
+    filtro,
+    filtroCampoClave,
+    pagina,
+    filasPorPagina,
     notificar,
   });
   const {
@@ -79,6 +85,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     camposParaFiltrar,
     lotesErpSugeridosParaVincular,
     filasLote,
+    totalFilasLotes,
     metricasLotes,
   } = useLotesDerivados({
     empresas,
@@ -88,6 +95,9 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
     lotesErp,
     filtro,
     filtroCampoClave,
+    pagina,
+    filasPorPagina,
+    totalLotesErpFiltrados: lotesErpTotal,
     lotePropioParaVincular,
   });
   const {
@@ -123,7 +133,7 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
 
       <Panel
         title="Lotes"
-        description={estado}
+        description={lotesErpCargando ? `${estado} Cargando pagina ERP.` : estado}
         actions={(
           <FiltrosLotes
             filtro={filtro}
@@ -138,7 +148,12 @@ export function LotesScreen({ sesion, empresas, camposPropios, puedeConfigurarPl
       >
         <TablaLotes
           filas={filasLote}
+          pagina={pagina}
+          filasPorPagina={filasPorPagina}
+          totalFilas={totalFilasLotes}
           puedeConfigurarPlanificacion={puedeConfigurarPlanificacion}
+          onCambiarPagina={setPagina}
+          onCambiarFilasPorPagina={setFilasPorPagina}
           onEditarLote={editarLote}
           onCopiarLote={copiarLote}
           onCopiarLoteErp={copiarLoteErp}

@@ -15,6 +15,13 @@ type DataTableProps<T> = {
   emptyMessage: string;
   initialPageSize?: number;
   pageSizeOptions?: number[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalRows: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange: (pageSize: number) => void;
+  };
   selectedRowKey?: string;
   onRowClick?: (row: T) => void;
 };
@@ -26,28 +33,60 @@ export function DataTable<T>({
   emptyMessage,
   initialPageSize = 10,
   pageSizeOptions = [10, 25, 50],
+  pagination,
   selectedRowKey,
   onRowClick,
 }: DataTableProps<T>) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(initialPageSize);
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(initialPageSize);
+  const page = pagination?.page ?? localPage;
+  const pageSize = pagination?.pageSize ?? localPageSize;
+  const totalRows = pagination?.totalRows ?? rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
   const gridTemplateColumns = columns.map((column) => column.width || 'minmax(96px, 1fr)').join(' ');
   const isActionColumn = (column: DataTableColumn<T>) => ['accion', 'acciones', 'actions'].includes(column.key);
   const visibleRows = useMemo(() => {
+    if (pagination) {
+      return rows;
+    }
+
     const start = (page - 1) * pageSize;
     return rows.slice(start, start + pageSize);
-  }, [page, pageSize, rows]);
+  }, [page, pageSize, pagination, rows]);
 
   useEffect(() => {
-    setPage(1);
-  }, [rows.length, pageSize]);
+    if (!pagination) {
+      setLocalPage(1);
+    }
+  }, [pagination, rows.length, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) {
-      setPage(totalPages);
+      if (pagination) {
+        pagination.onPageChange(totalPages);
+      } else {
+        setLocalPage(totalPages);
+      }
     }
-  }, [page, totalPages]);
+  }, [page, pagination, totalPages]);
+
+  const cambiarPagina = (siguientePagina: number) => {
+    if (pagination) {
+      pagination.onPageChange(siguientePagina);
+      return;
+    }
+
+    setLocalPage(siguientePagina);
+  };
+
+  const cambiarTamanoPagina = (siguienteTamano: number) => {
+    if (pagination) {
+      pagination.onPageSizeChange(siguienteTamano);
+      return;
+    }
+
+    setLocalPageSize(siguienteTamano);
+  };
 
   return (
     <div className="data-table">
@@ -57,7 +96,7 @@ export function DataTable<T>({
         ))}
       </div>
 
-      {!rows.length && (
+      {!totalRows && (
         <div className="empty-state">{emptyMessage}</div>
       )}
 
@@ -97,25 +136,25 @@ export function DataTable<T>({
         </div>
       ))}
 
-      {rows.length > 0 && (
+      {totalRows > 0 && (
         <footer className="data-table-footer">
           <span>
-            {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, rows.length)} de {rows.length}
+            {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, totalRows)} de {totalRows}
           </span>
           <div className="data-table-controls">
             <label>
               Filas
-              <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>
+              <select value={pageSize} onChange={(event) => cambiarTamanoPagina(Number(event.target.value))}>
                 {pageSizeOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </label>
-            <button className="small" type="button" disabled={page === 1} onClick={() => setPage((actual) => Math.max(1, actual - 1))}>
+            <button className="small" type="button" disabled={page === 1} onClick={() => cambiarPagina(Math.max(1, page - 1))}>
               Anterior
             </button>
             <span>Pagina {page} de {totalPages}</span>
-            <button className="small" type="button" disabled={page === totalPages} onClick={() => setPage((actual) => Math.min(totalPages, actual + 1))}>
+            <button className="small" type="button" disabled={page === totalPages} onClick={() => cambiarPagina(Math.min(totalPages, page + 1))}>
               Siguiente
             </button>
           </div>

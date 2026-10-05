@@ -3,7 +3,6 @@ import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp } from '@agro/tip
 import {
   construirCamposSeleccionables,
   construirFilasLotes,
-  filtrarLotesErp,
   filtrarLotesPropios,
   normalizarCodigo,
 } from '../utils/lotes/helpersLotes';
@@ -17,6 +16,9 @@ type UseLotesDerivadosParams = {
   lotesErp: ErpLote[];
   filtro: string;
   filtroCampoClave: string;
+  pagina: number;
+  filasPorPagina: number;
+  totalLotesErpFiltrados: number;
   lotePropioParaVincular: LoteApp | null;
 };
 
@@ -28,9 +30,12 @@ export function useLotesDerivados({
   lotesErp,
   filtro,
   filtroCampoClave,
+  pagina,
+  filasPorPagina,
+  totalLotesErpFiltrados,
   lotePropioParaVincular,
 }: UseLotesDerivadosParams) {
-  const empresasPorId = useMemo(() => new Map(empresas.map((empresa) => [empresa.erpId, empresa])), [empresas]);
+  void empresas;
   const camposPropiosPorId = useMemo(() => new Map(camposPropios.map((campo) => [campo.id, campo])), [camposPropios]);
   const camposErpPorId = useMemo(() => new Map(camposErp.map((campo) => [campo.erpId, campo])), [camposErp]);
   const camposSeleccionables = useMemo(
@@ -76,15 +81,18 @@ export function useLotesDerivados({
   ), [lotePropioParaVincular, lotesErpDisponiblesParaVincular]);
   const filtroNormalizado = normalizarCodigo(filtro);
   const campoFiltrado = filtroCampoClave ? camposParaFiltrarPorClave.get(filtroCampoClave) : undefined;
-  const lotesErpFiltrados = filtrarLotesErp(lotesErp, camposErpPorId, empresasPorId, filtroNormalizado, campoFiltrado);
   const lotesPropiosFiltrados = filtrarLotesPropios(lotesPropios, camposPropiosPorId, filtroNormalizado, campoFiltrado);
-  const filasLote = construirFilasLotes(lotesPropiosFiltrados, lotesErpFiltrados, camposPropiosPorId, camposErpPorId, lotesVinculados);
+  const inicioPagina = (pagina - 1) * filasPorPagina;
+  const finPagina = inicioPagina + filasPorPagina;
+  const lotesPropiosEnPagina = lotesPropiosFiltrados.slice(inicioPagina, finPagina);
+  const filasLote = construirFilasLotes(lotesPropiosEnPagina, lotesErp, camposPropiosPorId, camposErpPorId, lotesVinculados);
+  const totalFilasLotes = lotesPropiosFiltrados.length + totalLotesErpFiltrados;
   const metricasLotes = useMemo(() => ({
-    totalErp: lotesErp.length,
+    totalErp: totalLotesErpFiltrados,
     totalPropios: lotesPropios.length,
     totalProvisorios: lotesPropios.filter((lote) => lote.estadoVinculacion === 'provisorio').length,
     totalVinculados: lotesPropios.filter((lote) => lote.estadoVinculacion === 'vinculado_erp').length,
-  }), [lotesErp.length, lotesPropios]);
+  }), [lotesPropios, totalLotesErpFiltrados]);
 
   return {
     camposPropiosPorId,
@@ -95,6 +103,7 @@ export function useLotesDerivados({
     lotesVinculados,
     lotesErpSugeridosParaVincular,
     filasLote,
+    totalFilasLotes,
     metricasLotes,
   };
 }

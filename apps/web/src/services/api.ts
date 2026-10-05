@@ -179,11 +179,41 @@ export async function obtenerCamposErpImportados(token?: string, opciones: { for
 
 export type LotesErpImportadosResponse = {
   lotes: ErpLote[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+  hasMore?: boolean;
 };
 
 const lotesErpImportadosCache: CachedGet<LotesErpImportadosResponse> = {};
 
-export async function obtenerLotesErpImportados(token?: string, opciones: { forzar?: boolean } = {}): Promise<LotesErpImportadosResponse> {
+export async function obtenerLotesErpImportados(
+  token?: string,
+  opciones: { forzar?: boolean; limit?: number; offset?: number; q?: string; campoErpId?: string } = {},
+): Promise<LotesErpImportadosResponse> {
+  if (opciones.limit !== undefined || opciones.offset !== undefined || opciones.q || opciones.campoErpId) {
+    const params = new URLSearchParams();
+
+    if (opciones.limit !== undefined) {
+      params.set('limit', String(opciones.limit));
+    }
+
+    if (opciones.offset !== undefined) {
+      params.set('offset', String(opciones.offset));
+    }
+
+    if (opciones.q) {
+      params.set('q', opciones.q);
+    }
+
+    if (opciones.campoErpId) {
+      params.set('campoErpId', opciones.campoErpId);
+    }
+
+    const query = params.toString();
+    return request<LotesErpImportadosResponse>(`/erp/lotes-importados${query ? `?${query}` : ''}`, {}, token);
+  }
+
   return obtenerConCache(lotesErpImportadosCache, '/erp/lotes-importados', token, opciones);
 }
 

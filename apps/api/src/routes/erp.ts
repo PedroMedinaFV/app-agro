@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request } from 'express';
+import type { Prisma } from '@prisma/client';
 import type { ErpSnapshot, SincronizarErpRequest } from '@agro/tipos';
 import { obtenerSnapshotErp } from '../services/erp/clienteErp';
 import { obtenerConfiguracionErp } from '../services/erp/configuracionErp';
@@ -19,6 +20,23 @@ import { asegurarPadronesPlanificacionDesdeErp } from '../services/planificacion
 const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
 const clientesSincronizando = new Set<string>();
+
+function limitarEnteroQuery(valor: unknown, defecto: number, minimo: number, maximo: number) {
+  const crudo = Array.isArray(valor) ? valor[0] : valor;
+  const numero = Number(crudo);
+
+  if (!Number.isFinite(numero)) {
+    return defecto;
+  }
+
+  return Math.min(Math.max(Math.trunc(numero), minimo), maximo);
+}
+
+function obtenerTextoQuery(valor: unknown) {
+  const crudo = Array.isArray(valor) ? valor[0] : valor;
+
+  return typeof crudo === 'string' && crudo.trim() ? crudo.trim() : undefined;
+}
 
 type ResolverSincronizarErpDeps = {
   iniciarHistorial: typeof iniciarSincronizacionErpHistorial;
@@ -510,13 +528,37 @@ router.get('/lotes-importados', async (req, res, next) => {
     const empresasSeleccionadas = await listarEmpresasErpCliente(clienteId);
     const empresaErpIds = empresasSeleccionadas.map((empresa) => empresa.empresaErpId);
     const camposAsignados = user ? await obtenerCamposAsignados(user) : null;
-    const lotes = await prisma.erpLote.findMany({
-      where: {
-        empresaErpId: { in: empresaErpIds },
-        ...(camposAsignados ? { campoErpId: { in: camposAsignados } } : {}),
-      },
-      orderBy: [{ nombre: 'asc' }],
-    });
+    const usaPaginacion = req.query.limit !== undefined || req.query.limite !== undefined || req.query.offset !== undefined || req.query.desplazamiento !== undefined;
+    const limit = limitarEnteroQuery(req.query.limit ?? req.query.limite, 200, 1, 500);
+    const offset = limitarEnteroQuery(req.query.offset ?? req.query.desplazamiento, 0, 0, Number.MAX_SAFE_INTEGER);
+    const q = obtenerTextoQuery(req.query.q ?? req.query.busqueda);
+    const campoErpId = obtenerTextoQuery(req.query.campoErpId);
+    const where: Prisma.ErpLoteWhereInput = {
+      empresaErpId: { in: empresaErpIds },
+      ...(camposAsignados ? { campoErpId: { in: camposAsignados } } : {}),
+      ...(campoErpId ? { campoErpId } : {}),
+      ...(q ? {
+        OR: [
+          { codigo: { contains: q, mode: 'insensitive' } },
+          { nombre: { contains: q, mode: 'insensitive' } },
+          { cultivoNombre: { contains: q, mode: 'insensitive' } },
+          { campo: { nombre: { contains: q, mode: 'insensitive' } } },
+        ],
+      } : {}),
+    };
+    const orderBy = [{ nombre: 'asc' as const }, { codigo: 'asc' as const }];
+    const [total, lotes] = usaPaginacion
+      ? await prisma.$transaction([
+        prisma.erpLote.count({ where }),
+        prisma.erpLote.findMany({ where, orderBy, skip: offset, take: limit }),
+      ])
+      : [
+        undefined,
+        await prisma.erpLote.findMany({
+          where,
+          orderBy,
+        }),
+      ];
 
     res.json({
       lotes: lotes.map((lote) => ({
@@ -537,6 +579,12 @@ router.get('/lotes-importados', async (req, res, next) => {
         activo: lote.activo,
         actualizadoEn: lote.actualizadoEn.toISOString(),
       })),
+      ...(usaPaginacion ? {
+        total,
+        limit,
+        offset,
+        hasMore: offset + lotes.length < (total ?? 0),
+      } : {}),
     });
   } catch (error) {
     next(error);

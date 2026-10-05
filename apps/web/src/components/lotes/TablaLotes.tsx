@@ -6,7 +6,12 @@ import type { LoteTabla } from '../../utils/lotes/helpersLotes';
 
 type TablaLotesProps = {
   filas: LoteTabla[];
+  pagina: number;
+  filasPorPagina: number;
+  totalFilas: number;
   puedeConfigurarPlanificacion: boolean;
+  onCambiarPagina: (pagina: number) => void;
+  onCambiarFilasPorPagina: (filasPorPagina: number) => void;
   onEditarLote: (lote: LoteApp) => void;
   onCopiarLote: (lote: LoteApp) => void;
   onCopiarLoteErp: (lote: ErpLote) => void;
@@ -16,7 +21,12 @@ type TablaLotesProps = {
 
 export function TablaLotes({
   filas,
+  pagina,
+  filasPorPagina,
+  totalFilas,
   puedeConfigurarPlanificacion,
+  onCambiarPagina,
+  onCambiarFilasPorPagina,
   onEditarLote,
   onCopiarLote,
   onCopiarLoteErp,
@@ -28,7 +38,15 @@ export function TablaLotes({
       rows={filas}
       getRowKey={(fila) => fila.id}
       emptyMessage="Todavia no hay lotes para el filtro seleccionado."
-      initialPageSize={25}
+      initialPageSize={15}
+      pageSizeOptions={[15, 25, 50]}
+      pagination={{
+        page: pagina,
+        pageSize: filasPorPagina,
+        totalRows: totalFilas,
+        onPageChange: onCambiarPagina,
+        onPageSizeChange: onCambiarFilasPorPagina,
+      }}
       columns={[
         {
           key: 'lote',
