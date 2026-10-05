@@ -108,6 +108,14 @@ type ArchivoGeograficoRow = {
   updatedAt: Date;
 };
 
+type ValidarAlcanceCampoOperativoDeps = {
+  obtenerCamposAsignados: typeof obtenerCamposAsignados;
+};
+
+const depsValidarAlcanceCampoOperativo: ValidarAlcanceCampoOperativoDeps = {
+  obtenerCamposAsignados,
+};
+
 function crearErrorValidacion(message: string, statusCode = 400) {
   const error = new Error(message) as Error & { statusCode?: number };
   error.statusCode = statusCode;
@@ -115,7 +123,7 @@ function crearErrorValidacion(message: string, statusCode = 400) {
   return error;
 }
 
-function mapearCampo(row: LoteFichaRow): CampoApp {
+export function mapearCampoOperativo(row: LoteFichaRow): CampoApp {
   return {
     id: row.campoId,
     clienteId: row.campoClienteId,
@@ -131,7 +139,7 @@ function mapearCampo(row: LoteFichaRow): CampoApp {
   };
 }
 
-function mapearLote(row: LoteFichaRow): LoteApp {
+export function mapearLoteOperativo(row: LoteFichaRow): LoteApp {
   return {
     id: row.loteId,
     clienteId: row.loteClienteId,
@@ -147,7 +155,7 @@ function mapearLote(row: LoteFichaRow): LoteApp {
   };
 }
 
-function mapearZona(row: LoteFichaRow): ZonaApp | undefined {
+export function mapearZonaOperativa(row: LoteFichaRow): ZonaApp | undefined {
   if (!row.zonaId || !row.zonaClienteId || !row.zonaEmpresaErpId || !row.zonaNombre || !row.zonaEstadoVinculacion || !row.zonaCreatedAt || !row.zonaUpdatedAt) {
     return undefined;
   }
@@ -165,7 +173,7 @@ function mapearZona(row: LoteFichaRow): ZonaApp | undefined {
   };
 }
 
-function mapearCultivo(row: CultivoRow): CultivoOperativoResumen {
+export function mapearCultivoOperativo(row: CultivoRow): CultivoOperativoResumen {
   return {
     id: row.id,
     erpId: row.erpId,
@@ -180,7 +188,7 @@ function mapearCultivo(row: CultivoRow): CultivoOperativoResumen {
   };
 }
 
-function mapearLinea(row: PlanificacionLineaRow): PlanificacionOperativaLineaResumen {
+export function mapearLineaPlanificacionOperativa(row: PlanificacionLineaRow): PlanificacionOperativaLineaResumen {
   return {
     id: row.id,
     planificacionId: row.planificacionId,
@@ -195,7 +203,7 @@ function mapearLinea(row: PlanificacionLineaRow): PlanificacionOperativaLineaRes
   };
 }
 
-function mapearGeografia(row: ArchivoGeograficoRow | undefined): GeografiaLoteOperativoResumen | undefined {
+export function mapearGeografiaOperativa(row: ArchivoGeograficoRow | undefined): GeografiaLoteOperativoResumen | undefined {
   if (!row) {
     return undefined;
   }
@@ -213,12 +221,16 @@ function mapearGeografia(row: ArchivoGeograficoRow | undefined): GeografiaLoteOp
   };
 }
 
-async function validarAlcanceCampo(usuario: UsuarioOperacion, campoErpId: string | null) {
+export async function validarAlcanceCampoOperativo(
+  usuario: UsuarioOperacion,
+  campoErpId: string | null,
+  deps = depsValidarAlcanceCampoOperativo,
+) {
   if (usuario.rol === 'admin') {
     return;
   }
 
-  const camposAsignados = await obtenerCamposAsignados({
+  const camposAsignados = await deps.obtenerCamposAsignados({
     sub: usuario.id || '',
     rol: usuario.rol,
     clienteId: usuario.clienteId,
@@ -285,7 +297,7 @@ export async function obtenerFichaLoteOperativo(
     throw crearErrorValidacion('Lote no encontrado.', 404);
   }
 
-  await validarAlcanceCampo(usuario, row.campoErpId);
+  await validarAlcanceCampoOperativo(usuario, row.campoErpId);
 
   const cultivos = row.loteErpId
     ? await prisma.$queryRaw<CultivoRow[]>`
@@ -385,12 +397,12 @@ export async function obtenerFichaLoteOperativo(
   const resumenObservaciones = observacionesResumen[0];
 
   return {
-    campo: mapearCampo(row),
-    lote: mapearLote(row),
-    zona: mapearZona(row),
-    geografia: mapearGeografia(archivosGeograficos[0]),
-    cultivos: cultivos.map(mapearCultivo),
-    planificaciones: planificaciones.map(mapearLinea),
+    campo: mapearCampoOperativo(row),
+    lote: mapearLoteOperativo(row),
+    zona: mapearZonaOperativa(row),
+    geografia: mapearGeografiaOperativa(archivosGeograficos[0]),
+    cultivos: cultivos.map(mapearCultivoOperativo),
+    planificaciones: planificaciones.map(mapearLineaPlanificacionOperativa),
     precipitaciones: {
       cantidadRegistros: Number(resumenPrecipitaciones?.cantidadRegistros || 0),
       milimetrosUltimos30Dias: Number(resumenPrecipitaciones?.milimetrosUltimos30Dias || 0),
