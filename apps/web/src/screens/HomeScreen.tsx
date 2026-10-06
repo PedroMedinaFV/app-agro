@@ -1,13 +1,18 @@
-import { ErpSnapshot, SesionUsuario } from '@agro/tipos';
+import { useMemo } from 'react';
+import type { ErpCampania, ErpCampo, ErpLote, ErpSnapshot, ErpZona } from '@agro/tipos';
+
+type LoteHome = ErpLote & {
+  campo?: ErpCampo;
+};
 
 interface HomeScreenProps {
   snapshot: ErpSnapshot;
-  lotes: any[];
+  lotes: LoteHome[];
   esUsuarioComun: boolean;
-  campaniaActual: any;
+  campaniaActual?: ErpCampania;
   empresasOperativas: Set<string>;
   puedeConfigurarErp: boolean;
-  zonasPorEmpresaYId: Map<string, any>;
+  zonasPorEmpresaYId: Map<string, ErpZona>;
 }
 
 export function HomeScreen({
@@ -19,6 +24,13 @@ export function HomeScreen({
   zonasPorEmpresaYId,
   empresasOperativas,
 }: HomeScreenProps) {
+  const lotesActivos = useMemo(() => snapshot.lotes.filter((lote) => lote.activo).length, [snapshot.lotes]);
+  const hectareasTotales = useMemo(
+    () => snapshot.lotes.reduce((total, lote) => total + lote.areaHectareas, 0),
+    [snapshot.lotes],
+  );
+  const especiesPorId = useMemo(() => new Map(snapshot.especies.map((especie) => [especie.idEspecie, especie])), [snapshot.especies]);
+
   return (
     <>
       <section className="metrics">
@@ -28,11 +40,11 @@ export function HomeScreen({
         </article>
         <article>
           <span>{esUsuarioComun ? 'Mis lotes activos' : 'Lotes activos'}</span>
-          <strong>{snapshot.lotes.filter((lote) => lote.activo).length}</strong>
+          <strong>{lotesActivos}</strong>
         </article>
         <article>
           <span>Hectareas</span>
-          <strong>{snapshot.lotes.reduce((total, lote) => total + lote.areaHectareas, 0)}</strong>
+          <strong>{hectareasTotales}</strong>
         </article>
         <article>
           <span>Actividades ERP</span>
@@ -107,9 +119,7 @@ export function HomeScreen({
                   <strong>{actividad.codigo} - {actividad.descripcion}</strong>
                   <p>
                     Tipo {actividad.idTipoActividad ?? '-'} / Especie{' '}
-                    {snapshot.especies.find(
-                      (especie) => especie.idEspecie === actividad.idEspecie
-                    )?.nombre || actividad.idEspecie || '-'}
+                    {actividad.idEspecie ? especiesPorId.get(actividad.idEspecie)?.nombre || actividad.idEspecie : '-'}
                   </p>
                 </article>
               ))}

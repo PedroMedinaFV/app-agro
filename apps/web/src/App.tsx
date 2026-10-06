@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ErpCampania } from '@agro/tipos';
 import { Layout } from './components/Layout';
 import { LoginPanel } from './components/LoginPanel';
@@ -109,14 +109,27 @@ export function App() {
       .catch(() => setCampaniasImportadas([]));
   }, [sesion, vista]);
 
-  const lotes = erp.snapshot.lotes.map((lote) => ({
+  const camposPorId = useMemo(
+    () => new Map(erp.snapshot.campos.map((campo) => [campo.erpId, campo])),
+    [erp.snapshot.campos],
+  );
+  const lotes = useMemo(() => erp.snapshot.lotes.map((lote) => ({
     ...lote,
-    campo: erp.snapshot.campos.find((campo) => campo.erpId === lote.campoErpId),
-  }));
-  const zonasPorEmpresaYId = new Map(erp.snapshot.zonas.map((zona) => [`${zona.empresaErpId}:${zona.idZona}`, zona]));
+    campo: camposPorId.get(lote.campoErpId),
+  })), [camposPorId, erp.snapshot.lotes]);
+  const zonasPorEmpresaYId = useMemo(
+    () => new Map(erp.snapshot.zonas.map((zona) => [`${zona.empresaErpId}:${zona.idZona}`, zona])),
+    [erp.snapshot.zonas],
+  );
   const esUsuarioComun = sesion?.usuario.rol === 'operador_campo';
-  const empresasOperativas = new Set(erp.snapshot.campos.map((campo) => campo.empresaErpId));
-  const campaniaActual = erp.snapshot.campanias.find((campania) => campania.esActual);
+  const empresasOperativas = useMemo(
+    () => new Set(erp.snapshot.campos.map((campo) => campo.empresaErpId)),
+    [erp.snapshot.campos],
+  );
+  const campaniaActual = useMemo(
+    () => erp.snapshot.campanias.find((campania) => campania.esActual),
+    [erp.snapshot.campanias],
+  );
   const tituloVista = vista === 'empresas-erp'
     ? 'Empresas ERP'
     : vista === 'sincronizacion-erp'
