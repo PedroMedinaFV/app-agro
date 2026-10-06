@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type {
   DestinoApp,
   ErpCultivo,
@@ -34,7 +35,7 @@ type LineaPlanificacionProps = {
   onEliminarLinea: (lineaId: string) => void;
 };
 
-export function LineaPlanificacion({
+export const LineaPlanificacion = memo(function LineaPlanificacion({
   linea,
   lote,
   lotesDelCampo,
@@ -165,4 +166,4 @@ export function LineaPlanificacion({
       </div>
     </div>
   );
-}
+});

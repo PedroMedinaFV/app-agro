@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
 import type { PlanificacionAgricolaLinea } from '@agro/tipos';
 import { ActionBar } from '../ActionBar';
@@ -38,7 +39,7 @@ type ArbolPlanificacionProps = {
   onQuitarLineas: (event: MouseEvent<HTMLButtonElement>, lineas: PlanificacionAgricolaLinea[], etiqueta: string) => void;
 };
 
-export function ArbolPlanificacion({
+export const ArbolPlanificacion = memo(function ArbolPlanificacion({
   zonas,
   totalLineas,
   zonasAbiertas,
@@ -147,4 +148,4 @@ export function ArbolPlanificacion({
       })}
     </div>
   );
-}
+});

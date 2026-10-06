@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { MouseEvent } from 'react';
 import type { PlanificacionAgricolaLinea } from '@agro/tipos';
 
@@ -18,7 +18,7 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
   const [zonasAbiertas, setZonasAbiertas] = useState<Set<string>>(new Set());
   const [camposAbiertos, setCamposAbiertos] = useState<Set<string>>(new Set());
 
-  function alternarZona(zonaId: string, abierta: boolean) {
+  const alternarZona = useCallback((zonaId: string, abierta: boolean) => {
     setZonasAbiertas((actuales) => {
       const siguientes = new Set(actuales);
 
@@ -30,9 +30,9 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
 
       return siguientes;
     });
-  }
+  }, []);
 
-  function alternarCampo(campoId: string, abierto: boolean) {
+  const alternarCampo = useCallback((campoId: string, abierto: boolean) => {
     setCamposAbiertos((actuales) => {
       const siguientes = new Set(actuales);
 
@@ -44,19 +44,19 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
 
       return siguientes;
     });
-  }
+  }, []);
 
-  function expandirTodo() {
+  const expandirTodo = useCallback(() => {
     setZonasAbiertas(new Set(lineasAgrupadas.map((zona) => zona.id)));
     setCamposAbiertos(new Set(lineasAgrupadas.flatMap((zona) => zona.campos.map((campo) => campo.id))));
-  }
+  }, [lineasAgrupadas]);
 
-  function contraerTodo() {
+  const contraerTodo = useCallback(() => {
     setZonasAbiertas(new Set());
     setCamposAbiertos(new Set());
-  }
+  }, []);
 
-  function alternarTodoArbol() {
+  const alternarTodoArbol = useCallback(() => {
     const todasLasZonasAbiertas = lineasAgrupadas.length > 0 && lineasAgrupadas.every((zona) => zonasAbiertas.has(zona.id));
     const todosLosCamposAbiertos = lineasAgrupadas
       .flatMap((zona) => zona.campos)
@@ -67,13 +67,13 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
     } else {
       expandirTodo();
     }
-  }
+  }, [camposAbiertos, contraerTodo, expandirTodo, lineasAgrupadas, zonasAbiertas]);
 
-  function expandirCamposDeZona(campoIds: string[]) {
+  const expandirCamposDeZona = useCallback((campoIds: string[]) => {
     setCamposAbiertos((actuales) => new Set([...actuales, ...campoIds]));
-  }
+  }, []);
 
-  function contraerCamposDeZona(campoIds: string[]) {
+  const contraerCamposDeZona = useCallback((campoIds: string[]) => {
     setCamposAbiertos((actuales) => {
       const siguientes = new Set(actuales);
 
@@ -83,9 +83,9 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
 
       return siguientes;
     });
-  }
+  }, []);
 
-  function alternarCamposDeZona(event: MouseEvent<HTMLButtonElement>, zonaId: string, campoIds: string[]) {
+  const alternarCamposDeZona = useCallback((event: MouseEvent<HTMLButtonElement>, zonaId: string, campoIds: string[]) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -99,7 +99,7 @@ export function useExpansionArbolPlanificacion(lineasAgrupadas: GrupoZonaPlanifi
     } else {
       expandirCamposDeZona(campoIds);
     }
-  }
+  }, [camposAbiertos, contraerCamposDeZona, expandirCamposDeZona, zonasAbiertas]);
 
   return {
     zonasAbiertas,

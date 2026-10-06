@@ -9,6 +9,7 @@ type OpcionFiltro = {
 
 type FiltrosPlanificacionProps = {
   busqueda: string;
+  aplicandoBusqueda?: boolean;
   filtroZonaId: string;
   filtroCampoId: string;
   filtroEstadoCarga: EstadoCargaFiltro;
@@ -25,6 +26,7 @@ type FiltrosPlanificacionProps = {
 
 export function FiltrosPlanificacion({
   busqueda,
+  aplicandoBusqueda = false,
   filtroZonaId,
   filtroCampoId,
   filtroEstadoCarga,
@@ -79,7 +81,7 @@ export function FiltrosPlanificacion({
       </label>
       <div className="planning-filter-summary">
         <strong>{lineasFiltradas}</strong>
-        <span>de {totalLineas} lineas</span>
+        <span>{aplicandoBusqueda ? 'aplicando busqueda' : `de ${totalLineas} lineas`}</span>
         <Button variant="small" onClick={onLimpiar} disabled={!tieneFiltros}>
           Limpiar
         </Button>
