@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { obtenerMonedasErpImportadas, obtenerServiciosErpImportados, obtenerTiposServicioErpImportados } from '../services/api';
 import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/helpersPadrones';
 import { construirFilasLabores } from '../utils/padrones/helpersInsumosServicios';
@@ -49,6 +50,8 @@ export function ServiciosAppScreen({
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando servicios ERP.');
   const [laborPropiaParaVincular, setLaborPropiaParaVincular] = useState<ServicioApp | null>(null);
   const [servicioErpVincularId, setServicioErpVincularId] = useState('');
+  const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const laboresOrdenadas = useMemo(() => (
     [...planificacion.serviciosApp].sort((a, b) => a.nombre.localeCompare(b.nombre))
   ), [planificacion.serviciosApp]);
@@ -233,6 +236,10 @@ export function ServiciosAppScreen({
     monedaPorId,
     monedaPorDefecto,
   });
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
+  const filasLaborFiltradas = filasLabor.filter((fila) => (
+    normalizarCodigo(`${fila.nombre} ${fila.detalle} ${fila.codigo} ${fila.tipo} ${fila.unidad} ${fila.origen} ${fila.estado}`).includes(filtroNormalizado)
+  ));
 
   function abrirEditarServicioErp(servicioErp: ErpServicio, laborPropia?: ServicioApp) {
     const ahora = new Date().toISOString();
@@ -344,9 +351,13 @@ export function ServiciosAppScreen({
 
       <Panel
         title="Labores registradas"
-        description="El costo sugerido se copia al protocolo al seleccionar la labor; cambios posteriores no alteran historicos cerrados."
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : 'El costo sugerido se copia al protocolo al seleccionar la labor; cambios posteriores no alteran historicos cerrados.'}
         actions={(
           <ActionBar align="end">
+            <label className="compact-field">
+              Buscar
+              <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, nombre, tipo u origen" />
+            </label>
             <Button variant="small" onClick={abrirNuevaLabor} disabled={!puedeConfigurarPlanificacion}>
               Nueva labor
             </Button>
@@ -354,9 +365,9 @@ export function ServiciosAppScreen({
         )}
       >
         <DataTable
-          rows={filasLabor}
+          rows={filasLaborFiltradas}
           getRowKey={(fila) => fila.id}
-          emptyMessage="Todavia no hay labores registradas."
+          emptyMessage="Todavia no hay labores para el filtro seleccionado."
           initialPageSize={25}
           columns={[
             { key: 'labor', label: 'Labor', width: 'minmax(190px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },

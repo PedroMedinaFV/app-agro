@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { obtenerInsumosErpImportados, obtenerMonedasErpImportadas, obtenerTiposInsumoErpImportados } from '../services/api';
 import { limpiarTextoVisible, normalizarCodigo, unirPorClave, crearMapaPorErpId, crearSetVinculados } from '../utils/padrones/helpersPadrones';
 import { construirFilasInsumos } from '../utils/padrones/helpersInsumosServicios';
@@ -47,6 +48,8 @@ export function InsumosAppScreen({
   const [estadoCargaErp, setEstadoCargaErp] = useState('Cargando insumos ERP.');
   const [insumoPropioParaVincular, setInsumoPropioParaVincular] = useState<InsumoApp | null>(null);
   const [insumoErpVincularId, setInsumoErpVincularId] = useState('');
+  const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const insumosOrdenados = useMemo(() => (
     [...(planificacion.insumosApp || [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   ), [planificacion.insumosApp]);
@@ -234,6 +237,10 @@ export function InsumosAppScreen({
     monedaPorId,
     monedaPorDefecto,
   });
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
+  const filasInsumoFiltradas = filasInsumo.filter((fila) => (
+    normalizarCodigo(`${fila.nombre} ${fila.detalle} ${fila.codigo} ${fila.tipo} ${fila.unidad} ${fila.origen}`).includes(filtroNormalizado)
+  ));
 
   function abrirEditarInsumoErp(insumoErp: ErpInsumo, insumoPropio?: InsumoApp) {
     const ahora = new Date().toISOString();
@@ -335,9 +342,13 @@ export function InsumosAppScreen({
 
       <Panel
         title="Insumos registrados"
-        description="El precio estimado se copia al protocolo al seleccionar el insumo; cambios posteriores no alteran historicos cerrados."
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : 'El precio estimado se copia al protocolo al seleccionar el insumo; cambios posteriores no alteran historicos cerrados.'}
         actions={(
           <ActionBar align="end">
+            <label className="compact-field">
+              Buscar
+              <input value={filtro} onChange={(event) => setFiltro(event.target.value)} placeholder="Codigo, nombre, tipo u origen" />
+            </label>
             <Button variant="small" onClick={abrirNuevoInsumo} disabled={!puedeConfigurarPlanificacion}>
               Nuevo insumo
             </Button>
@@ -345,9 +356,9 @@ export function InsumosAppScreen({
         )}
       >
         <DataTable
-          rows={filasInsumo}
+          rows={filasInsumoFiltradas}
           getRowKey={(fila) => fila.id}
-          emptyMessage="Todavia no hay insumos registrados."
+          emptyMessage="Todavia no hay insumos para el filtro seleccionado."
           initialPageSize={25}
           columns={[
             { key: 'insumo', label: 'Insumo', width: 'minmax(190px, 1.4fr)', render: (fila) => <><strong>{fila.nombre}</strong><span>{fila.detalle}</span></> },
