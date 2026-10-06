@@ -1,13 +1,14 @@
 import { Request, Router } from 'express';
-import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest } from '@agro/tipos';
+import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest, PlanificacionAgricola } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
 import {
   cerrarPlanificacionPersistida,
+  obtenerPlanificacionPersistida,
   guardarPlanificacionPersistida,
   obtenerPlanificacionesPersistidas,
   obtenerPlanificacionesResumenPersistidas,
 } from '../services/planificacion/planificacionesPrisma';
-import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos } from '../services/planificacion/protocolosPrisma';
+import { copiarProtocoloPersistido, guardarProtocoloPersistido, obtenerProtocolosPersistidos, obtenerProtocolosResumenPersistidos } from '../services/planificacion/protocolosPrisma';
 import { obtenerDestinosReferenciaPersistidos, obtenerPreciosReferenciaPersistidos } from '../services/preciosReferencia/preciosReferenciaPrisma';
 import { obtenerGastosComercialesPersistidos } from '../services/gastosComerciales/gastosComercialesPrisma';
 import { obtenerConceptosGastosComercialesPersistidos } from '../services/gastosComerciales/conceptosGastosComerciales';
@@ -31,6 +32,140 @@ function obtenerClienteId(req: Request, request: RequestConUsuario) {
   }
 
   return clienteId;
+}
+
+async function obtenerSnapshotPlanificacion(
+  clienteId: string,
+  usuarioAutorizado: { sub?: string; rol?: string; clienteId?: string } | undefined,
+  planificaciones: PlanificacionAgricola[],
+  opciones: { detalleEditor?: boolean } = {},
+) {
+  const detalleEditor = opciones.detalleEditor ?? false;
+  const [
+    preciosPersistidos,
+    destinosPersistidos,
+    gastosPersistidos,
+    conceptosPersistidos,
+    protocolosPersistidos,
+    estadiosPersistidos,
+  ] = await Promise.all([
+    obtenerPreciosReferenciaPersistidos(clienteId),
+    obtenerDestinosReferenciaPersistidos(clienteId),
+    obtenerGastosComercialesPersistidos(clienteId),
+    detalleEditor ? Promise.resolve([]) : obtenerConceptosGastosComercialesPersistidos(clienteId),
+    detalleEditor ? obtenerProtocolosResumenPersistidos(clienteId) : obtenerProtocolosPersistidos(clienteId),
+    detalleEditor ? Promise.resolve([]) : asegurarEstadiosReferenciaSemilla(clienteId),
+  ]);
+  const camposAsignados = usuarioAutorizado?.sub ? await obtenerCamposAsignados({
+    sub: usuarioAutorizado.sub,
+    rol: usuarioAutorizado.rol,
+    clienteId: usuarioAutorizado.clienteId,
+  }) : null;
+  const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados, {
+    incluirCostos: !detalleEditor,
+  });
+  const loteErpIds = Array.from(new Set(planificaciones
+    .flatMap((planificacion) => planificacion.lineas.map((linea) => linea.loteErpId))
+    .filter((loteErpId): loteErpId is string => Boolean(loteErpId))));
+  const campaniaAnteriorErpId = detalleEditor ? await obtenerCampaniaAnteriorErpId(planificaciones[0]?.campaniaErpId) : undefined;
+  const cultivosErp = loteErpIds.length
+    ? await prisma.erpCultivo.findMany({
+      where: {
+        loteErpId: { in: loteErpIds },
+        ...(campaniaAnteriorErpId ? { campaniaErpId: campaniaAnteriorErpId } : {}),
+        activo: true,
+      },
+      orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
+    })
+    : [];
+
+  return {
+    zonasApp: padronesPersistidos.zonasApp,
+    camposApp: padronesPersistidos.camposApp,
+    lotesApp: padronesPersistidos.lotesApp,
+    especiesApp: padronesPersistidos.especiesApp,
+    actividadesApp: padronesPersistidos.actividadesApp,
+    insumosApp: padronesPersistidos.insumosApp,
+    planificaciones,
+    protocolos: Array.isArray(protocolosPersistidos) ? protocolosPersistidos : protocolosPersistidos.protocolos,
+    preciosReferencia: preciosPersistidos,
+    destinosReferencia: destinosPersistidos,
+    conceptosGastosComerciales: conceptosPersistidos,
+    gastosComercialesReferencia: gastosPersistidos,
+    estadiosReferencia: estadiosPersistidos,
+    serviciosApp: padronesPersistidos.serviciosApp,
+    cultivosErp: cultivosErp.map((cultivo) => ({
+      empresaErpId: cultivo.empresaErpId,
+      erpId: cultivo.erpId,
+      idCultivo: cultivo.idCultivo,
+      codigo: cultivo.codigo,
+      nombre: cultivo.nombre,
+      idCampo: cultivo.idCampo,
+      campoErpId: cultivo.campoErpId,
+      idLote: cultivo.idLote,
+      loteErpId: cultivo.loteErpId,
+      idActividad: cultivo.idActividad || undefined,
+      actividadErpId: cultivo.actividadErpId || undefined,
+      idEspecie: cultivo.idEspecie || undefined,
+      especieErpId: cultivo.especieErpId || undefined,
+      idCampania: cultivo.idCampania || undefined,
+      campaniaErpId: cultivo.campaniaErpId || undefined,
+      hectareas: cultivo.hectareas,
+      hectareasSembradas: cultivo.hectareasSembradas,
+      hectareasCosechadas: cultivo.hectareasCosechadas,
+      idPuerto: cultivo.idPuerto || undefined,
+      distanciaPuerto: cultivo.distanciaPuerto || undefined,
+      idPersonalResponsable: cultivo.idPersonalResponsable || undefined,
+      esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
+      socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
+      activo: cultivo.activo,
+      actualizadoEn: cultivo.actualizadoEn.toISOString(),
+    })),
+    sincronizadoEn: new Date().toISOString(),
+  };
+}
+
+function obtenerCodigoCampaniaAnterior(codigo?: string | null) {
+  const partes = codigo?.match(/^(\d{2})\/(\d{2})$/);
+
+  if (!partes) {
+    return undefined;
+  }
+
+  const inicio = Number(partes[1]);
+  const fin = Number(partes[2]);
+
+  if (!Number.isFinite(inicio) || !Number.isFinite(fin)) {
+    return undefined;
+  }
+
+  return `${String(inicio - 1).padStart(2, '0')}/${String(fin - 1).padStart(2, '0')}`;
+}
+
+async function obtenerCampaniaAnteriorErpId(campaniaErpId?: string) {
+  if (!campaniaErpId) {
+    return undefined;
+  }
+
+  const campania = await prisma.erpCampania.findUnique({
+    where: { erpId: campaniaErpId },
+    select: { codigo: true },
+  });
+  const codigoAnterior = obtenerCodigoCampaniaAnterior(campania?.codigo);
+
+  if (!codigoAnterior) {
+    return undefined;
+  }
+
+  const campaniaAnterior = await prisma.erpCampania.findFirst({
+    where: {
+      codigo: codigoAnterior,
+      activo: true,
+    },
+    select: { erpId: true },
+  });
+
+  return campaniaAnterior?.erpId;
 }
 
 router.get('/resumen', requierePermiso('planificacion:leer'), async (req, res, next) => {
@@ -62,77 +197,35 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
     const request = req as RequestConUsuario;
     const clienteId = obtenerClienteId(req, request);
     const planificacionesPersistidas = await obtenerPlanificacionesPersistidas(clienteId);
-    const preciosPersistidos = await obtenerPreciosReferenciaPersistidos(clienteId);
-    const destinosPersistidos = await obtenerDestinosReferenciaPersistidos(clienteId);
-    const gastosPersistidos = await obtenerGastosComercialesPersistidos(clienteId);
-    const conceptosPersistidos = await obtenerConceptosGastosComercialesPersistidos(clienteId);
-    const protocolosPersistidos = await obtenerProtocolosPersistidos(clienteId);
-    const estadiosPersistidos = await asegurarEstadiosReferenciaSemilla(clienteId);
     const usuarioAutorizado = request.user?.sub ? {
       sub: request.user.sub,
       rol: request.user.rol,
       clienteId: request.user.clienteId,
     } : undefined;
-    const camposAsignados = usuarioAutorizado ? await obtenerCamposAsignados(usuarioAutorizado) : null;
 
-    const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados);
-    const loteErpIds = padronesPersistidos.lotesApp
-      .map((lote) => lote.loteErpId)
-      .filter((loteErpId): loteErpId is string => Boolean(loteErpId));
-    const cultivosErp = loteErpIds.length
-      ? await prisma.erpCultivo.findMany({
-        where: {
-          loteErpId: { in: loteErpIds },
-          activo: true,
-        },
-        orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
-      })
-      : [];
+    res.json(await obtenerSnapshotPlanificacion(clienteId, usuarioAutorizado, planificacionesPersistidas));
+  } catch (error) {
+    next(error);
+  }
+});
 
-    res.json({
-      zonasApp: padronesPersistidos.zonasApp,
-      camposApp: padronesPersistidos.camposApp,
-      lotesApp: padronesPersistidos.lotesApp,
-      especiesApp: padronesPersistidos.especiesApp,
-      actividadesApp: padronesPersistidos.actividadesApp,
-      insumosApp: padronesPersistidos.insumosApp,
-      planificaciones: planificacionesPersistidas,
-      protocolos: protocolosPersistidos.protocolos,
-      preciosReferencia: preciosPersistidos,
-      destinosReferencia: destinosPersistidos,
-      conceptosGastosComerciales: conceptosPersistidos,
-      gastosComercialesReferencia: gastosPersistidos,
-      estadiosReferencia: estadiosPersistidos,
-      serviciosApp: padronesPersistidos.serviciosApp,
-      cultivosErp: cultivosErp.map((cultivo) => ({
-        empresaErpId: cultivo.empresaErpId,
-        erpId: cultivo.erpId,
-        idCultivo: cultivo.idCultivo,
-        codigo: cultivo.codigo,
-        nombre: cultivo.nombre,
-        idCampo: cultivo.idCampo,
-        campoErpId: cultivo.campoErpId,
-        idLote: cultivo.idLote,
-        loteErpId: cultivo.loteErpId,
-        idActividad: cultivo.idActividad || undefined,
-        actividadErpId: cultivo.actividadErpId || undefined,
-        idEspecie: cultivo.idEspecie || undefined,
-        especieErpId: cultivo.especieErpId || undefined,
-        idCampania: cultivo.idCampania || undefined,
-        campaniaErpId: cultivo.campaniaErpId || undefined,
-        hectareas: cultivo.hectareas,
-        hectareasSembradas: cultivo.hectareasSembradas,
-        hectareasCosechadas: cultivo.hectareasCosechadas,
-        idPuerto: cultivo.idPuerto || undefined,
-        distanciaPuerto: cultivo.distanciaPuerto || undefined,
-        idPersonalResponsable: cultivo.idPersonalResponsable || undefined,
-        esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
-        socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
-        activo: cultivo.activo,
-        actualizadoEn: cultivo.actualizadoEn.toISOString(),
-      })),
-      sincronizadoEn: new Date().toISOString(),
-    });
+router.get('/:id/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+    const clienteId = obtenerClienteId(req, request);
+    const planificacion = await obtenerPlanificacionPersistida(clienteId, req.params.id);
+
+    if (!planificacion) {
+      return res.status(404).json({ error: 'No existe la planificacion solicitada.' });
+    }
+
+    const usuarioAutorizado = request.user?.sub ? {
+      sub: request.user.sub,
+      rol: request.user.rol,
+      clienteId: request.user.clienteId,
+    } : undefined;
+
+    res.json(await obtenerSnapshotPlanificacion(clienteId, usuarioAutorizado, [planificacion], { detalleEditor: true }));
   } catch (error) {
     next(error);
   }

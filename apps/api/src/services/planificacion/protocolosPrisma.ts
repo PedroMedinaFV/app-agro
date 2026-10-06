@@ -11,6 +11,7 @@ import type {
   ProtocoloInsumo,
   ProtocoloLabor,
   ProtocoloProductivoDetalle,
+  ProtocoloProductivoResumen,
   ProtocolosSnapshot,
 } from '@agro/tipos';
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -237,6 +238,52 @@ export async function obtenerProtocolosPersistidos(clienteId: string): Promise<P
     protocolos: registros.map(mapearProtocolo),
     sincronizadoEn: new Date().toISOString(),
   };
+}
+
+export async function obtenerProtocolosResumenPersistidos(clienteId: string): Promise<ProtocoloProductivoResumen[]> {
+  const registros = await prisma.protocoloProductivo.findMany({
+    where: { clienteId },
+    select: {
+      id: true,
+      clienteId: true,
+      nombre: true,
+      descripcion: true,
+      protocoloOrigenId: true,
+      empresaErpId: true,
+      campaniaErpId: true,
+      actividadAppId: true,
+      actividadErpId: true,
+      tipoFecha: true,
+      fechaSiembra: true,
+      zonaAppId: true,
+      campoAppId: true,
+      costoEstimadoPorHa: true,
+      activo: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+  });
+
+  return registros.map((protocolo) => ({
+    id: protocolo.id,
+    clienteId: protocolo.clienteId,
+    nombre: protocolo.nombre,
+    descripcion: protocolo.descripcion,
+    protocoloOrigenId: protocolo.protocoloOrigenId || undefined,
+    empresaErpId: protocolo.empresaErpId || undefined,
+    campaniaErpId: protocolo.campaniaErpId,
+    actividadAppId: protocolo.actividadAppId,
+    actividadErpId: protocolo.actividadErpId || undefined,
+    tipoFecha: protocolo.tipoFecha as ProtocoloProductivoResumen['tipoFecha'],
+    fechaSiembra: serializarFecha(protocolo.fechaSiembra),
+    zonaAppId: protocolo.zonaAppId || undefined,
+    campoAppId: protocolo.campoAppId || undefined,
+    costoEstimadoPorHa: protocolo.costoEstimadoPorHa,
+    activo: protocolo.activo,
+    createdAt: protocolo.createdAt.toISOString(),
+    updatedAt: protocolo.updatedAt.toISOString(),
+  }));
 }
 
 async function guardarProtocoloConCliente(

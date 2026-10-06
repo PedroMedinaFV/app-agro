@@ -61,4 +61,5 @@ export type PlanificacionBaseProps = {
   obtenerProtocolosCompatibles: (linea: PlanificacionAgricolaLinea) => ProtocoloProductivoResumen[];
   formatearUsd: (valor: number, decimales?: number) => string;
   leerNumero: (valor: string) => number;
+  asegurarDetallePlanificacion: (planificacionId: string) => Promise<PlanificacionSnapshot | undefined>;
 };

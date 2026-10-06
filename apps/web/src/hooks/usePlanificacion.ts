@@ -36,6 +36,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
     cargandoPlanificacion,
     cargandoResumenPlanificacion,
     asegurarPlanificacion,
+    cargarDetallePlanificacion,
     refrescarPlanificacion,
     incorporarProtocoloPlanificacion,
   } = useCargaPlanificacion(sesion, cargarAutomaticamente);
@@ -136,6 +137,16 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
 
   function seleccionarPlanificacion(planificacionId: string) {
     setPlanificacionSeleccionadaId(planificacionId);
+  }
+
+  async function asegurarDetallePlanificacion(planificacionId: string) {
+    const detalleLocal = planificacion.planificaciones.find((item) => item.id === planificacionId);
+
+    if (detalleLocal) {
+      return planificacion;
+    }
+
+    return cargarDetallePlanificacion(planificacionId);
   }
 
   async function persistirEscenarioBorrador(
@@ -253,7 +264,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
       return undefined;
     }
 
-    const snapshotPlanificacion = planificacionCargada ? planificacion : await asegurarPlanificacion();
+    const snapshotPlanificacion = await asegurarDetallePlanificacion(planificacionId);
     const origen = snapshotPlanificacion?.planificaciones.find((item) => item.id === planificacionId);
 
     if (!snapshotPlanificacion || !origen) {
@@ -389,7 +400,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
   }
 
   async function cerrarPlanificacionActiva(planificacionId: string) {
-    const snapshotPlanificacion = planificacionCargada ? planificacion : await asegurarPlanificacion();
+    const snapshotPlanificacion = await asegurarDetallePlanificacion(planificacionId);
     const planificacionObjetivo = snapshotPlanificacion?.planificaciones.find((item) => item.id === planificacionId);
 
     if (!sesion || !planificacionObjetivo || !sesion.permisos.includes('planificacion:cerrar')) {
@@ -491,6 +502,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
     clavesDuplicadas,
     tieneLineasDuplicadas,
     asegurarPlanificacion,
+    asegurarDetallePlanificacion,
     seleccionarPlanificacion,
     crearEscenarioPlanificacion,
     copiarEscenarioPlanificacion,

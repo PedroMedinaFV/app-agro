@@ -1085,6 +1085,7 @@ model PlanificacionAgricolaLinea {
 
   @@unique([planificacionId, campoAppId, loteAppId, actividadAppId])
   @@index([planificacionId])
+  @@index([planificacionId, createdAt])
   @@index([campoAppId])
   @@index([loteAppId])
   @@index([actividadAppId])

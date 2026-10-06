@@ -7,7 +7,7 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
   const [modoEdicion, setModoEdicion] = useState(false);
 
   async function abrirEditor(planificacionId: string) {
-    await props.asegurarPlanificacion();
+    await props.asegurarDetallePlanificacion(planificacionId);
     props.seleccionarPlanificacion(planificacionId);
     setModoEdicion(true);
   }
@@ -24,7 +24,6 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
   }
 
   async function copiarYEditarEscenario(planificacionId: string) {
-    await props.asegurarPlanificacion();
     const copiaId = await props.copiarEscenarioPlanificacion(planificacionId);
 
     if (copiaId) {

@@ -297,6 +297,7 @@ export function App() {
           lotesAppPorId={planificacionApp.lotesAppPorId}
           protocolosPorId={planificacionApp.protocolosPorId}
           asegurarPlanificacion={planificacionApp.asegurarPlanificacion}
+          asegurarDetallePlanificacion={planificacionApp.asegurarDetallePlanificacion}
           seleccionarPlanificacion={planificacionApp.seleccionarPlanificacion}
           crearEscenarioPlanificacion={planificacionApp.crearEscenarioPlanificacion}
           copiarEscenarioPlanificacion={planificacionApp.copiarEscenarioPlanificacion}

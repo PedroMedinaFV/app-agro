@@ -153,6 +153,18 @@ export async function obtenerPlanificacionesPersistidas(clienteId: string) {
   return registros.map(mapearPlanificacion);
 }
 
+export async function obtenerPlanificacionPersistida(clienteId: string, planificacionId: string) {
+  const registro = await prisma.planificacionAgricola.findFirst({
+    where: {
+      id: planificacionId,
+      clienteId,
+    },
+    include: incluirPlanificacion,
+  });
+
+  return registro ? mapearPlanificacion(registro) : null;
+}
+
 export async function obtenerPlanificacionesResumenPersistidas(clienteId: string): Promise<PlanificacionAgricolaResumen[]> {
   const registros = await prisma.planificacionAgricola.findMany({
     where: { clienteId },

@@ -361,11 +361,13 @@ export async function guardarEmpresasErpAdmin(clienteId: string, empresasErpIds:
 let planificacionSnapshotCache: { token?: string; respuesta: PlanificacionSnapshot } | null = null;
 let planificacionSnapshotEnVuelo: { token?: string; promesa: Promise<PlanificacionSnapshot> } | null = null;
 const planificacionesResumenCache: CachedGet<PlanificacionesResumenResponse> = {};
+const planificacionDetalleCache = new Map<string, CachedGet<PlanificacionSnapshot>>();
 
 export function invalidarPlanificacionSnapshotCache() {
   planificacionSnapshotCache = null;
   planificacionesResumenCache.respuesta = undefined;
   planificacionesResumenCache.promesa = undefined;
+  planificacionDetalleCache.clear();
 }
 
 export async function obtenerPlanificacionesResumen(token?: string, opciones: { forzar?: boolean } = {}): Promise<PlanificacionesResumenResponse> {
@@ -398,6 +400,17 @@ export async function obtenerPlanificacionSnapshot(token?: string, opciones: { f
   planificacionSnapshotEnVuelo = { token, promesa };
 
   return promesa;
+}
+
+export async function obtenerPlanificacionDetalleSnapshot(
+  planificacionId: string,
+  token?: string,
+  opciones: { forzar?: boolean } = {},
+): Promise<PlanificacionSnapshot> {
+  const cache = planificacionDetalleCache.get(planificacionId) || {};
+  planificacionDetalleCache.set(planificacionId, cache);
+
+  return obtenerConCache(cache, `/planificacion/${planificacionId}/snapshot`, token, opciones);
 }
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {

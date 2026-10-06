@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlanificacionSnapshot, ProtocoloProductivoResumen, SesionUsuario } from '@agro/tipos';
-import { obtenerPlanificacionesResumen, obtenerPlanificacionSnapshot } from '../../services/api';
+import { obtenerPlanificacionesResumen, obtenerPlanificacionDetalleSnapshot, obtenerPlanificacionSnapshot } from '../../services/api';
 import { resumirPlanificacionLocal } from '../../utils/planificacion/helpersPlanificacion';
 import { ModoCargaPlanificacion, planificacionVacia, resumenPlanificacionVacio } from './estadoPlanificacion';
 
@@ -69,6 +69,47 @@ export function useCargaPlanificacion(sesion: SesionUsuario | null, cargarAutoma
       planificacionRef.current = planificacionVacia;
       setPlanificacionCargada(true);
       setPlanificacionEstado('No se pudo refrescar la planificacion desde API.');
+      return undefined;
+    } finally {
+      setCargandoPlanificacion(false);
+    }
+  }, [sesion]);
+
+  const cargarDetallePlanificacion = useCallback(async (planificacionId: string, opciones: OpcionesRefresco = {}) => {
+    if (!sesion) {
+      return undefined;
+    }
+
+    setCargandoPlanificacion(true);
+
+    try {
+      const detalle = await obtenerPlanificacionDetalleSnapshot(planificacionId, sesion.token, opciones);
+
+      planificacionRef.current = {
+        ...detalle,
+        planificaciones: [
+          ...detalle.planificaciones,
+          ...planificacionRef.current.planificaciones.filter((item) => !detalle.planificaciones.some((detalleItem) => detalleItem.id === item.id)),
+        ],
+      };
+      setPlanificacion(planificacionRef.current);
+      setResumenPlanificaciones((actual) => ({
+        planificaciones: [
+          ...detalle.planificaciones
+            .filter((planificacion) => !actual.planificaciones.some((item) => item.id === planificacion.id))
+            .map(resumirPlanificacionLocal),
+          ...actual.planificaciones.map((item) => {
+            const planificacionActualizada = detalle.planificaciones.find((planificacion) => planificacion.id === item.id);
+            return planificacionActualizada ? resumirPlanificacionLocal(planificacionActualizada) : item;
+          }),
+        ],
+        camposProvisorios: detalle.camposApp.filter((campo) => campo.estadoVinculacion === 'provisorio').length,
+        sincronizadoEn: detalle.sincronizadoEn,
+      }));
+      setPlanificacionEstado('Detalle de planificacion cargado desde API.');
+      return detalle;
+    } catch {
+      setPlanificacionEstado('No se pudo cargar el detalle de la planificacion.');
       return undefined;
     } finally {
       setCargandoPlanificacion(false);
@@ -144,6 +185,7 @@ export function useCargaPlanificacion(sesion: SesionUsuario | null, cargarAutoma
     cargandoPlanificacion,
     cargandoResumenPlanificacion,
     asegurarPlanificacion,
+    cargarDetallePlanificacion,
     refrescarPlanificacion,
     incorporarProtocoloPlanificacion,
   };

@@ -247,7 +247,9 @@ export async function asegurarPadronesPlanificacionDesdeErp(
 export async function obtenerPadronesPlanificacionPersistidos(
   clienteId: string,
   camposAsignados: string[] | null,
+  opciones: { incluirCostos?: boolean } = {},
 ): Promise<PadronesPlanificacionPersistidos> {
+  const incluirCostos = opciones.incluirCostos ?? true;
   const [
     zonas,
     campos,
@@ -268,8 +270,8 @@ export async function obtenerPadronesPlanificacionPersistidos(
     prisma.loteApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
     prisma.especieApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
     prisma.actividadApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
-    prisma.insumoApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
-    prisma.servicioApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }),
+    incluirCostos ? prisma.insumoApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }) : Promise.resolve([]),
+    incluirCostos ? prisma.servicioApp.findMany({ where: { clienteId }, orderBy: [{ nombre: 'asc' }] }) : Promise.resolve([]),
   ]);
 
   const camposPermitidosIds = new Set(campos.map((campo) => campo.id));
