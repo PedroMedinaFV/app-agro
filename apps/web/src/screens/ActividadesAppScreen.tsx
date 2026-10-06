@@ -7,6 +7,7 @@ import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import {
   guardarActividadApp,
   obtenerActividadesErpImportadas,
@@ -94,6 +95,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
   const [estado, setEstado] = useState('Cargando actividades sincronizadas.');
   const [guardando, setGuardando] = useState(false);
   const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const [actividadPropiaParaVincular, setActividadPropiaParaVincular] = useState<ActividadApp | null>(null);
   const [actividadErpVincularId, setActividadErpVincularId] = useState('');
 
@@ -150,7 +152,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
   const actividadesPropiasPorErpId = useMemo(() => (
     new Map(actividadesPropias.filter((actividad) => actividad.actividadErpId).map((actividad) => [actividad.actividadErpId, actividad]))
   ), [actividadesPropias]);
-  const filtroNormalizado = normalizarCodigo(filtro);
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
   const actividadesVinculadas = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter((id): id is string => Boolean(id))), [actividadesPropias]);
   const actividadesErpDisponiblesParaVincular = useMemo(() => {
     if (!actividadPropiaParaVincular) {
@@ -406,7 +408,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
 
       <Panel
         title="Actividades"
-        description={estado}
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : estado}
         actions={(
           <ActionBar align="end">
             <label className="compact-field">

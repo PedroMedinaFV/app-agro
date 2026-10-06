@@ -6,6 +6,7 @@ import { DataTable } from '../components/DataTable';
 import { IconButton } from '../components/IconButton';
 import { OriginBadge } from '../components/OriginBadge';
 import { Panel } from '../components/Panel';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { guardarCampoApp, obtenerCamposErpImportados, obtenerCamposApp, obtenerZonasErpImportadas, obtenerZonasApp } from '../services/api';
 import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
@@ -86,6 +87,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
   const [campoPropioParaVincular, setCampoPropioParaVincular] = useState<CampoApp | null>(null);
   const [campoErpVincularId, setCampoErpVincularId] = useState('');
   const [filtro, setFiltro] = useState('');
+  const filtroAplicado = useDebouncedValue(filtro);
   const [filtroZonaClave, setFiltroZonaClave] = useState('');
 
   useEffect(() => {
@@ -185,7 +187,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       )
       : []
   ), [campoPropioParaVincular, camposErpDisponiblesParaVincular]);
-  const filtroNormalizado = normalizarCodigo(filtro);
+  const filtroNormalizado = normalizarCodigo(filtroAplicado);
   const camposErpFiltrados = camposErp.filter((campo) => {
     const zonaFiltrada = filtroZonaClave ? zonasPorClave.get(filtroZonaClave) : undefined;
     const texto = normalizarCodigo(`${campo.codigo} ${campo.nombre} ${empresasPorId.get(campo.empresaErpId)?.nombre || campo.empresaErpId}`);
@@ -438,7 +440,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
       <Panel
         title="Campos"
-        description={estado}
+        description={filtro !== filtroAplicado ? 'Aplicando filtro de busqueda.' : estado}
         actions={(
           <ActionBar align="end">
             <label className="compact-field">
