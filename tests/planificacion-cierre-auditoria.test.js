@@ -75,6 +75,32 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
         superficieTotal: 100,
       })),
     },
+    gastoComercialApp: {
+      findMany: async () => [{
+        id: 'gasto-1',
+        clienteId: 'cliente-1',
+        campaniaErpId: 'campania-26',
+        empresaErpId: 'empresa-1',
+        zonaAppId: null,
+        zonaErpId: null,
+        campoAppId: null,
+        campoErpId: null,
+        actividadAppId: 'actividad-1',
+        actividadErpId: 'actividad:1',
+        destinoVenta: 'Puerto Norte',
+        descripcion: 'Gastos puerto norte',
+        items: [{
+          conceptoGastoComercialId: 'concepto-1',
+          conceptoNombre: 'Flete',
+          valorPorTonelada: 20,
+          unidadCalculo: 'Tn',
+          moneda: 'USD',
+        }],
+        activo: true,
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+      }],
+    },
     planificacionAgricolaLinea: {
       update: async (args) => {
         lineasActualizadas.push(args);

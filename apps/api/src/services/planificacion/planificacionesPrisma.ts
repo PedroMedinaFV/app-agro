@@ -1,6 +1,9 @@
 import type {
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
+  GastoComercialItemReferencia,
+  GastosComercialesLineaSnapshot,
+  GastosComercialesReferencia,
   GuardarPlanificacionRequest,
   GuardarPlanificacionResponse,
   PlanificacionAgricola,
@@ -30,6 +33,56 @@ function serializarFecha(fecha?: Date | string | null) {
 
 function parsearFecha(fecha?: string) {
   return fecha ? new Date(fecha) : undefined;
+}
+
+function mapearGastosComercialesSnapshot(valor: Prisma.JsonValue | null): GastosComercialesLineaSnapshot | undefined {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    return undefined;
+  }
+
+  return valor as unknown as GastosComercialesLineaSnapshot;
+}
+
+function serializarGastosComercialesSnapshot(snapshot?: GastosComercialesLineaSnapshot) {
+  return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
+function mapearGastoComercialReferencia(gasto: {
+  id: string;
+  clienteId: string;
+  campaniaErpId: string;
+  empresaErpId: string;
+  zonaAppId: string | null;
+  zonaErpId: string | null;
+  campoAppId: string | null;
+  campoErpId: string | null;
+  actividadAppId: string;
+  actividadErpId: string | null;
+  destinoVenta: string | null;
+  descripcion: string;
+  items: Prisma.JsonValue;
+  activo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): GastosComercialesReferencia {
+  return {
+    id: gasto.id,
+    clienteId: gasto.clienteId,
+    campaniaErpId: gasto.campaniaErpId,
+    empresaErpId: gasto.empresaErpId,
+    zonaAppId: gasto.zonaAppId || undefined,
+    zonaErpId: gasto.zonaErpId || undefined,
+    campoAppId: gasto.campoAppId || undefined,
+    campoErpId: gasto.campoErpId || undefined,
+    actividadAppId: gasto.actividadAppId,
+    actividadErpId: gasto.actividadErpId || undefined,
+    destinoVenta: gasto.destinoVenta || undefined,
+    descripcion: gasto.descripcion,
+    items: gasto.items as unknown as GastoComercialItemReferencia[],
+    activo: gasto.activo,
+    createdAt: gasto.createdAt.toISOString(),
+    updatedAt: gasto.updatedAt.toISOString(),
+  };
 }
 
 type PlanificacionPrisma = Prisma.PlanificacionAgricolaGetPayload<{
@@ -62,6 +115,7 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     rindeEstimado: linea.rindeEstimado,
     gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId || undefined,
     gastosComercialesEstimados: linea.gastosComercialesEstimados,
+    gastosComercialesSnapshot: mapearGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
     protocoloId: linea.protocoloId || undefined,
     ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
     ingresoNetoEstimado: linea.ingresoNetoEstimado,
@@ -264,6 +318,7 @@ async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: Pla
       rindeEstimado: linea.rindeEstimado,
       gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
       gastosComercialesEstimados: linea.gastosComercialesEstimados,
+      gastosComercialesSnapshot: serializarGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
       protocoloId: linea.protocoloId,
       ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
       ingresoNetoEstimado: linea.ingresoNetoEstimado,
@@ -437,7 +492,14 @@ export async function cerrarPlanificacionEnTransaccion(
 
   const planificacionExistente = mapearPlanificacion(existente);
   await validarPlanificacionParaCierre(planificacionExistente, tx);
-  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente);
+  const gastosReferenciaIds = Array.from(new Set(planificacionExistente.lineas
+    .map((linea) => linea.gastosComercialesReferenciaId)
+    .filter((id): id is string => Boolean(id))));
+  const gastosReferencias = gastosReferenciaIds.length
+    ? await tx.gastoComercialApp.findMany({ where: { id: { in: gastosReferenciaIds }, clienteId: existente.clienteId } })
+    : [];
+  const gastosComercialesPorId = new Map(gastosReferencias.map((gasto) => [gasto.id, mapearGastoComercialReferencia(gasto)]));
+  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId);
 
   const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
     where: {
@@ -486,6 +548,7 @@ export async function cerrarPlanificacionEnTransaccion(
         rindeEstimado: linea.rindeEstimado,
         gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
         gastosComercialesEstimados: linea.gastosComercialesEstimados,
+        gastosComercialesSnapshot: serializarGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
         protocoloId: linea.protocoloId,
         ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
         ingresoNetoEstimado: linea.ingresoNetoEstimado,

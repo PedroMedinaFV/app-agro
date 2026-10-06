@@ -210,6 +210,23 @@ export type GastoComercialApp = {
 
 export type GastosComercialesReferencia = GastoComercialApp;
 
+export type GastoComercialItemSnapshot = {
+  conceptoGastoComercialId: string;
+  conceptoNombre: string;
+  valorPorTonelada: number;
+  unidadCalculo: 'Tn' | 'Ha';
+  moneda: string;
+  observaciones?: string;
+};
+
+export type GastosComercialesLineaSnapshot = {
+  origen: 'referencia' | 'manual';
+  referenciaId?: string;
+  descripcion?: string;
+  items: GastoComercialItemSnapshot[];
+  totalEstimado: number;
+};
+
 export type EstadioFenologicoReferencia = {
   id: string;
   idEstadio: number;
@@ -334,6 +351,7 @@ export type PlanificacionAgricolaLinea = {
   rindeEstimado: number;
   gastosComercialesReferenciaId?: string;
   gastosComercialesEstimados: number;
+  gastosComercialesSnapshot?: GastosComercialesLineaSnapshot;
   protocoloId?: string;
   ingresoBrutoEstimado: number;
   ingresoNetoEstimado: number;

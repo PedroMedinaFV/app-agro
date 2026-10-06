@@ -1,4 +1,4 @@
-import type { PlanificacionAgricola, PlanificacionAgricolaLinea } from '@agro/tipos';
+import type { GastosComercialesLineaSnapshot, GastosComercialesReferencia, PlanificacionAgricola, PlanificacionAgricolaLinea } from '@agro/tipos';
 
 export type LoteSuperficieValidacion = {
   id: string;
@@ -46,6 +46,7 @@ export type SupuestosLineaPlanificacionCongelada = Pick<
   | 'rindeEstimado'
   | 'gastosComercialesReferenciaId'
   | 'gastosComercialesEstimados'
+  | 'gastosComercialesSnapshot'
   | 'protocoloId'
   | 'ingresoBrutoEstimado'
   | 'ingresoNetoEstimado'
@@ -74,6 +75,7 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
     rindeEstimado: linea.rindeEstimado,
     gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
     gastosComercialesEstimados: linea.gastosComercialesEstimados,
+    gastosComercialesSnapshot: linea.gastosComercialesSnapshot,
     protocoloId: linea.protocoloId,
     ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
     ingresoNetoEstimado: linea.ingresoNetoEstimado,
@@ -83,20 +85,68 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
   };
 }
 
-export function congelarLineaPlanificacionParaCierre(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
+export function crearSnapshotGastosComercialesLinea(
+  linea: PlanificacionAgricolaLinea,
+  gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
+): GastosComercialesLineaSnapshot {
+  const referencia = linea.gastosComercialesReferenciaId
+    ? gastosComercialesPorId.get(linea.gastosComercialesReferenciaId)
+    : undefined;
+
+  if (!referencia && !linea.gastosComercialesReferenciaId) {
+    return {
+      origen: 'manual',
+      items: [],
+      totalEstimado: linea.gastosComercialesEstimados,
+    };
+  }
+
+  if (!referencia) {
+    return {
+      origen: 'referencia',
+      referenciaId: linea.gastosComercialesReferenciaId,
+      items: [],
+      totalEstimado: linea.gastosComercialesEstimados,
+    };
+  }
+
+  return {
+    origen: 'referencia',
+    referenciaId: referencia.id,
+    descripcion: referencia.descripcion,
+    items: referencia.items.map((item) => ({
+      conceptoGastoComercialId: item.conceptoGastoComercialId,
+      conceptoNombre: item.conceptoNombre,
+      valorPorTonelada: item.valorPorTonelada,
+      unidadCalculo: item.unidadCalculo,
+      moneda: item.moneda,
+      observaciones: item.observaciones,
+    })),
+    totalEstimado: linea.gastosComercialesEstimados,
+  };
+}
+
+export function congelarLineaPlanificacionParaCierre(
+  linea: PlanificacionAgricolaLinea,
+  gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
+): PlanificacionAgricolaLinea {
   return {
     ...recalcularLineaPlanificacionPersistida(linea),
+    gastosComercialesSnapshot: crearSnapshotGastosComercialesLinea(linea, gastosComercialesPorId),
     estado: 'cerrada',
   };
 }
 
-export function congelarPlanificacionParaCierre(planificacion: PlanificacionAgricola): PlanificacionAgricola {
+export function congelarPlanificacionParaCierre(
+  planificacion: PlanificacionAgricola,
+  gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
+): PlanificacionAgricola {
   return {
     ...planificacion,
     estado: 'cerrada',
     escenarioOriginal: true,
     escenarioBloqueadoPorId: undefined,
-    lineas: planificacion.lineas.map(congelarLineaPlanificacionParaCierre),
+    lineas: planificacion.lineas.map((linea) => congelarLineaPlanificacionParaCierre(linea, gastosComercialesPorId)),
   };
 }
 

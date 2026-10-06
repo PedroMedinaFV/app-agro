@@ -186,6 +186,12 @@ test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que n
     rindeEstimado: 3.2,
     gastosComercialesReferenciaId: 'gasto-1',
     gastosComercialesEstimados: 780,
+    gastosComercialesSnapshot: {
+      origen: 'referencia',
+      referenciaId: 'gasto-1',
+      items: [],
+      totalEstimado: 780,
+    },
     protocoloId: 'protocolo-1',
     costoProduccionEstimado: 2400,
   }));
@@ -209,11 +215,75 @@ test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que n
     rindeEstimado: 3.2,
     gastosComercialesReferenciaId: 'gasto-1',
     gastosComercialesEstimados: 780,
+    gastosComercialesSnapshot: {
+      origen: 'referencia',
+      referenciaId: 'gasto-1',
+      items: [],
+      totalEstimado: 780,
+    },
     protocoloId: 'protocolo-1',
     ingresoBrutoEstimado: 10080,
     ingresoNetoEstimado: 9300,
     costoProduccionEstimado: 2400,
     margenBrutoEstimado: 6900,
     margenBrutoActualizado: 6900,
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda detalle de items si el gasto viene de referencia', () => {
+  const { congelarLineaPlanificacionParaCierre } = require('../apps/api/dist/services/planificacion/validacionesPlanificacion');
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    gastosComercialesReferenciaId: 'gasto-1',
+    gastosComercialesEstimados: 780,
+  }), new Map([
+    ['gasto-1', {
+      id: 'gasto-1',
+      clienteId: 'cliente-1',
+      campaniaErpId: 'campania-26',
+      empresaErpId: 'empresa-1',
+      actividadAppId: 'actividad-1',
+      descripcion: 'Gastos puerto norte',
+      items: [
+        {
+          conceptoGastoComercialId: 'concepto-1',
+          conceptoNombre: 'Flete',
+          valorPorTonelada: 20,
+          unidadCalculo: 'Tn',
+          moneda: 'USD',
+        },
+      ],
+      activo: true,
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    }],
+  ]));
+
+  assert.deepEqual(congelada.gastosComercialesSnapshot, {
+    origen: 'referencia',
+    referenciaId: 'gasto-1',
+    descripcion: 'Gastos puerto norte',
+    items: [{
+      conceptoGastoComercialId: 'concepto-1',
+      conceptoNombre: 'Flete',
+      valorPorTonelada: 20,
+      unidadCalculo: 'Tn',
+      moneda: 'USD',
+      observaciones: undefined,
+    }],
+    totalEstimado: 780,
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda solo valor total cuando el gasto es manual', () => {
+  const { congelarLineaPlanificacionParaCierre } = require('../apps/api/dist/services/planificacion/validacionesPlanificacion');
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    gastosComercialesReferenciaId: undefined,
+    gastosComercialesEstimados: 450,
+  }));
+
+  assert.deepEqual(congelada.gastosComercialesSnapshot, {
+    origen: 'manual',
+    items: [],
+    totalEstimado: 450,
   });
 });
