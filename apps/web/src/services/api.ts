@@ -5,6 +5,7 @@ import {
   ErpEspecie,
   ErpCampo,
   ErpCampania,
+  ErpCultivo,
   ErpInsumo,
   ErpMoneda,
   ErpTipoInsumo,
@@ -411,6 +412,18 @@ export async function obtenerPlanificacionDetalleSnapshot(
   planificacionDetalleCache.set(planificacionId, cache);
 
   return obtenerConCache(cache, `/planificacion/${planificacionId}/snapshot`, token, opciones);
+}
+
+export type CultivosAntecesoresPlanificacionResponse = {
+  cultivos: ErpCultivo[];
+  sincronizadoEn: string;
+};
+
+export async function obtenerCultivosAntecesoresPlanificacion(
+  planificacionId: string,
+  token?: string,
+): Promise<CultivosAntecesoresPlanificacionResponse> {
+  return request<CultivosAntecesoresPlanificacionResponse>(`/planificacion/${planificacionId}/cultivos-antecesores`, {}, token);
 }
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {

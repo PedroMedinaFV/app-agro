@@ -1,5 +1,5 @@
 import { Request, Router } from 'express';
-import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, GuardarPlanificacionRequest, GuardarProtocoloRequest, PlanificacionAgricola } from '@agro/tipos';
+import type { CerrarPlanificacionRequest, CopiarProtocoloRequest, ErpCultivo, GuardarPlanificacionRequest, GuardarProtocoloRequest, PlanificacionAgricola } from '@agro/tipos';
 import { requierePermiso } from '../middleware/permisos';
 import {
   cerrarPlanificacionPersistida,
@@ -38,17 +38,11 @@ async function obtenerSnapshotPlanificacion(
   clienteId: string,
   usuarioAutorizado: { sub?: string; rol?: string; clienteId?: string } | undefined,
   planificaciones: PlanificacionAgricola[],
-  opciones: { detalleEditor?: boolean } = {},
+  opciones: { detalleEditor?: boolean; incluirCultivos?: boolean } = {},
 ) {
   const detalleEditor = opciones.detalleEditor ?? false;
-  const [
-    preciosPersistidos,
-    destinosPersistidos,
-    gastosPersistidos,
-    conceptosPersistidos,
-    protocolosPersistidos,
-    estadiosPersistidos,
-  ] = await Promise.all([
+  const incluirCultivos = opciones.incluirCultivos ?? !detalleEditor;
+  const referenciasPromise = Promise.all([
     obtenerPreciosReferenciaPersistidos(clienteId),
     obtenerDestinosReferenciaPersistidos(clienteId),
     obtenerGastosComercialesPersistidos(clienteId),
@@ -56,28 +50,46 @@ async function obtenerSnapshotPlanificacion(
     detalleEditor ? obtenerProtocolosResumenPersistidos(clienteId) : obtenerProtocolosPersistidos(clienteId),
     detalleEditor ? Promise.resolve([]) : asegurarEstadiosReferenciaSemilla(clienteId),
   ]);
-  const camposAsignados = usuarioAutorizado?.sub ? await obtenerCamposAsignados({
+  const camposAsignadosPromise = usuarioAutorizado?.sub ? obtenerCamposAsignados({
     sub: usuarioAutorizado.sub,
     rol: usuarioAutorizado.rol,
     clienteId: usuarioAutorizado.clienteId,
-  }) : null;
-  const padronesPersistidos = await obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados, {
-    incluirCostos: !detalleEditor,
-  });
+  }) : Promise.resolve(null);
   const loteErpIds = Array.from(new Set(planificaciones
     .flatMap((planificacion) => planificacion.lineas.map((linea) => linea.loteErpId))
     .filter((loteErpId): loteErpId is string => Boolean(loteErpId))));
-  const campaniaAnteriorErpId = detalleEditor ? await obtenerCampaniaAnteriorErpId(planificaciones[0]?.campaniaErpId) : undefined;
-  const cultivosErp = loteErpIds.length
-    ? await prisma.erpCultivo.findMany({
-      where: {
-        loteErpId: { in: loteErpIds },
-        ...(campaniaAnteriorErpId ? { campaniaErpId: campaniaAnteriorErpId } : {}),
-        activo: true,
-      },
-      orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
-    })
-    : [];
+  const campaniaAnteriorPromise = detalleEditor && incluirCultivos ? obtenerCampaniaAnteriorErpId(planificaciones[0]?.campaniaErpId) : Promise.resolve(undefined);
+  const padronesPromise = camposAsignadosPromise.then((camposAsignados) => obtenerPadronesPlanificacionPersistidos(clienteId, camposAsignados, {
+    incluirCostos: !detalleEditor,
+  }));
+  const cultivosPromise = campaniaAnteriorPromise.then((campaniaAnteriorErpId) => (
+    incluirCultivos && loteErpIds.length
+      ? prisma.erpCultivo.findMany({
+        where: {
+          loteErpId: { in: loteErpIds },
+          ...(campaniaAnteriorErpId ? { campaniaErpId: campaniaAnteriorErpId } : {}),
+          activo: true,
+        },
+        orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
+      })
+      : Promise.resolve([])
+  ));
+  const [
+    [
+      preciosPersistidos,
+      destinosPersistidos,
+      gastosPersistidos,
+      conceptosPersistidos,
+      protocolosPersistidos,
+      estadiosPersistidos,
+    ],
+    padronesPersistidos,
+    cultivosErp,
+  ] = await Promise.all([
+    referenciasPromise,
+    padronesPromise,
+    cultivosPromise,
+  ]);
 
   return {
     zonasApp: padronesPersistidos.zonasApp,
@@ -94,34 +106,64 @@ async function obtenerSnapshotPlanificacion(
     gastosComercialesReferencia: gastosPersistidos,
     estadiosReferencia: estadiosPersistidos,
     serviciosApp: padronesPersistidos.serviciosApp,
-    cultivosErp: cultivosErp.map((cultivo) => ({
-      empresaErpId: cultivo.empresaErpId,
-      erpId: cultivo.erpId,
-      idCultivo: cultivo.idCultivo,
-      codigo: cultivo.codigo,
-      nombre: cultivo.nombre,
-      idCampo: cultivo.idCampo,
-      campoErpId: cultivo.campoErpId,
-      idLote: cultivo.idLote,
-      loteErpId: cultivo.loteErpId,
-      idActividad: cultivo.idActividad || undefined,
-      actividadErpId: cultivo.actividadErpId || undefined,
-      idEspecie: cultivo.idEspecie || undefined,
-      especieErpId: cultivo.especieErpId || undefined,
-      idCampania: cultivo.idCampania || undefined,
-      campaniaErpId: cultivo.campaniaErpId || undefined,
-      hectareas: cultivo.hectareas,
-      hectareasSembradas: cultivo.hectareasSembradas,
-      hectareasCosechadas: cultivo.hectareasCosechadas,
-      idPuerto: cultivo.idPuerto || undefined,
-      distanciaPuerto: cultivo.distanciaPuerto || undefined,
-      idPersonalResponsable: cultivo.idPersonalResponsable || undefined,
-      esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
-      socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
-      activo: cultivo.activo,
-      actualizadoEn: cultivo.actualizadoEn.toISOString(),
-    })),
+    cultivosErp: cultivosErp.map(mapearCultivoErp),
     sincronizadoEn: new Date().toISOString(),
+  };
+}
+
+function mapearCultivoErp(cultivo: {
+  empresaErpId: string;
+  erpId: string;
+  idCultivo: number;
+  codigo: string;
+  nombre: string;
+  idCampo: number;
+  campoErpId: string;
+  idLote: number;
+  loteErpId: string;
+  idActividad: number | null;
+  actividadErpId: string | null;
+  idEspecie: number | null;
+  especieErpId: string | null;
+  idCampania: number | null;
+  campaniaErpId: string | null;
+  hectareas: number;
+  hectareasSembradas: number;
+  hectareasCosechadas: number;
+  idPuerto: number | null;
+  distanciaPuerto: number | null;
+  idPersonalResponsable: number | null;
+  esAgriculturaIntensiva: boolean;
+  socioEnFuncionAportes: boolean;
+  activo: boolean;
+  actualizadoEn: Date;
+}): ErpCultivo {
+  return {
+    empresaErpId: cultivo.empresaErpId,
+    erpId: cultivo.erpId,
+    idCultivo: cultivo.idCultivo,
+    codigo: cultivo.codigo,
+    nombre: cultivo.nombre,
+    idCampo: cultivo.idCampo,
+    campoErpId: cultivo.campoErpId,
+    idLote: cultivo.idLote,
+    loteErpId: cultivo.loteErpId,
+    idActividad: cultivo.idActividad || undefined,
+    actividadErpId: cultivo.actividadErpId || undefined,
+    idEspecie: cultivo.idEspecie || undefined,
+    especieErpId: cultivo.especieErpId || undefined,
+    idCampania: cultivo.idCampania || undefined,
+    campaniaErpId: cultivo.campaniaErpId || undefined,
+    hectareas: cultivo.hectareas,
+    hectareasSembradas: cultivo.hectareasSembradas,
+    hectareasCosechadas: cultivo.hectareasCosechadas,
+    idPuerto: cultivo.idPuerto || undefined,
+    distanciaPuerto: cultivo.distanciaPuerto || undefined,
+    idPersonalResponsable: cultivo.idPersonalResponsable || undefined,
+    esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
+    socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
+    activo: cultivo.activo,
+    actualizadoEn: cultivo.actualizadoEn.toISOString(),
   };
 }
 
@@ -209,28 +251,6 @@ router.get('/snapshot', requierePermiso('planificacion:leer'), async (req, res, 
   }
 });
 
-router.get('/:id/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
-  try {
-    const request = req as RequestConUsuario;
-    const clienteId = obtenerClienteId(req, request);
-    const planificacion = await obtenerPlanificacionPersistida(clienteId, req.params.id);
-
-    if (!planificacion) {
-      return res.status(404).json({ error: 'No existe la planificacion solicitada.' });
-    }
-
-    const usuarioAutorizado = request.user?.sub ? {
-      sub: request.user.sub,
-      rol: request.user.rol,
-      clienteId: request.user.clienteId,
-    } : undefined;
-
-    res.json(await obtenerSnapshotPlanificacion(clienteId, usuarioAutorizado, [planificacion], { detalleEditor: true }));
-  } catch (error) {
-    next(error);
-  }
-});
-
 router.put('/:id', requierePermiso('planificacion:editar'), async (req, res, next) => {
   try {
     const request = req as RequestConUsuario;
@@ -267,6 +287,62 @@ router.get('/protocolos/snapshot', requierePermiso('planificacion:leer'), async 
     const persistidos = await obtenerProtocolosPersistidos(clienteId);
 
     res.json(persistidos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/snapshot', requierePermiso('planificacion:leer'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+    const clienteId = obtenerClienteId(req, request);
+    const planificacion = await obtenerPlanificacionPersistida(clienteId, req.params.id);
+
+    if (!planificacion) {
+      return res.status(404).json({ error: 'No existe la planificacion solicitada.' });
+    }
+
+    const usuarioAutorizado = request.user?.sub ? {
+      sub: request.user.sub,
+      rol: request.user.rol,
+      clienteId: request.user.clienteId,
+    } : undefined;
+
+    res.json(await obtenerSnapshotPlanificacion(clienteId, usuarioAutorizado, [planificacion], { detalleEditor: true }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id/cultivos-antecesores', requierePermiso('planificacion:leer'), async (req, res, next) => {
+  try {
+    const request = req as RequestConUsuario;
+    const clienteId = obtenerClienteId(req, request);
+    const planificacion = await obtenerPlanificacionPersistida(clienteId, req.params.id);
+
+    if (!planificacion) {
+      return res.status(404).json({ error: 'No existe la planificacion solicitada.' });
+    }
+
+    const loteErpIds = Array.from(new Set(planificacion.lineas
+      .map((linea) => linea.loteErpId)
+      .filter((loteErpId): loteErpId is string => Boolean(loteErpId))));
+    const campaniaAnteriorErpId = await obtenerCampaniaAnteriorErpId(planificacion.campaniaErpId);
+    const cultivos = loteErpIds.length
+      ? await prisma.erpCultivo.findMany({
+        where: {
+          loteErpId: { in: loteErpIds },
+          ...(campaniaAnteriorErpId ? { campaniaErpId: campaniaAnteriorErpId } : {}),
+          activo: true,
+        },
+        orderBy: [{ idCampania: 'desc' }, { nombre: 'asc' }],
+      })
+      : [];
+
+    res.json({
+      cultivos: cultivos.map(mapearCultivoErp),
+      sincronizadoEn: new Date().toISOString(),
+    });
   } catch (error) {
     next(error);
   }

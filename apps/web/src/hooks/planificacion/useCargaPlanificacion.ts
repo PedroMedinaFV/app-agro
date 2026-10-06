@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlanificacionSnapshot, ProtocoloProductivoResumen, SesionUsuario } from '@agro/tipos';
-import { obtenerPlanificacionesResumen, obtenerPlanificacionDetalleSnapshot, obtenerPlanificacionSnapshot } from '../../services/api';
+import { obtenerCultivosAntecesoresPlanificacion, obtenerPlanificacionesResumen, obtenerPlanificacionDetalleSnapshot, obtenerPlanificacionSnapshot } from '../../services/api';
 import { resumirPlanificacionLocal } from '../../utils/planificacion/helpersPlanificacion';
 import { ModoCargaPlanificacion, planificacionVacia, resumenPlanificacionVacio } from './estadoPlanificacion';
 
@@ -107,6 +107,23 @@ export function useCargaPlanificacion(sesion: SesionUsuario | null, cargarAutoma
         sincronizadoEn: detalle.sincronizadoEn,
       }));
       setPlanificacionEstado('Detalle de planificacion cargado desde API.');
+      void obtenerCultivosAntecesoresPlanificacion(planificacionId, sesion.token)
+        .then((respuesta) => {
+          setPlanificacion((actual) => {
+            if (!actual.planificaciones.some((item) => item.id === planificacionId)) {
+              return actual;
+            }
+
+            const siguiente = {
+              ...actual,
+              cultivosErp: respuesta.cultivos,
+              sincronizadoEn: respuesta.sincronizadoEn,
+            };
+            planificacionRef.current = siguiente;
+            return siguiente;
+          });
+        })
+        .catch(() => undefined);
       return detalle;
     } catch {
       setPlanificacionEstado('No se pudo cargar el detalle de la planificacion.');
