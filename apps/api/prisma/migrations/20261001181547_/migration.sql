@@ -42,8 +42,10 @@ ALTER TABLE "RecorridaCampo" ALTER COLUMN "updatedAt" DROP DEFAULT;
 ALTER TABLE "ServicioApp" RENAME CONSTRAINT "LaborReferencia_pkey" TO "ServicioApp_pkey";
 
 -- AlterTable
-ALTER TABLE "ZonaApp" RENAME CONSTRAINT "ZonaPlanificacion_pkey" TO "ZonaApp_pkey",
-ALTER COLUMN "empresaErpId" SET NOT NULL;
+ALTER TABLE "ZonaApp" RENAME CONSTRAINT "ZonaPlanificacion_pkey" TO "ZonaApp_pkey";
+
+-- AlterTable
+ALTER TABLE "ZonaApp" ALTER COLUMN "empresaErpId" SET NOT NULL;
 
 -- RenameForeignKey
 ALTER TABLE "ActividadApp" RENAME CONSTRAINT "ActividadPlanificacion_clienteId_fkey" TO "ActividadApp_clienteId_fkey";
