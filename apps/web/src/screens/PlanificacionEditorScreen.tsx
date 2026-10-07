@@ -168,11 +168,28 @@ export function PlanificacionEditorScreen({
       || Array.from(zonasErpPorId.entries()).find(([id]) => zonaErpId.endsWith(`:${id}`))?.[1]
       || 'Sin zona';
   }, [zonasAppPorId, zonasErpPorId]);
+  const obtenerCampoVisualLinea = useCallback((linea: PlanificacionAgricolaLinea) => {
+    const campo = camposAppPorId.get(linea.campoAppId);
+    const campoSnapshot = linea.padronesSnapshot?.campo;
+
+    return {
+      id: campo?.id || linea.campoAppId,
+      nombre: campo?.nombre || campoSnapshot?.nombre || 'Campo no disponible',
+      zonaAppId: campo?.zonaAppId || campoSnapshot?.zonaAppId,
+      zonaErpId: campo?.zonaErpId || campoSnapshot?.zonaErpId,
+    };
+  }, [camposAppPorId]);
+  const obtenerNombreLoteLinea = useCallback((linea: PlanificacionAgricolaLinea) => {
+    return lotesAppPorId.get(linea.loteAppId)?.nombre || linea.padronesSnapshot?.lote.nombre;
+  }, [lotesAppPorId]);
+  const obtenerNombreProtocoloLinea = useCallback((linea: PlanificacionAgricolaLinea) => {
+    return (linea.protocoloId ? protocolosPorId.get(linea.protocoloId)?.nombre : undefined) || linea.protocoloSnapshot?.nombre;
+  }, [protocolosPorId]);
   const zonasParaFiltro = useMemo(() => {
     const zonas = new Map<string, string>();
 
     for (const linea of lineasPlanificacion) {
-      const campo = camposAppPorId.get(linea.campoAppId);
+      const campo = obtenerCampoVisualLinea(linea);
       const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
       zonas.set(zonaId, obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId));
     }
@@ -180,30 +197,30 @@ export function PlanificacionEditorScreen({
     return Array.from(zonas.entries())
       .map(([id, nombre]) => ({ id, nombre }))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [lineasPlanificacion, camposAppPorId, planificacion.zonasApp, snapshot.zonas]);
+  }, [lineasPlanificacion, obtenerCampoVisualLinea, obtenerNombreZona]);
   const camposParaFiltro = useMemo(() => {
     const campos = new Map<string, { id: string; nombre: string; zonaId: string }>();
 
     for (const linea of lineasPlanificacion) {
-      const campo = camposAppPorId.get(linea.campoAppId);
+      const campo = obtenerCampoVisualLinea(linea);
       const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
 
       if (!filtroZonaId || filtroZonaId === zonaId) {
         campos.set(linea.campoAppId, {
           id: linea.campoAppId,
-          nombre: campo?.nombre || 'Campo no disponible',
+          nombre: campo.nombre,
           zonaId,
         });
       }
     }
 
     return Array.from(campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  }, [lineasPlanificacion, camposAppPorId, filtroZonaId]);
+  }, [lineasPlanificacion, obtenerCampoVisualLinea, filtroZonaId]);
   const busquedaNormalizada = normalizarTexto(busquedaAplicada);
   const lineasFiltradas = useMemo(() => lineasPlanificacion.filter((linea) => {
-    const campo = camposAppPorId.get(linea.campoAppId);
-    const lote = lotesAppPorId.get(linea.loteAppId);
-    const protocolo = linea.protocoloId ? protocolosPorId.get(linea.protocoloId) : undefined;
+    const campo = obtenerCampoVisualLinea(linea);
+    const loteNombre = obtenerNombreLoteLinea(linea);
+    const protocoloNombre = obtenerNombreProtocoloLinea(linea);
     const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
     const zonaNombre = obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId);
     const claveLinea = obtenerClaveLinea(planificacionActiva?.campaniaErpId, linea);
@@ -211,10 +228,10 @@ export function PlanificacionEditorScreen({
     const lineaCompleta = lineaPlanificacionEstaCompleta(linea);
     const textoLinea = normalizarTexto([
       zonaNombre,
-      campo?.nombre,
-      lote?.nombre,
-      protocolo?.nombre,
-      linea.destinoVenta,
+      campo.nombre,
+      loteNombre,
+      protocoloNombre,
+      linea.destinoVentaSnapshot?.destinoVenta || linea.destinoVenta,
     ].filter(Boolean).join(' '));
 
     if (filtroZonaId && filtroZonaId !== zonaId) {
@@ -240,28 +257,27 @@ export function PlanificacionEditorScreen({
     return !busquedaNormalizada || textoLinea.includes(busquedaNormalizada);
   }), [
     lineasPlanificacion,
-    camposAppPorId,
-    lotesAppPorId,
-    protocolosPorId,
+    obtenerCampoVisualLinea,
+    obtenerNombreLoteLinea,
+    obtenerNombreProtocoloLinea,
     planificacionActiva?.campaniaErpId,
     clavesDuplicadas,
     filtroZonaId,
     filtroCampoId,
     filtroEstadoCarga,
     busquedaNormalizada,
-    planificacion.zonasApp,
-    snapshot.zonas,
+    obtenerNombreZona,
   ]);
   const lineasAgrupadas = useMemo(() => {
     const zonas = new Map<string, { id: string; nombre: string; campos: Map<string, { id: string; nombre: string; lineas: PlanificacionAgricolaLinea[] }> }>();
 
     for (const linea of lineasFiltradas) {
-      const campo = camposAppPorId.get(linea.campoAppId);
+      const campo = obtenerCampoVisualLinea(linea);
       const zonaId = campo?.zonaAppId || campo?.zonaErpId || 'sin-zona';
       const zonaNombre = obtenerNombreZona(campo?.zonaAppId, campo?.zonaErpId);
       const zona = zonas.get(zonaId) || { id: zonaId, nombre: zonaNombre, campos: new Map() };
       const campoId = campo?.id || linea.campoAppId;
-      const campoGrupo = zona.campos.get(campoId) || { id: campoId, nombre: campo?.nombre || 'Campo no disponible', lineas: [] };
+      const campoGrupo = zona.campos.get(campoId) || { id: campoId, nombre: campo.nombre, lineas: [] };
 
       campoGrupo.lineas.push(linea);
       zona.campos.set(campoId, campoGrupo);
@@ -274,7 +290,7 @@ export function PlanificacionEditorScreen({
         ...zona,
         campos: Array.from(zona.campos.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
       }));
-  }, [lineasFiltradas, camposAppPorId, planificacion.zonasApp, snapshot.zonas]);
+  }, [lineasFiltradas, obtenerCampoVisualLinea, obtenerNombreZona]);
   const {
     zonasAbiertas,
     camposAbiertos,
@@ -325,12 +341,13 @@ export function PlanificacionEditorScreen({
   }, [lineasFiltradas, destinosDisponibles]);
   const lineasConHectareasExcedidas = useMemo(() => lineasPlanificacion.filter((linea) => {
     const lote = lotesAppPorId.get(linea.loteAppId);
+    const superficieTotal = lote?.superficieTotal ?? linea.padronesSnapshot?.lote.superficieTotal;
 
     return Boolean(
-      lote
-      && Number.isFinite(lote.superficieTotal)
-      && lote.superficieTotal >= 0
-      && linea.hectareasPlanificadas > lote.superficieTotal
+      superficieTotal !== undefined
+      && Number.isFinite(superficieTotal)
+      && superficieTotal >= 0
+      && linea.hectareasPlanificadas > superficieTotal
     );
   }), [lineasPlanificacion, lotesAppPorId]);
   const lotesIncluidosIds = useMemo(() => new Set(lineasPlanificacion.map((linea) => linea.loteAppId)), [lineasPlanificacion]);
@@ -525,7 +542,8 @@ export function PlanificacionEditorScreen({
     const claveLinea = obtenerClaveLinea(planificacionActiva?.campaniaErpId, linea);
     const lineaDuplicada = clavesDuplicadas.has(claveLinea);
     const cultivosAntecesores = lote?.loteErpId ? cultivosAntecesoresPorLote.get(lote.loteErpId) || [] : [];
-    const hectareasExcedidas = Boolean(lote && linea.hectareasPlanificadas > lote.superficieTotal);
+    const superficieTotal = lote?.superficieTotal ?? linea.padronesSnapshot?.lote.superficieTotal;
+    const hectareasExcedidas = Boolean(superficieTotal !== undefined && linea.hectareasPlanificadas > superficieTotal);
 
     return (
       <LineaPlanificacion
