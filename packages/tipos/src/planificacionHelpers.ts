@@ -57,6 +57,19 @@ export function lineaPlanificacionTieneDatos(linea: PlanificacionAgricolaLinea) 
   );
 }
 
+export function limpiarSnapshotsLineaPlanificacion(linea: PlanificacionAgricolaLinea): PlanificacionAgricolaLinea {
+  const {
+    padronesSnapshot: _padronesSnapshot,
+    destinoVentaSnapshot: _destinoVentaSnapshot,
+    precioVentaSnapshot: _precioVentaSnapshot,
+    gastosComercialesSnapshot: _gastosComercialesSnapshot,
+    protocoloSnapshot: _protocoloSnapshot,
+    ...lineaSinSnapshots
+  } = linea;
+
+  return lineaSinSnapshots;
+}
+
 export function calcularResumenPlanificacion(lineas: PlanificacionAgricolaLinea[]) {
   return lineas.reduce((total, linea) => ({
     margenBrutoTotal: total.margenBrutoTotal + linea.margenBrutoEstimado,

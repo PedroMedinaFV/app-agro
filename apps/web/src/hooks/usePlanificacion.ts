@@ -11,6 +11,7 @@ import {
 } from '../services/api';
 import {
   calcularResumenPlanificacion,
+  limpiarSnapshotsLineaPlanificacion,
   limpiarTextoVisible,
   obtenerClavesDuplicadas,
   resumirPlanificacionLocal,
@@ -302,7 +303,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
       createdAt: ahora,
       updatedAt: ahora,
       lineas: origen.lineas.map((linea, indice) => ({
-        ...linea,
+        ...limpiarSnapshotsLineaPlanificacion(linea),
         id: `linea-planificacion-copia-${Date.now()}-${indice}`,
         planificacionId: id,
         estado: 'borrador',
@@ -333,7 +334,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
       ...actual,
       campaniaErpId,
       lineas: actual.lineas.map((linea) => ({
-        ...linea,
+        ...limpiarSnapshotsLineaPlanificacion(linea),
         protocoloId: undefined,
         destinoReferenciaId: undefined,
         destinoVenta: '',

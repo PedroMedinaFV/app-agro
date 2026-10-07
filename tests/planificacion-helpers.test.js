@@ -7,6 +7,7 @@ const {
   calcularCostoProtocolo,
   calcularResumenPlanificacion,
   lineaPlanificacionEstaCompleta,
+  limpiarSnapshotsLineaPlanificacion,
   obtenerClavesDuplicadas,
   obtenerSuperficieInicialLote,
   recalcularLineaPlanificacion,
@@ -57,6 +58,24 @@ test('lineaPlanificacionEstaCompleta exige protocolo, destino, hectareas, rinde 
   assert.equal(lineaPlanificacionEstaCompleta(crearLinea({ hectareasPlanificadas: 0 })), false);
   assert.equal(lineaPlanificacionEstaCompleta(crearLinea({ rindeEstimado: 0 })), false);
   assert.equal(lineaPlanificacionEstaCompleta(crearLinea({ precioVentaEstimado: 0 })), false);
+});
+
+test('limpiarSnapshotsLineaPlanificacion quita snapshots congelados para nuevos borradores', () => {
+  const limpia = limpiarSnapshotsLineaPlanificacion(crearLinea({
+    padronesSnapshot: { campo: { id: 'campo-1' }, lote: { id: 'lote-1' }, actividad: { id: 'actividad-1' } },
+    destinoVentaSnapshot: { origen: 'referencia', referenciaId: 'destino-1', destinoVenta: 'Puerto' },
+    precioVentaSnapshot: { origen: 'referencia', referenciaId: 'precio-1', valor: 200 },
+    gastosComercialesSnapshot: { origen: 'manual', items: [], totalEstimado: 1000 },
+    protocoloSnapshot: { origen: 'referencia', protocoloId: 'protocolo-1', costoEstimadoPorHa: 150, costoTotalEstimado: 1500, etapas: [] },
+  }));
+
+  assert.equal(limpia.padronesSnapshot, undefined);
+  assert.equal(limpia.destinoVentaSnapshot, undefined);
+  assert.equal(limpia.precioVentaSnapshot, undefined);
+  assert.equal(limpia.gastosComercialesSnapshot, undefined);
+  assert.equal(limpia.protocoloSnapshot, undefined);
+  assert.equal(limpia.protocoloId, 'protocolo-1');
+  assert.equal(limpia.precioVentaEstimado, 200);
 });
 
 test('obtenerClavesDuplicadas detecta duplicados por campania, campo, lote y actividad', () => {
