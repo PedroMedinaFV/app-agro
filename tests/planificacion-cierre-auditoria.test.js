@@ -101,6 +101,47 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
         updatedAt: fechaBase,
       }],
     },
+    destinoApp: {
+      findMany: async () => [{
+        id: 'destino-1',
+        clienteId: 'cliente-1',
+        empresaErpId: 'empresa-1',
+        zonaErpId: null,
+        campoAppId: null,
+        campoErpId: null,
+        actividadAppId: 'actividad-1',
+        actividadErpId: 'actividad:1',
+        especieErpId: null,
+        cultivoErpId: 'empresa:1:cultivo:1',
+        destinoVenta: 'Puerto Norte',
+        destinoVentaNormalizado: 'PUERTO NORTE',
+        descripcion: 'Destino comercial base',
+        activo: true,
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+      }],
+    },
+    precioApp: {
+      findMany: async () => [{
+        id: 'precio-1',
+        clienteId: 'cliente-1',
+        empresaErpId: 'empresa-1',
+        actividadAppId: 'actividad-1',
+        actividadErpId: 'actividad:1',
+        especieAppId: null,
+        especieErpId: null,
+        cultivoErpId: 'empresa:1:cultivo:1',
+        destinoVenta: 'Puerto Norte',
+        valor: 200,
+        moneda: 'USD',
+        unidad: 'tn',
+        fuente: 'Pizarra',
+        observaciones: 'Referencia semanal',
+        activo: true,
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+      }],
+    },
     protocoloProductivo: {
       findMany: async () => [{
         id: 'protocolo-1',
@@ -239,6 +280,9 @@ test('cerrarPlanificacionEnTransaccion congela lineas y audita el cierre con ant
   assert.equal(lineasActualizadas[0].data.ingresoNetoEstimado, 5400);
   assert.equal(lineasActualizadas[0].data.margenBrutoEstimado, 3900);
   assert.equal(lineasActualizadas[0].data.margenBrutoActualizado, 3900);
+  assert.equal(lineasActualizadas[0].data.destinoVentaSnapshot.destinoVenta, 'Puerto Norte');
+  assert.equal(lineasActualizadas[0].data.precioVentaSnapshot.valor, 200);
+  assert.equal(lineasActualizadas[0].data.precioVentaSnapshot.moneda, 'USD');
   assert.equal(lineasActualizadas[0].data.protocoloSnapshot.protocoloId, 'protocolo-1');
   assert.equal(lineasActualizadas[0].data.protocoloSnapshot.etapas[0].labores[0].nombre, 'Siembra directa');
   assert.equal(lineasActualizadas[0].data.protocoloSnapshot.etapas[0].insumos[0].nombre, 'Semilla soja');

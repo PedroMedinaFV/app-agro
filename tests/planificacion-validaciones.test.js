@@ -208,9 +208,19 @@ test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que n
     destinoReferenciaId: 'destino-1',
     destinoVenta: 'Puerto Norte',
     destinoVentaManual: false,
+    destinoVentaSnapshot: {
+      origen: 'referencia',
+      referenciaId: 'destino-1',
+      destinoVenta: 'Puerto Norte',
+    },
     precioReferenciaId: 'precio-1',
     precioVentaEstimado: 210,
     precioVentaManual: false,
+    precioVentaSnapshot: {
+      origen: 'referencia',
+      referenciaId: 'precio-1',
+      valor: 210,
+    },
     hectareasPlanificadas: 15,
     rindeEstimado: 3.2,
     gastosComercialesReferenciaId: 'gasto-1',
@@ -278,6 +288,90 @@ test('congelarLineaPlanificacionParaCierre guarda detalle de items si el gasto v
       observaciones: undefined,
     }],
     totalEstimado: 780,
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda detalle comercial si destino y precio vienen de referencia', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    destinoReferenciaId: 'destino-1',
+    destinoVenta: 'Puerto Norte',
+    precioReferenciaId: 'precio-1',
+    precioVentaEstimado: 210,
+  }), new Map(), new Map(), {
+    destinosPorId: new Map([
+      ['destino-1', {
+        id: 'destino-1',
+        clienteId: 'cliente-1',
+        empresaErpId: 'empresa-1',
+        actividadAppId: 'actividad-1',
+        actividadErpId: 'actividad:1',
+        cultivoErpId: 'cultivo-1',
+        destinoVenta: 'Puerto Norte',
+        destinoVentaNormalizado: 'PUERTO NORTE',
+        descripcion: 'Destino base',
+        activo: true,
+        origen: 'app',
+        createdAt: '2026-10-01T12:00:00.000Z',
+        updatedAt: '2026-10-01T12:00:00.000Z',
+      }],
+    ]),
+    preciosPorId: new Map([
+      ['precio-1', {
+        id: 'precio-1',
+        clienteId: 'cliente-1',
+        actividadAppId: 'actividad-1',
+        destinoVenta: 'Puerto Norte',
+        valor: 210,
+        moneda: 'USD',
+        unidad: 'tn',
+        fuente: 'Pizarra',
+        observaciones: 'Semana 40',
+        activo: true,
+        createdAt: '2026-10-01T12:00:00.000Z',
+        updatedAt: '2026-10-01T12:00:00.000Z',
+      }],
+    ]),
+  });
+
+  assert.deepEqual(congelada.destinoVentaSnapshot, {
+    origen: 'referencia',
+    referenciaId: 'destino-1',
+    destinoVenta: 'Puerto Norte',
+    descripcion: 'Destino base',
+    empresaErpId: 'empresa-1',
+    actividadAppId: 'actividad-1',
+    actividadErpId: 'actividad:1',
+    cultivoErpId: 'cultivo-1',
+  });
+  assert.deepEqual(congelada.precioVentaSnapshot, {
+    origen: 'referencia',
+    referenciaId: 'precio-1',
+    destinoVenta: 'Puerto Norte',
+    valor: 210,
+    moneda: 'USD',
+    unidad: 'tn',
+    fuente: 'Pizarra',
+    observaciones: 'Semana 40',
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda solo valores comerciales si destino y precio son manuales', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    destinoReferenciaId: undefined,
+    destinoVenta: 'Destino manual',
+    destinoVentaManual: true,
+    precioReferenciaId: undefined,
+    precioVentaEstimado: 215,
+    precioVentaManual: true,
+  }));
+
+  assert.deepEqual(congelada.destinoVentaSnapshot, {
+    origen: 'manual',
+    destinoVenta: 'Destino manual',
+  });
+  assert.deepEqual(congelada.precioVentaSnapshot, {
+    origen: 'manual',
+    valor: 215,
   });
 });
 

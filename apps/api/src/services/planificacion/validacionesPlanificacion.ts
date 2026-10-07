@@ -1,8 +1,12 @@
 import type {
+  DestinoApp,
+  DestinoVentaLineaSnapshot,
   GastosComercialesLineaSnapshot,
   GastosComercialesReferencia,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
+  PrecioReferencia,
+  PrecioVentaLineaSnapshot,
   ProtocoloLineaSnapshot,
   ProtocoloProductivoDetalle,
 } from '@agro/tipos';
@@ -46,9 +50,11 @@ export type SupuestosLineaPlanificacionCongelada = Pick<
   | 'destinoReferenciaId'
   | 'destinoVenta'
   | 'destinoVentaManual'
+  | 'destinoVentaSnapshot'
   | 'precioReferenciaId'
   | 'precioVentaEstimado'
   | 'precioVentaManual'
+  | 'precioVentaSnapshot'
   | 'hectareasPlanificadas'
   | 'rindeEstimado'
   | 'gastosComercialesReferenciaId'
@@ -76,9 +82,11 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
     destinoReferenciaId: linea.destinoReferenciaId,
     destinoVenta: linea.destinoVenta,
     destinoVentaManual: linea.destinoVentaManual,
+    destinoVentaSnapshot: linea.destinoVentaSnapshot,
     precioReferenciaId: linea.precioReferenciaId,
     precioVentaEstimado: linea.precioVentaEstimado,
     precioVentaManual: linea.precioVentaManual,
+    precioVentaSnapshot: linea.precioVentaSnapshot,
     hectareasPlanificadas: linea.hectareasPlanificadas,
     rindeEstimado: linea.rindeEstimado,
     gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
@@ -91,6 +99,72 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
     costoProduccionEstimado: linea.costoProduccionEstimado,
     margenBrutoEstimado: linea.margenBrutoEstimado,
     margenBrutoActualizado: linea.margenBrutoActualizado,
+  };
+}
+
+export function crearSnapshotDestinoVentaLinea(
+  linea: PlanificacionAgricolaLinea,
+  destinosPorId: Map<string, DestinoApp> = new Map(),
+): DestinoVentaLineaSnapshot {
+  const destino = linea.destinoReferenciaId ? destinosPorId.get(linea.destinoReferenciaId) : undefined;
+
+  if (!destino && (!linea.destinoReferenciaId || linea.destinoVentaManual)) {
+    return {
+      origen: 'manual',
+      destinoVenta: linea.destinoVenta,
+    };
+  }
+
+  if (!destino) {
+    return {
+      origen: 'referencia',
+      referenciaId: linea.destinoReferenciaId,
+      destinoVenta: linea.destinoVenta,
+    };
+  }
+
+  return {
+    origen: 'referencia',
+    referenciaId: destino.id,
+    destinoVenta: destino.destinoVenta,
+    descripcion: destino.descripcion,
+    empresaErpId: destino.empresaErpId,
+    actividadAppId: destino.actividadAppId,
+    actividadErpId: destino.actividadErpId,
+    cultivoErpId: destino.cultivoErpId,
+  };
+}
+
+export function crearSnapshotPrecioVentaLinea(
+  linea: PlanificacionAgricolaLinea,
+  preciosPorId: Map<string, PrecioReferencia> = new Map(),
+): PrecioVentaLineaSnapshot {
+  const precio = linea.precioReferenciaId ? preciosPorId.get(linea.precioReferenciaId) : undefined;
+
+  if (!precio && (!linea.precioReferenciaId || linea.precioVentaManual)) {
+    return {
+      origen: 'manual',
+      valor: linea.precioVentaEstimado,
+    };
+  }
+
+  if (!precio) {
+    return {
+      origen: 'referencia',
+      referenciaId: linea.precioReferenciaId,
+      valor: linea.precioVentaEstimado,
+    };
+  }
+
+  return {
+    origen: 'referencia',
+    referenciaId: precio.id,
+    destinoVenta: precio.destinoVenta,
+    valor: precio.valor,
+    moneda: precio.moneda,
+    unidad: precio.unidad,
+    fuente: precio.fuente,
+    observaciones: precio.observaciones,
   };
 }
 
@@ -182,9 +256,15 @@ export function congelarLineaPlanificacionParaCierre(
   linea: PlanificacionAgricolaLinea,
   gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
   protocolosPorId: Map<string, ProtocoloProductivoDetalle> = new Map(),
+  opciones: {
+    destinosPorId?: Map<string, DestinoApp>;
+    preciosPorId?: Map<string, PrecioReferencia>;
+  } = {},
 ): PlanificacionAgricolaLinea {
   return {
     ...recalcularLineaPlanificacionPersistida(linea),
+    destinoVentaSnapshot: crearSnapshotDestinoVentaLinea(linea, opciones.destinosPorId),
+    precioVentaSnapshot: crearSnapshotPrecioVentaLinea(linea, opciones.preciosPorId),
     gastosComercialesSnapshot: crearSnapshotGastosComercialesLinea(linea, gastosComercialesPorId),
     protocoloSnapshot: crearSnapshotProtocoloLinea(linea, protocolosPorId),
     estado: 'cerrada',
@@ -195,13 +275,17 @@ export function congelarPlanificacionParaCierre(
   planificacion: PlanificacionAgricola,
   gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
   protocolosPorId: Map<string, ProtocoloProductivoDetalle> = new Map(),
+  opciones: {
+    destinosPorId?: Map<string, DestinoApp>;
+    preciosPorId?: Map<string, PrecioReferencia>;
+  } = {},
 ): PlanificacionAgricola {
   return {
     ...planificacion,
     estado: 'cerrada',
     escenarioOriginal: true,
     escenarioBloqueadoPorId: undefined,
-    lineas: planificacion.lineas.map((linea) => congelarLineaPlanificacionParaCierre(linea, gastosComercialesPorId, protocolosPorId)),
+    lineas: planificacion.lineas.map((linea) => congelarLineaPlanificacionParaCierre(linea, gastosComercialesPorId, protocolosPorId, opciones)),
   };
 }
 

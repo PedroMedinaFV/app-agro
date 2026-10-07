@@ -227,6 +227,28 @@ export type GastosComercialesLineaSnapshot = {
   totalEstimado: number;
 };
 
+export type DestinoVentaLineaSnapshot = {
+  origen: 'referencia' | 'manual';
+  referenciaId?: string;
+  destinoVenta: string;
+  descripcion?: string;
+  empresaErpId?: string;
+  actividadAppId?: string;
+  actividadErpId?: string;
+  cultivoErpId?: string;
+};
+
+export type PrecioVentaLineaSnapshot = {
+  origen: 'referencia' | 'manual';
+  referenciaId?: string;
+  destinoVenta?: string;
+  valor: number;
+  moneda?: string;
+  unidad?: string;
+  fuente?: string;
+  observaciones?: string;
+};
+
 export type EstadioFenologicoReferencia = {
   id: string;
   idEstadio: number;
@@ -354,9 +376,11 @@ export type PlanificacionAgricolaLinea = {
   destinoReferenciaId?: string;
   destinoVenta: string;
   destinoVentaManual: boolean;
+  destinoVentaSnapshot?: DestinoVentaLineaSnapshot;
   precioReferenciaId?: string;
   precioVentaEstimado: number;
   precioVentaManual: boolean;
+  precioVentaSnapshot?: PrecioVentaLineaSnapshot;
   hectareasPlanificadas: number;
   rindeEstimado: number;
   gastosComercialesReferenciaId?: string;

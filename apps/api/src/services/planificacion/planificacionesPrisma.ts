@@ -1,6 +1,8 @@
 import type {
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
+  DestinoApp,
+  DestinoVentaLineaSnapshot,
   GastoComercialItemReferencia,
   GastosComercialesLineaSnapshot,
   GastosComercialesReferencia,
@@ -9,6 +11,8 @@ import type {
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionAgricolaResumen,
+  PrecioReferencia,
+  PrecioVentaLineaSnapshot,
   ProtocoloLineaSnapshot,
 } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
@@ -49,6 +53,30 @@ function serializarGastosComercialesSnapshot(snapshot?: GastosComercialesLineaSn
   return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
 }
 
+function mapearDestinoVentaSnapshot(valor: Prisma.JsonValue | null): DestinoVentaLineaSnapshot | undefined {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    return undefined;
+  }
+
+  return valor as unknown as DestinoVentaLineaSnapshot;
+}
+
+function serializarDestinoVentaSnapshot(snapshot?: DestinoVentaLineaSnapshot) {
+  return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
+function mapearPrecioVentaSnapshot(valor: Prisma.JsonValue | null): PrecioVentaLineaSnapshot | undefined {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    return undefined;
+  }
+
+  return valor as unknown as PrecioVentaLineaSnapshot;
+}
+
+function serializarPrecioVentaSnapshot(snapshot?: PrecioVentaLineaSnapshot) {
+  return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
 function mapearProtocoloSnapshot(valor: Prisma.JsonValue | null): ProtocoloLineaSnapshot | undefined {
   if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
     return undefined;
@@ -59,6 +87,85 @@ function mapearProtocoloSnapshot(valor: Prisma.JsonValue | null): ProtocoloLinea
 
 function serializarProtocoloSnapshot(snapshot?: ProtocoloLineaSnapshot) {
   return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
+function mapearDestinoReferencia(destino: {
+  id: string;
+  clienteId: string;
+  empresaErpId: string | null;
+  zonaErpId: string | null;
+  campoAppId: string | null;
+  campoErpId: string | null;
+  actividadAppId: string | null;
+  actividadErpId: string | null;
+  especieErpId: string | null;
+  cultivoErpId: string | null;
+  destinoVenta: string;
+  destinoVentaNormalizado: string;
+  descripcion: string | null;
+  activo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): DestinoApp {
+  return {
+    id: destino.id,
+    clienteId: destino.clienteId,
+    empresaErpId: destino.empresaErpId || undefined,
+    zonaErpId: destino.zonaErpId || undefined,
+    campoAppId: destino.campoAppId || undefined,
+    campoErpId: destino.campoErpId || undefined,
+    actividadAppId: destino.actividadAppId || undefined,
+    actividadErpId: destino.actividadErpId || undefined,
+    especieErpId: destino.especieErpId || undefined,
+    cultivoErpId: destino.cultivoErpId || undefined,
+    destinoVenta: destino.destinoVenta,
+    destinoVentaNormalizado: destino.destinoVentaNormalizado,
+    descripcion: destino.descripcion || undefined,
+    activo: destino.activo,
+    origen: 'app',
+    createdAt: destino.createdAt.toISOString(),
+    updatedAt: destino.updatedAt.toISOString(),
+  };
+}
+
+function mapearPrecioReferencia(precio: {
+  id: string;
+  clienteId: string;
+  empresaErpId: string | null;
+  actividadAppId: string | null;
+  actividadErpId: string | null;
+  especieAppId: string | null;
+  especieErpId: string | null;
+  cultivoErpId: string | null;
+  destinoVenta: string;
+  valor: number;
+  moneda: string;
+  unidad: string;
+  fuente: string;
+  observaciones: string | null;
+  activo: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}): PrecioReferencia {
+  return {
+    id: precio.id,
+    clienteId: precio.clienteId,
+    empresaErpId: precio.empresaErpId || undefined,
+    actividadAppId: precio.actividadAppId || undefined,
+    actividadErpId: precio.actividadErpId || undefined,
+    especieAppId: precio.especieAppId || undefined,
+    especieErpId: precio.especieErpId || undefined,
+    cultivoErpId: precio.cultivoErpId || undefined,
+    destinoVenta: precio.destinoVenta,
+    valor: precio.valor,
+    moneda: precio.moneda,
+    unidad: precio.unidad,
+    fuente: precio.fuente,
+    observaciones: precio.observaciones || undefined,
+    activo: precio.activo,
+    createdAt: precio.createdAt.toISOString(),
+    updatedAt: precio.updatedAt.toISOString(),
+  };
 }
 
 function mapearGastoComercialReferencia(gasto: {
@@ -122,9 +229,11 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     destinoReferenciaId: linea.destinoReferenciaId || undefined,
     destinoVenta: linea.destinoVenta,
     destinoVentaManual: linea.destinoVentaManual,
+    destinoVentaSnapshot: mapearDestinoVentaSnapshot(linea.destinoVentaSnapshot),
     precioReferenciaId: linea.precioReferenciaId || undefined,
     precioVentaEstimado: linea.precioVentaEstimado,
     precioVentaManual: linea.precioVentaManual,
+    precioVentaSnapshot: mapearPrecioVentaSnapshot(linea.precioVentaSnapshot),
     hectareasPlanificadas: linea.hectareasPlanificadas,
     rindeEstimado: linea.rindeEstimado,
     gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId || undefined,
@@ -326,9 +435,11 @@ async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: Pla
       destinoReferenciaId: linea.destinoReferenciaId,
       destinoVenta: linea.destinoVenta,
       destinoVentaManual: linea.destinoVentaManual,
+      destinoVentaSnapshot: serializarDestinoVentaSnapshot(linea.destinoVentaSnapshot),
       precioReferenciaId: linea.precioReferenciaId,
       precioVentaEstimado: linea.precioVentaEstimado,
       precioVentaManual: linea.precioVentaManual,
+      precioVentaSnapshot: serializarPrecioVentaSnapshot(linea.precioVentaSnapshot),
       hectareasPlanificadas: linea.hectareasPlanificadas,
       rindeEstimado: linea.rindeEstimado,
       gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,
@@ -520,7 +631,22 @@ export async function cerrarPlanificacionEnTransaccion(
     .filter((protocoloId): protocoloId is string => Boolean(protocoloId))));
   const protocolosDetalle = await obtenerProtocolosDetallePorIds(existente.clienteId, protocoloIds, tx);
   const protocolosPorId = new Map(protocolosDetalle.map((protocolo) => [protocolo.id, protocolo]));
-  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId, protocolosPorId);
+  const destinoIds = Array.from(new Set(planificacionExistente.lineas
+    .map((linea) => linea.destinoReferenciaId)
+    .filter((destinoId): destinoId is string => typeof destinoId === 'string' && !destinoId.startsWith('puerto-'))));
+  const precioIds = Array.from(new Set(planificacionExistente.lineas
+    .map((linea) => linea.precioReferenciaId)
+    .filter((precioId): precioId is string => Boolean(precioId))));
+  const [destinosReferencia, preciosReferencia] = await Promise.all([
+    destinoIds.length ? tx.destinoApp.findMany({ where: { id: { in: destinoIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+    precioIds.length ? tx.precioApp.findMany({ where: { id: { in: precioIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+  ]);
+  const destinosPorId = new Map(destinosReferencia.map((destino) => [destino.id, mapearDestinoReferencia(destino)]));
+  const preciosPorId = new Map(preciosReferencia.map((precio) => [precio.id, mapearPrecioReferencia(precio)]));
+  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId, protocolosPorId, {
+    destinosPorId,
+    preciosPorId,
+  });
 
   const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
     where: {
@@ -562,9 +688,11 @@ export async function cerrarPlanificacionEnTransaccion(
         destinoReferenciaId: linea.destinoReferenciaId,
         destinoVenta: linea.destinoVenta,
         destinoVentaManual: linea.destinoVentaManual,
+        destinoVentaSnapshot: serializarDestinoVentaSnapshot(linea.destinoVentaSnapshot),
         precioReferenciaId: linea.precioReferenciaId,
         precioVentaEstimado: linea.precioVentaEstimado,
         precioVentaManual: linea.precioVentaManual,
+        precioVentaSnapshot: serializarPrecioVentaSnapshot(linea.precioVentaSnapshot),
         hectareasPlanificadas: linea.hectareasPlanificadas,
         rindeEstimado: linea.rindeEstimado,
         gastosComercialesReferenciaId: linea.gastosComercialesReferenciaId,

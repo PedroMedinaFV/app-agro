@@ -1065,9 +1065,11 @@ model PlanificacionAgricolaLinea {
   destinoReferenciaId           String?
   destinoVenta                  String
   destinoVentaManual            Boolean               @default(false)
+  destinoVentaSnapshot          Json?
   precioReferenciaId            String?
   precioVentaEstimado           Float
   precioVentaManual             Boolean               @default(false)
+  precioVentaSnapshot           Json?
   hectareasPlanificadas         Float
   rindeEstimado                 Float
   gastosComercialesReferenciaId String?
