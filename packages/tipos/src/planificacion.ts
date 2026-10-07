@@ -249,6 +249,50 @@ export type PrecioVentaLineaSnapshot = {
   observaciones?: string;
 };
 
+export type PadronesLineaSnapshot = {
+  campo: {
+    id: string;
+    nombre?: string;
+    codigoInterno?: string;
+    campoErpId?: string;
+    zonaAppId?: string;
+    zonaErpId?: string;
+    estadoVinculacion?: EstadoVinculacionPlanificacion;
+  };
+  lote: {
+    id: string;
+    nombre?: string;
+    codigoInterno?: string;
+    loteErpId?: string;
+    superficieTotal?: number;
+    superficieProductiva?: number;
+    estadoVinculacion?: EstadoVinculacionPlanificacion;
+  };
+  actividad: {
+    id: string;
+    nombre?: string;
+    codigoInterno?: string;
+    actividadErpId?: string;
+    especieAppId?: string;
+    especieErpId?: string;
+    tipoGrano?: TipoGranoActividad;
+    tipoCultivo?: TipoCultivoActividad;
+    epocaSiembra?: EpocaSiembraActividad;
+    estadoVinculacion?: EstadoVinculacionPlanificacion;
+  };
+  cultivo?: {
+    erpId: string;
+    idCultivo?: number;
+    codigo?: string;
+    nombre?: string;
+    campaniaErpId?: string;
+    hectareas?: number;
+    hectareasSembradas?: number;
+    hectareasCosechadas?: number;
+    activo?: boolean;
+  };
+};
+
 export type EstadioFenologicoReferencia = {
   id: string;
   idEstadio: number;
@@ -373,6 +417,7 @@ export type PlanificacionAgricolaLinea = {
   actividadAppId: string;
   actividadErpId?: string;
   cultivoErpId?: string;
+  padronesSnapshot?: PadronesLineaSnapshot;
   destinoReferenciaId?: string;
   destinoVenta: string;
   destinoVentaManual: boolean;

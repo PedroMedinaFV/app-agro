@@ -1,8 +1,13 @@
 import type {
+  ActividadApp,
+  CampoApp,
   DestinoApp,
   DestinoVentaLineaSnapshot,
+  ErpCultivo,
   GastosComercialesLineaSnapshot,
   GastosComercialesReferencia,
+  LoteApp,
+  PadronesLineaSnapshot,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PrecioReferencia,
@@ -37,6 +42,10 @@ export function recalcularLineaPlanificacionPersistida(linea: PlanificacionAgric
   };
 }
 
+function sinValoresIndefinidos<T extends Record<string, unknown>>(valor: T): T {
+  return Object.fromEntries(Object.entries(valor).filter(([, item]) => item !== undefined)) as T;
+}
+
 export type SupuestosLineaPlanificacionCongelada = Pick<
   PlanificacionAgricolaLinea,
   | 'empresaErpId'
@@ -47,6 +56,7 @@ export type SupuestosLineaPlanificacionCongelada = Pick<
   | 'actividadAppId'
   | 'actividadErpId'
   | 'cultivoErpId'
+  | 'padronesSnapshot'
   | 'destinoReferenciaId'
   | 'destinoVenta'
   | 'destinoVentaManual'
@@ -79,6 +89,7 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
     actividadAppId: linea.actividadAppId,
     actividadErpId: linea.actividadErpId,
     cultivoErpId: linea.cultivoErpId,
+    padronesSnapshot: linea.padronesSnapshot,
     destinoReferenciaId: linea.destinoReferenciaId,
     destinoVenta: linea.destinoVenta,
     destinoVentaManual: linea.destinoVentaManual,
@@ -99,6 +110,65 @@ export function extraerSupuestosCongeladosLinea(linea: PlanificacionAgricolaLine
     costoProduccionEstimado: linea.costoProduccionEstimado,
     margenBrutoEstimado: linea.margenBrutoEstimado,
     margenBrutoActualizado: linea.margenBrutoActualizado,
+  };
+}
+
+export function crearSnapshotPadronesLinea(
+  linea: PlanificacionAgricolaLinea,
+  opciones: {
+    camposPorId?: Map<string, CampoApp>;
+    lotesPorId?: Map<string, LoteApp>;
+    actividadesPorId?: Map<string, ActividadApp>;
+    cultivosPorErpId?: Map<string, ErpCultivo>;
+  } = {},
+): PadronesLineaSnapshot {
+  const campo = opciones.camposPorId?.get(linea.campoAppId);
+  const lote = opciones.lotesPorId?.get(linea.loteAppId);
+  const actividad = opciones.actividadesPorId?.get(linea.actividadAppId);
+  const cultivo = linea.cultivoErpId ? opciones.cultivosPorErpId?.get(linea.cultivoErpId) : undefined;
+
+  return {
+    campo: sinValoresIndefinidos({
+      id: linea.campoAppId,
+      nombre: campo?.nombre,
+      codigoInterno: campo?.codigoInterno,
+      campoErpId: campo?.campoErpId || linea.campoErpId,
+      zonaAppId: campo?.zonaAppId,
+      zonaErpId: campo?.zonaErpId,
+      estadoVinculacion: campo?.estadoVinculacion,
+    }),
+    lote: sinValoresIndefinidos({
+      id: linea.loteAppId,
+      nombre: lote?.nombre,
+      codigoInterno: lote?.codigoInterno,
+      loteErpId: lote?.loteErpId || linea.loteErpId,
+      superficieTotal: lote?.superficieTotal,
+      superficieProductiva: lote?.superficieProductiva,
+      estadoVinculacion: lote?.estadoVinculacion,
+    }),
+    actividad: sinValoresIndefinidos({
+      id: linea.actividadAppId,
+      nombre: actividad?.nombre,
+      codigoInterno: actividad?.codigoInterno,
+      actividadErpId: actividad?.actividadErpId || linea.actividadErpId,
+      especieAppId: actividad?.especieAppId,
+      especieErpId: actividad?.especieErpId,
+      tipoGrano: actividad?.tipoGrano,
+      tipoCultivo: actividad?.tipoCultivo,
+      epocaSiembra: actividad?.epocaSiembra,
+      estadoVinculacion: actividad?.estadoVinculacion,
+    }),
+    cultivo: cultivo ? sinValoresIndefinidos({
+      erpId: cultivo.erpId,
+      idCultivo: cultivo.idCultivo,
+      codigo: cultivo.codigo,
+      nombre: cultivo.nombre,
+      campaniaErpId: cultivo.campaniaErpId,
+      hectareas: cultivo.hectareas,
+      hectareasSembradas: cultivo.hectareasSembradas,
+      hectareasCosechadas: cultivo.hectareasCosechadas,
+      activo: cultivo.activo,
+    }) : linea.cultivoErpId ? { erpId: linea.cultivoErpId } : undefined,
   };
 }
 
@@ -257,12 +327,17 @@ export function congelarLineaPlanificacionParaCierre(
   gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
   protocolosPorId: Map<string, ProtocoloProductivoDetalle> = new Map(),
   opciones: {
+    camposPorId?: Map<string, CampoApp>;
+    lotesPorId?: Map<string, LoteApp>;
+    actividadesPorId?: Map<string, ActividadApp>;
+    cultivosPorErpId?: Map<string, ErpCultivo>;
     destinosPorId?: Map<string, DestinoApp>;
     preciosPorId?: Map<string, PrecioReferencia>;
   } = {},
 ): PlanificacionAgricolaLinea {
   return {
     ...recalcularLineaPlanificacionPersistida(linea),
+    padronesSnapshot: crearSnapshotPadronesLinea(linea, opciones),
     destinoVentaSnapshot: crearSnapshotDestinoVentaLinea(linea, opciones.destinosPorId),
     precioVentaSnapshot: crearSnapshotPrecioVentaLinea(linea, opciones.preciosPorId),
     gastosComercialesSnapshot: crearSnapshotGastosComercialesLinea(linea, gastosComercialesPorId),
@@ -276,6 +351,10 @@ export function congelarPlanificacionParaCierre(
   gastosComercialesPorId: Map<string, GastosComercialesReferencia> = new Map(),
   protocolosPorId: Map<string, ProtocoloProductivoDetalle> = new Map(),
   opciones: {
+    camposPorId?: Map<string, CampoApp>;
+    lotesPorId?: Map<string, LoteApp>;
+    actividadesPorId?: Map<string, ActividadApp>;
+    cultivosPorErpId?: Map<string, ErpCultivo>;
     destinosPorId?: Map<string, DestinoApp>;
     preciosPorId?: Map<string, PrecioReferencia>;
   } = {},

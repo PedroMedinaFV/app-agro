@@ -205,6 +205,23 @@ test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que n
     actividadAppId: 'actividad-1',
     actividadErpId: 'actividad:30',
     cultivoErpId: 'empresa:1:cultivo:40',
+    padronesSnapshot: {
+      campo: {
+        id: 'campo-1',
+        campoErpId: 'empresa:1:campo:10',
+      },
+      lote: {
+        id: 'lote-1',
+        loteErpId: 'empresa:1:lote:20',
+      },
+      actividad: {
+        id: 'actividad-1',
+        actividadErpId: 'actividad:30',
+      },
+      cultivo: {
+        erpId: 'empresa:1:cultivo:40',
+      },
+    },
     destinoReferenciaId: 'destino-1',
     destinoVenta: 'Puerto Norte',
     destinoVentaManual: false,
@@ -353,6 +370,83 @@ test('congelarLineaPlanificacionParaCierre guarda detalle comercial si destino y
     fuente: 'Pizarra',
     observaciones: 'Semana 40',
   });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda nombres base de campo, lote, actividad y cultivo', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    campoErpId: 'empresa:1:campo:10',
+    loteErpId: 'empresa:1:lote:20',
+    actividadErpId: 'actividad:30',
+    cultivoErpId: 'empresa:1:cultivo:40',
+  }), new Map(), new Map(), {
+    camposPorId: new Map([['campo-1', {
+      id: 'campo-1',
+      clienteId: 'cliente-1',
+      empresaErpId: 'empresa-1',
+      campoErpId: 'empresa:1:campo:10',
+      nombre: 'Campo Norte',
+      codigoInterno: 'CAM-1',
+      zonaAppId: 'zona-1',
+      estadoVinculacion: 'vinculado_erp',
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    }]]),
+    lotesPorId: new Map([['lote-1', {
+      id: 'lote-1',
+      clienteId: 'cliente-1',
+      campoAppId: 'campo-1',
+      loteErpId: 'empresa:1:lote:20',
+      nombre: 'Lote 20',
+      codigoInterno: 'LOT-20',
+      superficieTotal: 100,
+      superficieProductiva: 95,
+      estadoVinculacion: 'vinculado_erp',
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    }]]),
+    actividadesPorId: new Map([['actividad-1', {
+      id: 'actividad-1',
+      clienteId: 'cliente-1',
+      empresaErpId: 'empresa-1',
+      actividadErpId: 'actividad:30',
+      especieAppId: 'especie-1',
+      especieErpId: 'especie:30',
+      nombre: 'Soja primera',
+      codigoInterno: 'SOJ-1',
+      tipoGrano: 'gruesa',
+      tipoCultivo: 'primera',
+      epocaSiembra: 'verano',
+      estadoVinculacion: 'vinculado_erp',
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+    }]]),
+    cultivosPorErpId: new Map([['empresa:1:cultivo:40', {
+      empresaErpId: 'empresa-1',
+      erpId: 'empresa:1:cultivo:40',
+      idCultivo: 40,
+      codigo: 'CULT-40',
+      nombre: 'Cultivo soja',
+      idCampo: 10,
+      campoErpId: 'empresa:1:campo:10',
+      idLote: 20,
+      loteErpId: 'empresa:1:lote:20',
+      idActividad: 30,
+      actividadErpId: 'actividad:30',
+      campaniaErpId: 'campania-26',
+      hectareas: 100,
+      hectareasSembradas: 95,
+      hectareasCosechadas: 0,
+      esAgriculturaIntensiva: true,
+      socioEnFuncionAportes: false,
+      activo: true,
+      actualizadoEn: '2026-10-01T12:00:00.000Z',
+    }]]),
+  });
+
+  assert.equal(congelada.padronesSnapshot.campo.nombre, 'Campo Norte');
+  assert.equal(congelada.padronesSnapshot.lote.superficieProductiva, 95);
+  assert.equal(congelada.padronesSnapshot.actividad.nombre, 'Soja primera');
+  assert.equal(congelada.padronesSnapshot.cultivo.nombre, 'Cultivo soja');
 });
 
 test('congelarLineaPlanificacionParaCierre guarda solo valores comerciales si destino y precio son manuales', () => {

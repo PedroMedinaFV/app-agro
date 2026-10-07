@@ -1062,6 +1062,7 @@ model PlanificacionAgricolaLinea {
   actividadAppId                String
   actividadErpId                String?
   cultivoErpId                  String?
+  padronesSnapshot              Json?
   destinoReferenciaId           String?
   destinoVenta                  String
   destinoVentaManual            Boolean               @default(false)

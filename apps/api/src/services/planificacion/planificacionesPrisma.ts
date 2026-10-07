@@ -1,13 +1,18 @@
 import type {
+  ActividadApp,
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
+  CampoApp,
   DestinoApp,
   DestinoVentaLineaSnapshot,
+  ErpCultivo,
   GastoComercialItemReferencia,
   GastosComercialesLineaSnapshot,
   GastosComercialesReferencia,
   GuardarPlanificacionRequest,
   GuardarPlanificacionResponse,
+  LoteApp,
+  PadronesLineaSnapshot,
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionAgricolaResumen,
@@ -53,6 +58,18 @@ function serializarGastosComercialesSnapshot(snapshot?: GastosComercialesLineaSn
   return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
 }
 
+function mapearPadronesSnapshot(valor: Prisma.JsonValue | null): PadronesLineaSnapshot | undefined {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    return undefined;
+  }
+
+  return valor as unknown as PadronesLineaSnapshot;
+}
+
+function serializarPadronesSnapshot(snapshot?: PadronesLineaSnapshot) {
+  return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
 function mapearDestinoVentaSnapshot(valor: Prisma.JsonValue | null): DestinoVentaLineaSnapshot | undefined {
   if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
     return undefined;
@@ -87,6 +104,152 @@ function mapearProtocoloSnapshot(valor: Prisma.JsonValue | null): ProtocoloLinea
 
 function serializarProtocoloSnapshot(snapshot?: ProtocoloLineaSnapshot) {
   return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
+function mapearCampoApp(campo: {
+  id: string;
+  clienteId: string;
+  empresaErpId: string;
+  campoErpId: string | null;
+  nombre: string;
+  codigoInterno: string | null;
+  zonaAppId: string | null;
+  zonaErpId: string | null;
+  estadoVinculacion: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): CampoApp {
+  return {
+    id: campo.id,
+    clienteId: campo.clienteId,
+    empresaErpId: campo.empresaErpId,
+    campoErpId: campo.campoErpId || undefined,
+    nombre: campo.nombre,
+    codigoInterno: campo.codigoInterno || undefined,
+    zonaAppId: campo.zonaAppId || undefined,
+    zonaErpId: campo.zonaErpId || undefined,
+    estadoVinculacion: campo.estadoVinculacion as CampoApp['estadoVinculacion'],
+    createdAt: campo.createdAt.toISOString(),
+    updatedAt: campo.updatedAt.toISOString(),
+  };
+}
+
+function mapearLoteApp(lote: {
+  id: string;
+  clienteId: string;
+  campoAppId: string;
+  loteErpId: string | null;
+  nombre: string;
+  codigoInterno: string | null;
+  superficieTotal: number;
+  superficieProductiva: number;
+  estadoVinculacion: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): LoteApp {
+  return {
+    id: lote.id,
+    clienteId: lote.clienteId,
+    campoAppId: lote.campoAppId,
+    loteErpId: lote.loteErpId || undefined,
+    nombre: lote.nombre,
+    codigoInterno: lote.codigoInterno || undefined,
+    superficieTotal: lote.superficieTotal,
+    superficieProductiva: lote.superficieProductiva,
+    estadoVinculacion: lote.estadoVinculacion as LoteApp['estadoVinculacion'],
+    createdAt: lote.createdAt.toISOString(),
+    updatedAt: lote.updatedAt.toISOString(),
+  };
+}
+
+function mapearActividadApp(actividad: {
+  id: string;
+  clienteId: string;
+  empresaErpId: string;
+  actividadErpId: string | null;
+  especieAppId: string | null;
+  especieErpId: string | null;
+  nombre: string;
+  codigoInterno: string | null;
+  tipoGrano: string | null;
+  tipoCultivo: string | null;
+  epocaSiembra: string | null;
+  estadoVinculacion: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): ActividadApp {
+  return {
+    id: actividad.id,
+    clienteId: actividad.clienteId,
+    empresaErpId: actividad.empresaErpId,
+    actividadErpId: actividad.actividadErpId || undefined,
+    especieAppId: actividad.especieAppId || undefined,
+    especieErpId: actividad.especieErpId || undefined,
+    nombre: actividad.nombre,
+    codigoInterno: actividad.codigoInterno || undefined,
+    tipoGrano: actividad.tipoGrano as ActividadApp['tipoGrano'],
+    tipoCultivo: actividad.tipoCultivo as ActividadApp['tipoCultivo'],
+    epocaSiembra: actividad.epocaSiembra as ActividadApp['epocaSiembra'],
+    estadoVinculacion: actividad.estadoVinculacion as ActividadApp['estadoVinculacion'],
+    createdAt: actividad.createdAt.toISOString(),
+    updatedAt: actividad.updatedAt.toISOString(),
+  };
+}
+
+function mapearCultivoErp(cultivo: {
+  empresaErpId: string;
+  erpId: string;
+  idCultivo: number;
+  codigo: string;
+  nombre: string;
+  idCampo: number;
+  campoErpId: string;
+  idLote: number;
+  loteErpId: string;
+  idActividad: number | null;
+  actividadErpId: string | null;
+  idEspecie: number | null;
+  especieErpId: string | null;
+  idCampania: number | null;
+  campaniaErpId: string | null;
+  hectareas: number;
+  hectareasSembradas: number;
+  hectareasCosechadas: number;
+  idPuerto: number | null;
+  distanciaPuerto: number | null;
+  idPersonalResponsable: number | null;
+  esAgriculturaIntensiva: boolean;
+  socioEnFuncionAportes: boolean;
+  activo: boolean;
+  actualizadoEn: Date;
+}): ErpCultivo {
+  return {
+    empresaErpId: cultivo.empresaErpId,
+    erpId: cultivo.erpId,
+    idCultivo: cultivo.idCultivo,
+    codigo: cultivo.codigo,
+    nombre: cultivo.nombre,
+    idCampo: cultivo.idCampo,
+    campoErpId: cultivo.campoErpId,
+    idLote: cultivo.idLote,
+    loteErpId: cultivo.loteErpId,
+    idActividad: cultivo.idActividad ?? undefined,
+    actividadErpId: cultivo.actividadErpId || undefined,
+    idEspecie: cultivo.idEspecie ?? undefined,
+    especieErpId: cultivo.especieErpId || undefined,
+    idCampania: cultivo.idCampania ?? undefined,
+    campaniaErpId: cultivo.campaniaErpId || undefined,
+    hectareas: cultivo.hectareas,
+    hectareasSembradas: cultivo.hectareasSembradas,
+    hectareasCosechadas: cultivo.hectareasCosechadas,
+    idPuerto: cultivo.idPuerto ?? undefined,
+    distanciaPuerto: cultivo.distanciaPuerto ?? undefined,
+    idPersonalResponsable: cultivo.idPersonalResponsable ?? undefined,
+    esAgriculturaIntensiva: cultivo.esAgriculturaIntensiva,
+    socioEnFuncionAportes: cultivo.socioEnFuncionAportes,
+    activo: cultivo.activo,
+    actualizadoEn: cultivo.actualizadoEn.toISOString(),
+  };
 }
 
 function mapearDestinoReferencia(destino: {
@@ -226,6 +389,7 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     actividadAppId: linea.actividadAppId,
     actividadErpId: linea.actividadErpId || undefined,
     cultivoErpId: linea.cultivoErpId || undefined,
+    padronesSnapshot: mapearPadronesSnapshot(linea.padronesSnapshot),
     destinoReferenciaId: linea.destinoReferenciaId || undefined,
     destinoVenta: linea.destinoVenta,
     destinoVentaManual: linea.destinoVentaManual,
@@ -432,6 +596,7 @@ async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: Pla
       actividadAppId: linea.actividadAppId,
       actividadErpId: linea.actividadErpId,
       cultivoErpId: linea.cultivoErpId,
+      padronesSnapshot: serializarPadronesSnapshot(linea.padronesSnapshot),
       destinoReferenciaId: linea.destinoReferenciaId,
       destinoVenta: linea.destinoVenta,
       destinoVentaManual: linea.destinoVentaManual,
@@ -619,12 +784,26 @@ export async function cerrarPlanificacionEnTransaccion(
 
   const planificacionExistente = mapearPlanificacion(existente);
   await validarPlanificacionParaCierre(planificacionExistente, tx);
+  const campoIds = Array.from(new Set(planificacionExistente.lineas.map((linea) => linea.campoAppId).filter(Boolean)));
+  const loteIds = Array.from(new Set(planificacionExistente.lineas.map((linea) => linea.loteAppId).filter(Boolean)));
+  const actividadIds = Array.from(new Set(planificacionExistente.lineas.map((linea) => linea.actividadAppId).filter(Boolean)));
+  const cultivoErpIds = Array.from(new Set(planificacionExistente.lineas
+    .map((linea) => linea.cultivoErpId)
+    .filter((cultivoErpId): cultivoErpId is string => Boolean(cultivoErpId))));
   const gastosReferenciaIds = Array.from(new Set(planificacionExistente.lineas
     .map((linea) => linea.gastosComercialesReferenciaId)
     .filter((id): id is string => Boolean(id))));
-  const gastosReferencias = gastosReferenciaIds.length
-    ? await tx.gastoComercialApp.findMany({ where: { id: { in: gastosReferenciaIds }, clienteId: existente.clienteId } })
-    : [];
+  const [campos, lotes, actividades, cultivosErp, gastosReferencias] = await Promise.all([
+    campoIds.length ? tx.campoApp.findMany({ where: { id: { in: campoIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+    loteIds.length ? tx.loteApp.findMany({ where: { id: { in: loteIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+    actividadIds.length ? tx.actividadApp.findMany({ where: { id: { in: actividadIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+    cultivoErpIds.length ? tx.erpCultivo.findMany({ where: { erpId: { in: cultivoErpIds } } }) : Promise.resolve([]),
+    gastosReferenciaIds.length ? tx.gastoComercialApp.findMany({ where: { id: { in: gastosReferenciaIds }, clienteId: existente.clienteId } }) : Promise.resolve([]),
+  ]);
+  const camposPorId = new Map(campos.map((campo) => [campo.id, mapearCampoApp(campo)]));
+  const lotesPorId = new Map(lotes.map((lote) => [lote.id, mapearLoteApp(lote)]));
+  const actividadesPorId = new Map(actividades.map((actividad) => [actividad.id, mapearActividadApp(actividad)]));
+  const cultivosPorErpId = new Map(cultivosErp.map((cultivo) => [cultivo.erpId, mapearCultivoErp(cultivo)]));
   const gastosComercialesPorId = new Map(gastosReferencias.map((gasto) => [gasto.id, mapearGastoComercialReferencia(gasto)]));
   const protocoloIds = Array.from(new Set(planificacionExistente.lineas
     .map((linea) => linea.protocoloId)
@@ -644,6 +823,10 @@ export async function cerrarPlanificacionEnTransaccion(
   const destinosPorId = new Map(destinosReferencia.map((destino) => [destino.id, mapearDestinoReferencia(destino)]));
   const preciosPorId = new Map(preciosReferencia.map((precio) => [precio.id, mapearPrecioReferencia(precio)]));
   const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId, protocolosPorId, {
+    camposPorId,
+    lotesPorId,
+    actividadesPorId,
+    cultivosPorErpId,
     destinosPorId,
     preciosPorId,
   });
@@ -685,6 +868,7 @@ export async function cerrarPlanificacionEnTransaccion(
         actividadAppId: linea.actividadAppId,
         actividadErpId: linea.actividadErpId,
         cultivoErpId: linea.cultivoErpId,
+        padronesSnapshot: serializarPadronesSnapshot(linea.padronesSnapshot),
         destinoReferenciaId: linea.destinoReferenciaId,
         destinoVenta: linea.destinoVenta,
         destinoVentaManual: linea.destinoVentaManual,

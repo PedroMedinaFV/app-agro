@@ -71,9 +71,79 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
     loteApp: {
       findMany: async () => existente.lineas.map((linea) => ({
         id: linea.loteAppId,
+        clienteId: existente.clienteId,
+        campoAppId: linea.campoAppId,
+        loteErpId: linea.loteErpId,
         nombre: `Lote ${linea.loteAppId}`,
+        codigoInterno: `LOT-${linea.loteAppId}`,
         superficieTotal: 100,
+        superficieProductiva: 95,
+        estadoVinculacion: 'vinculado_erp',
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
       })),
+    },
+    campoApp: {
+      findMany: async () => [{
+        id: 'campo-1',
+        clienteId: 'cliente-1',
+        empresaErpId: 'empresa-1',
+        campoErpId: 'empresa:1:campo:1',
+        nombre: 'Campo Norte',
+        codigoInterno: 'CAM-1',
+        zonaAppId: 'zona-1',
+        zonaErpId: 'zona-erp-1',
+        estadoVinculacion: 'vinculado_erp',
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+      }],
+    },
+    actividadApp: {
+      findMany: async () => [{
+        id: 'actividad-1',
+        clienteId: 'cliente-1',
+        empresaErpId: 'empresa-1',
+        actividadErpId: 'actividad:1',
+        especieAppId: 'especie-1',
+        especieErpId: 'especie:1',
+        nombre: 'Soja primera',
+        codigoInterno: 'SOJA-1',
+        tipoGrano: 'gruesa',
+        tipoCultivo: 'primera',
+        epocaSiembra: 'verano',
+        estadoVinculacion: 'vinculado_erp',
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+      }],
+    },
+    erpCultivo: {
+      findMany: async () => [{
+        empresaErpId: 'empresa-1',
+        erpId: 'empresa:1:cultivo:1',
+        idCultivo: 1,
+        codigo: 'CULT-1',
+        nombre: 'Cultivo soja',
+        idCampo: 1,
+        campoErpId: 'empresa:1:campo:1',
+        idLote: 1,
+        loteErpId: 'empresa:1:lote:1',
+        idActividad: 1,
+        actividadErpId: 'actividad:1',
+        idEspecie: 1,
+        especieErpId: 'especie:1',
+        idCampania: 26,
+        campaniaErpId: 'campania-26',
+        hectareas: 10,
+        hectareasSembradas: 10,
+        hectareasCosechadas: 0,
+        idPuerto: null,
+        distanciaPuerto: null,
+        idPersonalResponsable: null,
+        esAgriculturaIntensiva: true,
+        socioEnFuncionAportes: false,
+        activo: true,
+        actualizadoEn: fechaBase,
+      }],
     },
     gastoComercialApp: {
       findMany: async () => [{
@@ -280,6 +350,10 @@ test('cerrarPlanificacionEnTransaccion congela lineas y audita el cierre con ant
   assert.equal(lineasActualizadas[0].data.ingresoNetoEstimado, 5400);
   assert.equal(lineasActualizadas[0].data.margenBrutoEstimado, 3900);
   assert.equal(lineasActualizadas[0].data.margenBrutoActualizado, 3900);
+  assert.equal(lineasActualizadas[0].data.padronesSnapshot.campo.nombre, 'Campo Norte');
+  assert.equal(lineasActualizadas[0].data.padronesSnapshot.lote.nombre, 'Lote lote-1');
+  assert.equal(lineasActualizadas[0].data.padronesSnapshot.actividad.nombre, 'Soja primera');
+  assert.equal(lineasActualizadas[0].data.padronesSnapshot.cultivo.nombre, 'Cultivo soja');
   assert.equal(lineasActualizadas[0].data.destinoVentaSnapshot.destinoVenta, 'Puerto Norte');
   assert.equal(lineasActualizadas[0].data.precioVentaSnapshot.valor, 200);
   assert.equal(lineasActualizadas[0].data.precioVentaSnapshot.moneda, 'USD');
