@@ -101,6 +101,66 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
         updatedAt: fechaBase,
       }],
     },
+    protocoloProductivo: {
+      findMany: async () => [{
+        id: 'protocolo-1',
+        clienteId: 'cliente-1',
+        nombre: 'Protocolo soja',
+        descripcion: 'Paquete base',
+        protocoloOrigenId: null,
+        empresaErpId: 'empresa-1',
+        campaniaErpId: 'campania-26',
+        actividadAppId: 'actividad-1',
+        actividadErpId: 'actividad:1',
+        tipoFecha: 'relativa_siembra',
+        fechaSiembra: null,
+        zonaAppId: null,
+        campoAppId: null,
+        costoEstimadoPorHa: 150,
+        activo: true,
+        createdAt: fechaBase,
+        updatedAt: fechaBase,
+        etapas: [{
+          id: 'etapa-1',
+          protocoloId: 'protocolo-1',
+          estadioReferenciaId: 'estadio-1',
+          estadioCodigo: 'VE',
+          orden: 1,
+          nombre: 'Siembra',
+          descripcion: null,
+          fechaObjetivo: null,
+          diasDesdeSiembra: 0,
+          observaciones: null,
+          labores: [{
+            id: 'labor-1',
+            etapaId: 'etapa-1',
+            servicioAppId: 'servicio-1',
+            indiceAplicacion: 1,
+            nombre: 'Siembra directa',
+            descripcion: null,
+            unidad: 'ha',
+            cantidadPorHa: 1,
+            costoUnitario: 80,
+            costoPorHa: 80,
+            momentoEstimado: null,
+          }],
+          insumos: [{
+            id: 'insumo-1',
+            etapaId: 'etapa-1',
+            indiceAplicacion: 1,
+            insumoAppId: 'insumo-app-1',
+            insumoErpId: 'insumo-erp-1',
+            nombre: 'Semilla soja',
+            tipo: 'Semilla',
+            unidad: 'kg',
+            dosisPorHa: 50,
+            precioUnitarioEstimado: 1.4,
+            costoPorHa: 70,
+            momentoEstimado: null,
+          }],
+        }],
+      }],
+    },
     planificacionAgricolaLinea: {
       update: async (args) => {
         lineasActualizadas.push(args);
@@ -179,6 +239,9 @@ test('cerrarPlanificacionEnTransaccion congela lineas y audita el cierre con ant
   assert.equal(lineasActualizadas[0].data.ingresoNetoEstimado, 5400);
   assert.equal(lineasActualizadas[0].data.margenBrutoEstimado, 3900);
   assert.equal(lineasActualizadas[0].data.margenBrutoActualizado, 3900);
+  assert.equal(lineasActualizadas[0].data.protocoloSnapshot.protocoloId, 'protocolo-1');
+  assert.equal(lineasActualizadas[0].data.protocoloSnapshot.etapas[0].labores[0].nombre, 'Siembra directa');
+  assert.equal(lineasActualizadas[0].data.protocoloSnapshot.etapas[0].insumos[0].nombre, 'Semilla soja');
 
   assert.equal(planificacionesActualizadas.length, 1);
   assert.equal(planificacionesActualizadas[0].data.estado, 'cerrada');

@@ -9,10 +9,12 @@ import type {
   PlanificacionAgricola,
   PlanificacionAgricolaLinea,
   PlanificacionAgricolaResumen,
+  ProtocoloLineaSnapshot,
 } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from './auditoria';
+import { obtenerProtocolosDetallePorIds } from './protocolosPrisma';
 import {
   crearErrorValidacion,
   congelarPlanificacionParaCierre,
@@ -44,6 +46,18 @@ function mapearGastosComercialesSnapshot(valor: Prisma.JsonValue | null): Gastos
 }
 
 function serializarGastosComercialesSnapshot(snapshot?: GastosComercialesLineaSnapshot) {
+  return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
+}
+
+function mapearProtocoloSnapshot(valor: Prisma.JsonValue | null): ProtocoloLineaSnapshot | undefined {
+  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
+    return undefined;
+  }
+
+  return valor as unknown as ProtocoloLineaSnapshot;
+}
+
+function serializarProtocoloSnapshot(snapshot?: ProtocoloLineaSnapshot) {
   return snapshot ? snapshot as unknown as Prisma.InputJsonValue : undefined;
 }
 
@@ -117,6 +131,7 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     gastosComercialesEstimados: linea.gastosComercialesEstimados,
     gastosComercialesSnapshot: mapearGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
     protocoloId: linea.protocoloId || undefined,
+    protocoloSnapshot: mapearProtocoloSnapshot(linea.protocoloSnapshot),
     ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
     ingresoNetoEstimado: linea.ingresoNetoEstimado,
     costoProduccionEstimado: linea.costoProduccionEstimado,
@@ -320,6 +335,7 @@ async function reemplazarLineas(tx: Prisma.TransactionClient, planificacion: Pla
       gastosComercialesEstimados: linea.gastosComercialesEstimados,
       gastosComercialesSnapshot: serializarGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
       protocoloId: linea.protocoloId,
+      protocoloSnapshot: serializarProtocoloSnapshot(linea.protocoloSnapshot),
       ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
       ingresoNetoEstimado: linea.ingresoNetoEstimado,
       costoProduccionEstimado: linea.costoProduccionEstimado,
@@ -499,7 +515,12 @@ export async function cerrarPlanificacionEnTransaccion(
     ? await tx.gastoComercialApp.findMany({ where: { id: { in: gastosReferenciaIds }, clienteId: existente.clienteId } })
     : [];
   const gastosComercialesPorId = new Map(gastosReferencias.map((gasto) => [gasto.id, mapearGastoComercialReferencia(gasto)]));
-  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId);
+  const protocoloIds = Array.from(new Set(planificacionExistente.lineas
+    .map((linea) => linea.protocoloId)
+    .filter((protocoloId): protocoloId is string => Boolean(protocoloId))));
+  const protocolosDetalle = await obtenerProtocolosDetallePorIds(existente.clienteId, protocoloIds, tx);
+  const protocolosPorId = new Map(protocolosDetalle.map((protocolo) => [protocolo.id, protocolo]));
+  const planificacionCongelada = congelarPlanificacionParaCierre(planificacionExistente, gastosComercialesPorId, protocolosPorId);
 
   const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
     where: {
@@ -550,6 +571,7 @@ export async function cerrarPlanificacionEnTransaccion(
         gastosComercialesEstimados: linea.gastosComercialesEstimados,
         gastosComercialesSnapshot: serializarGastosComercialesSnapshot(linea.gastosComercialesSnapshot),
         protocoloId: linea.protocoloId,
+        protocoloSnapshot: serializarProtocoloSnapshot(linea.protocoloSnapshot),
         ingresoBrutoEstimado: linea.ingresoBrutoEstimado,
         ingresoNetoEstimado: linea.ingresoNetoEstimado,
         costoProduccionEstimado: linea.costoProduccionEstimado,

@@ -330,6 +330,16 @@ export type ProtocoloProductivoDetalle = ProtocoloProductivoResumen & {
   etapas: ProtocoloEtapa[];
 };
 
+export type ProtocoloLineaSnapshot = {
+  origen: 'referencia' | 'manual';
+  protocoloId?: string;
+  nombre?: string;
+  descripcion?: string;
+  costoEstimadoPorHa: number;
+  costoTotalEstimado: number;
+  etapas: ProtocoloEtapa[];
+};
+
 export type PlanificacionAgricolaLinea = {
   id: string;
   planificacionId: string;
@@ -353,6 +363,7 @@ export type PlanificacionAgricolaLinea = {
   gastosComercialesEstimados: number;
   gastosComercialesSnapshot?: GastosComercialesLineaSnapshot;
   protocoloId?: string;
+  protocoloSnapshot?: ProtocoloLineaSnapshot;
   ingresoBrutoEstimado: number;
   ingresoNetoEstimado: number;
   costoProduccionEstimado: number;

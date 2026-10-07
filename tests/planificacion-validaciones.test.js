@@ -222,6 +222,13 @@ test('extraerSupuestosCongeladosLinea deja explicito el snapshot economico que n
       totalEstimado: 780,
     },
     protocoloId: 'protocolo-1',
+    protocoloSnapshot: {
+      origen: 'referencia',
+      protocoloId: 'protocolo-1',
+      costoEstimadoPorHa: 160,
+      costoTotalEstimado: 2400,
+      etapas: [],
+    },
     ingresoBrutoEstimado: 10080,
     ingresoNetoEstimado: 9300,
     costoProduccionEstimado: 2400,
@@ -285,5 +292,115 @@ test('congelarLineaPlanificacionParaCierre guarda solo valor total cuando el gas
     origen: 'manual',
     items: [],
     totalEstimado: 450,
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda detalle de labores e insumos si el protocolo existe', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    protocoloId: 'protocolo-1',
+    hectareasPlanificadas: 10,
+    costoProduccionEstimado: 1500,
+  }), new Map(), new Map([
+    ['protocolo-1', {
+      id: 'protocolo-1',
+      clienteId: 'cliente-1',
+      nombre: 'Protocolo soja',
+      descripcion: 'Paquete base',
+      campaniaErpId: 'campania-26',
+      actividadAppId: 'actividad-1',
+      tipoFecha: 'relativa_siembra',
+      costoEstimadoPorHa: 150,
+      activo: true,
+      createdAt: '2026-10-01T12:00:00.000Z',
+      updatedAt: '2026-10-01T12:00:00.000Z',
+      etapas: [{
+        id: 'etapa-1',
+        protocoloId: 'protocolo-1',
+        estadioReferenciaId: 'estadio-1',
+        estadioCodigo: 'VE',
+        orden: 1,
+        nombre: 'Siembra',
+        labores: [{
+          id: 'labor-1',
+          etapaId: 'etapa-1',
+          servicioAppId: 'servicio-1',
+          indiceAplicacion: 1,
+          nombre: 'Siembra directa',
+          unidad: 'ha',
+          cantidadPorHa: 1,
+          costoUnitario: 80,
+          costoPorHa: 80,
+        }],
+        insumos: [{
+          id: 'insumo-1',
+          etapaId: 'etapa-1',
+          indiceAplicacion: 1,
+          insumoAppId: 'insumo-app-1',
+          insumoErpId: 'insumo-erp-1',
+          nombre: 'Semilla soja',
+          tipo: 'Semilla',
+          unidad: 'kg',
+          dosisPorHa: 50,
+          precioUnitarioEstimado: 1.4,
+          costoPorHa: 70,
+        }],
+      }],
+    }],
+  ]));
+
+  assert.deepEqual(congelada.protocoloSnapshot, {
+    origen: 'referencia',
+    protocoloId: 'protocolo-1',
+    nombre: 'Protocolo soja',
+    descripcion: 'Paquete base',
+    costoEstimadoPorHa: 150,
+    costoTotalEstimado: 1500,
+    etapas: [{
+      id: 'etapa-1',
+      protocoloId: 'protocolo-1',
+      estadioReferenciaId: 'estadio-1',
+      estadioCodigo: 'VE',
+      orden: 1,
+      nombre: 'Siembra',
+      labores: [{
+        id: 'labor-1',
+        etapaId: 'etapa-1',
+        servicioAppId: 'servicio-1',
+        indiceAplicacion: 1,
+        nombre: 'Siembra directa',
+        unidad: 'ha',
+        cantidadPorHa: 1,
+        costoUnitario: 80,
+        costoPorHa: 80,
+      }],
+      insumos: [{
+        id: 'insumo-1',
+        etapaId: 'etapa-1',
+        indiceAplicacion: 1,
+        insumoAppId: 'insumo-app-1',
+        insumoErpId: 'insumo-erp-1',
+        nombre: 'Semilla soja',
+        tipo: 'Semilla',
+        unidad: 'kg',
+        dosisPorHa: 50,
+        precioUnitarioEstimado: 1.4,
+        costoPorHa: 70,
+      }],
+    }],
+  });
+});
+
+test('congelarLineaPlanificacionParaCierre guarda solo costo si el costo productivo es manual', () => {
+  const congelada = congelarLineaPlanificacionParaCierre(crearLinea({
+    protocoloId: undefined,
+    hectareasPlanificadas: 20,
+    costoProduccionEstimado: 3000,
+  }));
+
+  assert.deepEqual(congelada.protocoloSnapshot, {
+    origen: 'manual',
+    costoEstimadoPorHa: 150,
+    costoTotalEstimado: 3000,
+    etapas: [],
   });
 });

@@ -1075,6 +1075,7 @@ model PlanificacionAgricolaLinea {
   gastosComercialesSnapshot     Json?
   protocolo                     ProtocoloProductivo?  @relation(fields: [protocoloId], references: [id])
   protocoloId                   String?
+  protocoloSnapshot             Json?
   ingresoBrutoEstimado          Float
   ingresoNetoEstimado           Float
   costoProduccionEstimado       Float

@@ -240,6 +240,26 @@ export async function obtenerProtocolosPersistidos(clienteId: string): Promise<P
   };
 }
 
+export async function obtenerProtocolosDetallePorIds(
+  clienteId: string,
+  protocoloIds: string[],
+  client: PrismaClient | Prisma.TransactionClient = prisma,
+): Promise<ProtocoloProductivoDetalle[]> {
+  if (protocoloIds.length === 0) {
+    return [];
+  }
+
+  const registros = await client.protocoloProductivo.findMany({
+    where: {
+      clienteId,
+      id: { in: protocoloIds },
+    },
+    include: incluirDetalleProtocolo,
+  });
+
+  return registros.map(mapearProtocolo);
+}
+
 export async function obtenerProtocolosResumenPersistidos(clienteId: string): Promise<ProtocoloProductivoResumen[]> {
   const registros = await prisma.protocoloProductivo.findMany({
     where: { clienteId },
