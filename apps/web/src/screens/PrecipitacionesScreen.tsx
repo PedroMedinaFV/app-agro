@@ -11,7 +11,7 @@ import {
   obtenerPlanificacionSnapshot,
   obtenerPrecipitaciones,
 } from '../services/api';
-import { formatearFecha } from '../utils/formatters';
+import { formatearFecha, formatearNumero } from '../utils/formatters';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 
@@ -159,7 +159,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
         eyebrow="Operacion de campo"
         title="Precipitaciones"
         description="Carga y consulta de lluvias por campo asignado, con lote opcional para mejorar el analisis posterior."
-        aside={<div className="status-pill">{totalPeriodo.toFixed(1)} mm</div>}
+        aside={<div className="status-pill">{formatearNumero(totalPeriodo, 1)} mm</div>}
       />
 
       <Panel title="Nueva precipitacion" description={estado}>
@@ -296,7 +296,7 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
               key: 'mm',
               label: 'Milimetros',
               width: 'minmax(100px, 0.6fr)',
-              render: (precipitacion) => `${precipitacion.milimetros.toFixed(1)} mm`,
+              render: (precipitacion) => `${formatearNumero(precipitacion.milimetros, 1)} mm`,
             },
             {
               key: 'observaciones',

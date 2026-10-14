@@ -1,3 +1,5 @@
+import { formatearNumero } from '../../utils/formatters';
+
 type MetricasSeguimientoProps = {
   observaciones: number;
   adjuntos: number;
@@ -11,7 +13,7 @@ export function MetricasSeguimiento({ observaciones, adjuntos, precipitaciones, 
       <article><span>Observaciones</span><strong>{observaciones}</strong></article>
       <article><span>Adjuntos</span><strong>{adjuntos}</strong></article>
       <article><span>Precipitaciones</span><strong>{precipitaciones}</strong></article>
-      <article><span>Milimetros</span><strong>{totalMm.toFixed(1)}</strong></article>
+      <article><span>Milimetros</span><strong>{formatearNumero(totalMm, 1)}</strong></article>
     </section>
   );
 }

@@ -16,6 +16,7 @@ import {
   resumirPlanificacionLocal,
   tieneLineasDuplicadasEnPlanificacion,
 } from '@agro/tipos';
+import { formatearNumero } from '../formatters';
 
 export {
   calcularGastosComercialesLinea,
@@ -78,7 +79,7 @@ export function formatearCultivosAntecesores(cultivos: ErpCultivo[], actividadNo
       const actividad = cultivo.actividadErpId ? actividadNombrePorErpId.get(cultivo.actividadErpId) : undefined;
       const nombre = actividad || cultivo.nombre;
 
-      return `${nombre} (${cultivo.hectareasSembradas.toFixed(2)} ha)`;
+      return `${nombre} (${formatearNumero(cultivo.hectareasSembradas, 2)} ha)`;
     })
     .join(' / ');
 }

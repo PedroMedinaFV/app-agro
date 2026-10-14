@@ -3,6 +3,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import type { PlanificacionAgricolaLinea } from '@agro/tipos';
 import { ActionBar } from '../ActionBar';
 import { Button } from '../Button';
+import { formatearNumero } from '../../utils/formatters';
 
 export type CampoAgrupadoPlanificacion = {
   id: string;
@@ -88,7 +89,7 @@ export const ArbolPlanificacion = memo(function ArbolPlanificacion({
             <summary>
               <strong>{zona.nombre}</strong>
               <span>{lineasZona.length} linea(s)</span>
-              <span>{resumenZona.hectareas.toFixed(2)} ha</span>
+              <span>{formatearNumero(resumenZona.hectareas, 2)} ha</span>
               <span>{formatearUsd(resumenZona.margen)}</span>
               {resumenZona.pendientes > 0 && <em>{resumenZona.pendientes} pendiente(s)</em>}
               {resumenZona.duplicadas > 0 && <em className="summary-danger">{resumenZona.duplicadas} duplicada(s)</em>}
@@ -120,7 +121,7 @@ export const ArbolPlanificacion = memo(function ArbolPlanificacion({
                   <summary>
                     <strong>{campo.nombre}</strong>
                     <span>{campo.lineas.length} linea(s)</span>
-                    <span>{resumenCampo.hectareas.toFixed(2)} ha</span>
+                    <span>{formatearNumero(resumenCampo.hectareas, 2)} ha</span>
                     <span>{formatearUsd(resumenCampo.margen)}</span>
                     {resumenCampo.pendientes > 0 && <em>{resumenCampo.pendientes} pendiente(s)</em>}
                     {resumenCampo.duplicadas > 0 && <em className="summary-danger">{resumenCampo.duplicadas} duplicada(s)</em>}

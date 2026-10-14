@@ -1,4 +1,5 @@
 import type { ObservacionCampo, SeveridadObservacion } from '@agro/tipos';
+import { formatearNumero } from '../formatters';
 
 export type FormularioObservacion = {
   campoAppId: string;
@@ -38,7 +39,7 @@ export function describirCoordenadasObservacion(observacion: ObservacionCampo) {
     return 'Sin ubicacion';
   }
 
-  return `${observacion.latitud.toFixed(5)}, ${observacion.longitud.toFixed(5)}`;
+  return `${formatearNumero(observacion.latitud, 5)}, ${formatearNumero(observacion.longitud, 5)}`;
 }
 
 export function obtenerSeveridadMaximaObservacion(actual: ObservacionCampo['severidad'] | undefined, nueva: ObservacionCampo['severidad']) {

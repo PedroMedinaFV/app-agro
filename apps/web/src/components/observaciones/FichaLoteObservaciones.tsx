@@ -1,7 +1,7 @@
 import type { FichaLoteOperativoResponse } from '@agro/tipos';
 import { Button } from '../Button';
 import { Panel } from '../Panel';
-import { formatearFechaHora } from '../../utils/formatters';
+import { formatearFechaHora, formatearNumero } from '../../utils/formatters';
 
 type FichaLoteObservacionesProps = {
   fichaLote: FichaLoteOperativoResponse;
@@ -18,9 +18,9 @@ export function FichaLoteObservaciones({ fichaLote, onCerrar }: FichaLoteObserva
     >
 
       <section className="metrics operative-metrics">
-        <article><span>Superficie total</span><strong>{fichaLote.lote.superficieTotal.toFixed(1)} ha</strong></article>
-        <article><span>Productiva</span><strong>{fichaLote.lote.superficieProductiva.toFixed(1)} ha</strong></article>
-        <article><span>Lluvias 30 dias</span><strong>{fichaLote.precipitaciones.milimetrosUltimos30Dias.toFixed(1)} mm</strong></article>
+        <article><span>Superficie total</span><strong>{formatearNumero(fichaLote.lote.superficieTotal, 1)} ha</strong></article>
+        <article><span>Productiva</span><strong>{formatearNumero(fichaLote.lote.superficieProductiva, 1)} ha</strong></article>
+        <article><span>Lluvias 30 dias</span><strong>{formatearNumero(fichaLote.precipitaciones.milimetrosUltimos30Dias, 1)} mm</strong></article>
         <article><span>Observaciones altas</span><strong>{fichaLote.observaciones.cantidadAlta}</strong></article>
       </section>
 
@@ -32,21 +32,21 @@ export function FichaLoteObservaciones({ fichaLote, onCerrar }: FichaLoteObserva
           <p><strong>Codigo:</strong> {fichaLote.lote.codigoInterno || 'Sin codigo'}</p>
           <p><strong>Geografia:</strong> {fichaLote.geografia?.estado === 'procesado' ? 'Disponible' : fichaLote.geografia?.estado || 'Sin archivo'}</p>
           {fichaLote.geografia?.superficieCalculadaHa !== undefined && (
-            <p><strong>Superficie KML/KMZ:</strong> {fichaLote.geografia.superficieCalculadaHa.toFixed(2)} ha</p>
+            <p><strong>Superficie KML/KMZ:</strong> {formatearNumero(fichaLote.geografia.superficieCalculadaHa, 2)} ha</p>
           )}
         </article>
 
         <article>
           <h3>Cultivos ERP</h3>
           {fichaLote.cultivos.length ? fichaLote.cultivos.slice(0, 4).map((cultivo) => (
-            <p key={cultivo.id}>{cultivo.nombre} - {cultivo.campaniaNombre || 'Sin campania'} - {cultivo.hectareas.toFixed(1)} ha</p>
+            <p key={cultivo.id}>{cultivo.nombre} - {cultivo.campaniaNombre || 'Sin campania'} - {formatearNumero(cultivo.hectareas, 1)} ha</p>
           )) : <p>Sin cultivos ERP asociados.</p>}
         </article>
 
         <article>
           <h3>Planificacion</h3>
           {fichaLote.planificaciones.length ? fichaLote.planificaciones.slice(0, 4).map((linea) => (
-            <p key={linea.id}>{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {linea.margenBrutoEstimado.toFixed(0)}</p>
+            <p key={linea.id}>{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {formatearNumero(linea.margenBrutoEstimado, 0)}</p>
           )) : <p>Sin lineas de planificacion asociadas.</p>}
         </article>
 

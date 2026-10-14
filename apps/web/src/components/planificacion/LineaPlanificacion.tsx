@@ -142,7 +142,7 @@ export const LineaPlanificacion = memo(function LineaPlanificacion({
         <div className="planning-cell-number">
           <span className="cell-label">Rinde</span>
           <DecimalInput value={linea.rindeEstimado} onValueChange={(value) => onActualizarLinea(linea.id, { rindeEstimado: value })} disabled={!puedeEditar} commitOnBlur />
-          <span>tn/ha - prod. {produccionEstimada.toFixed(2)} tn</span>
+          <span>tn/ha - prod. {formatearNumero(produccionEstimada, 2)} tn</span>
         </div>
 
         <div className="planning-cell-number">

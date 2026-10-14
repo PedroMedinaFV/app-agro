@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { PlanificacionActiva, PlanificacionBaseProps } from './planificacionTypes';
 import type { PlanificacionAgricolaResumen } from '@agro/tipos';
+import { formatearNumero } from '../utils/formatters';
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
   onEditarPlanificacion: (planificacionId: string) => void;
@@ -218,7 +219,7 @@ export function PlanificacionesResumenScreen({
               key: 'hectareas',
               label: 'Hectareas',
               width: 'minmax(74px, 0.48fr)',
-              render: (item) => item.hectareasPlanificadas.toFixed(2),
+              render: (item) => formatearNumero(item.hectareasPlanificadas, 2),
             },
             {
               key: 'ingreso',
@@ -375,7 +376,7 @@ export function PlanificacionesResumenScreen({
             <div className="summary-grid">
               <article>
                 <span>Hectareas</span>
-                <strong>{(resumenParaCerrar?.hectareasPlanificadas || 0).toFixed(2)}</strong>
+                <strong>{formatearNumero(resumenParaCerrar?.hectareasPlanificadas || 0, 2)}</strong>
               </article>
               <article>
                 <span>Margen</span>

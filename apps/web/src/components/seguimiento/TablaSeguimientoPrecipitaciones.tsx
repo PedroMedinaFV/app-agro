@@ -1,6 +1,7 @@
 import type { CampoApp, LoteApp, PrecipitacionCampo } from '@agro/tipos';
 import { DataTable } from '../DataTable';
 import { describirFechaSeguimiento } from '../../utils/seguimiento/helpersSeguimiento';
+import { formatearNumero } from '../../utils/formatters';
 
 type TablaSeguimientoPrecipitacionesProps = {
   precipitaciones: PrecipitacionCampo[];
@@ -47,7 +48,7 @@ export function TablaSeguimientoPrecipitaciones({
           key: 'mm',
           label: 'Mm',
           width: 'minmax(70px, 0.4fr)',
-          render: (precipitacion) => `${precipitacion.milimetros.toFixed(1)} mm`,
+          render: (precipitacion) => `${formatearNumero(precipitacion.milimetros, 1)} mm`,
         },
         {
           key: 'observaciones',

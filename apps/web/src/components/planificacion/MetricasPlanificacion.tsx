@@ -1,3 +1,5 @@
+import { formatearNumero } from '../../utils/formatters';
+
 type MetricasPlanificacionProps = {
   hectareasPlanificadas: number;
   ingresoNetoTotal: number;
@@ -17,7 +19,7 @@ export function MetricasPlanificacion({
     <section className="metrics planning-metrics">
       <article>
         <span>Hectareas</span>
-        <strong>{hectareasPlanificadas.toFixed(2)}</strong>
+        <strong>{formatearNumero(hectareasPlanificadas, 2)}</strong>
       </article>
       <article>
         <span>Ingreso neto</span>

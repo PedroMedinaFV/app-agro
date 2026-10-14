@@ -25,7 +25,9 @@ function redondearDecimal(value: number, decimals: number) {
 }
 
 function textoDesdeNumero(value: number | null | undefined, decimals: number) {
-  return typeof value === 'number' && Number.isFinite(value) ? redondearDecimal(value, decimals).toFixed(decimals) : '';
+  return typeof value === 'number' && Number.isFinite(value)
+    ? redondearDecimal(value, decimals).toFixed(decimals).replace('.', ',')
+    : '';
 }
 
 function numeroDesdeTexto(value: string) {
@@ -59,27 +61,28 @@ export function DecimalInput({
   const [editando, setEditando] = useState(false);
 
   useEffect(() => {
-    if (commitOnBlur && editando) {
+    if (editando) {
       return;
     }
 
     const siguiente = textoDesdeNumero(value, decimals);
 
-    if (numeroDesdeTexto(texto) !== value) {
+    if (texto !== siguiente) {
       setTexto(siguiente);
     }
-  }, [value, texto, decimals, commitOnBlur, editando]);
+  }, [value, texto, decimals, editando]);
 
   function actualizarTexto(siguiente: string) {
-    const patron = allowNegative ? /^-?\d*(?:[.,]\d*)?$/ : /^\d*(?:[.,]\d*)?$/;
+    const textoLocal = siguiente.replace('.', ',');
+    const patron = allowNegative ? /^-?\d*(?:,\d*)?$/ : /^\d*(?:,\d*)?$/;
 
-    if (!patron.test(siguiente)) {
+    if (!patron.test(textoLocal)) {
       return;
     }
 
-    setTexto(siguiente);
+    setTexto(textoLocal);
 
-    if (allowEmpty && (siguiente === '' || siguiente === '-')) {
+    if (allowEmpty && (textoLocal === '' || textoLocal === '-')) {
       onEmptyValueChange?.();
       return;
     }
@@ -88,12 +91,12 @@ export function DecimalInput({
       return;
     }
 
-    if (siguiente === '' || siguiente === '.' || siguiente === ',') {
+    if (textoLocal === '' || textoLocal === ',') {
       onValueChange(0);
       return;
     }
 
-    onValueChange(numeroDesdeTexto(siguiente));
+    onValueChange(numeroDesdeTexto(textoLocal));
   }
 
   function confirmarValor() {

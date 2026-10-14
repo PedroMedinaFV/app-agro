@@ -1,6 +1,7 @@
 import type { LoteApp, LoteArchivoGeografico } from '@agro/tipos';
 import { Button } from '../Button';
 import { LoteGeoPreview } from './LoteGeoPreview';
+import { formatearNumero } from '../../utils/formatters';
 
 type ModalArchivosGeograficosLoteProps = {
   lote: LoteApp;
@@ -56,9 +57,9 @@ export function ModalArchivosGeograficosLote({
               <LoteGeoPreview archivo={archivo} />
               <div className="geo-file-data">
                 <strong>{archivo.nombreArchivo}</strong>
-                <span>{archivo.tipo.toUpperCase()} - {(archivo.tamanioBytes / 1024).toFixed(1)} KB</span>
+                <span>{archivo.tipo.toUpperCase()} - {formatearNumero(archivo.tamanioBytes / 1024, 1)} KB</span>
                 {archivo.superficieCalculadaHa !== undefined && (
-                  <span>Superficie detectada: {archivo.superficieCalculadaHa.toFixed(2)} ha</span>
+                  <span>Superficie detectada: {formatearNumero(archivo.superficieCalculadaHa, 2)} ha</span>
                 )}
                 {archivo.observaciones && <span>{archivo.observaciones}</span>}
               </div>
