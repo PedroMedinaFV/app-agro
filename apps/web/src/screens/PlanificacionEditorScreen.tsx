@@ -599,7 +599,7 @@ export function PlanificacionEditorScreen({
         title={planificacionActiva?.nombre || 'Planificacion sin nombre'}
         description="Carga por zona, campo y lote. Al elegir protocolo se define la actividad de la linea."
         aside={<div className={`status-pill ${planificacionActiva?.estado === 'cerrada' || planificacionActiva?.estado === 'deshabilitada' ? 'locked' : ''}`}>{planificacionActiva?.estado || 'sin_estado'}</div>}
-        actions={<Button variant="secondary" onClick={onVolverResumen}>Volver al resumen</Button>}
+        
       />
 
       {tieneLineasDuplicadas && (
@@ -622,6 +622,7 @@ export function PlanificacionEditorScreen({
             guardando={guardandoPlanificacion}
             deshabilitado={!puedeEditarPlanificacion || guardandoPlanificacion || tieneLineasDuplicadas || lineasConHectareasExcedidas.length > 0}
             onGuardar={guardarBorradorPlanificacion}
+            onCancelar={onVolverResumen}
           />
         )}
       >
