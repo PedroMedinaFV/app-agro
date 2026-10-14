@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, LoteApp, PrecipitacionCampo, SesionUsuario } from '@agro/tipos';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { DecimalInput } from '../components/DecimalInput';
 import { FechaInput } from '../components/FechaInput';
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
@@ -193,14 +194,17 @@ export function PrecipitacionesScreen({ sesion, notificar }: PrecipitacionesScre
 
           <label>
             Milimetros
-            <input
-              min="0"
+            <DecimalInput
+              value={formulario.milimetros.trim() ? Number(formulario.milimetros) : undefined}
+              onValueChange={(milimetros) => actualizarFormulario({ milimetros: String(milimetros) })}
+              onEmptyValueChange={() => actualizarFormulario({ milimetros: '' })}
+              allowEmpty
+              min={0}
               step="0.1"
-              type="number"
-              value={formulario.milimetros}
+              decimals={1}
+              commitOnBlur
               disabled={!puedeCrear || guardando}
               placeholder="Ej. 24.5"
-              onChange={(event) => actualizarFormulario({ milimetros: event.target.value })}
             />
           </label>
 

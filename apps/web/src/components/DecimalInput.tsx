@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 type DecimalInputProps = {
-  value: number;
+  value: number | null | undefined;
   onValueChange: (value: number) => void;
+  onEmptyValueChange?: () => void;
   disabled?: boolean;
   min?: number;
   max?: number;
@@ -13,6 +14,8 @@ type DecimalInputProps = {
   ariaLabel?: string;
   decimals?: number;
   commitOnBlur?: boolean;
+  allowNegative?: boolean;
+  allowEmpty?: boolean;
 };
 
 function redondearDecimal(value: number, decimals: number) {
@@ -21,8 +24,8 @@ function redondearDecimal(value: number, decimals: number) {
   return Math.round(value * factor) / factor;
 }
 
-function textoDesdeNumero(value: number, decimals: number) {
-  return Number.isFinite(value) ? redondearDecimal(value, decimals).toFixed(decimals) : '';
+function textoDesdeNumero(value: number | null | undefined, decimals: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? redondearDecimal(value, decimals).toFixed(decimals) : '';
 }
 
 function numeroDesdeTexto(value: string) {
@@ -39,6 +42,7 @@ function numeroDesdeTexto(value: string) {
 export function DecimalInput({
   value,
   onValueChange,
+  onEmptyValueChange,
   disabled,
   min = 0,
   max,
@@ -48,6 +52,8 @@ export function DecimalInput({
   ariaLabel,
   decimals = 2,
   commitOnBlur = false,
+  allowNegative = false,
+  allowEmpty = false,
 }: DecimalInputProps) {
   const [texto, setTexto] = useState(textoDesdeNumero(value, decimals));
   const [editando, setEditando] = useState(false);
@@ -65,11 +71,18 @@ export function DecimalInput({
   }, [value, texto, decimals, commitOnBlur, editando]);
 
   function actualizarTexto(siguiente: string) {
-    if (!/^\d*(?:[.,]\d*)?$/.test(siguiente)) {
+    const patron = allowNegative ? /^-?\d*(?:[.,]\d*)?$/ : /^\d*(?:[.,]\d*)?$/;
+
+    if (!patron.test(siguiente)) {
       return;
     }
 
     setTexto(siguiente);
+
+    if (allowEmpty && (siguiente === '' || siguiente === '-')) {
+      onEmptyValueChange?.();
+      return;
+    }
 
     if (commitOnBlur) {
       return;
@@ -84,6 +97,12 @@ export function DecimalInput({
   }
 
   function confirmarValor() {
+    if (allowEmpty && (texto === '' || texto === '-')) {
+      onEmptyValueChange?.();
+      setTexto('');
+      return;
+    }
+
     const valorRedondeado = redondearDecimal(numeroDesdeTexto(texto), decimals);
 
     setTexto(textoDesdeNumero(valorRedondeado, decimals));

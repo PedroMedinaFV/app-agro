@@ -1,5 +1,6 @@
 import type { CampoApp, LoteApp, RecorridaCampo, SeveridadObservacion } from '@agro/tipos';
 import { Button } from '../Button';
+import { DecimalInput } from '../DecimalInput';
 import { SelectorRecorrida } from '../recorridas/SelectorRecorrida';
 import type { FormularioObservacion as FormularioObservacionDatos } from '../../utils/observaciones/helpersObservaciones';
 
@@ -111,25 +112,37 @@ export function FormularioObservacion({
 
         <label>
           Latitud
-          <input
-            type="number"
+          <DecimalInput
+            value={formulario.latitud.trim() ? Number(formulario.latitud) : undefined}
+            onValueChange={(latitud) => onChange({ latitud: String(latitud) })}
+            onEmptyValueChange={() => onChange({ latitud: '' })}
+            allowNegative
+            allowEmpty
+            min={-90}
+            max={90}
             step="0.000001"
-            value={formulario.latitud}
+            decimals={6}
+            commitOnBlur
             disabled={!puedeCrear || guardando}
             placeholder="-37.12345"
-            onChange={(event) => onChange({ latitud: event.target.value })}
           />
         </label>
 
         <label>
           Longitud
-          <input
-            type="number"
+          <DecimalInput
+            value={formulario.longitud.trim() ? Number(formulario.longitud) : undefined}
+            onValueChange={(longitud) => onChange({ longitud: String(longitud) })}
+            onEmptyValueChange={() => onChange({ longitud: '' })}
+            allowNegative
+            allowEmpty
+            min={-180}
+            max={180}
             step="0.000001"
-            value={formulario.longitud}
+            decimals={6}
+            commitOnBlur
             disabled={!puedeCrear || guardando}
             placeholder="-58.12345"
-            onChange={(event) => onChange({ longitud: event.target.value })}
           />
         </label>
 

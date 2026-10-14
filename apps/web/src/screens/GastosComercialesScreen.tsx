@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActividadApp,
+  DestinoApp,
   ErpActividad,
   ErpCampania,
   ErpCampo,
@@ -15,6 +16,7 @@ import {
 import { ActionBar } from '../components/ActionBar';
 import { Button } from '../components/Button';
 import { DataTable } from '../components/DataTable';
+import { DecimalInput } from '../components/DecimalInput';
 import { IconButton } from '../components/IconButton';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PageHeader } from '../components/PageHeader';
@@ -45,8 +47,8 @@ interface GastosComercialesScreenProps {
   puedeConfigurarPlanificacion: boolean;
   guardandoGastos: boolean;
   guardarGastoComercial: (gasto: GastosComercialesReferencia) => Promise<boolean>;
+  guardarDestinoVenta: (destino: DestinoApp) => Promise<boolean>;
   formatearUsd: (valor: number) => string;
-  leerNumero: (valor: string) => number;
 }
 
 export function GastosComercialesScreen({
@@ -56,11 +58,11 @@ export function GastosComercialesScreen({
   puedeConfigurarPlanificacion,
   guardandoGastos,
   guardarGastoComercial,
+  guardarDestinoVenta,
   formatearUsd,
-  leerNumero,
 }: GastosComercialesScreenProps) {
   const [gastoEnEdicion, setGastoEnEdicion] = useState<GastosComercialesReferencia | null>(null);
-  const [modoModal, setModoModal] = useState<'crear' | 'editar'>('crear');
+  const [modoModal, setModoModal] = useState<'crear' | 'editar' | 'copiar'>('crear');
   const [creandoDestino, setCreandoDestino] = useState(false);
   const [actividadSeleccionadaClave, setActividadSeleccionadaClave] = useState('');
   const [zonaSeleccionadaClave, setZonaSeleccionadaClave] = useState('');
@@ -103,14 +105,33 @@ export function GastosComercialesScreen({
   const camposPorClave = useMemo(() => new Map(camposDisponibles.map((campo) => [campo.clave, campo])), [camposDisponibles]);
 
   useEffect(() => {
+    let cancelado = false;
+
+    obtenerCampaniasErpImportadas(sesion.token)
+      .then((respuesta) => {
+        if (!cancelado) {
+          setCampaniasErp(respuesta.campanias);
+        }
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setCampaniasErp([]);
+        }
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [sesion.token]);
+
+  useEffect(() => {
     async function cargarPadronesReales() {
       if (!modalAbierto) {
         return;
       }
 
-      const [actividadesErpRespuesta, campaniasErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
+      const [actividadesErpRespuesta, especiesErpRespuesta, zonasErpRespuesta, camposErpRespuesta, puertosErpRespuesta] = await Promise.all([
         obtenerActividadesErpImportadas(sesion.token),
-        obtenerCampaniasErpImportadas(sesion.token),
         obtenerEspeciesErpImportadas(sesion.token),
         obtenerZonasErpImportadas(sesion.token),
         obtenerCamposErpImportados(sesion.token),
@@ -118,7 +139,6 @@ export function GastosComercialesScreen({
       ]);
 
       setActividadesErp(actividadesErpRespuesta.actividades);
-      setCampaniasErp(campaniasErpRespuesta.campanias);
       setEspeciesErp(especiesErpRespuesta.especies);
       setZonasErp(zonasErpRespuesta.zonas);
       setCamposErp(camposErpRespuesta.campos);
@@ -195,16 +215,35 @@ export function GastosComercialesScreen({
     setGastoEnEdicion(crearBorradorGasto());
   }
 
-  function abrirEditarGasto(gasto: GastosComercialesReferencia) {
+  function prepararSeleccionGasto(gasto: GastosComercialesReferencia) {
     const zonaPropiaVinculada = gasto.zonaErpId ? zonasPropiasPorErpId.get(gasto.zonaErpId) : undefined;
     const campoPropioVinculado = gasto.campoErpId ? camposPropiosPorErpId.get(gasto.campoErpId) : undefined;
 
-    setModoModal('editar');
     setCreandoDestino(false);
     setActividadSeleccionadaClave(`agro:${gasto.actividadAppId}`);
     setZonaSeleccionadaClave(gasto.zonaAppId ? `agro:${gasto.zonaAppId}` : zonaPropiaVinculada ? `agro:${zonaPropiaVinculada.id}` : gasto.zonaErpId ? `erp:${gasto.zonaErpId}` : '');
     setCampoSeleccionadoClave(gasto.campoAppId ? `agro:${gasto.campoAppId}` : campoPropioVinculado ? `agro:${campoPropioVinculado.id}` : gasto.campoErpId ? `erp:${gasto.campoErpId}` : '');
+  }
+
+  function abrirEditarGasto(gasto: GastosComercialesReferencia) {
+    prepararSeleccionGasto(gasto);
+    setModoModal('editar');
     setGastoEnEdicion({ ...gasto, items: gasto.items.map((item) => ({ ...item })) });
+  }
+
+  function abrirCopiarGasto(gasto: GastosComercialesReferencia) {
+    const ahora = new Date().toISOString();
+
+    prepararSeleccionGasto(gasto);
+    setModoModal('copiar');
+    setGastoEnEdicion({
+      ...gasto,
+      id: `gastos-comerciales-copia-${Date.now()}`,
+      descripcion: `${gasto.descripcion} - copia`,
+      items: gasto.items.map((item) => ({ ...item })),
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
   }
 
   function actualizarBorrador(cambios: Partial<GastosComercialesReferencia>) {
@@ -249,7 +288,13 @@ export function GastosComercialesScreen({
     }
 
     const gastoPreparado = await asegurarActividadApp(gastoEnEdicion);
-    const guardado = await guardarGastoComercial(gastoPreparado);
+    const gastoConDestinoNormalizado: GastosComercialesReferencia = {
+      ...gastoPreparado,
+      destinoVenta: gastoPreparado.destinoVenta ? normalizarTexto(gastoPreparado.destinoVenta) : gastoPreparado.destinoVenta,
+    };
+
+    await asegurarDestinoVentaApp(gastoConDestinoNormalizado);
+    const guardado = await guardarGastoComercial(gastoConDestinoNormalizado);
 
     if (guardado) {
       setGastoEnEdicion(null);
@@ -258,6 +303,50 @@ export function GastosComercialesScreen({
 
   function crearIdActividadDesdeErp(actividadErpId: string) {
     return `actividad-app-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+  }
+
+  function crearIdDestinoDesdeNombre(destinoVenta: string) {
+    return `destino-venta-${normalizarTexto(destinoVenta).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')}`;
+  }
+
+  async function asegurarDestinoVentaApp(gasto: GastosComercialesReferencia): Promise<void> {
+    const destinoVenta = normalizarTexto(gasto.destinoVenta || '');
+
+    if (!destinoVenta) {
+      return;
+    }
+
+    const destinoVentaNormalizado = normalizarTexto(destinoVenta);
+    const existeDestino = planificacion.destinosReferencia.some((destino) => (
+      (destino.destinoVentaNormalizado || normalizarTexto(destino.destinoVenta)) === destinoVentaNormalizado
+    ));
+    const existePuertoErp = puertosErp.some((puerto) => (
+      puerto.activo && normalizarTexto(puerto.nombre) === destinoVentaNormalizado
+    ));
+
+    if (existeDestino || existePuertoErp) {
+      return;
+    }
+
+    const ahora = new Date().toISOString();
+
+    await guardarDestinoVenta({
+      id: crearIdDestinoDesdeNombre(destinoVenta),
+      clienteId: gasto.clienteId || planificacion.planificaciones[0]?.clienteId || planificacion.destinosReferencia[0]?.clienteId || '',
+      empresaErpId: gasto.empresaErpId,
+      zonaErpId: gasto.zonaErpId,
+      campoAppId: gasto.campoAppId,
+      campoErpId: gasto.campoErpId,
+      actividadAppId: gasto.actividadAppId,
+      actividadErpId: gasto.actividadErpId,
+      destinoVenta,
+      destinoVentaNormalizado,
+      descripcion: `Destino creado desde gastos comerciales ${gasto.descripcion}`,
+      activo: true,
+      origen: 'app',
+      createdAt: ahora,
+      updatedAt: ahora,
+    });
   }
 
   async function asegurarActividadApp(gasto: GastosComercialesReferencia): Promise<GastosComercialesReferencia> {
@@ -440,10 +529,11 @@ export function GastosComercialesScreen({
             {
               key: 'acciones',
               label: 'Acciones',
-              width: 'minmax(76px, 0.44fr)',
+              width: 'minmax(96px, 0.5fr)',
               render: (gasto) => (
                 <div className="table-icon-actions">
                   <IconButton icon="edit" label={`Editar gasto ${gasto.descripcion}`} onClick={() => abrirEditarGasto(gasto)} disabled={!puedeConfigurarPlanificacion} />
+                  <IconButton icon="copy" label={`Copiar gasto ${gasto.descripcion}`} onClick={() => abrirCopiarGasto(gasto)} disabled={!puedeConfigurarPlanificacion} />
                 </div>
               ),
             },
@@ -457,7 +547,7 @@ export function GastosComercialesScreen({
             <div className="modal-header">
               <div>
                 <p className="eyebrow">Gasto comercial</p>
-                <h2 id="gastos-modal-title">{modoModal === 'crear' ? 'Nuevo gasto' : 'Editar gasto'}</h2>
+                <h2 id="gastos-modal-title">{modoModal === 'crear' ? 'Nuevo gasto' : modoModal === 'copiar' ? 'Copiar gasto' : 'Editar gasto'}</h2>
               </div>
               <Button variant="small" onClick={() => { setCreandoDestino(false); setGastoEnEdicion(null); }}>Cerrar</Button>
             </div>
@@ -587,12 +677,10 @@ export function GastosComercialesScreen({
                   </label>
                   <label>
                     Valor
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
+                    <DecimalInput
                       value={item.valorPorTonelada}
-                      onChange={(event) => actualizarItem(indice, { valorPorTonelada: leerNumero(event.target.value) })}
+                      onValueChange={(valorPorTonelada) => actualizarItem(indice, { valorPorTonelada })}
+                      commitOnBlur
                     />
                   </label>
                   <label>
@@ -614,9 +702,15 @@ export function GastosComercialesScreen({
                       onChange={(event) => actualizarItem(indice, { observaciones: event.target.value })}
                     />
                   </label>
-                  <Button variant="danger" onClick={() => quitarItem(indice)} disabled={gastoEnEdicion.items.length === 1}>
-                    Quitar
-                  </Button>
+                  <div className="expense-item-action">
+                    <IconButton
+                      icon="trash"
+                      label={`Quitar item ${indice + 1}`}
+                      className="expense-remove-button"
+                      onClick={() => quitarItem(indice)}
+                      disabled={gastoEnEdicion.items.length === 1}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -626,7 +720,7 @@ export function GastosComercialesScreen({
               <Button variant="primary" onClick={aplicarModal} disabled={guardandoGastos || modalInvalido}>
                 <span className="button-content">
                   {guardandoGastos && <LoadingSpinner label="Guardando gastos" />}
-                  {guardandoGastos ? 'Guardando...' : modoModal === 'crear' ? 'Guardar' : 'Editar'}
+                  {guardandoGastos ? 'Guardando...' : modoModal === 'editar' ? 'Editar' : modoModal === 'copiar' ? 'Guardar copia' : 'Guardar'}
                 </span>
               </Button>
             </div>

@@ -109,11 +109,11 @@ export function DestinosVentaScreen({
       return;
     }
 
-    const destinoVenta = limpiarTextoVisible(destinoEnEdicion.destinoVenta);
+    const destinoVenta = normalizarTexto(destinoEnEdicion.destinoVenta);
     const destinoPreparado: DestinoApp = {
       ...destinoEnEdicion,
       destinoVenta,
-      destinoVentaNormalizado: normalizarTexto(destinoVenta),
+      destinoVentaNormalizado: destinoVenta,
       descripcion: destinoEnEdicion.descripcion ? limpiarTextoVisible(destinoEnEdicion.descripcion) : undefined,
     };
     const guardado = await guardarDestino(destinoPreparado);

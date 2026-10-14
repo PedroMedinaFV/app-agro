@@ -80,12 +80,12 @@ export function validarDestinoReferencia(destino: DestinoApp, usuario?: UsuarioC
 }
 
 export function prepararDestinoReferencia(destino: DestinoApp): DestinoApp {
-  const destinoVenta = limpiarTextoVisible(destino.destinoVenta);
+  const destinoVenta = normalizarTexto(destino.destinoVenta);
 
   return {
     ...destino,
     destinoVenta,
-    destinoVentaNormalizado: normalizarTexto(destinoVenta),
+    destinoVentaNormalizado: destinoVenta,
     descripcion: destino.descripcion ? limpiarTextoVisible(destino.descripcion) : undefined,
   };
 }

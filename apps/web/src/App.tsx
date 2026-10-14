@@ -362,8 +362,8 @@ export function App() {
           puedeConfigurarPlanificacion={planificacionApp.puedeConfigurarPlanificacion}
           guardandoGastos={planificacionApp.guardandoGastos}
           guardarGastoComercial={planificacionApp.guardarGastoComercialDesdeModal}
+          guardarDestinoVenta={planificacionApp.guardarDestinoVentaDesdeModal}
           formatearUsd={formatearUsd}
-          leerNumero={leerNumero}
         />
       )}
 

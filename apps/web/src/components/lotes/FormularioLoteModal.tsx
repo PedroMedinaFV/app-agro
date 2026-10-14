@@ -1,5 +1,6 @@
 import type { LoteApp } from '@agro/tipos';
 import { Button } from '../Button';
+import { DecimalInput } from '../DecimalInput';
 import type { CampoSeleccionable } from './tiposLotes';
 
 type ModoFormularioLote = 'crear' | 'editar' | 'copiar';
@@ -15,12 +16,6 @@ type FormularioLoteModalProps = {
   onActualizarLote: (lote: LoteApp) => void;
   onGuardar: () => void;
 };
-
-function leerNumeroPositivo(valor: string) {
-  const numero = Number(valor);
-
-  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
-}
 
 export function FormularioLoteModal({
   lote,
@@ -76,22 +71,18 @@ export function FormularioLoteModal({
           </label>
           <label>
             Superficie total
-            <input
-              min="0"
-              step="0.01"
-              type="number"
+            <DecimalInput
               value={lote.superficieTotal}
-              onChange={(event) => onActualizarLote({ ...lote, superficieTotal: leerNumeroPositivo(event.target.value) })}
+              onValueChange={(superficieTotal) => onActualizarLote({ ...lote, superficieTotal })}
+              commitOnBlur
             />
           </label>
           <label>
             Superficie productiva
-            <input
-              min="0"
-              step="0.01"
-              type="number"
+            <DecimalInput
               value={lote.superficieProductiva}
-              onChange={(event) => onActualizarLote({ ...lote, superficieProductiva: leerNumeroPositivo(event.target.value) })}
+              onValueChange={(superficieProductiva) => onActualizarLote({ ...lote, superficieProductiva })}
+              commitOnBlur
             />
           </label>
         </div>
