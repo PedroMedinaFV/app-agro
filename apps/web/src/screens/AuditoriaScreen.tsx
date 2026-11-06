@@ -127,7 +127,6 @@ export function AuditoriaScreen({ sesion, notificar }: AuditoriaScreenProps) {
 
   useEffect(() => {
     cargarAuditoria();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

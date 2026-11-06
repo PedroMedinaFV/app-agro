@@ -1,32 +1,39 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-06 (etapas 1 a 5; integracion HTTP/PostgreSQL aprobada; pendiente recorrido de dispositivo de etapa 3).
+Fecha de corte: 2026-11-06 (etapas 1 a 6 implementadas; pendiente recorrido de dispositivo de etapa 3 y primera corrida hospedada de CI).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
-- Suite rapida: `pnpm test`; 274 tests, 273 aprobados, 0 fallidos, 1 omitido (PostgreSQL ERP opcional).
-- Archivos de suite rapida: 48.
+- Suite rapida: `pnpm test`; 279 tests, 278 aprobados, 0 fallidos, 1 omitido (PostgreSQL ERP opcional).
+- Archivos de suite rapida: 50.
 - Suite de integracion: `pnpm test:integration`; 14 aprobados, 0 fallidos, 0 omitidos, en un archivo HTTP separado.
 - Replay de las 34 migraciones en schema vacio y limpieza final aprobados; fixtures ficticios.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 
-Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (versiones observadas en este entorno, no fijadas por el repositorio):
+Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (ahora declaradas en `.nvmrc`/`packageManager`/`engines`):
 
 | Comando | Resultado | Alcance |
 | --- | --- | --- |
-| `pnpm test` | Correcto: 273 aprobados, 1 omitido, etapa 5 | Compila tipos/API/nucleo offline y ejecuta 48 archivos de pruebas |
-| `pnpm test:integration` | Correcto: 14 aprobados, 0 omitidos, etapa 5 | App Express real, 34 migraciones, fixtures, HTTP/PostgreSQL y eliminacion del schema; tests HTTP de la ultima corrida: aproximadamente 131 segundos |
-| `pnpm build` | Correcto, etapa 5 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
+| `pnpm check` | Correcto, etapa 6 | Encadena lint, tipos, tests y builds; no incluye integracion PostgreSQL |
+| `pnpm lint` | Correcto, sin errores ni warnings, etapa 6 | ESLint recomendado JS/TS, variables sin uso y reglas de hooks; excepciones documentadas |
+| `pnpm typecheck` | Correcto, etapa 6 | Tipos compartidos y chequeo `--noEmit` en los cuatro workspaces |
+| `pnpm test` | Correcto: 278 aprobados, 1 omitido, etapa 6 | Compila tipos/API/nucleo offline y ejecuta 50 archivos; incluye React y CLI Prisma |
+| `pnpm test:integration` | Correcto: 14 aprobados, 0 omitidos, repetido en etapa 6 | App Express real, 34 migraciones, fixtures, HTTP/PostgreSQL y eliminacion del schema; tests HTTP de la ultima corrida: aproximadamente 127 segundos |
+| `pnpm build` | Correcto, etapa 6 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
 | `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto, etapa 3 | Chequeo TypeScript mobile, separado del bundle Expo |
-| `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 4 | Modelo de reserva ERP; no aplica migraciones ni verifica conectividad |
+| `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 6 | Wrapper local sin shell; no aplica migraciones ni verifica conectividad |
 | `pnpm --filter agro-app-api prisma:generate` | Correcto, etapa 4 | Prisma Client regenerado con el modelo nuevo |
 | `pnpm --filter agro-app-api db:status` | Base actualizada, 34 migraciones, etapa 5 | Consulta real al schema `agro_app` despues de registrar compatibilidad; sin escrituras |
 | `node --test tests/erp-bloqueo-postgres.test.js` con `ERP_LOCK_TEST_DATABASE_URL` | 1 aprobado, 0 fallidos, 0 omitidos | PostgreSQL real, schema temporal creado y eliminado; aproximadamente 29 segundos |
 
-Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. No se cambiaron dependencias. PostgreSQL y HTTP se verificaron con fixtures ficticios en schemas aislados; en agro_app solo se registro la compatibilidad no-op de etapa 5, sin cambios en datos de negocio. La suite usa ERP mock; la corrida del usuario con integracion real se registro por separado en etapa 4. Microsoft/Storage reales y dispositivo siguen fuera de estas pruebas.
+Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. En etapa 6 se agregaron dependencias de desarrollo para ESLint y pruebas React, con versiones exactas; no se actualizaron dependencias de runtime. PostgreSQL y HTTP se verificaron con fixtures ficticios en schemas aislados; en agro_app solo se registro la compatibilidad no-op de etapa 5, sin cambios en datos de negocio. La suite usa ERP mock; la corrida del usuario con integracion real se registro por separado en etapa 4. Microsoft/Storage reales y dispositivo siguen fuera de estas pruebas.
+
+Etapa 6: modularizacion mobile/planificacion, CLI Prisma fiable y `pnpm check` aprobados localmente. Workflow CI con dos jobs y PostgreSQL temporal creado; YAML parseado sin errores. Primera corrida en GitHub y configuracion de protecciones de rama pendientes de subir los cambios. Los tests React emiten la deprecacion del renderer fijado a 19.2.4; Expo emite advertencias de variables de color del entorno. No son fallos de tests/build ni se ocultan. Limites y futura migracion del renderer documentados en la guia de calidad.
+
+Integracion repetida despues del refactor: 14/14 recorridos aprobados, 0 fallidos/omitidos, aproximadamente 127 segundos de HTTP mas migraciones. Las 34 migraciones se aplicaron desde cero y el runner confirmo la eliminacion de `agro_integration_test_ded9af2bba0543d7be2bd3d3d4c9bc1a`. No se aplicaron migraciones al schema operativo en etapa 6.
 
 Actualizacion de etapa 5: el replay completo detecto incompatibilidad de nombres en migraciones historicas. La nueva migracion `20261001181546_compatibilidad_nombres_replay` permite reproducir el historial sin modificar checksums anteriores. Se verifico que es un no-op en schemas actualizados y se registro en `agro_app` con `db:deploy`, sin migrar datos operativos. Los fixtures de integracion solo se crean en schemas temporales. Se consultaron las credenciales mediante configuracion privada sin imprimirlas; ERP mock y proveedores externos vacios se fuerzan dentro de la suite.
 
@@ -83,7 +90,7 @@ El estado verde de la suite no implica que los siguientes puntos esten resueltos
 - La clave JWT local ya fue actualizada. Los logins reales y la configuracion del ambiente objetivo siguen pendientes de validacion.
 - La cola nueva separa propietarios y serializa mutaciones dentro de un runtime. Quedan pendientes la recuperacion controlada de registros globales anteriores y la coordinacion entre multiples pestanas/procesos web.
 - Los adjuntos guardan progreso para reintentos, pero un cierre entre PUT y persistencia local puede repetir una subida; fotos reales, cuotas, reinicio y depuracion de cache requieren validacion en dispositivo.
-- El script raiz `lint` aun no tiene implementacion en los workspaces; pendiente de automatizacion en etapa 6.
+- Lint/tipos/tests/build ya estan automatizados localmente. Falta ejecutar el workflow hospedado y exigir sus checks en la rama de entrega; no hay CD ni recuperacion de backups probada.
 
 Estos puntos no bloquean el avance de nuevas features, pero conviene tratarlos antes de produccion:
 

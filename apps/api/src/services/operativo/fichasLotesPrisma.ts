@@ -7,7 +7,7 @@ import type {
   PlanificacionOperativaLineaResumen,
   ZonaApp,
 } from '@agro/tipos';
-import { Prisma } from '@prisma/client';
+
 import { prisma } from '../../prisma';
 import { obtenerCamposAsignados } from '../usuarios/asignacionCampos';
 

@@ -4,6 +4,7 @@
   "private": true,
   "main": "src/App.tsx",
   "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:build": "tsc -p tsconfig.offline-tests.json",
     "dev": "node ../../scripts/run-expo.js",
     "build": "expo export"
@@ -26,5 +27,8 @@
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.26.2",
     "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "react-test-renderer": "19.2.4"
   }
 }

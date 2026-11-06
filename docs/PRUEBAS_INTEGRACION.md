@@ -2,6 +2,8 @@
 
 Fecha: 2026-11-06. Etapa 5 del plan de estabilizacion.
 
+Etapa 6: `.github/workflows/ci.yml` ejecuta esta suite contra PostgreSQL 16 temporal y tambien el test explicito de bloqueo ERP. No necesita la configuracion privada local ni secretos de proveedores. La primera corrida en GitHub queda pendiente de subir los cambios; operacion y controles en [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md).
+
 ## Objetivo y alcance
 
 Probar la aplicacion Express real con autenticacion, permisos, validaciones, servicios, Prisma, auditoria y PostgreSQL. Se usan usuarios y datos ficticios en un schema exclusivo por ejecucion. No se sustituyen los servicios de negocio ni la base con mocks.

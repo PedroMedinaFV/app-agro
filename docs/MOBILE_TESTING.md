@@ -197,6 +197,19 @@ Usar cuentas A/B de testing con cliente asociado y datos conocidos; no usar regi
 
 Registrar dispositivo, plataforma, versiones, escenario y resultado antes de marcar este recorrido como aprobado.
 
+Usar esta ficha como evidencia (no esta completada por los tests automaticos):
+
+| Dato | Valor a registrar |
+| --- | --- |
+| Fecha, responsable y commit | Pendiente |
+| Dispositivo, Android/iOS, Expo/app | Pendiente |
+| API, cliente y usuarios de testing | Identificadores de prueba; sin passwords ni tokens |
+| Cada escenario anterior | Aprobado/fallido, resultado observado e IDs locales/remotos |
+| Fotos y reintentos | Confirmar apertura y cantidad de registros/subidas tras interrupcion |
+| Incidencias | Pasos, resultado esperado/obtenido y evidencia sin informacion privada |
+
+Repetir el cambio de sesion con formularios escritos y selector/camara abierto: despues de salir, ningun texto, foto o respuesta anterior debe aparecer en la nueva cuenta. El refactor de etapa 6 incorpora pruebas React de estos estados; no acredita permisos/archivos nativos reales.
+
 ## 8. Problemas comunes
 
 ### La app abre pero no carga datos

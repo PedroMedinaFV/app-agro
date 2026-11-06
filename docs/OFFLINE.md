@@ -2,6 +2,8 @@
 
 Actualizado: 2026-11-06, etapa 3 de estabilizacion. Implementacion y pruebas automaticas disponibles; validacion con fotos reales en dispositivo pendiente.
 
+Etapa 6: la entrada y los hooks de sesion, datos, formularios, fotos y pendientes se separaron sin cambiar el formato de cola ni el coordinador. Ver [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md) para contratos y ciclo de desmontaje del panel. `tests/mobile-react.test.js` prueba cambios de cuenta, respuestas/fotos anteriores y fallos de persistencia con React real y adaptadores sustituidos; no reemplaza el recorrido de dispositivo.
+
 ## Proposito y alcance
 
 El operador puede guardar observaciones y precipitaciones cuando la API no esta disponible. Los registros permanecen en el dispositivo y solo se envian con la sesion de su propietario. El backend mantiene la autoridad sobre permisos, cliente, campos y lotes.
@@ -81,7 +83,9 @@ Una solicitud ya en vuelo no se cancela automaticamente. Si confirma una operaci
 | `services/almacenamientoLocal.ts` | Adaptar AsyncStorage/localStorage y construir la cola desde la sesion; detectar pendientes antiguos |
 | `services/sincronizacion.ts` | Conectar el sincronizador con API y storage remoto, usando la sesion capturada |
 | `services/adjuntosLocales.ts` | Preservar contenido de fotos segun plataforma |
-| `App.tsx` | Integrar formularios, estado visible y ciclo de sesion |
+| `App.tsx`, `screens/PantallaOperativa.tsx` | Componer login/panel y presentacion operativa; desmontar el panel al cambiar sesion |
+| `hooks/useSesionMobile.ts`, `useDatosOperativosMobile.ts` | Sesion vigente y consultas/seleccion con descarte de respuestas anteriores |
+| `hooks/usePendientesMobile.ts`, `useFormularioRegistrosMobile.ts`, `useFotoObservacion.ts` | Contador/envio, guardado previo y captura/seleccion de fotos; delegan al nucleo y adaptadores |
 
 Para otro tipo de registro, definir su contrato compartido, implementarlo y autorizarlo en backend, luego agregar su captura local. No marcarlo sincronizado sin confirmacion. Para reemplazar la persistencia implementar `AlmacenamientoOffline`; mantener la misma instancia de adaptador durante su uso para compartir la exclusion por propietario.
 

@@ -11,7 +11,7 @@ Fecha de inicio: 2026-11-06. Alcance acordado: estabilizar Agro App por etapas c
 | 3. Integridad offline | Separar cola por cliente/usuario, serializar escrituras, impedir sincronizacion de pendientes ajenos y persistir progreso de adjuntos | Pruebas de cambio de usuario, concurrencia, errores parciales y reintentos; validacion en dispositivo | Implementada con pruebas automaticas; pendiente recorrido en dispositivo |
 | 4. Concurrencia ERP | Bloqueo persistente por cliente, vencimiento, recuperacion y trazabilidad | Dos instancias no sincronizan el mismo cliente simultaneamente; interrupciones no dejan bloqueo permanente | Completada: pruebas, migracion y sincronizacion ERP verificadas el 2026-11-06 |
 | 5. Integracion | PostgreSQL aislado por schema, migraciones desde cero, recorridos HTTP con middleware real y aislamiento entre clientes/campos | Flujos criticos completos aprobados sin datos operativos reales | Completada el 2026-11-06: 14 recorridos HTTP aprobados, replay de 34 migraciones y limpieza verificada |
-| 6. Modularizacion y entrega | Separar responsabilidades restantes en mobile y servicios criticos; automatizar verificaciones; documentar despliegue y recuperacion | Verificaciones reproducibles y modulos con contratos y dependencias comprensibles | Pendiente |
+| 6. Modularizacion y entrega | Separar responsabilidades restantes en mobile y servicios criticos; automatizar verificaciones; documentar despliegue y recuperacion | Verificaciones reproducibles y modulos con contratos y dependencias comprensibles | Implementada y verificada localmente el 2026-11-06; primera corrida hospedada de CI pendiente |
 
 La modularizacion necesaria para una correccion se realiza dentro de su etapa. La etapa 6 aborda lo restante; no se posterga la calidad de las etapas anteriores.
 
@@ -83,3 +83,15 @@ El criterio de PostgreSQL aislado esta aprobado. El usuario aplico la migracion 
 - Suite rapida: 273 aprobados, 0 fallidos y 1 test PostgreSQL opcional omitido; suite de integracion separada: 14 aprobados, sin omisiones. La evidencia del build queda en `ESTABILIDAD_MVP.md`.
 
 Guia funcional/tecnica, configuracion, aislamiento, excepcion acotada de advisory lock de Prisma para schemas exclusivos y limites en [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md). No se considera ejecutado el recorrido de dispositivo de etapa 3 ni se extiende esta suite a Microsoft/Storage reales o pruebas de carga.
+
+## Entrega de etapa 6
+
+- Mobile compone login/panel y hooks de sesion, datos operativos, pendientes, formularios y fotos. Se desmonta el panel al cambiar cuenta y se conservan guards de respuestas en vuelo y guardado previo al envio.
+- Planificacion API extrae serializacion sin I/O y reemplazo de lineas con transaccion explicita; permanecen autorizacion, validaciones, cierre y auditoria en el caso de uso.
+- ESLint real, chequeo TypeScript de los cuatro workspaces, comando `pnpm check`, Node/pnpm declarados y lockfile actualizado. Limpieza de imports y helper ERP sin uso, sin modificar contratos.
+- Pruebas React sobre el flujo activo: reset/aislamiento A/B, respuesta y foto anteriores, fallo de persistencia y reintento; pruebas de CLI Prisma para prioridad de entorno y salida fiable.
+- Workflow CI para calidad y PostgreSQL temporal; incluye las 34 migraciones, HTTP real y exclusion ERP. Sin secretos externos ni despliegue; corrida hospedada pendiente de subir cambios.
+- [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md) describe responsabilidades/contratos y [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md) documenta herramientas, entrega, backups, recuperacion y limites. Se actualizan arquitectura, README, calidad, offline y decisiones.
+- Resultado: `pnpm check` aprobado; 278 tests aprobados, 0 fallidos y 1 PostgreSQL opcional omitido. Integracion repetida despues del refactor: 14 aprobados, 34 migraciones aplicadas en schema temporal y eliminacion confirmada. YAML CI valido y schema Prisma validado con el wrapper actualizado.
+
+La etapa 6 no ejecuta una entrega productiva ni cambia secretos/migraciones. El recorrido de etapa 3 en telefono real sigue pendiente, con ficha y criterios en [MOBILE_TESTING.md](MOBILE_TESTING.md). Los resultados finales se mantienen en [ESTABILIDAD_MVP.md](ESTABILIDAD_MVP.md).

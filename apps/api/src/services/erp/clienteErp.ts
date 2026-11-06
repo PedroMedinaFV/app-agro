@@ -275,26 +275,6 @@ async function obtenerTokenLogin(configuracion: ConfiguracionErp) {
   return token;
 }
 
-async function getErp<T>(configuracion: ConfiguracionErp, path: string): Promise<T> {
-  validarConfiguracionErp(configuracion);
-  const tokenLogin = await obtenerTokenLogin(configuracion);
-
-  const respuesta = await fetchConTimeout(construirUrl(configuracion.baseUrl as string, path), {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      ...crearHeadersAutenticacion(configuracion, tokenLogin),
-    },
-  }, configuracion.timeoutMs);
-
-  if (!respuesta.ok) {
-    const detalle = await leerErrorSeguro(respuesta);
-    throw new Error(`ERP respondio ${respuesta.status} al consultar ${path}.${detalle ? ` Detalle: ${detalle}` : ''}`);
-  }
-
-  return respuesta.json() as Promise<T>;
-}
-
 async function getErpConQuery<T>(
   configuracion: ConfiguracionErp,
   path: string,

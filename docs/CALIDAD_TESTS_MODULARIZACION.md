@@ -42,13 +42,30 @@ El primer intento fallo porque la base estaba pausada. Tras reactivarla se ejecu
 
 ## Cobertura agregada en etapa 5 (2026-11-06)
 
-Suite rapida vigente: 274 tests en 48 archivos, 273 aprobados y uno omitido (PostgreSQL ERP opcional). `alcance-cliente.test.js` verifica el guard compartido y su middleware; `integration-environment.test.js` verifica configuracion explicita sin fallback operativo, prioridad del proceso y validacion estricta del nombre de schema.
+Al cerrar etapa 5: 274 tests en 48 archivos, 273 aprobados y uno omitido (PostgreSQL ERP opcional). `alcance-cliente.test.js` verifica el guard compartido y su middleware; `integration-environment.test.js` verifica configuracion explicita sin fallback operativo, prioridad del proceso y validacion estricta del nombre de schema.
 
 Suite separada `pnpm test:integration`: 14 recorridos aprobados, 0 fallidos y 0 omitidos, usando la app Express real y PostgreSQL con fixtures en un schema nuevo. Se verifico el replay completo de 34 migraciones, la compatibilidad no-op y la eliminacion final del schema. La ultima corrida HTTP duro aproximadamente 131 segundos, sin incluir todo el tiempo de migracion.
 
 Los recorridos cubren auth/registro/permisos, campos y tenants, precipitaciones/observaciones y auditoria, offline parcial/concurrente, cierre de recorrida, aislamiento administrativo, planificacion con snapshots/cierre y ERP con proveedor mock pero coordinador/base reales. Las pruebas reprodujeron los accesos entre clientes y timeout de cierre que se corrigieron en esta etapa.
 
 Ver [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md) para archivos, configuracion, limpieza, excepcion del advisory lock global de Prisma limitada al replay exclusivo y alcance fuera de la suite. La configuracion privada local no se versiona. Los tests unitarios existentes de planificacion ahora incluyen cliente de sesion en sus actores, conforme al contrato real de autorizacion.
+
+## Cobertura y herramientas de etapa 6 (2026-11-06)
+
+Suite rapida: 279 tests en 50 archivos; 278 aprobados, 0 fallidos y 1 omitido (PostgreSQL ERP opcional). `pnpm check` completo aprobado localmente, incluyendo lint/tipos y exportacion Expo para web/iOS/Android.
+
+Integracion HTTP/PostgreSQL repetida tras la extraccion: 14 aprobados, 0 fallidos/omitidos, con replay de 34 migraciones y eliminacion confirmada del schema temporal. El recorrido de planificacion incluye guardado, aislamiento de clientes, snapshots y cierre.
+
+`pnpm lint` ahora ejecuta ESLint real desde la raiz, `pnpm typecheck` comprueba los cuatro workspaces y `pnpm check` encadena lint, tipos, tests y build. Node/pnpm quedan declarados y la CI agrega un PostgreSQL descartable para integracion y exclusion ERP. Configuracion, excepciones de lint, instalacion congelada y procedimiento operativo en [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md).
+
+| Archivo | Regresion protegida | Limite |
+| --- | --- | --- |
+| `tests/mobile-react.test.js` | Formularios/pendientes por sesion, desmontaje A/B, snapshot/foto anteriores y preservacion del formulario cuando falla storage; guardar antes de sincronizar | App, pantallas y hooks reales con React; adaptadores nativos/red/storage sustituidos |
+| `tests/prisma-cli.test.js` | Prioridad de entorno incluso vacio, argumentos sin shell, propagacion de fallo/terminacion/error de inicio | CLI inyectado; no aplica migraciones |
+
+`tests/helpers/mobile-react.js` transpila los TS/TSX reales en memoria y los carga con sustituciones explicitas de adaptadores. El chequeo TypeScript se ejecuta por separado; no se duplica la logica de los hooks. Se fija `react-test-renderer` a la version de React instalada para aprovechar el runner Node existente sin agregar Jest. Este renderer emite un aviso de deprecacion; no se oculta. Es un limite de esta cobertura: al introducir una suite UI nativa completa, migrar a Testing Library, segun la [recomendacion de React](https://react.dev/warnings/react-test-renderer). No se considera validacion en Android/iOS.
+
+La extraccion API conserva los tests existentes de contratos, guardado/cierre y auditoria; la suite HTTP/PostgreSQL vuelve a ejecutar el recorrido con snapshots. El detalle de responsabilidades y garantias esta en [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md). El recorrido de dispositivo de etapa 3 sigue pendiente.
 
 ## Principio
 

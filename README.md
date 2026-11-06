@@ -18,12 +18,12 @@ Estado: MVP en estabilizacion. La API ya persiste datos en PostgreSQL mediante P
 
 ## Preparar desarrollo local
 
-Se necesitan Node.js compatible con los paquetes instalados, pnpm y PostgreSQL. Docker Compose permite levantar la base local. El repositorio todavia no fija versiones de Node/pnpm; la etapa 1 se verifico con Node `v24.18.1` y pnpm `11.18.0`. Registrar cambios de herramientas junto con sus verificaciones.
+Se necesitan Node.js `24.18.1` (`.nvmrc`), pnpm `11.18.0` (`packageManager` raiz) y PostgreSQL. Docker Compose permite levantar la base local. Registrar cambios de herramientas junto con sus verificaciones.
 
 Desde la raiz, en PowerShell:
 
 ```powershell
-pnpm install
+pnpm install --frozen-lockfile
 Copy-Item .env.example .env
 ```
 
@@ -68,9 +68,7 @@ El ERP, Microsoft Entra ID y Supabase requieren configuracion adicional; consult
 ## Verificaciones
 
 ```powershell
-pnpm test
-pnpm --filter agro-app-web build
-pnpm --filter agro-app-mobile exec tsc --noEmit
+pnpm check
 pnpm --filter agro-app-api prisma:validate
 pnpm --filter agro-app-api db:status
 ```
@@ -79,11 +77,15 @@ pnpm --filter agro-app-api db:status
 
 Para probar recorridos HTTP completos con PostgreSQL real, configurar `TEST_DATABASE_URL` en el entorno o `.env.test.local` y ejecutar `pnpm test:integration`. El runner crea un schema nuevo, aplica todas las migraciones, usa fixtures ficticios y elimina el schema al terminar. No toma `DATABASE_URL` como fallback. Ver [pruebas de integracion](docs/PRUEBAS_INTEGRACION.md) para configuracion, seguridad, cobertura y limites.
 
-Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` para mobile. El chequeo TypeScript de mobile y la exportacion Expo son verificaciones distintas. El script raiz `pnpm lint` todavia no tiene scripts/configuracion de lint en los workspaces y no debe contarse como control de calidad implementado.
+`pnpm check` ejecuta lint sin warnings, chequeo TypeScript de los cuatro workspaces, suite rapida y build completo. Los controles tambien se pueden ejecutar por separado con `pnpm lint`, `pnpm typecheck`, `pnpm test` y `pnpm build`. Este ultimo incluye `expo export` para mobile; tipos y exportacion son verificaciones distintas. La integracion PostgreSQL se ejecuta por separado.
+
+GitHub Actions configura ambos controles en PR y push a `main`/`testing`, con PostgreSQL temporal sin secretos externos. La primera corrida hospedada queda pendiente de subir los cambios. Ver [entrega y recuperacion](docs/ENTREGA_Y_RECUPERACION.md) para herramientas, CI, despliegue, backups, rollback y limites antes de produccion.
 
 ## Documentacion para continuar
 
 - [Arquitectura actual](docs/ARQUITECTURA_PROYECTO.md): mapa del codigo y flujos de datos.
+- [Modulos mobile y planificacion](docs/MODULOS_MOBILE_PLANIFICACION.md): responsabilidades, contratos y ciclo de sesion.
+- [Entrega y recuperacion](docs/ENTREGA_Y_RECUPERACION.md): verificaciones reproducibles, CI y operacion.
 - [Calidad, SOLID y documentacion](docs/CALIDAD_TESTS_MODULARIZACION.md): criterios para cambios nuevos y existentes.
 - [Plan de accion](docs/PLAN_ACCION_ESTABILIZACION.md): etapas y criterios de cierre.
 - [Estado de estabilidad](docs/ESTABILIDAD_MVP.md): evidencia de verificaciones y pendientes.

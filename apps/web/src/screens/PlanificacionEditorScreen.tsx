@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { ErpCultivo, PlanificacionAgricolaLinea } from '@agro/tipos';
-import { Button } from '../components/Button';
+
 import { PageHeader } from '../components/PageHeader';
 import { Panel } from '../components/Panel';
 import { AccionesAlcancePlanificacion, TipoAlcancePlanificacion } from '../components/planificacion/AccionesAlcancePlanificacion';
@@ -329,11 +329,9 @@ export function PlanificacionEditorScreen({
   const destinosParaAccionMasiva = useMemo(() => {
     const destinos = new Map<string, string>();
 
-    for (const linea of lineasFiltradas) {
-      for (const destino of planificacion.destinosReferencia) {
-        if (destino.activo) {
-          destinos.set(normalizarTexto(destino.destinoVenta), destino.destinoVenta);
-        }
+    for (const destino of lineasFiltradas.length ? planificacion.destinosReferencia : []) {
+      if (destino.activo) {
+        destinos.set(normalizarTexto(destino.destinoVenta), destino.destinoVenta);
       }
     }
 

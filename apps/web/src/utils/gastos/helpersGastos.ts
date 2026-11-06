@@ -7,7 +7,7 @@ import {
   ErpZona,
   ZonaApp,
 } from '@agro/tipos';
-import { formatearFecha } from '../formatters';
+
 
 export type ActividadSeleccionable = {
   clave: string;

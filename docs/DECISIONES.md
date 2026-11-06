@@ -1,5 +1,17 @@
 # Decisiones Tecnicas
 
+## 2026-11-06 - Modularizacion y entrega verificable
+
+La entrada mobile compone pantallas y hooks por responsabilidad; el nucleo offline conserva sus contratos y adaptadores. Una version numerica de sesion fuerza el desmontaje del panel, evitando una lista manual de resets que se vuelve incompleta al agregar formularios. La referencia compartida invalida callbacks antes del render; no se usan tokens como claves de componentes. La lectura local de pendientes no condiciona la consulta remota del snapshot.
+
+Planificacion API separa conversiones sin I/O y reemplazo de lineas del caso de uso. El helper de escritura exige la transaccion del caller, conservando atomicidad de cabecera, lineas y auditoria. No se crean capas genericas sin necesidad ni cambian tablas/contratos.
+
+Node/pnpm y dependencias de lint quedan declarados. `pnpm check` encadena ESLint, tipos, tests y builds; integracion permanece separada porque requiere PostgreSQL. CI configura ambos en jobs independientes con PostgreSQL temporal, sin secretos de proveedores ni despliegue. Su primera corrida hospedada queda pendiente de subir cambios. Las protecciones de rama y el ambiente productivo requieren configuracion posterior.
+
+El CLI Prisma deja de depender de un shell y propaga fallos de inicio/terminacion; el entorno, incluso vacio, prevalece sobre `.env`. Las nuevas regresiones prueban esa garantia y el ciclo de React con adaptadores sustituidos. El renderer de test se fija a React 19.2.4 para la suite Node actual; su deprecacion queda documentada como limite y futura migracion de la suite UI, sin atribuirle validacion nativa.
+
+Mapa, contratos y limites en [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md); controles, CI y runbook en [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md). El recorrido real de dispositivo de etapa 3 sigue pendiente.
+
 ## Web separada de mobile
 
 Se crea `apps/web` con React + Vite para validar rapido pantallas y flujos desde navegador. Expo queda enfocado en mobile, donde aporta mas valor para uso de campo y offline-first.

@@ -1,11 +1,4 @@
-import type {
-  ActividadApp,
-  EpocaSiembraActividad,
-  GuardarActividadAppRequest,
-  GuardarActividadAppResponse,
-  TipoCultivoActividad,
-  TipoGranoActividad,
-} from '@agro/tipos';
+import type { ActividadApp, GuardarActividadAppRequest, GuardarActividadAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
 import { registrarAuditoria, UsuarioAuditoria } from '../planificacion/auditoria';

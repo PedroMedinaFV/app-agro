@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type {
   AdjuntoObservacion,
-  CrearAdjuntoObservacionInput,
   CrearObservacionRequest,
   CrearObservacionResponse,
   EstadoAdjuntoObservacion,

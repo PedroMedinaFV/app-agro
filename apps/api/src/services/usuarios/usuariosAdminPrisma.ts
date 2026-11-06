@@ -2,7 +2,6 @@ import type {
   AsignacionCampoUsuario,
   GuardarUsuarioAdminRequest,
   GuardarUsuarioAdminResponse,
-  RolUsuario,
   UsuarioAdminResumen,
   UsuariosAdminResponse,
 } from '@agro/tipos';

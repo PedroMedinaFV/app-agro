@@ -1,6 +1,8 @@
 {
   "name": "agro-app",
   "private": true,
+  "packageManager": "pnpm@11.18.0",
+  "engines": { "node": ">=24.18.1 <25", "pnpm": "11.18.0" },
   "version": "0.1.0",
   "workspaces": [
     "apps/*",
@@ -11,10 +13,17 @@
     "dev": "pnpm -r run dev",
     "dev:all": "pnpm dev",
     "build": "pnpm -r run build",
-    "lint": "pnpm -r run lint",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "pnpm --filter @agro/tipos build && pnpm -r --if-present run typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "test": "pnpm --filter agro-app-api build && pnpm --filter agro-app-mobile test:build && node --test \"tests/*.test.js\""
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "8.72.1"
   }
 }

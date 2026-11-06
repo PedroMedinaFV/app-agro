@@ -1,5 +1,7 @@
 # Planificacion Agricola
 
+La distribucion tecnica de guardado/cierre, serializacion y escritura transaccional de lineas se describe en [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md). La etapa 6 separa responsabilidades sin cambiar las reglas ni los contratos funcionales de esta guia.
+
 ## Objetivo
 
 La planificacion agricola es el primer paso antes de iniciar una nueva campania. Permite definir que cultivo o actividad se planifica realizar por campo y lote, estimando ingresos, costos productivos y margen bruto esperado.

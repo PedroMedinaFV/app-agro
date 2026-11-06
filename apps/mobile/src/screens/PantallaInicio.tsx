@@ -21,7 +21,7 @@ export function PantallaInicio() {
   const [logueado, setLogueado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState('');
-  const [token, setToken] = useState('');
+  const [, setToken] = useState('');
   const [usuarios, setUsuarios] = useState<Array<{ id: string; email: string; nombre?: string | null }>>([]);
   const discovery = AuthSession.useAutoDiscovery(`https://login.microsoftonline.com/${MICROSOFT_TENANT_ID}/v2.0`);
   const [microsoftRequest, microsoftResponse, promptMicrosoft] = AuthSession.useAuthRequest(

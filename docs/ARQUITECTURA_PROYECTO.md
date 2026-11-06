@@ -549,7 +549,11 @@ Regla de negocio acordada:
 
 ## Mobile y sincronizacion offline
 
-`apps/mobile/package.json` declara `src/App.tsx` como entrada. Ese archivo concentra actualmente login, seleccion de campo/lote, consulta operativa y formularios; su separacion por responsabilidad es trabajo pendiente. Existen tambien carpetas de navegacion y store, pero no deben asumirse como el flujo activo sin revisar sus imports desde la entrada.
+`apps/mobile/package.json` declara `src/App.tsx` como entrada. Compone `PantallaLogin` o `PantallaOperativa`; los hooks separan sesion, consulta/seleccion, pendientes, formularios y fotos. El panel se desmonta al cambiar sesion y los guards compartidos descartan respuestas anteriores. Existen tambien carpetas de navegacion y store, pero no deben asumirse como el flujo activo sin revisar sus imports desde la entrada. Contratos y dependencias en [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md).
+
+En API, `planificacionesPrisma.ts` coordina autorizacion, reglas y transacciones; `serializacionPlanificacion.ts` convierte filas/snapshots sin I/O y `lineasPlanificacionPrisma.ts` recibe la transaccion para reemplazar lineas en bloques. No cambian contratos HTTP ni tablas.
+
+Las versiones de herramientas, `pnpm check`, workflow CI y procedimiento de entrega/recuperacion estan en [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md).
 
 - `services/api.ts` contiene operaciones HTTP y subida de archivos; `services/clienteApi.ts` se usa para enviar pendientes.
 - `services/almacenamientoLocal.ts` adapta AsyncStorage/localStorage y construye una cola por cliente/usuario. `services/offline/cola.ts` serializa sus mutaciones y verifica propietarios/formato.
