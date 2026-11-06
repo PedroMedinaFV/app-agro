@@ -29,6 +29,7 @@ apps/web
   v HTTP + Bearer token
 apps/api
   src/index.ts
+    -> crearApp en src/app.ts (rutas y middleware sin abrir puerto al importar)
     -> middleware/autenticacion.ts
     -> middleware/permisos.ts
     -> routes/*
@@ -316,11 +317,11 @@ apps/api/prisma
   seed.ts
 ```
 
-### `src/index.ts`
+### `src/app.ts` y `src/index.ts`
 
-Es el punto de entrada de la API.
+`app.ts` expone `crearApp()` para componer la API sin abrir un puerto al importar. `index.ts` llama esa fabrica y abre el servidor en `PORT` o `4000`. Las pruebas HTTP completas usan la misma composicion y servicios reales con un schema aislado.
 
-Responsabilidades:
+Responsabilidades de `crearApp`:
 
 - Crear la app Express.
 - Configurar CORS.
@@ -328,7 +329,7 @@ Responsabilidades:
 - Registrar rutas.
 - Aplicar autenticacion y permisos.
 - Registrar el manejador global de errores.
-- Levantar el servidor en `PORT` o `4000`.
+- Validar configuracion antes de devolver la app. El servidor lo abre exclusivamente `index.ts`.
 
 Ejemplo conceptual:
 
@@ -566,7 +567,7 @@ La cola nueva esta particionada por cliente/usuario; la antigua clave global se 
 3. Agregar modelos/migracion Prisma si requiere persistencia.
 4. Crear service en `apps/api/src/services/<modulo>`.
 5. Crear route en `apps/api/src/routes/<modulo>.ts`.
-6. Registrar route en `apps/api/src/index.ts`.
+6. Registrar route en `apps/api/src/app.ts`.
 7. Agregar funciones HTTP en `apps/web/src/services/api.ts`.
 8. Crear hook en `apps/web/src/hooks/use<Modulo>.ts`.
 9. Crear componentes en `apps/web/src/components/<modulo>/`.

@@ -140,6 +140,7 @@ test('guardarPlanificacionEnTransaccion audita y bloquea edicion de planificacio
     () => guardarPlanificacionEnTransaccion(tx, 'plan-1', crearRequest(), {
       id: 'usuario-1',
       email: 'admin@agro.test',
+      clienteId: 'cliente-1',
     }),
   );
 
@@ -168,6 +169,7 @@ test('guardarPlanificacionEnTransaccion usa motivo default al bloquear edicion d
   await assert.rejects(
     () => guardarPlanificacionEnTransaccion(tx, 'plan-1', crearRequest({ motivo: undefined }), {
       id: 'usuario-2',
+      clienteId: 'cliente-1',
     }),
     /cerrada o deshabilitada/,
   );

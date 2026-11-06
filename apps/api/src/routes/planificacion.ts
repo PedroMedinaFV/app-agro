@@ -23,7 +23,7 @@ type RequestConUsuario = Request & {
 };
 
 function obtenerClienteId(req: Request, request: RequestConUsuario) {
-  const clienteId = request.user?.clienteId || (req.query.clienteId as string | undefined);
+  const clienteId = request.user?.clienteId;
 
   if (!clienteId) {
     const error = new Error('La sesion no tiene cliente asignado.') as Error & { statusCode?: number };

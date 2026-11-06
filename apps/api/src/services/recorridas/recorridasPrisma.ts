@@ -315,6 +315,9 @@ export async function crearRecorridaCampoPersistida(
 }
 
 export async function cerrarRecorridaCampoPersistida(id: string, request: CerrarRecorridaCampoRequest, usuario: UsuarioOperacion) {
+  if (!['web', 'mobile', 'api'].includes(request?.origen)) {
+    throw crearErrorValidacion('El origen de la recorrida no es valido.');
+  }
   if (!usuario.clienteId) {
     throw crearErrorValidacion('Sesion sin cliente asociado.', 401);
   }

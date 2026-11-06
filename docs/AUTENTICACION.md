@@ -22,7 +22,7 @@ Colocar el resultado en `JWT_SECRET` del `.env` raiz o en el gestor de secretos 
 
 `config/cargarEnvRaiz.ts` completa solo las variables ausentes. Los valores ya definidos por el proceso prevalecen sobre `.env`, incluso si son vacios: una clave vacia debe fallar, no recuperar silenciosamente un valor local. Prisma reutiliza este cargador indicando la raiz a partir de su ubicacion; los CLI conservan la busqueda desde su directorio de trabajo.
 
-`src/index.ts` valida la configuracion antes de crear la app y abrir el puerto. Firma, verificacion y el codigo legacy de refresh consultan la misma configuracion. No existe fallback `secret-dev` en estas operaciones.
+`crearApp()` en `src/app.ts` valida la configuracion antes de devolver la app; `src/index.ts` la usa para abrir el puerto. Firma, verificacion y el codigo legacy de refresh consultan la misma configuracion. No existe fallback `secret-dev` en estas operaciones.
 
 ## JWT y permisos
 

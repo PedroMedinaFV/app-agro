@@ -10,7 +10,7 @@ Fecha de inicio: 2026-11-06. Alcance acordado: estabilizar Agro App por etapas c
 | 2. Autenticacion y errores | Centralizar JWT, exigir secreto valido, validar login/registro y propagar errores sin exponer detalles internos | Pruebas de configuracion ausente, entradas invalidas, credenciales y errores de infraestructura | Implementada y probada el 2026-11-06; JWT de desarrollo actualizado en etapa 3 |
 | 3. Integridad offline | Separar cola por cliente/usuario, serializar escrituras, impedir sincronizacion de pendientes ajenos y persistir progreso de adjuntos | Pruebas de cambio de usuario, concurrencia, errores parciales y reintentos; validacion en dispositivo | Implementada con pruebas automaticas; pendiente recorrido en dispositivo |
 | 4. Concurrencia ERP | Bloqueo persistente por cliente, vencimiento, recuperacion y trazabilidad | Dos instancias no sincronizan el mismo cliente simultaneamente; interrupciones no dejan bloqueo permanente | Completada: pruebas, migracion y sincronizacion ERP verificadas el 2026-11-06 |
-| 5. Integracion | Base exclusiva de testing, migraciones, recorridos HTTP con middleware real y aislamiento entre clientes/campos | Flujos criticos completos aprobados sin datos operativos reales | Pendiente |
+| 5. Integracion | PostgreSQL aislado por schema, migraciones desde cero, recorridos HTTP con middleware real y aislamiento entre clientes/campos | Flujos criticos completos aprobados sin datos operativos reales | Completada el 2026-11-06: 14 recorridos HTTP aprobados, replay de 34 migraciones y limpieza verificada |
 | 6. Modularizacion y entrega | Separar responsabilidades restantes en mobile y servicios criticos; automatizar verificaciones; documentar despliegue y recuperacion | Verificaciones reproducibles y modulos con contratos y dependencias comprensibles | Pendiente |
 
 La modularizacion necesaria para una correccion se realiza dentro de su etapa. La etapa 6 aborda lo restante; no se posterga la calidad de las etapas anteriores.
@@ -71,3 +71,15 @@ La etapa no se considera cerrada respecto de su criterio manual: falta el recorr
 - Prueba PostgreSQL real repetida despues de reactivar la base: 1 aprobada, 0 fallidas, 0 omitidas. El schema temporal se creo, se probo y se elimino; no se modificaron tablas de aplicacion ni se aplico la migracion al entorno operativo.
 
 El criterio de PostgreSQL aislado esta aprobado. El usuario aplico la migracion al schema `agro_app` y se verifico `db:status`: 33 migraciones y base actualizada. Se agrego ese comando con carga del `.env` raiz para evitar P1012 al consultar. La sincronizacion realizada por el usuario se verifico en el historial: corrida `45e3e349-6943-48df-bb8a-0081909c0948`, estado `completada`, 14 padrones ejecutados, 20 detalles completados y sin reserva restante para su cliente. La etapa 4 queda completada; evidencia y limites en `ERP_CONCURRENCIA.md`.
+
+## Entrega de etapa 5
+
+- `crearApp()` separa composicion de Express y apertura del servidor; integracion usa la misma app y middleware que desarrollo.
+- `pnpm test:integration` exige configuracion explicita, crea un schema aleatorio, aplica migraciones, carga fixtures ficticios, prueba HTTP real y elimina el schema aun ante fallos. `.env.test.local` no se versiona ni se imprimen credenciales.
+- Replay completo aprobado con 34 migraciones. Se agrego compatibilidad anterior a `20261001181547_` sin editar migraciones aplicadas; en schemas actualizados no modifica objetos. Se registro tambien en `agro_app` con el flujo normal de deploy.
+- 14 recorridos aprobados: login/registro/JWT, permisos, precipitaciones/observaciones, ficha por campo, offline parcial/concurrente e idempotencia, recorridas con cierre, auditoria, aislamiento administrativo, planificacion con snapshots y ERP mock con bloqueo/historial reales.
+- Las pruebas reprodujeron accesos administrativos y escrituras de planificacion entre clientes; se corrigieron con validaciones compartidas de sesion, propietario y referencias. No se permite elegir cliente por querystring.
+- Validacion de origen en cierre de recorridas y timeout transaccional de cierre de planificacion alineado al guardado (60s, maxWait 10s).
+- Suite rapida: 273 aprobados, 0 fallidos y 1 test PostgreSQL opcional omitido; suite de integracion separada: 14 aprobados, sin omisiones. La evidencia del build queda en `ESTABILIDAD_MVP.md`.
+
+Guia funcional/tecnica, configuracion, aislamiento, excepcion acotada de advisory lock de Prisma para schemas exclusivos y limites en [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md). No se considera ejecutado el recorrido de dispositivo de etapa 3 ni se extiende esta suite a Microsoft/Storage reales o pruebas de carga.

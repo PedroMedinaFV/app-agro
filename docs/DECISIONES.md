@@ -444,3 +444,15 @@ El vencimiento solo no impide que un trabajador pausado vuelva a escribir. Se el
 La cache actual contiene maestros globales y refrescos destructivos. Se agrega una puerta de escritura compartida entre clientes para evitar carreras; una fuente ERP independiente por cliente requerira particionar esa cache. La transaccion incluye lecturas remotas y mantiene una conexion: es una solucion acotada con TTL, que debe evolucionar a descarga/aplicacion separadas para jobs largos y mayor paralelismo.
 
 La primera prueba PostgreSQL no pudo conectar porque la base estaba pausada. Tras reactivarla se aprobo el test real en un schema temporal, que se elimino al terminar. El usuario aplico la migracion al schema agro_app y db:status confirmo 33 migraciones actualizadas; se verifico la corrida 45e3e349-6943-48df-bb8a-0081909c0948 completada y sin reserva restante para su cliente. La etapa 4 queda completada. Ver `ERP_CONCURRENCIA.md` para operacion y evidencia.
+
+## 2026-11-06 - Integracion HTTP con PostgreSQL aislado
+
+Se separa composicion Express (`crearApp`) del servidor para ejecutar los mismos routers/middleware/servicios por HTTP sin lanzar la API al importar. Las pruebas usan un schema aleatorio por corrida, migraciones reales y fixtures ficticios, con configuracion TEST_DATABASE_URL explicita y sin fallback a la base operativa. El entorno temporal se elimina al terminar, tambien ante fallos. La separacion es por schema; en CI se puede apuntar a una base/rol dedicados.
+
+El replay detecto diferencias de nombres en migraciones historicas y consultas de catalogo sin alcance de schema. Se agrega compatibilidad antes del paso afectado, sin editar checksums aplicados. Si ese paso ya fue completado, la compatibilidad retorna sin modificar objetos. Se probaron ambas ramas y se registro la migracion en agro_app con deploy normal. Hay 34 migraciones versionadas.
+
+El pooler produjo un timeout del advisory lock global de Prisma durante una repeticion. Solo el subproceso que migra un schema nuevo/exclusivo deshabilita ese lock; los despliegues operativos y bloqueos de negocio lo conservan. No se usa esta excepcion sobre un schema compartido.
+
+Las regresiones HTTP demostraron que permisos de admin no bastaban para aislar rutas parametrizadas por cliente y escrituras de planificacion. Se exige cliente de sesion, se valida el propietario persistido y las referencias de linea. No existe un rol superadmin implicito. El cierre de recorridas valida origen y el cierre de planificacion reutiliza el timeout transaccional de 60s del guardado, conservando rollback.
+
+Resultado: 14 recorridos de integracion aprobados y suite rapida en verde. El proveedor ERP de la suite se mantiene mock para no consumir credenciales reales; las pruebas de dispositivo, UI y proveedores externos conservan su alcance separado. Guia de operacion y limites en `PRUEBAS_INTEGRACION.md`.

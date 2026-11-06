@@ -22,6 +22,8 @@ import type {
 } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
+import { obtenerClienteSesion, validarClienteSesion } from '../seguridad/alcanceCliente';
+import { validarAlcanceLineasPlanificacion } from './alcancePlanificacion';
 import { registrarAuditoria, UsuarioAuditoria } from './auditoria';
 import { obtenerProtocolosDetallePorIds } from './protocolosPrisma';
 import {
@@ -651,6 +653,7 @@ export async function guardarPlanificacionPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarPlanificacionResponse> {
   const planificacion = { ...request.planificacion, id };
+  validarClienteSesion(planificacion.clienteId, usuario);
   await validarPlanificacion(planificacion);
 
   return prisma.$transaction((tx) => guardarPlanificacionEnTransaccion(tx, id, request, usuario), {
@@ -666,11 +669,13 @@ export async function guardarPlanificacionEnTransaccion(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarPlanificacionResponse> {
   const planificacion = { ...request.planificacion, id };
+  validarClienteSesion(planificacion.clienteId, usuario);
   const existente = await tx.planificacionAgricola.findUnique({
     where: { id },
     include: incluirPlanificacion,
   });
 
+  if (existente) validarClienteSesion(existente.clienteId, usuario);
   if (existente?.estado === 'cerrada' || existente?.estado === 'deshabilitada') {
     await registrarAuditoria(tx, {
       clienteId: existente.clienteId,
@@ -700,6 +705,7 @@ export async function guardarPlanificacionEnTransaccion(
     throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original. No se pueden crear ni editar otros escenarios activos.', 409);
   }
 
+  await validarAlcanceLineasPlanificacion(tx, planificacion);
   await tx.planificacionAgricola.upsert({
     where: { id },
     update: {
@@ -760,7 +766,10 @@ export async function cerrarPlanificacionPersistida(
   request: CerrarPlanificacionRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<CerrarPlanificacionResponse> {
-  return prisma.$transaction((tx) => cerrarPlanificacionEnTransaccion(tx, id, request, usuario));
+  return prisma.$transaction((tx) => cerrarPlanificacionEnTransaccion(tx, id, request, usuario), {
+    maxWait: 10000,
+    timeout: TIMEOUT_TRANSACCION_PLANIFICACION_MS,
+  });
 }
 
 export async function cerrarPlanificacionEnTransaccion(
@@ -769,6 +778,7 @@ export async function cerrarPlanificacionEnTransaccion(
   request: CerrarPlanificacionRequest,
   usuario?: UsuarioAuditoria,
 ): Promise<CerrarPlanificacionResponse> {
+  obtenerClienteSesion(usuario);
   const existente = await tx.planificacionAgricola.findUnique({
     where: { id },
     include: incluirPlanificacion,
@@ -778,6 +788,7 @@ export async function cerrarPlanificacionEnTransaccion(
     throw crearErrorValidacion('No existe la planificacion a cerrar.', 404);
   }
 
+  validarClienteSesion(existente.clienteId, usuario);
   if (existente.estado === 'cerrada') {
     throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
   }

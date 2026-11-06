@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "test:integration": "pnpm --filter agro-app-api build && node scripts/run-integration-tests.js",
     "dev": "pnpm -r run dev",
     "dev:all": "pnpm dev",
     "build": "pnpm -r run build",

@@ -364,6 +364,14 @@ Decision UX:
 - la validacion de duplicados por campania/campo/lote/actividad se muestra antes de guardar;
 - `PlanificacionScreen` queda como orquestador y delega en `PlanificacionesResumenScreen` y `PlanificacionEditorScreen`.
 
+## Aislamiento y cierre verificados por integracion (2026-11-06)
+
+El cliente se obtiene exclusivamente de la sesion autenticada. En guardado se compara con el `clienteId` del body y, si existe el ID, con el propietario persistido; en cierre tambien se verifica el propietario antes de operar. Un administrador no puede editar/cerrar planificaciones de otro cliente cambiando el ID o el body.
+
+Antes de reemplazar lineas se valida que campo, empresa, lote, actividad y protocolo correspondan al cliente y que el lote pertenezca al campo. Se consultan referencias agrupadas dentro de la transaccion y se resuelven con mapas/sets. La autorizacion de cierre y los snapshots economicos existentes se mantienen.
+
+Guardado y cierre usan un limite de transaccion de 60 segundos y maxWait de 10 segundos. El cierre ya no depende del timeout implicito de cinco segundos, que fallaba con PostgreSQL remoto aun en un escenario pequeno. El timeout sigue siendo acotado y los errores mantienen rollback. La suite HTTP prueba guardado, rechazos entre clientes/referencias, cierre con snapshots y bloqueo posterior; ver [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md).
+
 ## Destinos de venta
 
 La planificacion debe contar con un catalogo de destinos de venta.

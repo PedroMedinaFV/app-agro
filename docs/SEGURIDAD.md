@@ -23,6 +23,8 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - Toda ruta administrativa debe usar middleware de autenticacion y `requierePermiso`.
 - La pantalla web puede ocultar acciones, pero la seguridad real debe aplicarse en backend.
 
+Las rutas administrativas con `:clienteId` exigen que coincida con la sesion, incluso para `admin`. Planificacion no acepta cliente por querystring; guardado/cierre verifican tanto el body como el propietario persistido y las referencias de sus lineas. La regresion se prueba por HTTP con dos clientes reales de testing; ver [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md).
+
 ## Secretos
 
 - API keys, tokens y passwords del ERP no se guardan en el repositorio.

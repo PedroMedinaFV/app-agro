@@ -1,5 +1,7 @@
 # API Agro App
 
+La composicion Express esta en `src/app.ts` (`crearApp`); `src/index.ts` abre el servidor. Las pruebas de integracion usan esa misma app, puertos locales efimeros y PostgreSQL aislado. Desde la raiz ejecutar `pnpm test:integration` con configuracion explicita de testing; ver [la guia](../../docs/PRUEBAS_INTEGRACION.md).
+
 ## Variables de entorno
 
 Copia el archivo `.env.example` a `.env` en la raiz del proyecto y configura tus valores reales.

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requiereClienteRuta } from '../middleware/cliente';
 import type { Request } from 'express';
 import type { AsignarCamposUsuarioInput } from '@agro/tipos';
 import { listarAsignacionesUsuario, reemplazarAsignacionesUsuario } from '../services/usuarios/asignacionCampos';
@@ -6,6 +7,7 @@ import { listarAsignacionesUsuario, reemplazarAsignacionesUsuario } from '../ser
 type RequestConUsuario = Request & { user?: { sub?: string } };
 
 const router = Router();
+router.use('/:clienteId', requiereClienteRuta);
 
 router.get('/:clienteId/usuarios/:usuarioId/campos', async (req, res, next) => {
   try {

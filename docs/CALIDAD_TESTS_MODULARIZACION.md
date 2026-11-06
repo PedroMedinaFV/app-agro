@@ -29,7 +29,7 @@ Se sustituyen persistencia y servicios de red mediante interfaces pequenas; no s
 
 ## Cobertura agregada en etapa 4 (2026-11-06)
 
-Suite vigente: 270 tests en 46 archivos; 269 aprobados y uno omitido por requerir PostgreSQL real.
+Al cerrar la etapa 4: 270 tests en 46 archivos; 269 aprobados y uno omitido por requerir PostgreSQL real.
 
 | Archivo | Escenario protegido | Limite |
 | --- | --- | --- |
@@ -39,6 +39,16 @@ Suite vigente: 270 tests en 46 archivos; 269 aprobados y uno omitido por requeri
 | `erp-bloqueo-postgres.test.js` | Dos clientes independientes, recuperacion, propietario antiguo, rollback, timeout y contencion global | Opt-in con `ERP_LOCK_TEST_DATABASE_URL`; schema temporal propio |
 
 El primer intento fallo porque la base estaba pausada. Tras reactivarla se ejecuto por separado `erp-bloqueo-postgres.test.js`: 1 aprobado, 0 fallidos, 0 omitidos (aproximadamente 29 segundos), con creacion y eliminacion del schema temporal. La suite habitual sigue omitiendolo si no se configura su URL; ese resultado no sustituye la ejecucion explicita. [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) documenta la evidencia y la migracion operativa aplicada y verificada con db:status (33 migraciones, base actualizada).
+
+## Cobertura agregada en etapa 5 (2026-11-06)
+
+Suite rapida vigente: 274 tests en 48 archivos, 273 aprobados y uno omitido (PostgreSQL ERP opcional). `alcance-cliente.test.js` verifica el guard compartido y su middleware; `integration-environment.test.js` verifica configuracion explicita sin fallback operativo, prioridad del proceso y validacion estricta del nombre de schema.
+
+Suite separada `pnpm test:integration`: 14 recorridos aprobados, 0 fallidos y 0 omitidos, usando la app Express real y PostgreSQL con fixtures en un schema nuevo. Se verifico el replay completo de 34 migraciones, la compatibilidad no-op y la eliminacion final del schema. La ultima corrida HTTP duro aproximadamente 131 segundos, sin incluir todo el tiempo de migracion.
+
+Los recorridos cubren auth/registro/permisos, campos y tenants, precipitaciones/observaciones y auditoria, offline parcial/concurrente, cierre de recorrida, aislamiento administrativo, planificacion con snapshots/cierre y ERP con proveedor mock pero coordinador/base reales. Las pruebas reprodujeron los accesos entre clientes y timeout de cierre que se corrigieron en esta etapa.
+
+Ver [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md) para archivos, configuracion, limpieza, excepcion del advisory lock global de Prisma limitada al replay exclusivo y alcance fuera de la suite. La configuracion privada local no se versiona. Los tests unitarios existentes de planificacion ahora incluyen cliente de sesion en sus actores, conforme al contrato real de autorizacion.
 
 ## Principio
 

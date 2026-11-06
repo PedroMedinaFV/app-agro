@@ -77,6 +77,8 @@ pnpm --filter agro-app-api db:status
 
 `pnpm test` compila tipos, API y nucleo offline mobile antes de ejecutar `tests/*.test.js`. Incluye pruebas HTTP de autenticacion y reglas/servicios con dependencias sustituidas; no reemplaza recorridos completos con base/storage reales, migraciones en testing ni pruebas en dispositivo.
 
+Para probar recorridos HTTP completos con PostgreSQL real, configurar `TEST_DATABASE_URL` en el entorno o `.env.test.local` y ejecutar `pnpm test:integration`. El runner crea un schema nuevo, aplica todas las migraciones, usa fixtures ficticios y elimina el schema al terminar. No toma `DATABASE_URL` como fallback. Ver [pruebas de integracion](docs/PRUEBAS_INTEGRACION.md) para configuracion, seguridad, cobertura y limites.
+
 Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` para mobile. El chequeo TypeScript de mobile y la exportacion Expo son verificaciones distintas. El script raiz `pnpm lint` todavia no tiene scripts/configuracion de lint en los workspaces y no debe contarse como control de calidad implementado.
 
 ## Documentacion para continuar
@@ -91,6 +93,7 @@ Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` par
 - [Registros offline](docs/OFFLINE.md): aislamiento por propietario, persistencia, adjuntos, reintentos y recuperacion de registros anteriores.
 - [Integracion ERP](docs/INTEGRACION_ERP.md), [Supabase](docs/SUPABASE.md) y [pruebas mobile](docs/MOBILE_TESTING.md).
 - [Concurrencia ERP](docs/ERP_CONCURRENCIA.md): reserva persistente, migracion, tiempo maximo, recuperacion y pruebas PostgreSQL.
+- [Pruebas de integracion](docs/PRUEBAS_INTEGRACION.md): HTTP y PostgreSQL reales en schemas efimeros, migraciones desde cero y regresiones de aislamiento.
 - [Decisiones](docs/DECISIONES.md): fundamentos y restricciones del producto.
 
 La arquitectura describe el codigo existente; los planes y checklists distinguen lo implementado de lo pendiente. Toda funcionalidad debe mantener actualizados su comportamiento, contratos, reglas, operacion y forma de validacion.

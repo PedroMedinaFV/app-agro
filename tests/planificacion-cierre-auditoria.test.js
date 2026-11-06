@@ -388,7 +388,7 @@ test('cerrarPlanificacionEnTransaccion audita escenarios alternativos deshabilit
   const respuesta = await cerrarPlanificacionEnTransaccion(tx, 'plan-1', {
     origen: 'api',
     motivo: 'Cierre final',
-  }, { id: 'usuario-2' });
+  }, { id: 'usuario-2', clienteId: 'cliente-1' });
 
   assert.match(respuesta.mensaje, /Se deshabilitaron 1 escenario/);
   assert.equal(updateManyCalls.length, 1);
@@ -412,7 +412,7 @@ test('cerrarPlanificacionEnTransaccion rechaza planificacion ya cerrada sin audi
   });
 
   await assert.rejects(
-    () => cerrarPlanificacionEnTransaccion(tx, 'plan-1', { origen: 'web' }, { id: 'usuario-1' }),
+    () => cerrarPlanificacionEnTransaccion(tx, 'plan-1', { origen: 'web' }, { id: 'usuario-1', clienteId: 'cliente-1' }),
     /ya esta cerrada/,
   );
 

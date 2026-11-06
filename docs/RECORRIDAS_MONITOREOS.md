@@ -208,6 +208,8 @@ Regla:
 
 ## Proximos pasos recomendados
 
+La suite HTTP de etapa 5 ya verifica con PostgreSQL real la creacion, observacion vinculada, consulta y cierre con auditoria. `CerrarRecorridaCampoRequest.origen` es obligatorio y se valida antes de escribir: un pedido incompleto recibe 400, no un error de auditoria 500. El cierre repetido se rechaza. Esta evidencia automatizada no marca como hechos los recorridos manuales anteriores; ver [PRUEBAS_INTEGRACION.md](PRUEBAS_INTEGRACION.md).
+
 1. Ejecutar smoke manual web de recorrida completa: crear, asociar observacion, cerrar y revisar detalle.
 2. Validar mobile/offline para crear/cerrar recorrida y sincronizar observaciones con `recorridaId`.
 3. Agregar detalle de recorrida con observaciones vinculadas.
