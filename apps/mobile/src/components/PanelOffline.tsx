@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { leerRegistrosLocales } from '../services/almacenamientoLocal';
+import type { SesionUsuario } from '@agro/tipos';
+import { obtenerColaSesion } from '../services/almacenamientoLocal';
 
-export function PanelOffline() {
+export function PanelOffline({ sesion }: { sesion: SesionUsuario }) {
   const [cantidad, setCantidad] = useState(0);
 
   useEffect(() => {
+    let cancelada = false;
     async function cargarCantidad() {
-      const registros = await leerRegistrosLocales();
-      setCantidad(registros.length);
+      const registros = await (await obtenerColaSesion(sesion)).listar();
+      if (!cancelada) setCantidad(registros.filter((registro) => !registro.sincronizado).length);
     }
-    cargarCantidad();
-  }, []);
+    setCantidad(0);
+    void cargarCantidad().catch(() => { if (!cancelada) setCantidad(0); });
+    return () => { cancelada = true; };
+  }, [sesion]);
 
   return (
     <View style={styles.card}>

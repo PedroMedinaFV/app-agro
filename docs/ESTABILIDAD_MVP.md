@@ -1,14 +1,14 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-06 (etapas 1 y 2 del plan de estabilizacion).
+Fecha de corte: 2026-11-06 (etapas 1 a 3 del plan de estabilizacion; etapa 3 pendiente de validacion en dispositivo).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
 - Suite automatica completa: `pnpm test`.
-- Resultado ultimo: 244 tests, 244 passing, 0 failing.
-- Archivos de test: 42.
+- Resultado ultimo: 258 tests, 258 passing, 0 failing.
+- Archivos de test: 43.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 
@@ -16,9 +16,9 @@ Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (ve
 
 | Comando | Resultado | Alcance |
 | --- | --- | --- |
-| `pnpm test` | Correcto: 244/244, etapa 2 | Compila tipos/API y ejecuta 42 archivos de pruebas |
-| `pnpm build` | Correcto, etapa 2 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
-| `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto, etapa 1 | Chequeo TypeScript mobile, separado del bundle Expo; mobile sin cambios en etapa 2 |
+| `pnpm test` | Correcto: 258/258, etapa 3 | Compila tipos/API/nucleo offline y ejecuta 43 archivos de pruebas |
+| `pnpm build` | Correcto, etapa 3 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
+| `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto, etapa 3 | Chequeo TypeScript mobile, separado del bundle Expo |
 | `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 1 | No aplica migraciones ni verifica conectividad; schema sin cambios en etapa 2 |
 
 Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. No se cambiaron dependencias ni se aplicaron migraciones/seeds. No se validaron conexiones reales con PostgreSQL, ERP, Microsoft o Supabase ni flujos en dispositivo. La guia de inicio se reviso contra scripts y configuracion existentes, sin repetir una instalacion limpia.
@@ -27,7 +27,9 @@ La etapa 1 corrigio la separacion entre nombre visible y clave normalizada de de
 
 La etapa 2 centralizo JWT, valido entradas de autenticacion y mejoro la propagacion y respuesta de errores. Agrego pruebas HTTP reales de auth con dependencias de datos/proveedor sustituidas y pruebas de arranque rechazado con clave invalida. No son pruebas e2e contra PostgreSQL o Microsoft.
 
-La comprobacion de configuracion local detecto que el JWT_SECRET privado no cumple el minimo de 32 bytes. Se deja sin modificar: requiere actualizacion antes de arrancar, siguiendo [AUTENTICACION.md](AUTENTICACION.md) para no comprometer sesiones ni secretos ERP cifrados con fallback JWT. No se imprimio el secreto.
+En etapa 3 se actualizo el JWT_SECRET local, con autorizacion del usuario y una clave aleatoria valida. Se preservo el material efectivo de cifrado ERP y se verifico cifrado/descifrado local antes y despues; no se imprimieron claves ni se consulto la base. Reiniciar API y volver a autenticar las sesiones previas. `.env` permanece ignorado por Git.
+
+El nucleo offline nuevo se prueba con almacenamiento y servicios sustituidos: aislamiento, concurrencia, errores parciales, logout y reintentos de adjuntos. El recorrido de dispositivo de [MOBILE_TESTING.md](MOBILE_TESTING.md) sigue pendiente: no se dispone de dispositivo/emulador en este entorno. No se declara la etapa cerrada respecto de ese criterio.
 
 ## Bloques cubiertos
 
@@ -45,7 +47,7 @@ La comprobacion de configuracion local detecto que el JWT_SECRET privado no cump
 | Operativo de campo | Cubierto | Recorridas, observaciones, precipitaciones, ficha de lote y alcance por campo |
 | NDVI | Cubierto | Validaciones, mappers, ultimo mapa y alcance por campo |
 | Storage y geografia | Cubierto | Adjuntos, KML/KMZ, archivos geograficos y preparacion de guardado |
-| Offline sync | Cubierto | Tipos no soportados y payload invalido sin marcar como sincronizado |
+| Offline sync | Cubierto automaticamente; pendiente dispositivo | Backend: tipos/payloads invalidos. Mobile: propietario, concurrencia, progreso de adjuntos, logout y confirmacion exacta |
 | Rutas operativas | Cubierto | Smoke tests de ficha operativa, geografia y NDVI |
 
 ## Criterio para llamar estable al MVP
@@ -67,9 +69,9 @@ Antes de cortar version:
 
 El estado verde de la suite no implica que los siguientes puntos esten resueltos:
 
-- El entorno local requiere actualizar `JWT_SECRET` antes de arrancar; el fallback fue eliminado. La configuracion y los logins reales del ambiente objetivo siguen pendientes de validacion.
-- La cola offline usa una clave local global y escritura del arreglo completo; la etapa 3 aborda aislamiento por usuario/cliente y concurrencia.
-- Los reintentos de adjuntos offline requieren persistir su progreso para evitar subidas repetidas; pendiente de etapa 3.
+- La clave JWT local ya fue actualizada. Los logins reales y la configuracion del ambiente objetivo siguen pendientes de validacion.
+- La cola nueva separa propietarios y serializa mutaciones dentro de un runtime. Quedan pendientes la recuperacion controlada de registros globales anteriores y la coordinacion entre multiples pestanas/procesos web.
+- Los adjuntos guardan progreso para reintentos, pero un cierre entre PUT y persistencia local puede repetir una subida; fotos reales, cuotas, reinicio y depuracion de cache requieren validacion en dispositivo.
 - El script raiz `lint` aun no tiene implementacion en los workspaces; pendiente de automatizacion en etapa 6.
 
 Estos puntos no bloquean el avance de nuevas features, pero conviene tratarlos antes de produccion:

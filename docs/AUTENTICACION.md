@@ -78,7 +78,7 @@ Los errores tecnicos del validador Microsoft existente se propagan y reciben la 
 3. Antes de rotar, revisar `SECRETS_ENCRYPTION_KEY`: el cifrado ERP existente puede usar `JWT_SECRET` como fallback. Si hay secretos cifrados con esa clave, preservar el material anterior como clave de cifrado independiente o planificar su recifrado antes de cambiarla. Esta etapa no modifica el cifrado ERP ni rota secretos automaticamente.
 4. Reiniciar y verificar arranque y login. No se debe restaurar el fallback para resolver un fallo de configuracion.
 
-No se modifico el `.env` privado durante la implementacion. La comprobacion local del 2026-11-06 detecto que su JWT requiere actualizar la clave para arrancar con estas reglas; no se imprimio su valor.
+Durante la etapa 2 no se modifico el `.env` privado. En la etapa 3, el 2026-11-06 y con autorizacion del usuario para desarrollo, se genero una clave aleatoria de 32 bytes (representada en hexadecimal) y se actualizo `JWT_SECRET`. Se verifico que el material efectivo de cifrado ERP permaneciera igual mediante cifrado/descifrado local antes y despues. No se expuso el secreto, no se modificaron registros de base y `.env` continua ignorado por Git. Reiniciar la API y volver a iniciar sesion; las sesiones anteriores no verifican con la nueva clave. Esta comprobacion no es una prueba de conexion real con el ERP.
 
 Credenciales historicas de mas de 72 bytes ahora se rechazan en login. Si existen, requieren restablecimiento mediante el proceso administrativo disponible; esta etapa no cambia hashes existentes. Los emails historicos con capitalizacion no normalizada pueden requerir una correccion controlada de datos; no se realiza una migracion masiva.
 

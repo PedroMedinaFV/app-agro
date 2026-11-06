@@ -1,73 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import { prepararAdjuntosLocalesPendientes } from './services/adjuntosLocales';
 import * as ImagePicker from 'expo-image-picker';
 import { FichaLoteOperativoResponse, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import {
-  crearObservacion,
-  crearPrecipitacion,
-  crearUrlSubidaAdjuntoObservacion,
   loginUsuario,
   obtenerFichaLoteOperativo,
   obtenerPlanificacionSnapshot,
-  subirArchivoAFirmaSupabase,
 } from './services/api';
-import { AdjuntoLocalPendiente, guardarRegistroLocal, leerRegistrosLocales } from './services/almacenamientoLocal';
+import { AdjuntoLocalPendiente, obtenerColaSesion, hayPendientesAnteriores } from './services/almacenamientoLocal';
 import { sincronizarPendientes } from './services/sincronizacion';
-
-const esReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
-
-function obtenerExtensionArchivo(nombreArchivo: string, mimeType: string) {
-  const extensionNombre = nombreArchivo.match(/\.[a-z0-9]+$/i)?.[0];
-
-  if (extensionNombre) {
-    return extensionNombre.toLowerCase();
-  }
-
-  if (mimeType === 'image/png') {
-    return '.png';
-  }
-
-  if (mimeType === 'image/webp') {
-    return '.webp';
-  }
-
-  return '.jpg';
-}
-
-async function copiarFotoPendienteASandbox(adjunto: AdjuntoLocalPendiente): Promise<AdjuntoLocalPendiente> {
-  if (!esReactNative) {
-    return adjunto;
-  }
-
-  const raiz = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-
-  if (!raiz) {
-    throw new Error('No hay almacenamiento local disponible para preservar la foto.');
-  }
-
-  const directorio = `${raiz}agro-app/observaciones/`;
-  const extension = obtenerExtensionArchivo(adjunto.nombreArchivo, adjunto.mimeType);
-  const destino = `${directorio}${Date.now()}-${Math.random().toString(16).slice(2)}${extension}`;
-
-  await FileSystem.makeDirectoryAsync(directorio, { intermediates: true });
-  await FileSystem.copyAsync({ from: adjunto.uri, to: destino });
-
-  return {
-    ...adjunto,
-    uri: destino,
-  };
-}
-
-async function prepararAdjuntosLocalesPendientes(adjuntos: AdjuntoLocalPendiente[]) {
-  const preparados: AdjuntoLocalPendiente[] = [];
-
-  for (const adjunto of adjuntos) {
-    preparados.push(await copiarFotoPendienteASandbox(adjunto));
-  }
-
-  return preparados;
-}
 
 const planificacionVacia: PlanificacionSnapshot = {
   zonasApp: [],
@@ -90,6 +32,8 @@ const planificacionVacia: PlanificacionSnapshot = {
 
 export default function App() {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null);
+  const sesionActual = useRef<SesionUsuario | null>(null);
+  const [pendientesAnteriores, setPendientesAnteriores] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [campoSeleccionadoId, setCampoSeleccionadoId] = useState('');
@@ -112,34 +56,68 @@ export default function App() {
   const [cargandoPlanificacion, setCargandoPlanificacion] = useState(false);
   const [errorPlanificacion, setErrorPlanificacion] = useState<string | null>(null);
 
+  function cambiarSesion(nueva: SesionUsuario | null) {
+    sesionActual.current = nueva;
+    setPlanificacionOperativa(planificacionVacia);
+    setFichaLote(null);
+    setCampoSeleccionadoId('');
+    setLoteSeleccionadoId('');
+    setMilimetros('');
+    setObservaciones('');
+    setTituloObservacion('');
+    setDescripcionObservacion('');
+    setLatitudObservacion('');
+    setLongitudObservacion('');
+    setFotoSeleccionada(null);
+    setSeveridadObservacion('media');
+    setErrorPlanificacion(null);
+    setCargandoPlanificacion(false);
+    setCargandoFichaLote(false);
+    setPendientesOffline(0);
+    setPendientesAnteriores(false);
+    setGuardandoPrecipitacion(false);
+    setGuardandoObservacion(false);
+    setSincronizandoOffline(false);
+    setSesion(nueva);
+  }
+
   useEffect(() => {
+    let cancelada = false;
     async function cargarDatosOperativos() {
       if (!sesion) {
         setPlanificacionOperativa(planificacionVacia);
         return;
       }
 
-      setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-
       setCargandoPlanificacion(true);
       try {
+        const cola = await obtenerColaSesion(sesion);
+        const registros = await cola.listar();
+        const anteriores = await hayPendientesAnteriores();
+        if (cancelada || sesionActual.current !== sesion) return;
+        setPendientesOffline(registros.filter((item) => !item.sincronizado).length);
+        setPendientesAnteriores(anteriores);
         const snapshot = await obtenerPlanificacionSnapshot(sesion.token);
+        if (cancelada || sesionActual.current !== sesion) return;
         setPlanificacionOperativa(snapshot);
         setCampoSeleccionadoId(snapshot.camposApp[0]?.id || '');
         setLoteSeleccionadoId(snapshot.lotesApp[0]?.id || '');
         setErrorPlanificacion(null);
       } catch (error) {
+        if (cancelada || sesionActual.current !== sesion) return;
         setPlanificacionOperativa(planificacionVacia);
         setErrorPlanificacion(error instanceof Error ? error.message : 'No se pudieron cargar los datos operativos.');
       } finally {
-        setCargandoPlanificacion(false);
+        if (!cancelada && sesionActual.current === sesion) setCargandoPlanificacion(false);
       }
     }
 
     void cargarDatosOperativos();
+    return () => { cancelada = true; };
   }, [sesion]);
 
   useEffect(() => {
+    let cancelada = false;
     async function cargarFichaLote() {
       if (!sesion || !loteSeleccionadoId) {
         setFichaLote(null);
@@ -148,20 +126,22 @@ export default function App() {
 
       setCargandoFichaLote(true);
       try {
-        setFichaLote(await obtenerFichaLoteOperativo(loteSeleccionadoId, sesion.token));
+        const ficha = await obtenerFichaLoteOperativo(loteSeleccionadoId, sesion.token);
+        if (!cancelada && sesionActual.current === sesion) setFichaLote(ficha);
       } catch {
-        setFichaLote(null);
+        if (!cancelada && sesionActual.current === sesion) setFichaLote(null);
       } finally {
-        setCargandoFichaLote(false);
+        if (!cancelada && sesionActual.current === sesion) setCargandoFichaLote(false);
       }
     }
 
     void cargarFichaLote();
+    return () => { cancelada = true; };
   }, [loteSeleccionadoId, sesion]);
 
   async function iniciarSesion() {
     try {
-      setSesion(await loginUsuario(email.trim().toLowerCase(), password));
+      cambiarSesion(await loginUsuario(email.trim().toLowerCase(), password));
       setPassword('');
     } catch (error) {
       Alert.alert('Login', error instanceof Error ? error.message : 'No se pudo iniciar sesion.');
@@ -228,23 +208,21 @@ export default function App() {
 
       setGuardandoPrecipitacion(true);
       try {
-        await crearPrecipitacion(payload, sesionActiva.token);
-        Alert.alert('Precipitaciones', 'Precipitacion enviada al backend.');
-
-        setMilimetros('');
-        setObservaciones('');
-      } catch (error) {
-        await guardarRegistroLocal({
+        const cola = await obtenerColaSesion(sesionActiva);
+        await cola.guardar({
           id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           tipo: 'precipitacion',
           payload,
           creadoEn: new Date().toISOString(),
-          sincronizado: false,
         });
-        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-        Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
+        if (sesionActual.current !== sesionActiva) return;
+        setMilimetros('');
+        setObservaciones('');
+        await sincronizarRegistrosPendientes();
+      } catch (error) {
+        if (sesionActual.current === sesionActiva) Alert.alert('Precipitaciones', error instanceof Error ? error.message : 'No se pudo guardar el registro localmente.');
       } finally {
-        setGuardandoPrecipitacion(false);
+        if (sesionActual.current === sesionActiva) setGuardandoPrecipitacion(false);
       }
     }
 
@@ -288,78 +266,52 @@ export default function App() {
 
       setGuardandoObservacion(true);
       try {
-        const adjuntoSubido = fotoSeleccionada
-          ? await crearUrlSubidaAdjuntoObservacion({
-            nombreArchivo: nombreFoto,
-            mimeType: mimeFoto,
-            tamanioBytes: tamanioFoto,
-          }, sesionActiva.token)
-          : null;
-
-        if (fotoSeleccionada && adjuntoSubido) {
-          await subirArchivoAFirmaSupabase(adjuntoSubido.signedUploadUrl, fotoSeleccionada.uri, mimeFoto);
-        }
-
-        await crearObservacion({
-          ...payload,
-          adjuntos: fotoSeleccionada && adjuntoSubido
-            ? [{
-              storageBucket: adjuntoSubido.storageBucket,
-              storagePath: adjuntoSubido.storagePath,
-              nombreArchivo: nombreFoto,
-              mimeType: mimeFoto,
-              tamanioBytes: tamanioFoto,
-              estado: 'disponible',
-            }]
-            : undefined,
-        }, sesionActiva.token);
-        Alert.alert('Observaciones', 'Observacion enviada al backend.');
-
+        const cola = await obtenerColaSesion(sesionActiva);
+        const adjuntosLocales = await prepararAdjuntosLocalesPendientes(adjuntosSeleccionados);
+        await cola.guardar({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          tipo: 'observacion', payload, adjuntosLocales, creadoEn: new Date().toISOString(),
+        });
+        if (sesionActual.current !== sesionActiva) return;
         setTituloObservacion('');
         setDescripcionObservacion('');
         setLatitudObservacion('');
         setLongitudObservacion('');
         setFotoSeleccionada(null);
-      } catch {
-        try {
-          const adjuntosLocales = await prepararAdjuntosLocalesPendientes(adjuntosSeleccionados);
-
-          await guardarRegistroLocal({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            tipo: 'observacion',
-            payload,
-            adjuntosLocales,
-            creadoEn: new Date().toISOString(),
-            sincronizado: false,
-          });
-          setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
-          Alert.alert('Sin conexion', 'No se pudo enviar al backend. Quedo pendiente para sincronizar.');
-        } catch {
-          Alert.alert('Observaciones', 'No se pudo preservar la foto localmente. Intenta guardar la observacion nuevamente.');
-        }
+        await sincronizarRegistrosPendientes();
+      } catch (error) {
+        if (sesionActual.current === sesionActiva) Alert.alert('Observaciones', error instanceof Error ? error.message : 'No se pudo preservar la observacion localmente.');
       } finally {
-        setGuardandoObservacion(false);
+        if (sesionActual.current === sesionActiva) setGuardandoObservacion(false);
       }
     }
 
     async function sincronizarRegistrosPendientes() {
       setSincronizandoOffline(true);
       try {
-        const resultado = await sincronizarPendientes(sesionActiva.token);
-        setPendientesOffline((await leerRegistrosLocales()).filter((item) => !item.sincronizado).length);
+        const previos = await (await obtenerColaSesion(sesionActiva)).listar();
+        if (sesionActual.current !== sesionActiva) return;
+        setPendientesOffline(previos.filter((item) => !item.sincronizado).length);
+        const resultado = await sincronizarPendientes(sesionActiva, () => sesionActual.current === sesionActiva);
+        const registros = await (await obtenerColaSesion(sesionActiva)).listar();
+        if (sesionActual.current !== sesionActiva) return;
+        setPendientesOffline(registros.filter((item) => !item.sincronizado).length);
 
         if (resultado.ok) {
           Alert.alert('Sincronizacion', `Registros sincronizados: ${resultado.sincronizados}`);
         } else {
           Alert.alert('Sincronizacion', resultado.error || `Quedan pendientes: ${resultado.restantes}`);
         }
+      } catch (error) {
+        if (sesionActual.current === sesionActiva) Alert.alert('Sincronizacion', error instanceof Error ? error.message : 'Los pendientes se conservaron localmente.');
       } finally {
-        setSincronizandoOffline(false);
+        if (sesionActual.current === sesionActiva) setSincronizandoOffline(false);
       }
     }
 
     async function seleccionarFotoObservacion() {
       const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (sesionActual.current !== sesionActiva) return;
 
       if (!permiso.granted) {
         Alert.alert('Observaciones', 'Necesitamos permiso para acceder a tus fotos.');
@@ -371,13 +323,14 @@ export default function App() {
         quality: 0.82,
       });
 
-      if (!resultado.canceled) {
+      if (!resultado.canceled && sesionActual.current === sesionActiva) {
         setFotoSeleccionada(resultado.assets[0]);
       }
     }
 
     async function tomarFotoObservacion() {
       const permiso = await ImagePicker.requestCameraPermissionsAsync();
+      if (sesionActual.current !== sesionActiva) return;
 
       if (!permiso.granted) {
         Alert.alert('Observaciones', 'Necesitamos permiso para usar la camara.');
@@ -389,7 +342,7 @@ export default function App() {
         quality: 0.82,
       });
 
-      if (!resultado.canceled) {
+      if (!resultado.canceled && sesionActual.current === sesionActiva) {
         setFotoSeleccionada(resultado.assets[0]);
       }
     }
@@ -581,10 +534,11 @@ export default function App() {
                   />
                 </View>
                 <Text style={styles.note}>Pendientes de sincronizacion: {pendientesOffline}</Text>
+                {pendientesAnteriores && <Text style={styles.note}>Hay registros anteriores que requieren recuperacion antes de enviarse. Se conservaron en este dispositivo.</Text>}
               </View>
             </>
           )}
-          <Button title="Cerrar sesion" onPress={() => setSesion(null)} />
+          <Button title="Cerrar sesion" onPress={() => cambiarSesion(null)} />
         </View>
       </ScrollView>
     );

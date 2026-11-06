@@ -6,7 +6,7 @@ El estado de corte para version estable queda resumido en `docs/ESTABILIDAD_MVP.
 
 ## Cobertura agregada en etapa 2 (2026-11-06)
 
-La suite completa tiene 244 tests en 42 archivos. La evidencia de build y sus limitaciones se mantienen en `ESTABILIDAD_MVP.md`. El flujo funcional y tecnico esta documentado en [AUTENTICACION.md](AUTENTICACION.md).
+Al cerrar la etapa 2 la suite tenia 244 tests en 42 archivos. La evidencia vigente y sus limitaciones se mantienen en `ESTABILIDAD_MVP.md`. El flujo funcional y tecnico esta documentado en [AUTENTICACION.md](AUTENTICACION.md).
 
 | Archivo | Comportamiento protegido | Limite de la prueba |
 | --- | --- | --- |
@@ -18,6 +18,14 @@ La suite completa tiene 244 tests en 42 archivos. La evidencia de build y sus li
 | `middleware-errores.test.js` | Ocultar detalles incluso en 5xx controlados, validar codigos HTTP y delegar headers enviados | Middleware invocado directamente |
 
 Se actualizaron tambien los tests existentes de email/Microsoft/middleware para usar claves explicitas validas. Los casos originales de errores de credenciales, usuario no habilitado y permisos se conservan.
+
+## Cobertura agregada en etapa 3 (2026-11-06)
+
+La suite vigente tiene 258 tests en 43 archivos. `tests/mobile-offline.test.js` agrega 14 pruebas del nucleo real de mobile, compilado con `pnpm --filter agro-app-mobile test:build` a `.cache/offline-tests`. El comando raiz `pnpm test` incorpora esa compilacion despues de construir tipos/API.
+
+Las pruebas cubren propietarios por cliente/usuario, reapertura de cola, mutaciones concurrentes, legacy sin reasignacion, corrupcion sin sobrescritura, falla y recuperacion de almacenamiento, progreso de fotos entre intentos, respuesta perdida, fallo al persistir progreso, cambio de sesion durante PUT/POST, errores parciales, confirmaciones invalidas y exclusion de sincronizaciones con altas simultaneas.
+
+Se sustituyen persistencia y servicios de red mediante interfaces pequenas; no se duplica la implementacion para probarla. Las pruebas no garantizan permisos de camara, archivos reales, cuota AsyncStorage/localStorage o integracion con storage/base. Ver [OFFLINE.md](OFFLINE.md) y el recorrido pendiente de [MOBILE_TESTING.md](MOBILE_TESTING.md).
 
 ## Principio
 

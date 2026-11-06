@@ -549,12 +549,13 @@ Regla de negocio acordada:
 `apps/mobile/package.json` declara `src/App.tsx` como entrada. Ese archivo concentra actualmente login, seleccion de campo/lote, consulta operativa y formularios; su separacion por responsabilidad es trabajo pendiente. Existen tambien carpetas de navegacion y store, pero no deben asumirse como el flujo activo sin revisar sus imports desde la entrada.
 
 - `services/api.ts` contiene operaciones HTTP y subida de archivos; `services/clienteApi.ts` se usa para enviar pendientes.
-- `services/almacenamientoLocal.ts` persiste pendientes en AsyncStorage nativo o localStorage al ejecutar en web.
-- `services/sincronizacion.ts` prepara adjuntos, envia registros a `POST /sincronizacion` y marca solo los confirmados por el servidor.
+- `services/almacenamientoLocal.ts` adapta AsyncStorage/localStorage y construye una cola por cliente/usuario. `services/offline/cola.ts` serializa sus mutaciones y verifica propietarios/formato.
+- `services/offline/sincronizador.ts` coordina reintentos y progreso con dependencias inyectadas. `services/sincronizacion.ts` lo conecta con firmas, subidas y `POST /sincronizacion` usando la sesion capturada.
+- `services/adjuntosLocales.ts` preserva fotos en sandbox nativo o contenido data URL en web. La pantalla guarda siempre en la cola antes del primer envio y mantiene un ID estable.
 - `routes/sincronizacion.ts` delega en `services/sincronizacionOffline.ts`; se soportan observaciones y precipitaciones. Los tipos no soportados quedan pendientes con error.
 - Los servicios operativos validan alcance y persistencia. PostgreSQL impone unicidad por `clienteId` y `registroMovilId` para esos registros.
 
-La cola local todavia usa una clave global, sin separar usuario/cliente, y operaciones de lectura/escritura del arreglo completo. La sesion y el snapshot operativo del flujo activo estan en memoria; no se debe prometer un arranque offline completo despues de reiniciar la app. Ver etapas 3 y 5 del plan para aislamiento, concurrencia y validacion en dispositivo.
+La cola nueva esta particionada por cliente/usuario; la antigua clave global se conserva sin importacion automatica porque no identifica al propietario. La exclusion cubre un runtime JavaScript, no multiples procesos/pestanas web. La sesion y el snapshot operativo siguen en memoria: no se debe prometer un arranque offline completo despues de reiniciar. Ver [OFFLINE.md](OFFLINE.md) para contratos, errores y pruebas; la validacion en dispositivo y con servicios reales sigue pendiente.
 
 ## Como Agregar Una Nueva Funcionalidad
 

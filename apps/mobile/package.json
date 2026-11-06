@@ -4,6 +4,7 @@
   "private": true,
   "main": "src/App.tsx",
   "scripts": {
+    "test:build": "tsc -p tsconfig.offline-tests.json",
     "dev": "node ../../scripts/run-expo.js",
     "build": "expo export"
   },

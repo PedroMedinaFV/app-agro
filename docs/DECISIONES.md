@@ -422,3 +422,15 @@ Los resolvers de auth validan entradas desconocidas antes de usar datos o bcrypt
 Las rutas usan un adaptador async reutilizable compatible con Express 4. El middleware conserva mensajes controlados 4xx, maneja JSON malformado y oculta mensajes y detalles en todos los 5xx. Se prueba HTTP real con dependencias de infraestructura sustituidas para verificar el limite de transporte sin requerir datos operativos.
 
 Consecuencias: claves cortas impiden el arranque y rotar una clave invalida sesiones. No se rota el `.env` automaticamente porque el cifrado ERP existente puede usar JWT como fallback; revisar el material de cifrado antes de actualizar. Se mantienen contratos de sesion y persistencia. Operacion, limitaciones y pruebas en `AUTENTICACION.md`.
+
+## 2026-11-06 - Cola offline por propietario y guardado previo al envio
+
+La cola activa se particiona por cliente/usuario con formato versionado. Se guardan los registros antes de iniciar solicitudes y se conserva su ID durante los reintentos, reutilizando la idempotencia del backend. Motivo: un timeout posterior a un alta no debe originar otra carga con un ID distinto.
+
+Las mutaciones y sincronizaciones se excluyen por propietario dentro de un runtime, compartiendo la misma instancia de adaptador. El coordinador de sincronizacion depende de contratos pequenos de almacenamiento/red y persiste cada foto confirmada antes de enviar el registro. Un cambio de sesion detiene nuevas solicitudes; las ya iniciadas solo pueden actualizar la cola capturada del propietario original.
+
+Los registros legacy globales quedan preservados sin reasignacion automatica: no contienen evidencia suficiente del propietario. Para futuras recuperaciones se necesita un proceso controlado. No se implementan ahora coordinacion entre pestanas, login offline ni limpieza de fotos/objetos huerfanos. Detalles y limites en `OFFLINE.md`; recorrido de dispositivo pendiente en `MOBILE_TESTING.md`.
+
+## 2026-11-06 - Rotacion autorizada del JWT de desarrollo
+
+El usuario autorizo actualizar el JWT en desarrollo antes del primer lanzamiento. Se genero una clave aleatoria propia y se comprobo localmente que el material efectivo de cifrado ERP se mantiene, con cifrado/descifrado antes y despues. No se imprimieron secretos ni se modificaron datos de base; `.env` no se versiona. Las sesiones emitidas con la clave anterior requieren volver a autenticarse tras reiniciar la API.

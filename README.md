@@ -74,7 +74,7 @@ pnpm --filter agro-app-mobile exec tsc --noEmit
 pnpm --filter agro-app-api prisma:validate
 ```
 
-`pnpm test` compila los tipos y la API antes de ejecutar `tests/*.test.js`. La suite actual es principalmente de unidad/servicio y resolvers; no reemplaza pruebas HTTP completas, migraciones en base de testing ni pruebas en dispositivo.
+`pnpm test` compila tipos, API y nucleo offline mobile antes de ejecutar `tests/*.test.js`. Incluye pruebas HTTP de autenticacion y reglas/servicios con dependencias sustituidas; no reemplaza recorridos completos con base/storage reales, migraciones en testing ni pruebas en dispositivo.
 
 Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` para mobile. El chequeo TypeScript de mobile y la exportacion Expo son verificaciones distintas. El script raiz `pnpm lint` todavia no tiene scripts/configuracion de lint en los workspaces y no debe contarse como control de calidad implementado.
 
@@ -87,6 +87,7 @@ Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` par
 - [Planificacion agricola](docs/PLANIFICACION_AGRICOLA.md) y [modelo de datos](docs/MODELO_PLANIFICACION_V1.md).
 - [Roles y permisos](docs/ROLES_Y_PERMISOS.md), [seguridad](docs/SEGURIDAD.md) y [auditoria](docs/AUDITORIA.md).
 - [Autenticacion y errores](docs/AUTENTICACION.md): validaciones, JWT, configuracion y pruebas HTTP.
+- [Registros offline](docs/OFFLINE.md): aislamiento por propietario, persistencia, adjuntos, reintentos y recuperacion de registros anteriores.
 - [Integracion ERP](docs/INTEGRACION_ERP.md), [Supabase](docs/SUPABASE.md) y [pruebas mobile](docs/MOBILE_TESTING.md).
 - [Decisiones](docs/DECISIONES.md): fundamentos y restricciones del producto.
 

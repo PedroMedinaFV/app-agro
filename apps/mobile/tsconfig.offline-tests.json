@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "rootDir": "src/services/offline",
+    "outDir": ".cache/offline-tests",
+    "paths": { "@agro/tipos": ["packages/tipos/dist/index.d.ts"] }
+  },
+  "include": ["src/services/offline/**/*.ts"]
+}

@@ -1,88 +1,35 @@
-export type RegistroLocal = {
-  id: string;
-  tipo: string;
-  payload: unknown;
-  adjuntosLocales?: AdjuntoLocalPendiente[];
-  creadoEn: string;
-  sincronizado: boolean;
-};
-
-export type AdjuntoLocalPendiente = {
-  uri: string;
-  nombreArchivo: string;
-  mimeType: string;
-  tamanioBytes: number;
-};
-
-const clave = 'agro-app-registros-local';
+import type { SesionUsuario } from '@agro/tipos';
+import { crearColaOffline } from './offline/cola';
+import type { AlmacenamientoOffline } from './offline/tipos';
+export type { AdjuntoLocalPendiente, RegistroLocal, NuevoRegistroLocal, PropietarioOffline } from './offline/tipos';
 
 const esReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+let almacenamiento: Promise<AlmacenamientoOffline> | undefined;
 
-async function obtenerAlmacenamiento() {
-  if (!esReactNative) {
-    return null;
+function obtenerAlmacenamiento() {
+  if (!almacenamiento) {
+    almacenamiento = (async () => {
+      if (esReactNative) return (await import('@react-native-async-storage/async-storage')).default;
+      if (typeof localStorage === 'undefined') throw new Error('No hay almacenamiento persistente disponible.');
+      return {
+        getItem: async (clave: string) => localStorage.getItem(clave),
+        setItem: async (clave: string, valor: string) => { localStorage.setItem(clave, valor); },
+      };
+    })().catch((error) => { almacenamiento = undefined; throw error; });
   }
-
-  const AsyncStorage = await import('@react-native-async-storage/async-storage');
-  return AsyncStorage.default;
+  return almacenamiento;
 }
 
-async function leerRaw(): Promise<RegistroLocal[]> {
-  if (esReactNative) {
-    const storage = await obtenerAlmacenamiento();
-    if (!storage) {
-      return [];
-    }
-    const valor = await storage.getItem(clave);
-    return valor ? JSON.parse(valor) : [];
-  }
-
-  if (typeof localStorage === 'undefined') {
-    return [];
-  }
-
-  const valor = localStorage.getItem(clave);
-  return valor ? JSON.parse(valor) : [];
+export async function obtenerColaSesion(sesion: SesionUsuario) {
+  const propietario = { clienteId: sesion.usuario.clienteId || '', usuarioId: sesion.usuario.id };
+  return crearColaOffline(await obtenerAlmacenamiento(), propietario);
 }
 
-async function escribirRaw(registros: RegistroLocal[]) {
-  if (esReactNative) {
-    const storage = await obtenerAlmacenamiento();
-    if (!storage) {
-      return;
-    }
-    await storage.setItem(clave, JSON.stringify(registros));
-    return;
-  }
-
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-
-  localStorage.setItem(clave, JSON.stringify(registros));
-}
-
-export async function guardarRegistroLocal(registro: RegistroLocal) {
-  const actual = await leerRaw();
-  const siguiente = [...actual, registro];
-  await escribirRaw(siguiente);
-  return siguiente;
-}
-
-export async function leerRegistrosLocales(): Promise<RegistroLocal[]> {
-  return leerRaw();
-}
-
-export async function marcarRegistroSincronizado(id: string) {
-  const actual = (await leerRaw()).map((item) =>
-    item.id === id ? { ...item, sincronizado: true } : item
-  );
-  await escribirRaw(actual);
-  return actual;
-}
-
-export async function limpiarRegistrosSincronizados() {
-  const actual = (await leerRaw()).filter((item) => !item.sincronizado);
-  await escribirRaw(actual);
-  return actual;
+export async function hayPendientesAnteriores() {
+  const raw = await (await obtenerAlmacenamiento()).getItem('agro-app-registros-local');
+  if (!raw) return false;
+  try {
+    const registros = JSON.parse(raw);
+    return !Array.isArray(registros) || registros.some((registro) => registro?.sincronizado !== true);
+  } catch { return true; }
 }

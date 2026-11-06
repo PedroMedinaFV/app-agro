@@ -2,6 +2,8 @@
 
 Guia practica para probar `apps/mobile` durante desarrollo.
 
+La arquitectura, persistencia y limites del flujo actual estan en [OFFLINE.md](OFFLINE.md). Las pruebas automaticas de etapa 3 no sustituyen el recorrido en celular indicado aqui; ese recorrido permanece pendiente.
+
 ## 1. Comandos base
 
 Desde la raiz del repo:
@@ -19,6 +21,8 @@ pnpm --filter agro-app-mobile build
 
 El build usa `expo export`. Sirve como control tecnico, pero no reemplaza una prueba en dispositivo.
 
+`pnpm test` incluye compilacion y pruebas del nucleo offline; `pnpm --filter agro-app-mobile exec tsc --noEmit` verifica tipos de toda la app.
+
 ## 2. URL de API
 
 Mobile consume la API desde:
@@ -27,7 +31,7 @@ Mobile consume la API desde:
 process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000'
 ```
 
-La variable está en `.env` / `.env.example`:
+El `.env.example` raiz documenta la variable; el launcher mobile no carga ese archivo. Exportarla en la terminal que inicia Expo o usar un `.env` de `apps/mobile`:
 
 ```env
 EXPO_PUBLIC_API_URL="http://localhost:4000"
@@ -176,6 +180,22 @@ Esto depende del emulador. En Expo Go con celular real, usar la IP LAN de la PC.
 - [ ] Restaurar conexion.
 - [ ] Sincronizar pendientes.
 - [ ] Confirmar que no se duplican registros al reintentar.
+
+### Recorrido requerido de etapa 3 (pendiente en dispositivo)
+
+Usar cuentas A/B de testing con cliente asociado y datos conocidos; no usar registros operativos reales.
+
+- [ ] Ingresar como A con conexion, cortar red y guardar una precipitacion y una observacion con foto. Verificar contador y preservacion del contenido.
+- [ ] Cerrar sesion; ingresar como B con conexion y verificar que no aparecen formularios, fotos, campos ni pendientes de A. Repetir con otro cliente.
+- [ ] Volver como A y comprobar que se recuperan los pendientes. Reiniciar la app, volver a autenticar con conexion y comprobar nuevamente antes de sincronizar.
+- [ ] Restaurar red y enviar. Verificar en web/base de testing que cada ID local genera un solo registro y que las fotos se pueden abrir.
+- [ ] Interrumpir envio despues de subir una foto o durante el POST; reintentar y comprobar reutilizacion de metadata guardada y ausencia de registros duplicados.
+- [ ] Cerrar sesion durante una subida/envio: la respuesta en vuelo solo puede confirmar la cola de A; no deben comenzar nuevas solicitudes de A ni aparecer datos suyos en B.
+- [ ] Guardar nuevos registros mientras se sincronizan otros y comprobar que permanecen en la cola; pulsar sincronizacion repetidamente no debe iniciar corridas simultaneas.
+- [ ] Verificar errores de permisos/validacion y almacenamiento lleno: no se borra el pendiente ni se informa un guardado que fallo. No borrar almacenamiento del dispositivo para ocultar fallos.
+- [ ] Si existen registros antiguos sin propietario, comprobar aviso y conservacion; no atribuirlos automaticamente a A o B.
+
+Registrar dispositivo, plataforma, versiones, escenario y resultado antes de marcar este recorrido como aprobado.
 
 ## 8. Problemas comunes
 
