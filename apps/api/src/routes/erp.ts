@@ -4,22 +4,17 @@ import type { Prisma } from '@prisma/client';
 import type { ErpSnapshot, SincronizarErpRequest } from '@agro/tipos';
 import { obtenerSnapshotErp } from '../services/erp/clienteErp';
 import { obtenerConfiguracionErp } from '../services/erp/configuracionErp';
-import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
+import { ejecutarSincronizacionErp, type DependenciasSincronizacionErp } from '../services/erp/ejecutarSincronizacionErp';
 import { requierePermiso } from '../middleware/permisos';
 import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { listarEmpresasErpCliente } from '../services/erp/empresasCliente';
 import {
-  fallarSincronizacionErpHistorial,
-  finalizarSincronizacionErpHistorial,
-  iniciarSincronizacionErpHistorial,
   listarHistorialSincronizacionesErp,
 } from '../services/erp/historialSincronizacionErp';
 import { prisma } from '../prisma';
-import { asegurarPadronesPlanificacionDesdeErp } from '../services/planificacion/padronesPlanificacionPrisma';
 
 const router = Router();
 type RequestConUsuario = Request & { user?: { sub: string; rol?: string; clienteId?: string } };
-const clientesSincronizando = new Set<string>();
 
 function limitarEnteroQuery(valor: unknown, defecto: number, minimo: number, maximo: number) {
   const crudo = Array.isArray(valor) ? valor[0] : valor;
@@ -38,23 +33,6 @@ function obtenerTextoQuery(valor: unknown) {
   return typeof crudo === 'string' && crudo.trim() ? crudo.trim() : undefined;
 }
 
-type ResolverSincronizarErpDeps = {
-  iniciarHistorial: typeof iniciarSincronizacionErpHistorial;
-  sincronizarSnapshot: typeof sincronizarSnapshotErp;
-  asegurarPadrones: typeof asegurarPadronesPlanificacionDesdeErp;
-  finalizarHistorial: typeof finalizarSincronizacionErpHistorial;
-  fallarHistorial: typeof fallarSincronizacionErpHistorial;
-  clientesEnProceso: Set<string>;
-};
-
-const depsSincronizarErp: ResolverSincronizarErpDeps = {
-  iniciarHistorial: iniciarSincronizacionErpHistorial,
-  sincronizarSnapshot: sincronizarSnapshotErp,
-  asegurarPadrones: asegurarPadronesPlanificacionDesdeErp,
-  finalizarHistorial: finalizarSincronizacionErpHistorial,
-  fallarHistorial: fallarSincronizacionErpHistorial,
-  clientesEnProceso: clientesSincronizando,
-};
 
 function filtrarSnapshotPorCampos(snapshot: ErpSnapshot, camposErpIds: string[] | null): ErpSnapshot {
   if (!camposErpIds) {
@@ -609,46 +587,18 @@ router.get('/sincronizaciones', requierePermiso('erp:sincronizar'), async (req, 
 export async function resolverSincronizarErp(
   user: RequestConUsuario['user'],
   body: SincronizarErpRequest,
-  deps: ResolverSincronizarErpDeps = depsSincronizarErp,
-): Promise<{ status: number; body: { error: string } | { ok: true; resultado: Awaited<ReturnType<typeof sincronizarSnapshotErp>> } }> {
+  deps?: DependenciasSincronizacionErp,
+) {
   const clienteId = user?.clienteId;
-
-  if (!clienteId) {
-    return { status: 400, body: { error: 'El usuario no tiene cliente asociado.' } };
-  }
-
-  if (deps.clientesEnProceso.has(clienteId)) {
-    return { status: 409, body: { error: 'Ya hay una sincronizacion en curso para este cliente.' } };
-  }
-
-  deps.clientesEnProceso.add(clienteId);
-
-  let historial: Awaited<ReturnType<typeof iniciarSincronizacionErpHistorial>> | null = null;
-
+  if (!clienteId) return { status: 400, body: { error: 'El usuario no tiene cliente asociado.' } };
   try {
-    historial = await deps.iniciarHistorial(clienteId, user?.sub, body.items);
-    const resultado = await deps.sincronizarSnapshot(clienteId, {
-      id: user?.sub,
-      clienteId,
-    }, body.items);
-    await deps.asegurarPadrones(clienteId, null);
-    await deps.finalizarHistorial(historial.id, clienteId, historial.itemsEjecutados, resultado);
-
-    return {
-      status: 200,
-      body: {
-        ok: true,
-        resultado,
-      },
-    };
+    const resultado = await ejecutarSincronizacionErp(clienteId, { id: user?.sub, clienteId }, body?.items, deps);
+    return { status: 200, body: { ok: true, resultado } };
   } catch (error) {
-    if (historial) {
-      await deps.fallarHistorial(historial.id, error);
+    if ((error as { statusCode?: number }).statusCode === 409) {
+      return { status: 409, body: { error: (error as Error).message } };
     }
-
     throw error;
-  } finally {
-    deps.clientesEnProceso.delete(clienteId);
   }
 }
 

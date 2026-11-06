@@ -9,7 +9,7 @@ Fecha de inicio: 2026-11-06. Alcance acordado: estabilizar Agro App por etapas c
 | 1. Base de estabilidad | Resolver discrepancia de destinos; actualizar README, arquitectura y comandos | Suite verde, builds correctos y guia de inicio coherente con el codigo | Completada el 2026-11-06; evidencia en `ESTABILIDAD_MVP.md` |
 | 2. Autenticacion y errores | Centralizar JWT, exigir secreto valido, validar login/registro y propagar errores sin exponer detalles internos | Pruebas de configuracion ausente, entradas invalidas, credenciales y errores de infraestructura | Implementada y probada el 2026-11-06; JWT de desarrollo actualizado en etapa 3 |
 | 3. Integridad offline | Separar cola por cliente/usuario, serializar escrituras, impedir sincronizacion de pendientes ajenos y persistir progreso de adjuntos | Pruebas de cambio de usuario, concurrencia, errores parciales y reintentos; validacion en dispositivo | Implementada con pruebas automaticas; pendiente recorrido en dispositivo |
-| 4. Concurrencia ERP | Bloqueo persistente por cliente, vencimiento, recuperacion y trazabilidad | Dos instancias no sincronizan el mismo cliente simultaneamente; interrupciones no dejan bloqueo permanente | Pendiente |
+| 4. Concurrencia ERP | Bloqueo persistente por cliente, vencimiento, recuperacion y trazabilidad | Dos instancias no sincronizan el mismo cliente simultaneamente; interrupciones no dejan bloqueo permanente | Implementada; pendiente aplicar migracion y aprobar prueba PostgreSQL real (base no accesible) |
 | 5. Integracion | Base exclusiva de testing, migraciones, recorridos HTTP con middleware real y aislamiento entre clientes/campos | Flujos criticos completos aprobados sin datos operativos reales | Pendiente |
 | 6. Modularizacion y entrega | Separar responsabilidades restantes en mobile y servicios criticos; automatizar verificaciones; documentar despliegue y recuperacion | Verificaciones reproducibles y modulos con contratos y dependencias comprensibles | Pendiente |
 
@@ -59,3 +59,15 @@ El pendiente de JWT local detectado al cerrar etapa 2 se resolvio en etapa 3 con
 - Resultado: 258/258 pruebas; TypeScript mobile y build completo correctos. Guia tecnica/funcional en [OFFLINE.md](OFFLINE.md).
 
 La etapa no se considera cerrada respecto de su criterio manual: falta el recorrido de [MOBILE_TESTING.md](MOBILE_TESTING.md) con dispositivo, fotos reales y servicios de testing. No hay dispositivo/emulador disponible en este entorno. Tampoco se valida aqui coordinacion entre pestanas, recuperacion automatica de registros legacy o arranque completamente offline.
+
+## Entrega de etapa 4
+
+- Reserva PostgreSQL por cliente, token por intento, historial asociado y vencimiento con reloj de base. Migracion `20261106120000_bloqueo_sincronizacion_erp` preparada.
+- Adquisicion atomica, recuperacion bajo demanda de historiales interrumpidos y liberacion condicionada al propietario; sin `Set` de coordinacion en produccion.
+- Contexto transaccional para proteger tambien escritores indirectos y evitar fallback al cliente global despues de un timeout. Cache, padrones derivados e historial final se confirman o revierten juntos.
+- Coordinador compartido por HTTP y CLI, incluida importacion de empresas. Los CLI requieren clienteId. La cache global tiene exclusion adicional entre clientes para impedir refrescos destructivos simultaneos.
+- TTL configurable y acotado, por defecto cinco minutos, sin renovacion indefinida. Costos de conexion/transacciones largas documentados en [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md).
+- Suite: 269 aprobadas, 0 fallidas y 1 prueba PostgreSQL opcional omitida; build completo, schema Prisma y generacion de cliente correctos.
+- Intento adicional de prueba PostgreSQL real: fallo de conexion antes de crear el schema temporal; no se modificaron tablas de aplicacion ni se aplico la migracion.
+
+La etapa no se da por cerrada respecto de su criterio de base real. Cuando PostgreSQL este disponible, ejecutar la prueba aislada con `ERP_LOCK_TEST_DATABASE_URL`, revisar/aplicar migraciones en el entorno objetivo y validar una sincronizacion de testing. La guia explica permisos, aislamiento, limpieza y recuperacion.

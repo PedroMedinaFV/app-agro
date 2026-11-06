@@ -1,14 +1,14 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-06 (etapas 1 a 3 del plan de estabilizacion; etapa 3 pendiente de validacion en dispositivo).
+Fecha de corte: 2026-11-06 (etapas 1 a 4; pendientes dispositivo en etapa 3 y migracion/prueba PostgreSQL en etapa 4).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
 - Suite automatica completa: `pnpm test`.
-- Resultado ultimo: 258 tests, 258 passing, 0 failing.
-- Archivos de test: 43.
+- Resultado ultimo: 270 tests, 269 passing, 0 failing, 1 skipped (PostgreSQL opcional).
+- Archivos de test: 46.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 
@@ -16,10 +16,11 @@ Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (ve
 
 | Comando | Resultado | Alcance |
 | --- | --- | --- |
-| `pnpm test` | Correcto: 258/258, etapa 3 | Compila tipos/API/nucleo offline y ejecuta 43 archivos de pruebas |
-| `pnpm build` | Correcto, etapa 3 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
+| `pnpm test` | Correcto: 269 aprobados, 1 omitido, etapa 4 | Compila tipos/API/nucleo offline y ejecuta 46 archivos de pruebas |
+| `pnpm build` | Correcto, etapa 4 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
 | `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto, etapa 3 | Chequeo TypeScript mobile, separado del bundle Expo |
-| `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 1 | No aplica migraciones ni verifica conectividad; schema sin cambios en etapa 2 |
+| `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 4 | Modelo de reserva ERP; no aplica migraciones ni verifica conectividad |
+| `pnpm --filter agro-app-api prisma:generate` | Correcto, etapa 4 | Prisma Client regenerado con el modelo nuevo |
 
 Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. No se cambiaron dependencias ni se aplicaron migraciones/seeds. No se validaron conexiones reales con PostgreSQL, ERP, Microsoft o Supabase ni flujos en dispositivo. La guia de inicio se reviso contra scripts y configuracion existentes, sin repetir una instalacion limpia.
 
@@ -30,6 +31,8 @@ La etapa 2 centralizo JWT, valido entradas de autenticacion y mejoro la propagac
 En etapa 3 se actualizo el JWT_SECRET local, con autorizacion del usuario y una clave aleatoria valida. Se preservo el material efectivo de cifrado ERP y se verifico cifrado/descifrado local antes y despues; no se imprimieron claves ni se consulto la base. Reiniciar API y volver a autenticar las sesiones previas. `.env` permanece ignorado por Git.
 
 El nucleo offline nuevo se prueba con almacenamiento y servicios sustituidos: aislamiento, concurrencia, errores parciales, logout y reintentos de adjuntos. El recorrido de dispositivo de [MOBILE_TESTING.md](MOBILE_TESTING.md) sigue pendiente: no se dispone de dispositivo/emulador en este entorno. No se declara la etapa cerrada respecto de ese criterio.
+
+Etapa 4: reserva persistente y contexto de escrituras implementados y testeados con dependencias sustituidas. La prueba PostgreSQL real se intento en un schema temporal aislado, pero no pudo conectar con la base configurada: fallo antes de crear el schema y no modifico datos. La suite normal omite ese test sin `ERP_LOCK_TEST_DATABASE_URL`. La migracion nueva no se aplico al entorno de aplicacion; la sincronizacion requiere aplicarla cuando la base vuelva a estar disponible. Ver [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md).
 
 ## Bloques cubiertos
 
@@ -77,7 +80,7 @@ El estado verde de la suite no implica que los siguientes puntos esten resueltos
 Estos puntos no bloquean el avance de nuevas features, pero conviene tratarlos antes de produccion:
 
 - La suite actual es mayormente de unidad/servicio; falta una capa e2e real contra API levantada y base de testing.
-- La sincronizacion ERP usa lock en memoria para MVP temprano; para produccion conviene lock persistente por cliente.
+- El bloqueo ERP persistente requiere aplicar su migracion y aprobar la prueba PostgreSQL real. Su transaccion acotada incluye lecturas remotas y ocupa una conexion; la cache global serializa refrescos entre clientes. Medir duraciones/pool antes de produccion y evolucionar a descarga/aplicacion separadas si se necesitan jobs largos.
 - Mobile offline todavia necesita validacion manual fuerte con dispositivo/emulador y archivos reales.
 - Las rutas tienen smoke tests de delegacion; falta cobertura HTTP completa con middleware real para todos los endpoints.
 - Las migraciones y seeds deben validarse en un schema separado de testing antes del despliegue.

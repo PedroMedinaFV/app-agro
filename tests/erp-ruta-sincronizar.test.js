@@ -38,6 +38,18 @@ function crearDeps(overrides = {}) {
     ...overrides,
   };
 
+  deps.bloqueo = {
+    adquirir: async (clienteId, usuarioId, items) => {
+      if (deps.clientesEnProceso.has(clienteId)) return null;
+      deps.clientesEnProceso.add(clienteId);
+      try {
+        return { clienteId, token: 'token-prueba', ttl: 300000, ...await deps.iniciarHistorial(clienteId, usuarioId, items) };
+      } catch (error) { deps.clientesEnProceso.delete(clienteId); throw error; }
+    },
+    ejecutar: async (reserva, tarea) => tarea(),
+    liberar: async (reserva) => { deps.clientesEnProceso.delete(reserva.clienteId); },
+  };
+
   return { deps, llamadas };
 }
 
@@ -130,5 +142,41 @@ test('resolverSincronizarErp libera lock aunque falle antes de crear historial',
 
   assert.equal(llamadas.sincronizar.length, 0);
   assert.equal(llamadas.fallar.length, 0);
+  assert.equal(deps.clientesEnProceso.has('cliente-1'), false);
+});
+
+test('resolverSincronizarErp conserva error original aunque fallen historial y liberacion', async () => {
+  const { deps } = crearDeps({
+    sincronizarSnapshot: async () => { throw new Error('fallo de importacion'); },
+    fallarHistorial: async () => { throw new Error('fallo de historial'); },
+  });
+  deps.bloqueo.liberar = async () => { throw new Error('fallo de liberacion'); };
+  const log = console.error;
+  console.error = () => {};
+  try {
+    await assert.rejects(resolverSincronizarErp({ sub: 'usuario-1', clienteId: 'cliente-1' }, {}, deps), /fallo de importacion/);
+  } finally { console.error = log; }
+});
+
+test('resolverSincronizarErp no revierte exito confirmado si solo falla liberar el bloqueo', async () => {
+  const { deps, llamadas } = crearDeps();
+  deps.bloqueo.liberar = async () => { throw new Error('conexion perdida'); };
+  const log = console.error;
+  console.error = () => {};
+  try {
+    const respuesta = await resolverSincronizarErp({ sub: 'usuario-1', clienteId: 'cliente-1' }, {}, deps);
+    assert.equal(respuesta.status, 200);
+    assert.equal(llamadas.finalizar.length, 1);
+    assert.equal(llamadas.fallar.length, 0);
+  } finally { console.error = log; }
+});
+
+test('resolverSincronizarErp devuelve conflicto si otra corrida refresca maestros globales', async () => {
+  const { deps, llamadas } = crearDeps();
+  deps.bloqueo.ejecutar = async () => { throw Object.assign(new Error('Cache ERP compartida ocupada'), { statusCode: 409 }); };
+  const respuesta = await resolverSincronizarErp({ sub: 'usuario-1', clienteId: 'cliente-1' }, {}, deps);
+  assert.equal(respuesta.status, 409);
+  assert.equal(llamadas.sincronizar.length, 0);
+  assert.equal(llamadas.fallar.length, 1);
   assert.equal(deps.clientesEnProceso.has('cliente-1'), false);
 });

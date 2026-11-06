@@ -434,3 +434,13 @@ Los registros legacy globales quedan preservados sin reasignacion automatica: no
 ## 2026-11-06 - Rotacion autorizada del JWT de desarrollo
 
 El usuario autorizo actualizar el JWT en desarrollo antes del primer lanzamiento. Se genero una clave aleatoria propia y se comprobo localmente que el material efectivo de cifrado ERP se mantiene, con cifrado/descifrado antes y despues. No se imprimieron secretos ni se modificaron datos de base; `.env` no se versiona. Las sesiones emitidas con la clave anterior requieren volver a autenticarse tras reiniciar la API.
+
+## 2026-11-06 - Reserva ERP persistente y transaccion protegida
+
+Se reemplaza la coordinacion en memoria por reserva PostgreSQL por cliente, token de propietario, historial y vencimiento. HTTP y ambos CLI usan el mismo coordinador. La adquisicion y recuperacion son atomicas y una liberacion vieja no elimina una reserva nueva.
+
+El vencimiento solo no impide que un trabajador pausado vuelva a escribir. Se eligio una transaccion con tiempo maximo y contexto AsyncLocalStorage que alcanza los servicios indirectos; los bloques transaccionales anidados se unen a esa unidad. Al expirar no hay fallback a un cliente global. La reserva inicial/historial se confirman antes del trabajo para conservar trazabilidad aun si este se revierte.
+
+La cache actual contiene maestros globales y refrescos destructivos. Se agrega una puerta de escritura compartida entre clientes para evitar carreras; una fuente ERP independiente por cliente requerira particionar esa cache. La transaccion incluye lecturas remotas y mantiene una conexion: es una solucion acotada con TTL, que debe evolucionar a descarga/aplicacion separadas para jobs largos y mayor paralelismo.
+
+La migracion y escenarios PostgreSQL estan preparados; la base configurada no estuvo accesible en la prueba aislada, por lo que su validacion y aplicacion siguen pendientes. Ver `ERP_CONCURRENCIA.md` para operacion y evidencia.

@@ -89,6 +89,7 @@ Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` par
 - [Autenticacion y errores](docs/AUTENTICACION.md): validaciones, JWT, configuracion y pruebas HTTP.
 - [Registros offline](docs/OFFLINE.md): aislamiento por propietario, persistencia, adjuntos, reintentos y recuperacion de registros anteriores.
 - [Integracion ERP](docs/INTEGRACION_ERP.md), [Supabase](docs/SUPABASE.md) y [pruebas mobile](docs/MOBILE_TESTING.md).
+- [Concurrencia ERP](docs/ERP_CONCURRENCIA.md): reserva persistente, migracion, tiempo maximo, recuperacion y pruebas PostgreSQL.
 - [Decisiones](docs/DECISIONES.md): fundamentos y restricciones del producto.
 
 La arquitectura describe el codigo existente; los planes y checklists distinguen lo implementado de lo pendiente. Toda funcionalidad debe mantener actualizados su comportamiento, contratos, reglas, operacion y forma de validacion.

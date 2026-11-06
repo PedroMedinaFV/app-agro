@@ -32,9 +32,11 @@ import { manejadorErrores } from './middleware/manejadorErrores';
 import { autenticacionBasica } from './middleware/autenticacion';
 import { requierePermiso } from './middleware/permisos';
 import { obtenerConfiguracionJwt } from './config/jwt';
+import { obtenerDuracionBloqueoErp } from './config/bloqueoErp';
 
 // Validar antes de abrir el puerto; el entorno raiz ya fue cargado por prisma.ts.
 obtenerConfiguracionJwt();
+obtenerDuracionBloqueoErp();
 const app = express();
 app.use(cors());
 // La planilla de planificacion puede enviar cientos de lineas en un unico borrador.

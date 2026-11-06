@@ -526,6 +526,8 @@ SincronizacionErpScreen
   -> padrones App / vinculaciones sugeridas
 ```
 
+HTTP y CLI entran por `services/erp/ejecutarSincronizacionErp.ts`. `bloqueoSincronizacionErp.ts` adquiere una reserva persistente con token/vencimiento e historial asociado. La importacion, escritores indirectos y cierre del historial comparten una transaccion acotada mediante `contextoTransaccional.ts` y el cliente exportado por `prisma.ts`; fuera del contexto los demas flujos usan el cliente habitual. Una puerta adicional protege el refresco de maestros globales entre clientes. Ver [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) para migracion, limites de pool/duracion, recuperacion y prueba real pendiente.
+
 ### Padrones
 
 ```txt

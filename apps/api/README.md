@@ -14,6 +14,8 @@ La API exige `JWT_SECRET` de al menos 32 bytes; `.env.example` lo deja vacio. La
 
 ## Base de datos local
 
+La sincronizacion ERP requiere la tabla de la migracion `20261106120000_bloqueo_sincronizacion_erp`. `ERP_SYNC_LOCK_TTL_MS` configura su limite (default cinco minutos). Los CLI de sincronizacion requieren clienteId. Ver [concurrencia ERP](../../docs/ERP_CONCURRENCIA.md) para aplicar migraciones, recuperacion y pruebas aisladas.
+
 La configuracion por defecto usa PostgreSQL local en el puerto 5432.
 
 ```bash

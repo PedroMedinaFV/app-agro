@@ -720,7 +720,7 @@ Decision MVP:
 - El administrador la dispara desde web y la pantalla espera la respuesta del backend.
 - Mientras la pestania siga abierta, la UI muestra estado de carga y luego conteos principales.
 - Si el usuario refresca el navegador, se pierde el estado visual de la corrida en curso.
-- El backend bloquea corridas simultaneas por cliente en memoria, suficiente para desarrollo/MVP temprano.
+- El backend usa una reserva PostgreSQL por cliente con token y vencimiento, compartida por HTTP y CLI. La cache global excluye refrescos simultaneos entre clientes. Ver [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) para la migracion requerida, configuracion, recuperacion y validacion pendiente contra PostgreSQL real.
 
 Antes de produccion, la sincronizacion debe evolucionar a job persistido.
 

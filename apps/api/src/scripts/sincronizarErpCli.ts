@@ -1,6 +1,6 @@
 import { cargarEnvRaiz } from '../config/cargarEnvRaiz';
 import { prisma } from '../prisma';
-import { sincronizarSnapshotErp } from '../services/erp/sincronizarErp';
+import { ejecutarSincronizacionErp } from '../services/erp/ejecutarSincronizacionErp';
 import { PadronErpSincronizable, padronesErpSincronizables } from '@agro/tipos';
 
 cargarEnvRaiz();
@@ -40,7 +40,8 @@ function obtenerItemsDesdeArgs(): PadronErpSincronizable[] | undefined {
 async function main() {
   const clienteId = obtenerClienteIdDesdeArgs();
   const items = obtenerItemsDesdeArgs();
-  const resultado = await sincronizarSnapshotErp(clienteId, undefined, items);
+  if (!clienteId) throw new Error('Indica --clienteId=... o CLIENTE_ID para sincronizar con bloqueo e historial.');
+  const resultado = await ejecutarSincronizacionErp(clienteId, undefined, items);
 
   console.log(JSON.stringify(resultado, null, 2));
 }

@@ -226,7 +226,7 @@ export async function fallarSincronizacionErpHistorial(sincronizacionId: string,
         "error" = ${mensaje},
         "finalizadoEn" = NOW(),
         "updatedAt" = NOW()
-    WHERE "id" = ${sincronizacionId}
+    WHERE "id" = ${sincronizacionId} AND "estado" = 'en_proceso'
   `;
 }
 

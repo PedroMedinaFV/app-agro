@@ -121,6 +121,16 @@ model ErpSincronizacion {
   @@index([iniciadoEn])
 }
 
+model ErpSincronizacionBloqueo {
+  clienteId        String   @id
+  token            String
+  sincronizacionId String
+  adquiridoEn      DateTime @default(now())
+  venceEn          DateTime
+
+  @@index([venceEn])
+}
+
 model ErpSincronizacionDetalle {
   id               String            @id @default(uuid())
   sincronizacion   ErpSincronizacion @relation(fields: [sincronizacionId], references: [id])

@@ -36,9 +36,9 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 - El backend solo debe sincronizar empresas ERP asociadas al cliente por un admin.
 - Cada registro importado guarda `empresaErpId` para trazabilidad.
 - Los identificadores internos incluyen empresa para evitar colisiones entre tenants o empresas.
-- Durante el MVP temprano, la sincronizacion manual bloquea corridas simultaneas por cliente en memoria.
+- La sincronizacion manual usa una reserva persistente por cliente, token por intento, vencimiento y escrituras dentro de una transaccion protegida; HTTP y CLI comparten el coordinador.
 - Cada corrida manual debe dejar historial persistido con usuario, cliente, items solicitados, items ejecutados, estado, resultado y errores.
-- Antes de produccion, el bloqueo de corridas simultaneas debe persistirse en base de datos para sobrevivir reinicios, multiples instancias y refrescos de navegador.
+- La cache global tambien excluye refrescos destructivos simultaneos entre clientes. La migracion y las pruebas PostgreSQL reales deben validarse antes del despliegue; ver [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md).
 - La sincronizacion futura debe guardar job, estado, usuario iniciador, fechas, conteos y errores sin exponer secretos ni tokens ERP.
 
 ## Datos y multi-cliente

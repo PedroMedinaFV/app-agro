@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { sincronizarEmpresasErp } from '../services/erp/sincronizarErp';
+import { importarEmpresasConBloqueo } from '../services/erp/ejecutarSincronizacionErp';
 
 function obtenerClienteIdDesdeArgs() {
   const argumento = process.argv.find((arg) => arg.startsWith('--clienteId='));
@@ -12,7 +12,9 @@ function obtenerClienteIdDesdeArgs() {
 }
 
 async function main() {
-  const resultado = await sincronizarEmpresasErp(obtenerClienteIdDesdeArgs());
+  const clienteId = obtenerClienteIdDesdeArgs();
+  if (!clienteId) throw new Error('Indica --clienteId=... o CLIENTE_ID para importar con bloqueo e historial.');
+  const resultado = await importarEmpresasConBloqueo(clienteId);
 
   console.log(JSON.stringify(resultado, null, 2));
 }

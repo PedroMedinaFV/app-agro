@@ -2,7 +2,8 @@ import { Router } from 'express';
 import type { Request } from 'express';
 import type { AsignarEmpresasErpClienteInput } from '@agro/tipos';
 import { listarEmpresasErpCliente, reemplazarEmpresasErpCliente } from '../services/erp/empresasCliente';
-import { listarEmpresasErpImportadas, sincronizarEmpresasErp } from '../services/erp/sincronizarErp';
+import { listarEmpresasErpImportadas } from '../services/erp/sincronizarErp';
+import { importarEmpresasConBloqueo } from '../services/erp/ejecutarSincronizacionErp';
 
 type RequestConUsuario = Request & { user?: { sub?: string } };
 
@@ -34,7 +35,7 @@ router.put('/:clienteId/empresas', async (req, res, next) => {
 
 router.post('/:clienteId/importar', async (req, res, next) => {
   try {
-    res.json(await sincronizarEmpresasErp(req.params.clienteId));
+    res.json(await importarEmpresasConBloqueo(req.params.clienteId, { id: (req as RequestConUsuario).user?.sub, clienteId: req.params.clienteId }));
   } catch (error) {
     next(error);
   }

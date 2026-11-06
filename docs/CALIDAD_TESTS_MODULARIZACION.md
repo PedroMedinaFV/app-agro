@@ -21,11 +21,24 @@ Se actualizaron tambien los tests existentes de email/Microsoft/middleware para 
 
 ## Cobertura agregada en etapa 3 (2026-11-06)
 
-La suite vigente tiene 258 tests en 43 archivos. `tests/mobile-offline.test.js` agrega 14 pruebas del nucleo real de mobile, compilado con `pnpm --filter agro-app-mobile test:build` a `.cache/offline-tests`. El comando raiz `pnpm test` incorpora esa compilacion despues de construir tipos/API.
+Al cerrar la parte automatizada de etapa 3 habia 258 tests en 43 archivos. `tests/mobile-offline.test.js` agrega 14 pruebas del nucleo real de mobile, compilado con `pnpm --filter agro-app-mobile test:build` a `.cache/offline-tests`. El comando raiz `pnpm test` incorpora esa compilacion despues de construir tipos/API.
 
 Las pruebas cubren propietarios por cliente/usuario, reapertura de cola, mutaciones concurrentes, legacy sin reasignacion, corrupcion sin sobrescritura, falla y recuperacion de almacenamiento, progreso de fotos entre intentos, respuesta perdida, fallo al persistir progreso, cambio de sesion durante PUT/POST, errores parciales, confirmaciones invalidas y exclusion de sincronizaciones con altas simultaneas.
 
 Se sustituyen persistencia y servicios de red mediante interfaces pequenas; no se duplica la implementacion para probarla. Las pruebas no garantizan permisos de camara, archivos reales, cuota AsyncStorage/localStorage o integracion con storage/base. Ver [OFFLINE.md](OFFLINE.md) y el recorrido pendiente de [MOBILE_TESTING.md](MOBILE_TESTING.md).
+
+## Cobertura agregada en etapa 4 (2026-11-06)
+
+Suite vigente: 270 tests en 46 archivos; 269 aprobados y uno omitido por requerir PostgreSQL real.
+
+| Archivo | Escenario protegido | Limite |
+| --- | --- | --- |
+| `erp-ruta-sincronizar.test.js` | Cliente ocupado, ciclo compartido, errores originales frente a fallos de limpieza, exito ya confirmado y cache global ocupada | Bloqueo/servicios sustituidos |
+| `erp-bloqueo-servicio.test.js` | Adquisicion ocupada, recuperacion, token/vigencia, escrituras ligadas al contexto y liberacion por propietario | Adaptador Prisma sustituido; verifica flujo y condiciones SQL, no exclusion real |
+| `erp-contexto-transaccional.test.js` | Requests fuera del contexto no afectadas, transacciones anidadas y ausencia de fallback tras cierre; rango de TTL | Clientes simulados |
+| `erp-bloqueo-postgres.test.js` | Dos clientes independientes, recuperacion, propietario antiguo, rollback, timeout y contencion global | Opt-in con `ERP_LOCK_TEST_DATABASE_URL`; schema temporal propio |
+
+El intento de prueba real fallo por conexion antes de crear su schema; sigue pendiente. No interpretar el test omitido como validacion de PostgreSQL. [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) explica como ejecutarlo y aplicar la migracion requerida.
 
 ## Principio
 
