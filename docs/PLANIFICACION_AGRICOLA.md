@@ -386,6 +386,21 @@ Campos sugeridos:
 - `descripcion`
 - `activo`
 
+### Nombre visible e identidad del destino (2026-11-06)
+
+El usuario autorizado administra el maestro desde `Padrones > Destinos`. Tanto `PUT /destinos-venta/:id` como `GET /destinos-venta` requieren autenticacion y permiso `planificacion:configurar`. Las validaciones de cliente y origen permanecen en el backend. Los destinos ERP no se editan desde Agro App.
+
+Al guardar un destino propio, `routes/destinosVenta.ts` delega en `guardarDestinoReferenciaPersistido`. Este usa `prepararDestinoReferencia`, en `services/preciosReferencia/validacionesPreciosReferencia.ts`, para separar dos responsabilidades de los datos:
+
+- `destinoVenta`: nombre visible con tildes y capitalizacion originales; solo se recortan extremos y se colapsan espacios.
+- `destinoVentaNormalizado`: clave recalculada en backend, sin tildes y en mayusculas; se ignora cualquier clave enviada por el frontend.
+
+Ejemplo: `  Bahía   Blanca  ` se guarda como nombre `Bahía Blanca` y clave `BAHIA BLANCA`. `bahia blanca` tiene la misma clave. El servicio comprueba duplicados y Prisma mantiene la restriccion unica `[clienteId, destinoVentaNormalizado]`; el cambio no altera esa identidad ni los contratos de `@agro/tipos`. La escritura y su auditoria permanecen en la transaccion existente.
+
+No requiere migracion ni nuevas variables de entorno. Los nombres historicos ya guardados en mayusculas permanecen asi hasta una edicion explicita; no se pueden recuperar automaticamente tildes/capitalizacion perdidas. Las planificaciones historicas no se reescriben por este cambio.
+
+Verificacion automatizada: `tests/comercial-validaciones.test.js` cubre limpieza del nombre/descripcion, equivalencia de variantes y recalculo de una clave incorrecta enviada por cliente. Ejecutar `pnpm test` desde la raiz. La persistencia real, rechazo concurrente de duplicados y renderizado en navegador no se verifican con estas pruebas puras; forman parte de la validacion de integracion/manual pendiente.
+
 Regla de busqueda sugerida futura:
 
 1. Buscar coincidencia por campo + actividad/cultivo.
@@ -463,7 +478,7 @@ Estado UX actual:
 - el destino se selecciona desde un catalogo y permite crear uno nuevo si no existe;
 - si se crea un destino nuevo desde el modal de precios, debe guardarse tambien como `DestinoApp` unico por cliente y nombre de destino;
 - la opcion `Crear nuevo destino` debe mostrar un input explicito para cargar el nombre, evitando que el usuario tenga que escribir sobre un select ambiguo;
-- el backend normaliza el destino con trim, espacios simples, sin tildes y uppercase para evitar duplicados por escritura del usuario;
+- el backend conserva tildes y capitalizacion en el nombre visible del destino, recortando extremos y colapsando espacios; calcula por separado `destinoVentaNormalizado` sin tildes y en mayusculas para evitar duplicados;
 - la creacion automatica del destino debe auditarse igual que la creacion o edicion del precio;
 - esos precios quedan disponibles para proponer valores al crear lineas de planificacion;
 - cada guardado/edicion desde el modal debe mostrar estado de carga, spinner y toast de confirmacion;

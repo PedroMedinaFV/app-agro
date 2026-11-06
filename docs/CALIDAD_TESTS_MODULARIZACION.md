@@ -6,13 +6,38 @@ El estado de corte para version estable queda resumido en `docs/ESTABILIDAD_MVP.
 
 ## Principio
 
-Cada feature debe entregar tres cosas juntas:
+Cada feature debe entregar cuatro cosas juntas:
 
 - comportamiento funcionando;
 - tests proporcionales al riesgo;
 - codigo modular y reutilizable.
+- documentacion funcional y tecnica actualizada.
 
 No alcanza con que compile. Una funcionalidad queda realmente lista cuando puede evolucionar sin romper permisos, datos de otros clientes, flujos mobile/offline ni pantallas relacionadas.
+
+## SOLID y limites de responsabilidad
+
+- Responsabilidad unica: separar transporte HTTP, reglas de negocio, persistencia y presentacion. Extraer por motivo de cambio, no solo por cantidad de lineas.
+- Abierto/cerrado: permitir variantes mediante composicion cuando hay una necesidad concreta; evitar modificar una cadena de condicionales en varios modulos por cada variante.
+- Sustitucion: adaptadores intercambiables deben conservar contratos, reglas de errores y garantias de aislamiento e idempotencia.
+- Segregacion de interfaces: definir dependencias pequenas por caso de uso; no obligar a un servicio a conocer toda la API de un proveedor.
+- Inversion de dependencias: aislar infraestructura en limites utiles y permitir inyectar dependencias en servicios de riesgo. Los resolvers con dependencias explicitas existentes son una referencia.
+
+Reutilizar contratos y helpers existentes antes de crear nuevos. Introducir abstracciones cuando reduzcan acoplamiento real o permitan validar reglas sin infraestructura; no crear capas vacias por uniformidad. Estas son pautas de evolucion: no implican que todo el codigo existente ya cumpla SOLID.
+
+## Documentacion obligatoria por funcionalidad
+
+Actualizar el documento existente del dominio; crear uno nuevo si el tema no tiene lugar claro. El README es el indice de entrada y `ARQUITECTURA_PROYECTO.md` describe el mapa vigente.
+
+Cada cambio debe permitir entender:
+
+1. Problema, usuarios y alcance de la funcionalidad.
+2. Flujo principal, reglas de negocio, permisos y alcance por cliente/campo.
+3. Modulos, contratos, endpoints y persistencia involucrados.
+4. Configuracion, migraciones, errores, reintentos y recuperacion cuando apliquen.
+5. Como verificarlo: pruebas, comandos, resultados y limitaciones pendientes.
+
+Registrar decisiones relevantes con motivo y consecuencias en `DECISIONES.md`. Comentar el por que de restricciones no evidentes en el codigo; evitar repetir lo que ya expresa la implementacion. Un cambio solo esta terminado cuando su documentacion corresponde al comportamiento entregado y distingue lo probado de lo pendiente.
 
 ## Bloque de tests por feature
 
@@ -163,6 +188,7 @@ Los tests triviales no necesitan documentacion individual. Si un helper tiene mu
 | `prepararPrecioReferencia limpia destino y fuerza cliente del usuario autenticado` | `tests/comercial-validaciones.test.js` | Alcance por cliente y normalizacion de precio | Precio con cliente en payload y usuario autenticado con otro cliente | Usa el cliente autenticado y limpia el destino |
 | `validarPrecioReferencia exige especie, destino, valor no negativo, moneda y unidad` | `tests/comercial-validaciones.test.js` | Datos minimos de precio de referencia | Precio sin especie, destino, moneda o con valor negativo | Lanza error controlado antes de persistir |
 | `prepararDestinoReferencia normaliza nombre, clave y descripcion` | `tests/comercial-validaciones.test.js` | Normalizacion de destinos de venta | Destino con espacios extra y acentos | Genera nombre visible limpio y clave normalizada |
+| `destinos con diferencias de tildes, mayusculas y espacios comparten clave sin perder su nombre visible` | `tests/comercial-validaciones.test.js` | Identidad del destino independiente del texto visible | Variantes de Bahia Blanca y clave enviada por cliente incorrecta | Conserva cada nombre limpio y recalcula la misma clave `BAHIA BLANCA` |
 | `validarDestinoReferencia bloquea ERP, puerto y modificaciones de otro cliente` | `tests/comercial-validaciones.test.js` | Proteccion de padrones ERP y alcance por cliente | Destino ERP, puerto ERP o usuario de otro cliente | Lanza error 403 y evita la edicion |
 | `prepararGastoComercial limpia cabecera e items y normaliza moneda` | `tests/comercial-validaciones.test.js` | Normalizacion de gastos comerciales | Gasto con textos espaciados, destino e item manual | Limpia cabecera, item, observaciones y moneda |
 | `validarGastoComercial exige cabecera completa e items validos` | `tests/comercial-validaciones.test.js` | Datos minimos de gastos comerciales | Gasto sin cliente, empresa, campania, actividad, descripcion o items | Lanza error controlado |

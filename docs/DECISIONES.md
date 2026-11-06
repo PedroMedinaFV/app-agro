@@ -398,3 +398,17 @@ Patron acordado:
 Este criterio se aplica primero al editor de protocolos para evitar renders globales por cada cambio en etapas, labores e insumos.
 
 El patron queda establecido como base para todo el frontend en `docs/PATRONES_FRONTEND.md`.
+
+## 2026-11-06 - Nombre visible y clave de destinos
+
+Se conserva la escritura del nombre visible, limpiando solo extremos y espacios repetidos. La comparacion y unicidad usan por separado `destinoVentaNormalizado`, recalculado por backend sin tildes y en mayusculas.
+
+Motivo: el test existente y la lectura de puertos ERP distinguen presentacion e identidad. Aplicar la clave normalizada al nombre destruia informacion visible sin mejorar la deduplicacion.
+
+Consecuencias: no cambian contratos ni indices; variantes de escritura siguen representando la misma identidad por cliente. No se realiza migracion de datos ni reconstruccion de tildes en nombres historicos. El detalle del flujo y su verificacion esta en `PLANIFICACION_AGRICOLA.md`, seccion de destinos de venta.
+
+## 2026-11-06 - Documentacion y calidad por etapa
+
+Cada etapa del plan de estabilizacion entrega implementacion, validaciones y documentacion funcional/tecnica juntas. La arquitectura vigente se mantiene en `ARQUITECTURA_PROYECTO.md`; el archivo raiz remite a ella para evitar duplicacion.
+
+Aplicamos SOLID separando responsabilidades y dependencias en limites utiles, reutilizando contratos y helpers existentes. No se agregan capas sin una necesidad concreta. La guia detallada y el criterio de cierre estan en `CALIDAD_TESTS_MODULARIZACION.md` y `PLAN_ACCION_ESTABILIZACION.md`.

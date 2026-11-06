@@ -126,6 +126,24 @@ test('prepararDestinoReferencia normaliza nombre, clave y descripcion', () => {
   assert.equal(preparado.descripcion, 'Puerto cerealero');
 });
 
+test('destinos con diferencias de tildes, mayusculas y espacios comparten clave sin perder su nombre visible', () => {
+  const variantes = [
+    ['  Bahía   Blanca  ', 'Bahía Blanca'],
+    ['bahia blanca', 'bahia blanca'],
+    ['BAHIA BLANCA', 'BAHIA BLANCA'],
+  ];
+
+  for (const [entrada, nombreVisible] of variantes) {
+    const preparado = prepararDestinoReferencia(crearDestino({
+      destinoVenta: entrada,
+      destinoVentaNormalizado: 'CLAVE ENVIADA POR EL CLIENTE',
+    }));
+
+    assert.equal(preparado.destinoVenta, nombreVisible);
+    assert.equal(preparado.destinoVentaNormalizado, 'BAHIA BLANCA');
+  }
+});
+
 test('validarDestinoReferencia bloquea ERP, puerto y modificaciones de otro cliente', () => {
   assert.doesNotThrow(() => validarDestinoReferencia(crearDestino(), { clienteId: 'cliente-1' }));
 

@@ -1,16 +1,29 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-10-05.
+Fecha de corte: 2026-11-06 (etapa 1 del plan de estabilizacion).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
 - Suite automatica completa: `pnpm test`.
-- Resultado ultimo: 220 tests, 220 passing, 0 failing.
+- Resultado ultimo: 229 tests, 229 passing, 0 failing.
 - Archivos de test: 37.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
+
+Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (versiones observadas en este entorno, no fijadas por el repositorio):
+
+| Comando | Resultado | Alcance |
+| --- | --- | --- |
+| `pnpm test` | Correcto: 229/229 | Compila tipos/API y ejecuta 37 archivos de pruebas |
+| `pnpm build` | Correcto | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
+| `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto | Chequeo TypeScript mobile, separado del bundle Expo |
+| `pnpm --filter agro-app-api prisma:validate` | Schema valido | No aplica migraciones ni verifica conectividad con la base |
+
+Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. No se cambiaron dependencias ni se aplicaron migraciones/seeds. No se validaron conexiones reales con PostgreSQL, ERP, Microsoft o Supabase ni flujos en dispositivo. La guia de inicio se reviso contra scripts y configuracion existentes, sin repetir una instalacion limpia.
+
+La etapa 1 corrigio la separacion entre nombre visible y clave normalizada de destinos; actualizo README, arquitectura y pautas de calidad. El alcance de las siguientes etapas esta en [PLAN_ACCION_ESTABILIZACION.md](PLAN_ACCION_ESTABILIZACION.md).
 
 ## Bloques cubiertos
 
@@ -47,6 +60,13 @@ Antes de cortar version:
 - [ ] Smoke manual mobile/offline con al menos precipitacion y observacion pendiente.
 
 ## Riesgos residuales
+
+El estado verde de la suite no implica que los siguientes puntos esten resueltos:
+
+- JWT permite todavia el fallback `secret-dev` si no se configura `JWT_SECRET`; la etapa 2 lo elimina y mejora validaciones y errores de autenticacion.
+- La cola offline usa una clave local global y escritura del arreglo completo; la etapa 3 aborda aislamiento por usuario/cliente y concurrencia.
+- Los reintentos de adjuntos offline requieren persistir su progreso para evitar subidas repetidas; pendiente de etapa 3.
+- El script raiz `lint` aun no tiene implementacion en los workspaces; pendiente de automatizacion en etapa 6.
 
 Estos puntos no bloquean el avance de nuevas features, pero conviene tratarlos antes de produccion:
 

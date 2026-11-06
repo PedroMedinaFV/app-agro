@@ -2,11 +2,14 @@
 
 Este documento resume como esta montada la aplicacion para que una persona nueva pueda seguir el proyecto sin tener que reconstruir el mapa desde cero.
 
-La app es un monorepo con tres piezas principales:
+La app es un monorepo con cuatro piezas principales:
 
 - `apps/web`: frontend web en React/Vite.
 - `apps/api`: backend HTTP en Express + Prisma.
-- `packages/tipos`: contratos compartidos entre web y API.
+- `apps/mobile`: Expo/React Native para registros operativos y pendientes offline.
+- `packages/tipos`: contratos, permisos y helpers compartidos entre API, web y mobile.
+
+La persistencia PostgreSQL ya esta implementada mediante Prisma y migraciones. Este documento describe el codigo actual; las mejoras pendientes y su validacion se registran en [PLAN_ACCION_ESTABILIZACION.md](PLAN_ACCION_ESTABILIZACION.md) y [ESTABILIDAD_MVP.md](ESTABILIDAD_MVP.md). Los comandos de inicio estan en el [README](../README.md).
 
 ## Vista General
 
@@ -36,7 +39,14 @@ apps/api
 PostgreSQL / ERP externo / Storage
 
 packages/tipos
-  -> tipos, permisos y contratos compartidos
+  -> tipos, permisos y contratos compartidos entre API, web y mobile
+
+apps/mobile
+  src/App.tsx (entrada declarada en package.json)
+    -> services/api.ts / clienteApi.ts -> API HTTP
+    -> services/almacenamientoLocal.ts -> AsyncStorage o localStorage en web
+    -> services/sincronizacion.ts -> POST /sincronizacion
+    -> fotos locales -> firma de subida -> Supabase Storage
 ```
 
 ## Monorepo
@@ -138,7 +148,7 @@ Contiene piezas visuales.
 Componentes globales:
 
 - `Layout.tsx`: estructura general, header y sidebar.
-- `LoginPanel.tsx`: login con email/password, Microsoft y demo admin.
+- `LoginPanel.tsx`: login con email/password y Microsoft.
 - `PageHeader.tsx`: encabezado estandar de pantallas.
 - `Panel.tsx`: contenedor visual reutilizable.
 - `DataTable.tsx`: tabla responsive de datos.
@@ -206,7 +216,7 @@ Regla:
 
 ### `services`
 
-`services/api.ts` es el cliente HTTP de la web.
+`services/api.ts` expone los casos de uso HTTP de la web y delega el transporte comun a `services/apiClient.ts` (`request`, cache e invalidacion).
 
 Responsabilidades:
 
@@ -297,8 +307,6 @@ apps/api/src
   routes/
   services/
   middleware/
-  controllers/
-  repositories/
   config/
   scripts/
 
@@ -483,7 +491,7 @@ LoginPanel
   -> services/api.ts
   -> POST /auth/*
   -> routes/auth.ts
-  -> services/seguridad o usuarios
+  -> resolvers de auth.ts / prisma.ts / services/microsoftIdentity.ts
   -> JWT + usuario + permisos
 ```
 
@@ -507,8 +515,8 @@ App.tsx
 ```txt
 SincronizacionErpScreen
   -> services/api.ts
-  -> /sincronizacion
-  -> routes/sincronizacion.ts
+  -> POST /erp/sincronizar
+  -> routes/erp.ts
   -> services/erp
   -> ERP externo
   -> tablas Erp*
@@ -533,6 +541,18 @@ Regla de negocio acordada:
 - Lo creado desde la app nace como provisorio cuando corresponde.
 - Algunos padrones son globales y no deben pedir empresa al usuario.
 
+## Mobile y sincronizacion offline
+
+`apps/mobile/package.json` declara `src/App.tsx` como entrada. Ese archivo concentra actualmente login, seleccion de campo/lote, consulta operativa y formularios; su separacion por responsabilidad es trabajo pendiente. Existen tambien carpetas de navegacion y store, pero no deben asumirse como el flujo activo sin revisar sus imports desde la entrada.
+
+- `services/api.ts` contiene operaciones HTTP y subida de archivos; `services/clienteApi.ts` se usa para enviar pendientes.
+- `services/almacenamientoLocal.ts` persiste pendientes en AsyncStorage nativo o localStorage al ejecutar en web.
+- `services/sincronizacion.ts` prepara adjuntos, envia registros a `POST /sincronizacion` y marca solo los confirmados por el servidor.
+- `routes/sincronizacion.ts` delega en `services/sincronizacionOffline.ts`; se soportan observaciones y precipitaciones. Los tipos no soportados quedan pendientes con error.
+- Los servicios operativos validan alcance y persistencia. PostgreSQL impone unicidad por `clienteId` y `registroMovilId` para esos registros.
+
+La cola local todavia usa una clave global, sin separar usuario/cliente, y operaciones de lectura/escritura del arreglo completo. La sesion y el snapshot operativo del flujo activo estan en memoria; no se debe prometer un arranque offline completo despues de reiniciar la app. Ver etapas 3 y 5 del plan para aislamiento, concurrencia y validacion en dispositivo.
+
 ## Como Agregar Una Nueva Funcionalidad
 
 1. Definir contrato en `packages/tipos/src`.
@@ -549,7 +569,7 @@ Regla de negocio acordada:
 12. Reutilizar componentes, hooks, helpers, middleware y servicios existentes antes de crear variantes nuevas.
 13. Agregar tests automaticos proporcionales al riesgo de la feature.
 14. Documentar el flujo en `docs/`.
-15. Ejecutar build.
+15. Ejecutar las verificaciones pertinentes y registrar resultados y limitaciones en la documentacion del modulo o en el estado de estabilidad.
 
 La guia obligatoria para tests, reutilizacion y modularizacion queda en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 

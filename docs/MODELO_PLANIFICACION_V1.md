@@ -420,6 +420,7 @@ Reglas:
 
 - `clienteId` + `destinoVentaNormalizado` debe ser unico.
 - `destinoVentaNormalizado` se calcula en backend con trim, espacios simples, sin tildes y uppercase.
+- `destinoVenta` conserva tildes y capitalizacion del texto ingresado, con extremos recortados y espacios simples. La identidad se determina por la clave normalizada, no por el nombre visible.
 - Si un precio crea un destino nuevo, se crea el destino global sin asociarlo obligatoriamente a la actividad del precio.
 - Si se necesita sugerir destinos por zona/campo/actividad, esa configuracion debe vivir en una tabla de reglas que referencie el destino global y no duplicarlo.
 - El padron maestro no expone prioridad al usuario. Si una regla de sugerencia necesitara orden, esa prioridad pertenecera a la regla, no al destino.
