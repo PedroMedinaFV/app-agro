@@ -72,6 +72,7 @@ pnpm test
 pnpm --filter agro-app-web build
 pnpm --filter agro-app-mobile exec tsc --noEmit
 pnpm --filter agro-app-api prisma:validate
+pnpm --filter agro-app-api db:status
 ```
 
 `pnpm test` compila tipos, API y nucleo offline mobile antes de ejecutar `tests/*.test.js`. Incluye pruebas HTTP de autenticacion y reglas/servicios con dependencias sustituidas; no reemplaza recorridos completos con base/storage reales, migraciones en testing ni pruebas en dispositivo.

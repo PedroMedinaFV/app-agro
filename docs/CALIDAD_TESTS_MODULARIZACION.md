@@ -38,7 +38,7 @@ Suite vigente: 270 tests en 46 archivos; 269 aprobados y uno omitido por requeri
 | `erp-contexto-transaccional.test.js` | Requests fuera del contexto no afectadas, transacciones anidadas y ausencia de fallback tras cierre; rango de TTL | Clientes simulados |
 | `erp-bloqueo-postgres.test.js` | Dos clientes independientes, recuperacion, propietario antiguo, rollback, timeout y contencion global | Opt-in con `ERP_LOCK_TEST_DATABASE_URL`; schema temporal propio |
 
-El intento de prueba real fallo por conexion antes de crear su schema; sigue pendiente. No interpretar el test omitido como validacion de PostgreSQL. [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) explica como ejecutarlo y aplicar la migracion requerida.
+El primer intento fallo porque la base estaba pausada. Tras reactivarla se ejecuto por separado `erp-bloqueo-postgres.test.js`: 1 aprobado, 0 fallidos, 0 omitidos (aproximadamente 29 segundos), con creacion y eliminacion del schema temporal. La suite habitual sigue omitiendolo si no se configura su URL; ese resultado no sustituye la ejecucion explicita. [ERP_CONCURRENCIA.md](ERP_CONCURRENCIA.md) documenta la evidencia y la migracion operativa aplicada y verificada con db:status (33 migraciones, base actualizada).
 
 ## Principio
 

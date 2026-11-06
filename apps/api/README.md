@@ -10,6 +10,8 @@ copy .env.example .env
 
 Si ejecutas comandos de Prisma desde `apps/api`, usa la misma `DATABASE_URL` del archivo `.env`.
 
+Para consultar migraciones desde la raiz usar `pnpm --filter agro-app-api db:status`. Este comando usa el mismo cargador del `.env` raiz que `db:deploy`. Ejecutar `exec prisma migrate status` directamente no pasa por ese cargador y puede devolver P1012 por falta de `DATABASE_URL` aunque el despliegue haya funcionado. `db:status` solo consulta; no aplica migraciones.
+
 La API exige `JWT_SECRET` de al menos 32 bytes; `.env.example` lo deja vacio. Las variables del proceso prevalecen sobre `.env`, incluso vacias. Sin clave valida el servidor falla antes de abrir el puerto. Ver [autenticacion](../../docs/AUTENTICACION.md) para generacion, rotacion, compatibilidad con el cifrado ERP y validaciones de login/registro.
 
 ## Base de datos local

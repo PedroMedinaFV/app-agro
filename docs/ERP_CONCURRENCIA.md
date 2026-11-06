@@ -1,6 +1,6 @@
 # Concurrencia y recuperacion de sincronizaciones ERP
 
-Actualizado: 2026-11-06, etapa 4. Implementacion y pruebas de unidad disponibles. Migracion en el entorno objetivo y validacion PostgreSQL real pendientes: la conexion de desarrollo no estuvo disponible durante la prueba aislada.
+Actualizado: 2026-11-06, etapa 4 completada. Implementacion, pruebas, migracion y sincronizacion ERP realizadas y verificadas.
 
 ## Proposito y comportamiento
 
@@ -62,11 +62,14 @@ Con la base correcta disponible, revisar/aplicar migraciones pendientes y regene
 
 ```powershell
 pnpm --filter agro-app-api db:deploy
+pnpm --filter agro-app-api db:status
 pnpm --filter agro-app-api prisma:generate
 pnpm --filter agro-app-api prisma:validate
 ```
 
-`db:deploy` aplica todas las migraciones pendientes de la base configurada, no solamente esta. No se ejecuto contra la base de aplicacion durante esta etapa porque no estuvo accesible. Sin la tabla nueva, la sincronizacion falla; no existe fallback a bloqueo en memoria.
+`db:deploy` aplica todas las migraciones pendientes de la base configurada, no solamente esta. El usuario aplico `20261106120000_bloqueo_sincronizacion_erp` al schema `agro_app`; luego se verifico con `db:status`: 33 migraciones encontradas y `Database schema is up to date!`. No existe fallback a bloqueo en memoria.
+
+Usar `db:status` en lugar de `exec prisma migrate status`: el script carga el `.env` raiz igual que `db:deploy`. El comando directo puede fallar con P1012 por `DATABASE_URL` ausente; eso no revierte ni invalida una migracion ya aplicada. La consulta de estado es de solo lectura.
 
 CLI desde la raiz:
 
@@ -92,4 +95,19 @@ pnpm test
 
 Escenarios reales preparados: adquisicion simultanea con un ganador, recuperacion de historial vencido, rechazo de token antiguo, liberacion vieja que no borra una reserva nueva, rollback completo, timeout que no vuelve al cliente global, contencion mientras otro trabajo esta activo y puerta de maestros compartidos.
 
-El intento real del 2026-11-06 fallo por falta de conexion con PostgreSQL antes de crear el schema. En la suite habitual esta prueba se informa como omitida si no se configura su URL. La migracion y estos escenarios siguen pendientes de aprobacion real; no se considera cerrada la etapa 4 respecto de ese criterio.
+El primer intento real del 2026-11-06 fallo porque la base estaba pausada. Luego de reactivarla se repitio el test: 1 aprobado, 0 fallidos, 0 omitidos, en aproximadamente 29 segundos. Se verificaron acceso, creacion del schema aislado, instalacion de la migracion alli, concurrencia entre dos clientes, recuperacion, rechazo de propietario antiguo, rollback, timeout y contencion global. El schema temporal se elimino al terminar. No se modificaron tablas de aplicacion ni se aplico la migracion al schema operativo.
+
+En la suite habitual esta prueba sigue siendo opcional y se omite sin `ERP_LOCK_TEST_DATABASE_URL`. El criterio de PostgreSQL aislado y la aplicacion de la migracion estan aprobados.
+
+## Verificacion de la sincronizacion realizada por el usuario
+
+El 2026-11-06 se consultaron historial, detalles y reserva del cliente en modo de solo lectura, sin ejecutar otra importacion ni mostrar credenciales:
+
+- Corrida: `45e3e349-6943-48df-bb8a-0081909c0948`.
+- Estado: `completada`; inicio `2026-11-06T12:21:03.037Z`, fin `2026-11-06T12:21:05.523Z` (09:21 en Buenos Aires).
+- 14 padrones ejecutados y 20 detalles, todos `completada`.
+- Resultado registrado: 25 campos, 900 lotes, 3319 cultivos, 1016 insumos y 151 servicios, ademas de otros maestros.
+- Sin reservas restantes en `ErpSincronizacionBloqueo` para ese cliente al consultar.
+- Configuracion actual de integracion: activa, modo `login` (no `mock`).
+
+La evidencia confirma resultado persistido, trazabilidad y liberacion posterior para esa corrida, junto con las pruebas de concurrencia aisladas. No representa una auditoria registro por registro contra el ERP ni una prueba de carga o disponibilidad prolongada. Se cumple el criterio pendiente para cerrar la etapa 4.
