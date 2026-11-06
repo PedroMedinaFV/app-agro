@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.JWT_SECRET = 'secret-auth-microsoft-test';
+process.env.JWT_SECRET = 'secret-auth-microsoft-test-32-bytes-minimum';
 
 const jwt = require('../apps/api/node_modules/jsonwebtoken');
 const { resolverLoginMicrosoft } = require('../apps/api/dist/routes/auth');
@@ -141,7 +141,7 @@ test('resolverLoginMicrosoft actualiza identidad y devuelve token con permisos',
     microsoftId: 'tenant-1:sub-1',
   }]);
 
-  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET || 'secret-dev');
+  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET);
   assert.equal(payload.sub, 'usuario-1');
   assert.equal(payload.email, 'usuario@agroapp.local');
   assert.equal(payload.rol, 'admin');

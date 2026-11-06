@@ -1,19 +1,18 @@
 import { Router } from 'express';
-import jwt from 'jsonwebtoken';
+import { crearTokenSesion, verificarTokenSesion } from '../services/seguridad/sesionJwt';
 
 const router = Router();
-const SECRET = process.env.JWT_SECRET || 'secret-dev';
 
 router.post('/', (req, res) => {
-  const { token } = req.body;
+  const token = req.body?.token;
 
   if (!token) {
     return res.status(401).json({ error: 'Falta token' });
   }
 
   try {
-    const payload = jwt.verify(token, SECRET) as { sub: string; email: string };
-    const nuevoToken = jwt.sign({ sub: payload.sub, email: payload.email }, SECRET, { expiresIn: '8h' });
+    const payload = verificarTokenSesion(token);
+    const nuevoToken = crearTokenSesion({ id: payload.sub, email: payload.email, rol: payload.rol, clienteId: payload.clienteId });
     res.json({ token: nuevoToken });
   } catch (error) {
     res.status(401).json({ error: 'Token inválido' });

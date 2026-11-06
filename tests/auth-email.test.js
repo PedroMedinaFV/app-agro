@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.JWT_SECRET = 'secret-auth-email-test';
+process.env.JWT_SECRET = 'secret-auth-email-test-32-bytes-minimum';
 
 const jwt = require('../apps/api/node_modules/jsonwebtoken');
 const {
@@ -114,7 +114,7 @@ test('resolverRegistroEmail crea usuario, emite token y permisos', async () => {
     password: 'hash-generado',
   }]);
 
-  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET || 'secret-dev');
+  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET);
   assert.equal(payload.sub, 'usuario-1');
   assert.equal(payload.email, 'nuevo@agroapp.local');
   assert.equal(payload.rol, 'admin');
@@ -199,7 +199,7 @@ test('resolverLoginEmail devuelve sesion con token y permisos si password es val
     passwordHash: 'hash-password',
   }]);
 
-  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET || 'secret-dev');
+  const payload = jwt.verify(respuesta.body.token, process.env.JWT_SECRET);
   assert.equal(payload.sub, 'usuario-1');
   assert.equal(payload.email, 'usuario@agroapp.local');
   assert.equal(payload.rol, 'admin');

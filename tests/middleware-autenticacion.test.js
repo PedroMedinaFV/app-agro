@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.JWT_SECRET = 'secret-test';
+process.env.JWT_SECRET = 'secret-test-autenticacion-32-bytes-minimum';
 
 const jwt = require('../apps/api/node_modules/jsonwebtoken');
 const { autenticacionBasica } = require('../apps/api/dist/middleware/autenticacion');
@@ -57,7 +57,8 @@ test('autenticacionBasica carga usuario y permite avanzar con token valido', () 
       rol: 'operador_campo',
       clienteId: 'cliente-1',
     },
-    'secret-test',
+    process.env.JWT_SECRET,
+    { expiresIn: '8h' },
   );
   const req = { headers: { authorization: `Bearer ${token}` } };
   const res = crearResponse();

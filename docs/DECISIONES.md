@@ -412,3 +412,13 @@ Consecuencias: no cambian contratos ni indices; variantes de escritura siguen re
 Cada etapa del plan de estabilizacion entrega implementacion, validaciones y documentacion funcional/tecnica juntas. La arquitectura vigente se mantiene en `ARQUITECTURA_PROYECTO.md`; el archivo raiz remite a ella para evitar duplicacion.
 
 Aplicamos SOLID separando responsabilidades y dependencias en limites utiles, reutilizando contratos y helpers existentes. No se agregan capas sin una necesidad concreta. La guia detallada y el criterio de cierre estan en `CALIDAD_TESTS_MODULARIZACION.md` y `PLAN_ACCION_ESTABILIZACION.md`.
+
+## 2026-11-06 - Configuracion JWT explicita y errores seguros
+
+JWT comparte una configuracion de clave obligatoria (minimo 32 bytes), HS256 y ocho horas. Firma/verificacion se extraen a un servicio comun y la API valida antes de abrir el puerto. Prisma reutiliza el cargador `.env` respetando valores del proceso, incluso vacios, para no sustituir silenciosamente secretos de despliegue o pruebas.
+
+Los resolvers de auth validan entradas desconocidas antes de usar datos o bcrypt. Se conserva el password exacto y se limita a 72 bytes para evitar truncacion; el minimo de ocho caracteres solo se aplica al registro para conservar logins historicos cortos. No se habilitan campos de rol/cliente en el alta publica.
+
+Las rutas usan un adaptador async reutilizable compatible con Express 4. El middleware conserva mensajes controlados 4xx, maneja JSON malformado y oculta mensajes y detalles en todos los 5xx. Se prueba HTTP real con dependencias de infraestructura sustituidas para verificar el limite de transporte sin requerir datos operativos.
+
+Consecuencias: claves cortas impiden el arranque y rotar una clave invalida sesiones. No se rota el `.env` automaticamente porque el cifrado ERP existente puede usar JWT como fallback; revisar el material de cifrado antes de actualizar. Se mantienen contratos de sesion y persistencia. Operacion, limitaciones y pruebas en `AUTENTICACION.md`.

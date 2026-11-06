@@ -27,7 +27,7 @@ pnpm install
 Copy-Item .env.example .env
 ```
 
-Si `.env` ya existe, conservarlo y comparar las variables con `.env.example`. Configurar `DATABASE_URL`, `JWT_SECRET` y `SECRETS_ENCRYPTION_KEY` con valores propios. No versionar secretos. Luego:
+Si `.env` ya existe, conservarlo y comparar las variables con `.env.example`. Configurar `DATABASE_URL`, `JWT_SECRET` y `SECRETS_ENCRYPTION_KEY` con valores propios. `JWT_SECRET` exige al menos 32 bytes y no tiene fallback: sin clave valida la API no abre el puerto. Las variables del proceso prevalecen sobre `.env`, incluso vacias. Consultar [autenticacion y actualizacion de entornos existentes](docs/AUTENTICACION.md) antes de rotar una clave en uso. No versionar secretos. Luego:
 
 ```powershell
 docker compose up -d postgres
@@ -86,6 +86,7 @@ Para compilar todo el monorepo, ejecutar `pnpm build`: incluye `expo export` par
 - [Estado de estabilidad](docs/ESTABILIDAD_MVP.md): evidencia de verificaciones y pendientes.
 - [Planificacion agricola](docs/PLANIFICACION_AGRICOLA.md) y [modelo de datos](docs/MODELO_PLANIFICACION_V1.md).
 - [Roles y permisos](docs/ROLES_Y_PERMISOS.md), [seguridad](docs/SEGURIDAD.md) y [auditoria](docs/AUDITORIA.md).
+- [Autenticacion y errores](docs/AUTENTICACION.md): validaciones, JWT, configuracion y pruebas HTTP.
 - [Integracion ERP](docs/INTEGRACION_ERP.md), [Supabase](docs/SUPABASE.md) y [pruebas mobile](docs/MOBILE_TESTING.md).
 - [Decisiones](docs/DECISIONES.md): fundamentos y restricciones del producto.
 

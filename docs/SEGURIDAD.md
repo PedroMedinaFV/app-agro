@@ -8,14 +8,17 @@ Toda edicion de datos realizada por un usuario debe quedar registrada para audit
 
 ## Autenticacion
 
-- El modo demo existe solo para desarrollo y validacion temprana.
-- La autenticacion final debe integrarse con Microsoft Entra ID.
+- Los endpoints de autenticacion actuales permiten email/password y Microsoft Entra ID con alta previa para Microsoft.
+- JWT usa una clave explicita de al menos 32 bytes, algoritmo HS256 y expiracion de ocho horas. La API no arranca sin configuracion valida.
+- Las entradas se validan antes de acceder a datos o bcrypt; las contrasenas no se recortan y tienen limite de 72 bytes UTF-8.
+- Los rechazos asincronos llegan al middleware; errores internos no devuelven mensajes tecnicos ni `detalle` al cliente.
+- Ver [AUTENTICACION.md](AUTENTICACION.md) para contratos, configuracion, rotacion y pruebas.
 - Los endpoints protegidos deben requerir token valido.
 - Los tokens deben tener expiracion y no deben guardarse en lugares inseguros del cliente.
 
 ## Autorizacion
 
-- Los roles iniciales son `admin` y `usuario`.
+- Los roles actuales son `admin`, `planificador`, `responsable_compras` y `operador_campo`, definidos en `@agro/tipos`.
 - Las rutas no deben depender solamente de comparar roles; deben usar permisos declarativos.
 - Toda ruta administrativa debe usar middleware de autenticacion y `requierePermiso`.
 - La pantalla web puede ocultar acciones, pero la seguridad real debe aplicarse en backend.

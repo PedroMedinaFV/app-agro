@@ -1,14 +1,14 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-06 (etapa 1 del plan de estabilizacion).
+Fecha de corte: 2026-11-06 (etapas 1 y 2 del plan de estabilizacion).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
 - Suite automatica completa: `pnpm test`.
-- Resultado ultimo: 229 tests, 229 passing, 0 failing.
-- Archivos de test: 37.
+- Resultado ultimo: 244 tests, 244 passing, 0 failing.
+- Archivos de test: 42.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
 
@@ -16,20 +16,24 @@ Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (ve
 
 | Comando | Resultado | Alcance |
 | --- | --- | --- |
-| `pnpm test` | Correcto: 229/229 | Compila tipos/API y ejecuta 37 archivos de pruebas |
-| `pnpm build` | Correcto | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
-| `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto | Chequeo TypeScript mobile, separado del bundle Expo |
-| `pnpm --filter agro-app-api prisma:validate` | Schema valido | No aplica migraciones ni verifica conectividad con la base |
+| `pnpm test` | Correcto: 244/244, etapa 2 | Compila tipos/API y ejecuta 42 archivos de pruebas |
+| `pnpm build` | Correcto, etapa 2 | Tipos, API, web Vite y exportacion Expo para web, iOS y Android |
+| `pnpm --filter agro-app-mobile exec tsc --noEmit` | Correcto, etapa 1 | Chequeo TypeScript mobile, separado del bundle Expo; mobile sin cambios en etapa 2 |
+| `pnpm --filter agro-app-api prisma:validate` | Schema valido, etapa 1 | No aplica migraciones ni verifica conectividad; schema sin cambios en etapa 2 |
 
 Los comandos que crean subprocesos se ejecutaron fuera del sandbox debido a su restriccion `spawn EPERM`. No se cambiaron dependencias ni se aplicaron migraciones/seeds. No se validaron conexiones reales con PostgreSQL, ERP, Microsoft o Supabase ni flujos en dispositivo. La guia de inicio se reviso contra scripts y configuracion existentes, sin repetir una instalacion limpia.
 
 La etapa 1 corrigio la separacion entre nombre visible y clave normalizada de destinos; actualizo README, arquitectura y pautas de calidad. El alcance de las siguientes etapas esta en [PLAN_ACCION_ESTABILIZACION.md](PLAN_ACCION_ESTABILIZACION.md).
 
+La etapa 2 centralizo JWT, valido entradas de autenticacion y mejoro la propagacion y respuesta de errores. Agrego pruebas HTTP reales de auth con dependencias de datos/proveedor sustituidas y pruebas de arranque rechazado con clave invalida. No son pruebas e2e contra PostgreSQL o Microsoft.
+
+La comprobacion de configuracion local detecto que el JWT_SECRET privado no cumple el minimo de 32 bytes. Se deja sin modificar: requiere actualizacion antes de arrancar, siguiendo [AUTENTICACION.md](AUTENTICACION.md) para no comprometer sesiones ni secretos ERP cifrados con fallback JWT. No se imprimio el secreto.
+
 ## Bloques cubiertos
 
 | Bloque | Estado | Evidencia |
 | --- | --- | --- |
-| Autenticacion email/Microsoft | Cubierto | Login, registro, identidad Microsoft, JWT y permisos |
+| Autenticacion email/Microsoft | Cubierto | Login, registro, identidad Microsoft, JWT, configuracion, arranque invalido y rutas HTTP con errores seguros |
 | Roles y middleware | Cubierto | Autenticacion, permisos y errores controlados |
 | Auditoria | Cubierto | Servicio, filtros, serializacion y ruta |
 | ERP | Cubierto | Cliente, configuracion, mappers, historial y sincronizacion |
@@ -63,7 +67,7 @@ Antes de cortar version:
 
 El estado verde de la suite no implica que los siguientes puntos esten resueltos:
 
-- JWT permite todavia el fallback `secret-dev` si no se configura `JWT_SECRET`; la etapa 2 lo elimina y mejora validaciones y errores de autenticacion.
+- El entorno local requiere actualizar `JWT_SECRET` antes de arrancar; el fallback fue eliminado. La configuracion y los logins reales del ambiente objetivo siguen pendientes de validacion.
 - La cola offline usa una clave local global y escritura del arreglo completo; la etapa 3 aborda aislamiento por usuario/cliente y concurrencia.
 - Los reintentos de adjuntos offline requieren persistir su progreso para evitar subidas repetidas; pendiente de etapa 3.
 - El script raiz `lint` aun no tiene implementacion en los workspaces; pendiente de automatizacion en etapa 6.

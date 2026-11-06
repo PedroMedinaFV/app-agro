@@ -10,6 +10,8 @@ copy .env.example .env
 
 Si ejecutas comandos de Prisma desde `apps/api`, usa la misma `DATABASE_URL` del archivo `.env`.
 
+La API exige `JWT_SECRET` de al menos 32 bytes; `.env.example` lo deja vacio. Las variables del proceso prevalecen sobre `.env`, incluso vacias. Sin clave valida el servidor falla antes de abrir el puerto. Ver [autenticacion](../../docs/AUTENTICACION.md) para generacion, rotacion, compatibilidad con el cifrado ERP y validaciones de login/registro.
+
 ## Base de datos local
 
 La configuracion por defecto usa PostgreSQL local en el puerto 5432.

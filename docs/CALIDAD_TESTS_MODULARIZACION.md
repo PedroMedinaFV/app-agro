@@ -4,6 +4,21 @@ Este documento define reglas obligatorias para que Agro App pueda crecer sin vol
 
 El estado de corte para version estable queda resumido en `docs/ESTABILIDAD_MVP.md`.
 
+## Cobertura agregada en etapa 2 (2026-11-06)
+
+La suite completa tiene 244 tests en 42 archivos. La evidencia de build y sus limitaciones se mantienen en `ESTABILIDAD_MVP.md`. El flujo funcional y tecnico esta documentado en [AUTENTICACION.md](AUTENTICACION.md).
+
+| Archivo | Comportamiento protegido | Limite de la prueba |
+| --- | --- | --- |
+| `jwt-configuracion.test.js` | No existe fallback; clave corta/vacia impide abrir el puerto aun existiendo `.env` | Arranque de proceso sin consultas a base |
+| `cargar-env.test.js` | Variables del proceso prevalecen sobre `.env`, incluyendo vacias | Archivo temporal, sin leer valores privados |
+| `sesion-jwt.test.js` | HS256, ocho horas, claims validos y rechazo de expirados/firma ajena/otro algoritmo | Tokens locales de prueba |
+| `auth-validaciones.test.js` | Tipos y limites, email/nombre limpios, password exacto y limite bcrypt en bytes | Validaciones puras |
+| `auth-http.test.js` | HTTP real: entradas invalidas sin consultas, sesiones, errores 400/401/413/500 y ausencia de detalles privados | Resolvers reales con datos/proveedor sustituidos; sin base ni Microsoft reales |
+| `middleware-errores.test.js` | Ocultar detalles incluso en 5xx controlados, validar codigos HTTP y delegar headers enviados | Middleware invocado directamente |
+
+Se actualizaron tambien los tests existentes de email/Microsoft/middleware para usar claves explicitas validas. Los casos originales de errores de credenciales, usuario no habilitado y permisos se conservan.
+
 ## Principio
 
 Cada feature debe entregar cuatro cosas juntas:

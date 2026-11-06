@@ -413,8 +413,11 @@ route
 Piezas transversales de Express.
 
 - `autenticacion.ts`: valida token JWT y carga `req.user`.
+- `rutaAsincrona.ts`: lleva excepciones y rechazos de handlers a `next` en Express 4; usado por las tres rutas de autenticacion.
 - `permisos.ts`: valida permisos por rol usando `@agro/tipos`.
 - `manejadorErrores.ts`: respuesta estandar de errores.
+
+`config/jwt.ts` centraliza la clave obligatoria, HS256 y duracion de ocho horas; `index.ts` valida antes de abrir el puerto. `services/seguridad/sesionJwt.ts` emite/verifica y `validacionesAuth.ts` valida entradas desconocidas. Prisma reutiliza `config/cargarEnvRaiz.ts` sin sobrescribir variables del proceso. Ver [AUTENTICACION.md](AUTENTICACION.md) para reglas, responsabilidades y actualizacion de entornos.
 
 Flujo:
 

@@ -23,8 +23,8 @@ function buscarEnvRaiz(desde: string) {
   return undefined;
 }
 
-export function cargarEnvRaiz() {
-  const envPath = buscarEnvRaiz(process.cwd());
+export function cargarEnvRaiz(desde = process.cwd()) {
+  const envPath = buscarEnvRaiz(desde);
 
   if (!envPath) {
     return;
@@ -42,7 +42,7 @@ export function cargarEnvRaiz() {
     const clave = match[1];
     const valor = (match[2] || '').replace(/^["']|["']$/g, '');
 
-    if (!process.env[clave]) {
+    if (process.env[clave] === undefined) {
       process.env[clave] = valor;
     }
   }

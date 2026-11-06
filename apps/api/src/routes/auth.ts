@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { obtenerPermisosRol } from '@agro/tipos';
 import type { RolUsuario } from '@agro/tipos';
 import { prisma, obtenerUsuarioPorEmail, crearUsuario } from '../prisma';
 import { validarIdTokenMicrosoft, type MicrosoftIdentity } from '../services/microsoftIdentity';
+import { crearTokenSesion } from '../services/seguridad/sesionJwt';
+import { validarLoginEmail, validarRegistroEmail, validarTokenMicrosoft } from '../services/seguridad/validacionesAuth';
+import { rutaAsincrona } from '../middleware/rutaAsincrona';
 
-const router = Router();
-const SECRET = process.env.JWT_SECRET || 'secret-dev';
+export { crearTokenSesion } from '../services/seguridad/sesionJwt';
 
 type UsuarioSesion = {
   id: string;
@@ -35,14 +36,6 @@ export type ResolverLoginMicrosoftDeps = {
   buscarUsuarioPorEmail: (email: string) => Promise<UsuarioSesion | null>;
   actualizarUsuarioMicrosoft: (input: { id: string; nombre?: string; microsoftId: string }) => Promise<UsuarioSesion>;
 };
-
-export function crearTokenSesion(usuario: { id: string; email: string; rol?: string; clienteId?: string | null }) {
-  return jwt.sign(
-    { sub: usuario.id, email: usuario.email, rol: usuario.rol || 'operador_campo', clienteId: usuario.clienteId || undefined },
-    SECRET,
-    { expiresIn: '8h' },
-  );
-}
 
 function serializarUsuarioSesion(usuario: UsuarioSesion) {
   return {
@@ -78,18 +71,19 @@ const depsLoginMicrosoft: ResolverLoginMicrosoftDeps = {
 };
 
 export async function resolverRegistroEmail(
-  input: { email: string; nombre?: string; password: string },
+  input: unknown,
   deps: ResolverRegistroEmailDeps = depsRegistroEmail,
 ) {
-  const usuarioExistente = await deps.buscarUsuarioPorEmail(input.email);
+  const datos = validarRegistroEmail(input);
+  const usuarioExistente = await deps.buscarUsuarioPorEmail(datos.email);
   if (usuarioExistente) {
     return { status: 400, body: { error: 'El correo ya está registrado' } };
   }
 
-  const passwordHash = await deps.hashPassword(input.password);
+  const passwordHash = await deps.hashPassword(datos.password);
   const usuario = await deps.crearUsuarioEmail({
-    email: input.email,
-    nombre: input.nombre,
+    email: datos.email,
+    nombre: datos.nombre,
     password: passwordHash,
   });
   const token = crearTokenSesion(usuario);
@@ -107,10 +101,11 @@ export async function resolverRegistroEmail(
 }
 
 export async function resolverLoginEmail(
-  input: { email: string; password: string },
+  input: unknown,
   deps: ResolverLoginEmailDeps = depsLoginEmail,
 ) {
-  const usuario = await deps.buscarUsuarioPorEmail(input.email);
+  const datos = validarLoginEmail(input);
+  const usuario = await deps.buscarUsuarioPorEmail(datos.email);
   if (!usuario) {
     return { status: 401, body: { error: 'Credenciales inválidas' } };
   }
@@ -119,7 +114,7 @@ export async function resolverLoginEmail(
     return { status: 401, body: { error: 'Esta cuenta usa inicio de sesion Microsoft' } };
   }
 
-  const passwordValida = await deps.compararPassword(input.password, usuario.password);
+  const passwordValida = await deps.compararPassword(datos.password, usuario.password);
   if (!passwordValida) {
     return { status: 401, body: { error: 'Credenciales inválidas' } };
   }
@@ -139,14 +134,14 @@ export async function resolverLoginEmail(
 }
 
 export async function resolverLoginMicrosoft(
-  idToken: string | undefined,
+  idToken: unknown,
   deps: ResolverLoginMicrosoftDeps = depsLoginMicrosoft,
 ) {
   if (!idToken) {
     return { status: 400, body: { error: 'Falta idToken de Microsoft' } };
   }
 
-  const identidad = await deps.validarIdToken(idToken);
+  const identidad = await deps.validarIdToken(validarTokenMicrosoft(idToken));
   const email = identidad.email.trim().toLowerCase();
   const usuarioExistente = await deps.buscarUsuarioPorEmail(email);
 
@@ -177,26 +172,31 @@ export async function resolverLoginMicrosoft(
   };
 }
 
-router.post('/registro', async (req, res) => {
-  const { email, nombre, password } = req.body;
-  const respuesta = await resolverRegistroEmail({ email, nombre, password });
-  res.status(respuesta.status).json(respuesta.body);
-});
+type ResolversAuth = {
+  registro: typeof resolverRegistroEmail;
+  login: typeof resolverLoginEmail;
+  microsoft: typeof resolverLoginMicrosoft;
+};
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const respuesta = await resolverLoginEmail({ email, password });
-  res.status(respuesta.status).json(respuesta.body);
-});
-
-router.post('/microsoft', async (req, res, next) => {
-  try {
-    const { idToken } = req.body;
-    const respuesta = await resolverLoginMicrosoft(idToken);
+export function crearRouterAuth(resolvers: ResolversAuth = {
+  registro: resolverRegistroEmail,
+  login: resolverLoginEmail,
+  microsoft: resolverLoginMicrosoft,
+}) {
+  const router = Router();
+  router.post('/registro', rutaAsincrona(async (req, res) => {
+    const respuesta = await resolvers.registro(req.body);
     res.status(respuesta.status).json(respuesta.body);
-  } catch (error) {
-    next(error);
-  }
-});
+  }));
+  router.post('/login', rutaAsincrona(async (req, res) => {
+    const respuesta = await resolvers.login(req.body);
+    res.status(respuesta.status).json(respuesta.body);
+  }));
+  router.post('/microsoft', rutaAsincrona(async (req, res) => {
+    const respuesta = await resolvers.microsoft(req.body?.idToken);
+    res.status(respuesta.status).json(respuesta.body);
+  }));
+  return router;
+}
 
-export default router;
+export default crearRouterAuth();

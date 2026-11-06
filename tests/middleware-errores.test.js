@@ -49,8 +49,23 @@ test('manejadorErrores no expone detalle interno para errores sin statusCode', (
   assert.equal(res.statusCode, 500);
   assert.deepEqual(res.body, {
     error: 'Error interno del servidor',
-    detalle: 'detalle tecnico sensible',
   });
+});
+
+test('manejadorErrores oculta tambien errores 5xx con statusCode y valida el rango HTTP', () => {
+  for (const statusCode of [503, 500, 200, 999, '403']) {
+    const res = crearResponse();
+    manejadorErrores(Object.assign(new Error('password-interno'), { statusCode }), {}, res, () => {});
+    assert.equal(res.statusCode, statusCode === 503 ? 503 : 500);
+    assert.deepEqual(res.body, { error: 'Error interno del servidor' });
+  }
+});
+
+test('manejadorErrores delega cuando los headers ya fueron enviados', () => {
+  const error = new Error('respuesta iniciada');
+  let delegado;
+  manejadorErrores(error, {}, { headersSent: true }, (recibido) => { delegado = recibido; });
+  assert.equal(delegado, error);
 });
 
 test('manejadorErrores respeta statusCode y mensaje de errores controlados', () => {

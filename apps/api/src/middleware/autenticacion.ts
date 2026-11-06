@@ -1,16 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { verificarTokenSesion, type UsuarioToken } from '../services/seguridad/sesionJwt';
 
-type UsuarioAutenticado = {
-  sub: string;
-  email: string;
-  rol?: string;
-  clienteId?: string;
-};
-
-type RequestConUsuario = Request & { user?: UsuarioAutenticado };
-
-const SECRET = process.env.JWT_SECRET || 'secret-dev';
+type RequestConUsuario = Request & { user?: UsuarioToken };
 
 export function autenticacionBasica(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -22,7 +13,7 @@ export function autenticacionBasica(req: Request, res: Response, next: NextFunct
   const token = authHeader.split(' ')[1];
 
   try {
-    const payload = jwt.verify(token, SECRET) as UsuarioAutenticado;
+    const payload = verificarTokenSesion(token);
     (req as RequestConUsuario).user = payload;
     next();
   } catch (error) {
