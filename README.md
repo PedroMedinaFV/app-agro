@@ -58,8 +58,10 @@ pnpm --filter agro-app-mobile dev
 API: `http://localhost:4000`. Web: `http://localhost:5173`. El comando mobile inicia Expo en modo web desde el puerto 8082 y busca uno libre si esta ocupado. Para iniciar Expo con sus opciones de dispositivo:
 
 ```powershell
-pnpm --filter agro-app-mobile exec expo start
+pnpm --filter agro-app-mobile exec expo start --go --lan --port 8082
 ```
+
+Para probar en un telefono desde cero, seguir [la guia paso a paso](docs/MOBILE_TESTING.md): instalacion compatible con SDK 57 (Android/iPhone), URL LAN, terminales, QR y recorrido offline con resultados esperados.
 
 La web lee `VITE_*` desde el `.env` raiz. Para mobile, exportar `EXPO_PUBLIC_API_URL` en la terminal que inicia Expo o configurar el entorno de Expo en `apps/mobile`; el launcher actual no carga el `.env` raiz. En un telefono usar una URL de API accesible desde su red, ya que `localhost` apunta al propio dispositivo. Reiniciar los procesos al cambiar configuracion.
 
