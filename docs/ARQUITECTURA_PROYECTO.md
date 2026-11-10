@@ -1,5 +1,7 @@
 # Arquitectura del proyecto
 
+Identidad de padrones App/ERP: [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) describe precedencia en selectores, copias automaticas, consolidacion transaccional, aliases de IDs y vigencia de notificaciones. Los DTO exponen `vinculoAutomatico` calculado por servidor y la migracion `20261106140000_identidad_padrones_erp` incorpora aliases e indices por cliente/ERP.
+
 Este documento resume como esta montada la aplicacion para que una persona nueva pueda seguir el proyecto sin tener que reconstruir el mapa desde cero.
 
 La app es un monorepo con cuatro piezas principales:

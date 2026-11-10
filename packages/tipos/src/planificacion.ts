@@ -13,6 +13,8 @@ export type TipoCultivoActividad = 'primera' | 'segunda';
 export type EpocaSiembraActividad = 'invierno' | 'verano';
 
 export type ZonaApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -25,6 +27,8 @@ export type ZonaApp = {
 };
 
 export type CampoApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -39,6 +43,8 @@ export type CampoApp = {
 };
 
 export type LoteApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   campoAppId: string;
@@ -76,6 +82,8 @@ export type LoteArchivoGeografico = {
 };
 
 export type EspecieApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -88,6 +96,8 @@ export type EspecieApp = {
 };
 
 export type ActividadApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -105,6 +115,8 @@ export type ActividadApp = {
 };
 
 export type InsumoApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId: string;
@@ -306,6 +318,8 @@ export type EstadioFenologicoReferencia = {
 };
 
 export type ServicioApp = {
+  /** Copia ERP sin ediciones; puede consolidarse mediante vinculacion explicita. Solo lectura. */
+  vinculoAutomatico?: boolean;
   id: string;
   clienteId: string;
   empresaErpId?: string;

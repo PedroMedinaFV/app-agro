@@ -4,6 +4,13 @@ const { spawn } = require('node:child_process');
 const { cargarEntornoTesting, validarSchemaTesting } = require('./lib/integration-environment');
 
 async function main() {
+  const filtros = process.argv.slice(2);
+  if (filtros.length > 1 || filtros.some((argumento) => !argumento.startsWith('--test-name-pattern='))) {
+    throw new Error('Solo se admite un filtro opcional --test-name-pattern=expresion. Sin filtro se ejecuta la suite completa.');
+  }
+  if (filtros.length && process.env.CI === 'true') {
+    throw new Error('CI debe ejecutar la integracion completa, sin filtros de diagnostico.');
+  }
   const raiz = path.resolve(__dirname, '..');
   const conexion = cargarEntornoTesting(raiz);
   const schema = `agro_integration_test_${randomUUID().replaceAll('-', '')}`;
@@ -43,7 +50,7 @@ async function main() {
     // no aporta exclusion aqui y puede quedar retenido por un pooler de sesiones.
     // La excepcion se limita a este hijo; db:deploy operativo mantiene su lock.
     await ejecutar([path.join(raiz, 'apps/api/node_modules/prisma/build/index.js'), 'migrate', 'deploy', '--schema', path.join(raiz, 'apps/api/prisma/schema.prisma')], raiz, { PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK: '1' });
-    await ejecutar(['--test', '--test-concurrency=1', path.join(raiz, 'tests/integration/api.integration.test.js')]);
+    await ejecutar(['--test', '--test-concurrency=1', ...filtros, path.join(raiz, 'tests/integration/api.integration.test.js')]);
   } finally {
     process.off('SIGINT', interrumpir);
     process.off('SIGTERM', interrumpir);

@@ -1,3 +1,5 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -117,14 +119,16 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
 
   const empresasPorId = useMemo(() => new Map(empresas.map((empresa) => [empresa.erpId, empresa])), [empresas]);
   const zonasDisponibles = useMemo<ZonaSeleccionable[]>(() => {
+    const propiasPorErpId = new Map(zonasPropiasActuales.filter((zona) => zona.zonaErpId).map((zona) => [zona.zonaErpId, zona]));
     const zonasDesdeErp = zonasErp.map((zona) => ({
       id: zona.erpId,
       empresaErpId: zona.empresaErpId,
-      nombre: zona.nombre,
-      codigo: zona.codigo,
+      nombre: propiasPorErpId.get(zona.erpId)?.nombre || zona.nombre,
+      codigo: propiasPorErpId.get(zona.erpId)?.codigoInterno || zona.codigo,
       idZona: zona.idZona,
       origen: 'erp' as const,
       zonaErpId: zona.erpId,
+      zonaAppId: propiasPorErpId.get(zona.erpId)?.id,
     }));
     const zonasDesdeAgro = zonasPropiasActuales
       .filter((zona) => !zona.zonaErpId)
@@ -157,7 +161,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
     return mapa;
   }, [zonasDisponibles]);
   const camposVinculados = useMemo(
-    () => new Set(camposPropios.map((campo) => campo.campoErpId).filter((id): id is string => Boolean(id))),
+    () => idsErpOcupados(camposPropios, (campo) => campo.campoErpId),
     [camposPropios],
   );
   const camposErpDisponiblesParaVincular = useMemo(() => {
@@ -318,7 +322,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
       setCamposPropios((actuales) => {
         const existe = actuales.some((campo) => campo.id === respuesta.campo.id);
         return existe
-          ? actuales.map((campo) => (campo.id === respuesta.campo.id ? respuesta.campo : campo))
+          ? actualizarRegistroPadron(actuales, respuesta.campo, (item) => item.campoErpId)
           : [respuesta.campo, ...actuales];
       });
       setCampoEnEdicion(null);
@@ -404,7 +408,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
         motivo: `Vinculacion manual con campo ERP ${campoErp.erpId}`,
       }, sesion.token);
 
-      setCamposPropios((actuales) => actuales.map((campo) => (campo.id === respuesta.campo.id ? respuesta.campo : campo)));
+      setCamposPropios((actuales) => actualizarRegistroPadron(actuales, respuesta.campo, (item) => item.campoErpId));
       setCampoPropioParaVincular(null);
       setCampoErpVincularId('');
       setEstado('Campo vinculado con auditoria.');
@@ -433,8 +437,8 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
           <strong>{camposPropios.filter((campo) => campo.estadoVinculacion === 'provisorio').length}</strong>
         </article>
         <article>
-          <span>Vinculados</span>
-          <strong>{camposPropios.filter((campo) => campo.estadoVinculacion === 'vinculado_erp').length}</strong>
+          <span>Vinculos confirmados</span>
+          <strong>{camposPropios.filter((campo) => campo.estadoVinculacion === 'vinculado_erp' && !campo.vinculoAutomatico).length}</strong>
         </article>
       </section>
 

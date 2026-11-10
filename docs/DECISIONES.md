@@ -1,5 +1,17 @@
 # Decisiones Tecnicas
 
+## 2026-11-06 - Identidad operativa App/ERP y consolidacion explicita
+
+Un registro materializado de ERP no es una segunda opcion de seleccion ni una vinculacion decidida por el usuario. Los selectores conservan App por ID ERP; nombres/codigos parecidos solo sirven para sugerir, nunca para fusionar automaticamente.
+
+Se expone `vinculoAutomatico` calculado en servidor y se distingue copia intacta de registro manual/editado. Confirmar un vinculo conserva el ID del provisorio, traslada referencias, audita y absorbe solo la copia intacta en una transaccion. Materializacion y vinculacion comparten exclusion por cliente; indices unicos protegen cliente/ERP. IDs materializados nuevos incluyen cliente sin recodificar los anteriores.
+
+Los aliases por cliente/tipo preservan referencias de requests y pendientes mobile anteriores a la consolidacion, conservando ID movil e idempotencia. Los snapshots historicos permanecen intactos. No se absorben copias editadas ni se resuelven colisiones de referencias borrando informacion.
+
+Notificaciones comprueba vigencia al generar/listar/aceptar y conserva historial de avisos obsoletos. Aceptacion y guardados indirectos usan el contexto Prisma compartido existente; se agrega nombre generico `conTransaccionCompartida` conservando el alias ERP. Guardados web autenticados de insumos/labores ya no simulan exito local frente a rechazos del servidor.
+
+Detalle de contratos, modulos, migracion y verificacion en [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md). Se prepara una migracion de tabla/indices; no se confirman sugerencias ni se limpian datos operativos automaticamente.
+
 ## 2026-11-06 - Modularizacion y entrega verificable
 
 La entrada mobile compone pantallas y hooks por responsabilidad; el nucleo offline conserva sus contratos y adaptadores. Una version numerica de sesion fuerza el desmontaje del panel, evitando una lista manual de resets que se vuelve incompleta al agregar formularios. La referencia compartida invalida callbacks antes del render; no se usan tokens como claves de componentes. La lectura local de pendientes no condiciona la consulta remota del snapshot.

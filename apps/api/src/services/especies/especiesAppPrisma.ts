@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { EspecieApp, GuardarEspecieAppRequest, GuardarEspecieAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -13,6 +15,7 @@ type EspeciePrisma = Prisma.EspecieAppGetPayload<Record<string, never>>;
 function mapearEspecie(especie: EspeciePrisma): EspecieApp {
   return {
     id: especie.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('especies', especie),
     clienteId: especie.clienteId,
     empresaErpId: especie.empresaErpId,
     especieErpId: especie.especieErpId || undefined,
@@ -34,17 +37,6 @@ async function validarEspecie(especie: EspecieApp, usuario?: UsuarioAuditoria) {
       throw crearErrorValidacion('La especie ERP seleccionada no existe en la cache importada.');
     }
 
-    const especieYaVinculada = await prisma.especieApp.findFirst({
-      where: {
-        clienteId: especie.clienteId,
-        especieErpId: especie.especieErpId,
-        id: { not: especie.id },
-      },
-    });
-
-    if (especieYaVinculada) {
-      throw crearErrorValidacion('Esa especie ERP ya esta vinculada a otra especie del cliente.');
-    }
   }
 }
 
@@ -66,7 +58,9 @@ export async function guardarEspecieAppPersistida(
   await validarEspecie(especie, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'especies', especie, usuario);
     const existente = await tx.especieApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== especie.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = especie.codigoInterno
       ? await tx.especieApp.findFirst({
         where: {
@@ -122,5 +116,5 @@ export async function guardarEspecieAppPersistida(
       auditado: true,
       mensaje: existente ? 'Especie actualizada con auditoria.' : 'Especie creada con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

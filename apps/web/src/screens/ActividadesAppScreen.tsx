@@ -1,3 +1,7 @@
+import { idCopiaPadronErp } from '@agro/tipos';
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { preferirRegistrosApp } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import type { ActividadApp, ErpActividad, ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -82,8 +86,8 @@ function crearActividadNueva(clienteId: string, especie?: EspecieSeleccionable):
   };
 }
 
-function crearIdActividadAppDesdeErp(actividad: ErpActividad) {
-  return `actividad-app-erp-${actividad.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+function crearIdActividadAppDesdeErp(actividad: ErpActividad, clienteId: string) {
+  return idCopiaPadronErp('actividad-app', actividad.erpId, clienteId);
 }
 
 export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, notificar }: ActividadesAppScreenProps) {
@@ -133,7 +137,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
       especieAppId: especie.id,
       especieErpId: especie.especieErpId,
     }));
-    const erp = especiesErp.map((especie) => ({
+    const erp = preferirRegistrosApp(especiesPropias, especiesErp, (item) => item.especieErpId, (item) => item.erpId).erp.map((especie) => ({
       clave: `erp:${especie.erpId}`,
       nombre: especie.nombre,
       codigo: especie.codigo,
@@ -153,7 +157,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
     new Map(actividadesPropias.filter((actividad) => actividad.actividadErpId).map((actividad) => [actividad.actividadErpId, actividad]))
   ), [actividadesPropias]);
   const filtroNormalizado = normalizarCodigo(filtroAplicado);
-  const actividadesVinculadas = useMemo(() => new Set(actividadesPropias.map((actividad) => actividad.actividadErpId).filter((id): id is string => Boolean(id))), [actividadesPropias]);
+  const actividadesVinculadas = useMemo(() => idsErpOcupados(actividadesPropias, (actividad) => actividad.actividadErpId), [actividadesPropias]);
   const actividadesErpDisponiblesParaVincular = useMemo(() => {
     if (!actividadPropiaParaVincular) {
       return [];
@@ -225,7 +229,8 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
     }
 
     if (actividad.especieErpId) {
-      return `erp:${actividad.especieErpId}`;
+      const propia = especiesPropias.find((item) => item.especieErpId === actividad.especieErpId);
+      return propia ? `agro:${propia.id}` : `erp:${actividad.especieErpId}`;
     }
 
     return '';
@@ -247,7 +252,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
     const ahora = new Date().toISOString();
 
     setActividadEnEdicion(actividadPropia || {
-      id: crearIdActividadAppDesdeErp(actividadErp),
+      id: crearIdActividadAppDesdeErp(actividadErp, sesion.usuario.clienteId || ''),
       clienteId: sesion.usuario.clienteId || '',
       empresaErpId: 'global',
       actividadErpId: actividadErp.erpId,
@@ -301,7 +306,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
       setActividadesPropias((actuales) => {
         const existe = actuales.some((actividad) => actividad.id === respuesta.actividad.id);
         return existe
-          ? actuales.map((actividad) => (actividad.id === respuesta.actividad.id ? respuesta.actividad : actividad))
+          ? actualizarRegistroPadron(actuales, respuesta.actividad, (item) => item.actividadErpId)
           : [respuesta.actividad, ...actuales];
       });
       setActividadEnEdicion(null);
@@ -384,7 +389,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
         motivo: `Vinculacion manual con actividad ERP ${actividadErp.erpId}`,
       }, sesion.token);
 
-      setActividadesPropias((actuales) => actuales.map((actividad) => (actividad.id === respuesta.actividad.id ? respuesta.actividad : actividad)));
+      setActividadesPropias((actuales) => actualizarRegistroPadron(actuales, respuesta.actividad, (item) => item.actividadErpId));
       setActividadPropiaParaVincular(null);
       setActividadErpVincularId('');
       setEstado('Actividad vinculada con auditoria.');
@@ -403,7 +408,7 @@ export function ActividadesAppScreen({ sesion, puedeConfigurarPlanificacion, not
         <article><span>ERP sincronizadas</span><strong>{actividadesErp.length}</strong></article>
         <article><span>Propias Agro App</span><strong>{actividadesPropias.length}</strong></article>
         <article><span>Provisorias</span><strong>{actividadesPropias.filter((actividad) => actividad.estadoVinculacion === 'provisorio').length}</strong></article>
-        <article><span>Vinculadas</span><strong>{actividadesPropias.filter((actividad) => actividad.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+        <article><span>Vinculos confirmados</span><strong>{actividadesPropias.filter((actividad) => actividad.estadoVinculacion === 'vinculado_erp' && !actividad.vinculoAutomatico).length}</strong></article>
       </section>
 
       <Panel

@@ -1,3 +1,5 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpZona, SesionUsuario, ZonaApp } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -90,7 +92,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
   }, [sesion.token, notificar]);
 
   const filtroNormalizado = normalizarCodigo(filtroAplicado);
-  const zonasVinculadas = useMemo(() => new Set(zonasPropias.map((zona) => zona.zonaErpId).filter((id): id is string => Boolean(id))), [zonasPropias]);
+  const zonasVinculadas = useMemo(() => idsErpOcupados(zonasPropias, (zona) => zona.zonaErpId), [zonasPropias]);
   const zonasErpDisponiblesParaVincular = useMemo(() => zonasErp
     .filter((zona) => !zonasVinculadas.has(zona.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [zonasErp, zonasVinculadas]);
@@ -170,7 +172,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
       setZonasPropias((actuales) => {
         const existe = actuales.some((zona) => zona.id === respuesta.zona.id);
         return existe
-          ? actuales.map((zona) => (zona.id === respuesta.zona.id ? respuesta.zona : zona))
+          ? actualizarRegistroPadron(actuales, respuesta.zona, (item) => item.zonaErpId)
           : [respuesta.zona, ...actuales];
       });
       setZonaEnEdicion(null);
@@ -237,7 +239,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
         motivo: `Vinculacion manual con zona ERP ${zonaErp.erpId}`,
       }, sesion.token);
 
-      setZonasPropias((actuales) => actuales.map((zona) => (zona.id === respuesta.zona.id ? respuesta.zona : zona)));
+      setZonasPropias((actuales) => actualizarRegistroPadron(actuales, respuesta.zona, (item) => item.zonaErpId));
       setZonaPropiaParaVincular(null);
       setZonaErpVincularId('');
       setEstado('Zona vinculada con auditoria.');
@@ -266,8 +268,8 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
           <strong>{zonasPropias.filter((zona) => zona.estadoVinculacion === 'provisorio').length}</strong>
         </article>
         <article>
-          <span>Vinculadas</span>
-          <strong>{zonasPropias.filter((zona) => zona.estadoVinculacion === 'vinculado_erp').length}</strong>
+          <span>Vinculos confirmados</span>
+          <strong>{zonasPropias.filter((zona) => zona.estadoVinculacion === 'vinculado_erp' && !zona.vinculoAutomatico).length}</strong>
         </article>
       </section>
 

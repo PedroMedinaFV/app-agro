@@ -90,7 +90,7 @@ export async function obtenerPlanificacionSnapshot(token: string) {
 }
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token: string) {
-  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${loteAppId}/ficha`, {
+  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${encodeURIComponent(loteAppId)}/ficha`, {
     method: 'GET',
   }, token);
 }

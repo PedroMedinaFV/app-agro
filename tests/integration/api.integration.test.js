@@ -249,3 +249,128 @@ test('ERP HTTP con proveedor mock usa permisos, historial y bloqueo PostgreSQL r
   assert.deepEqual(historial.itemsSolicitados, ['monedas']);
   assert.equal(await prisma.erpSincronizacionBloqueo.count({ where: { clienteId: clientes.a } }), 0);
 });
+
+test('padrones HTTP: zona provisoria puede absorber copia automatica y la notificacion deja de recomendar un vinculo aplicado', async () => {
+  const { generarSugerenciasVinculacionErp } = require('../../apps/api/dist/services/notificaciones/vinculacionesSugeridas');
+  const erpId = 'zona:98701';
+  await prisma.erpZona.create({ data: { erpId, empresaErpId: 'global', idZona: 98701, codigo: '98701', nombre: 'ZONA PRUEBA CANONICA' } });
+  const zona = { id: 'zona-provisoria-prueba', clienteId: clientes.a, empresaErpId: 'global', nombre: 'Zona prueba canonica', codigoInterno: 'PROVISORIA', estadoVinculacion: 'provisorio', createdAt: fecha, updatedAt: fecha };
+  assert.equal((await request(`/zonas-app/${zona.id}`, { usuario: 'adminA', method: 'PUT', body: { zona, origen: 'web' } })).status, 200);
+  await prisma.zonaApp.create({ data: { id: 'zona-app-zona-98701', clienteId: clientes.a, empresaErpId: 'global', zonaErpId: erpId, nombre: 'ZONA PRUEBA CANONICA', estadoVinculacion: 'vinculado_erp' } });
+  await prisma.campoApp.update({ where: { id: campos.a.id }, data: { zonaAppId: 'zona-app-zona-98701', zonaErpId: erpId } });
+  await generarSugerenciasVinculacionErp(clientes.a, usuarios.adminA);
+  const notificacion = await prisma.notificacionUsuario.findFirst({ where: { clienteId: clientes.a, vinculacionSugerida: { entidadPlanificacionId: zona.id, entidadErpId: erpId }, estado: 'pendiente' } });
+  assert.ok(notificacion, 'la copia automatica no debe bloquear la sugerencia');
+  const listado = await request('/zonas-app', { usuario: 'adminA' });
+  assert.equal(listado.body.zonas.find((item) => item.id === 'zona-app-zona-98701').vinculoAutomatico, true);
+  const guardado = await request(`/zonas-app/${zona.id}`, { usuario: 'adminA', method: 'PUT', body: { zona: { ...zona, zonaErpId: erpId, estadoVinculacion: 'vinculado_erp' }, origen: 'web' } });
+  assert.equal(guardado.status, 200, JSON.stringify(guardado.body));
+  assert.equal(await prisma.zonaApp.count({ where: { clienteId: clientes.a, zonaErpId: erpId } }), 1);
+  assert.equal((await prisma.campoApp.findUnique({ where: { id: campos.a.id } })).zonaAppId, zona.id);
+  assert.equal((await request('/notificaciones', { usuario: 'adminA' })).body.notificaciones.some((item) => item.id === notificacion.id), false);
+  assert.equal((await prisma.vinculacionErpSugerida.findFirst({ where: { entidadPlanificacionId: zona.id } })).estado, 'descartada');
+  const auditoria = await prisma.auditoriaEvento.findFirst({ where: { entidadId: zona.id, accion: 'consolidar_copia_erp' } });
+  assert.equal(auditoria.valoresDespues.copiaAbsorbidaId, 'zona-app-zona-98701');
+});
+
+test('padrones: los siete tipos consolidan atomicamente, conservan aliases y aceptan registros offline con IDs anteriores', async () => {
+  const { consolidarCopiaErp } = require('../../apps/api/dist/services/planificacion/consolidarCopiaErp');
+  const { idCopiaPadronErp, padronesErp } = require('../../packages/tipos/dist');
+  const datos = {
+    zonas: { empresaErpId: 'global', nombre: 'Consolidar zona' },
+    campos: { empresaErpId: 'test-empresa-a', nombre: 'Consolidar campo' },
+    lotes: { campoAppId: campos.a.id, nombre: 'Consolidar lote', superficieTotal: 10, superficieProductiva: 9 },
+    especies: { empresaErpId: 'global', nombre: 'Consolidar especie' },
+    actividades: { empresaErpId: 'global', nombre: 'Consolidar actividad' },
+    insumos: { empresaErpId: 'global', nombre: 'Consolidar insumo', unidad: 'kg' },
+    labores: { empresaErpId: 'global', nombre: 'Consolidar labor', codigo: 'LABOR-CANONICA', unidadSugerida: 'ha' },
+  };
+  const aliases = {};
+  for (const [tipo, conf] of Object.entries(padronesErp)) {
+    const delegado = conf.modelo[0].toLowerCase() + conf.modelo.slice(1);
+    const erpId = `testing:${tipo}:98702`;
+    const anteriorId = idCopiaPadronErp(conf.prefijo, erpId, clientes.a);
+    const actualId = `manual-consolidar-${tipo}`;
+    const comun = { ...datos[tipo], clienteId: clientes.a };
+    await prisma[delegado].create({ data: { ...comun, id: actualId, createdBy: usuarios.adminA.id } });
+    await prisma[delegado].create({ data: { ...comun, ...(tipo === 'labores' ? { codigo: 'LABOR-COPIA' } : {}), id: anteriorId, [conf.campoErp]: erpId, estadoVinculacion: 'vinculado_erp' } });
+    const destino = { id: actualId, clienteId: clientes.a, [conf.campoErp]: erpId };
+    await assert.rejects(prisma.$transaction(async (tx) => {
+      await consolidarCopiaErp(tx, tipo, destino, usuarios.adminA);
+      throw new Error('fallo posterior al traslado');
+    }, { timeout: 60000 }), /fallo posterior/);
+    assert.ok(await prisma[delegado].findUnique({ where: { id: anteriorId } }));
+    assert.equal(await prisma.aliasPadronApp.count({ where: { clienteId: clientes.a, tipo, anteriorId } }), 0);
+    await prisma.$transaction(async (tx) => {
+      await consolidarCopiaErp(tx, tipo, destino, usuarios.adminA);
+      await tx[delegado].update({ where: { id: actualId }, data: { [conf.campoErp]: erpId, estadoVinculacion: 'vinculado_erp' } });
+    }, { timeout: 60000 });
+    assert.equal(await prisma[delegado].count({ where: { clienteId: clientes.a, [conf.campoErp]: erpId } }), 1);
+    assert.equal((await prisma.aliasPadronApp.findUnique({ where: { clienteId_tipo_anteriorId: { clienteId: clientes.a, tipo, anteriorId } } })).actualId, actualId);
+    aliases[tipo] = { anteriorId, actualId };
+  }
+  await prisma.loteApp.update({ where: { id: aliases.lotes.actualId }, data: { campoAppId: aliases.campos.actualId } });
+  const registro = { id: 'offline-alias-canonico', tipo: 'precipitacion', payload: { campoAppId: aliases.campos.anteriorId, loteAppId: aliases.lotes.anteriorId, milimetros: 5, fechaEvento: fecha, origen: 'mobile' } };
+  const respuesta = await request('/sincronizacion', { usuario: 'adminA', body: { registros: [registro] } });
+  assert.equal(respuesta.status, 200, JSON.stringify(respuesta.body));
+  assert.equal(respuesta.body.resultado.registros[0].sincronizado, true, JSON.stringify(respuesta.body));
+  const lluviaGuardada = await prisma.precipitacionCampo.findFirst({ where: { registroMovilId: registro.id, clienteId: clientes.a } });
+  assert.equal(lluviaGuardada.campoAppId, aliases.campos.actualId);
+  assert.equal(lluviaGuardada.loteAppId, aliases.lotes.actualId);
+  const fichaAnterior = await request(`/operativo/lotes/${encodeURIComponent(aliases.lotes.anteriorId)}/ficha`, { usuario: 'adminA' });
+  assert.equal(fichaAnterior.status, 200, JSON.stringify(fichaAnterior.body));
+  assert.equal(fichaAnterior.body.lote.id, aliases.lotes.actualId);
+  const ajeno = await request('/sincronizacion', { usuario: 'adminB', body: { registros: [{ ...registro, id: 'alias-ajeno' }] } });
+  assert.equal(ajeno.body.resultado.registros[0].sincronizado, false);
+});
+
+test('padrones: aceptar sugerencia es atomico; copia editada ocupa vinculo y se retiran notificaciones obsoletas', async () => {
+  const { generarSugerenciasVinculacionErp } = require('../../apps/api/dist/services/notificaciones/vinculacionesSugeridas');
+  for (const editada of [false, true]) {
+    const numero = editada ? 98704 : 98703;
+    const erpId = `zona:${numero}`;
+    const id = `manual-zona-${numero}`;
+    await prisma.erpZona.create({ data: { erpId, idZona: numero, empresaErpId: 'global', codigo: String(numero), nombre: `Zona caso ${numero}` } });
+    await prisma.zonaApp.create({ data: { id, clienteId: clientes.a, empresaErpId: 'global', nombre: `Zona caso ${numero}`, createdBy: usuarios.adminA.id } });
+    await generarSugerenciasVinculacionErp(clientes.a, usuarios.adminA);
+    const notificacion = await prisma.notificacionUsuario.findFirst({ where: { clienteId: clientes.a, estado: 'pendiente', vinculacionSugerida: { entidadPlanificacionId: id, entidadErpId: erpId } } });
+    assert.ok(notificacion);
+    await prisma.zonaApp.create({ data: { id: `zona-app-zona-${numero}`, clienteId: clientes.a, empresaErpId: 'global', zonaErpId: erpId, nombre: `Zona caso ${numero}`, estadoVinculacion: 'vinculado_erp', updatedBy: editada ? usuarios.adminA.id : null } });
+    const respuesta = await request(`/notificaciones/${notificacion.id}/resolver-vinculacion`, { usuario: 'adminA', body: { decision: 'aceptar' }, timeout: 90000 });
+    assert.equal(respuesta.status, editada ? 409 : 200, JSON.stringify(respuesta.body));
+    assert.equal((await prisma.zonaApp.findUnique({ where: { id } })).zonaErpId, editada ? null : erpId);
+    const pendientes = await request('/notificaciones', { usuario: 'adminA' });
+    assert.equal(pendientes.body.notificaciones.some((item) => item.id === notificacion.id), false);
+    if (editada) assert.ok(await prisma.zonaApp.findUnique({ where: { id: `zona-app-zona-${numero}` } }));
+  }
+});
+
+test('padrones: materializacion por cliente es idempotente y no recicla IDs/aliases al desvincular y volver a vincular', async () => {
+  const { asegurarPadronesPlanificacionDesdeErp } = require('../../apps/api/dist/services/planificacion/padronesPlanificacionPrisma');
+  const { esCopiaAutomaticaErp } = require('../../packages/tipos/dist');
+  const erpId = 'especie:98705';
+  await prisma.erpEspecie.create({ data: { erpId, empresaErpId: 'global', idEspecie: 98705, codigo: '98705', nombre: 'Especie ciclo de identidad', activo: true, actualizadoEn: new Date() } });
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  await asegurarPadronesPlanificacionDesdeErp(clientes.b, null);
+  const copiaA = await prisma.especieApp.findFirst({ where: { clienteId: clientes.a, especieErpId: erpId } });
+  const copiaB = await prisma.especieApp.findFirst({ where: { clienteId: clientes.b, especieErpId: erpId } });
+  assert.ok(copiaA && copiaB);
+  assert.notEqual(copiaA.id, copiaB.id);
+  assert.equal(esCopiaAutomaticaErp('especies', copiaA), true);
+  const especie = { id: 'especie-manual-ciclo', clienteId: clientes.a, empresaErpId: 'global', nombre: 'Especie propia ciclo', codigoInterno: 'MANUAL-CICLO', estadoVinculacion: 'provisorio', createdAt: fecha, updatedAt: fecha };
+  const guardar = (datos) => request(`/especies-app/${especie.id}`, { usuario: 'adminA', method: 'PUT', body: { especie: datos, origen: 'web' }, timeout: 90000 });
+  assert.equal((await guardar(especie)).status, 200);
+  assert.equal((await guardar({ ...especie, especieErpId: erpId })).status, 200);
+  assert.equal((await guardar(especie)).status, 200);
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  const nueva = await prisma.especieApp.findFirst({ where: { clienteId: clientes.a, especieErpId: erpId } });
+  assert.notEqual(nueva.id, copiaA.id);
+  assert.equal(esCopiaAutomaticaErp('especies', nueva), true);
+  const segunda = await guardar({ ...especie, especieErpId: erpId });
+  assert.equal(segunda.status, 200, JSON.stringify(segunda.body));
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  assert.equal(await prisma.especieApp.count({ where: { clienteId: clientes.a, especieErpId: erpId } }), 1);
+  assert.equal((await prisma.especieApp.findUnique({ where: { id: especie.id } })).especieErpId, erpId);
+  assert.equal(await prisma.aliasPadronApp.count({ where: { clienteId: clientes.a, tipo: 'especies', actualId: especie.id } }), 2);
+  assert.ok(await prisma.especieApp.findUnique({ where: { id: copiaB.id } }));
+});

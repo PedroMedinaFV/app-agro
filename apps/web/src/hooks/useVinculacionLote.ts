@@ -1,3 +1,5 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useState } from 'react';
 import type { CampoApp, ErpLote, LoteApp } from '@agro/tipos';
 import { guardarLoteApp } from '../services/api';
@@ -29,7 +31,7 @@ export function useVinculacionLote({
   const [guardandoVinculacion, setGuardandoVinculacion] = useState(false);
 
   function abrirVinculacion(lote: LoteApp) {
-    const lotesVinculados = new Set(lotesPropios.map((lotePropio) => lotePropio.loteErpId).filter((loteErpId): loteErpId is string => Boolean(loteErpId)));
+    const lotesVinculados = idsErpOcupados(lotesPropios, (lote) => lote.loteErpId);
     const campoPropio = camposPropios.find((campo) => campo.id === lote.campoAppId);
     const candidatos = sugerirVinculacion(
       { codigo: lote.codigoInterno, nombre: lote.nombre },
@@ -93,7 +95,7 @@ export function useVinculacionLote({
         motivo: `Vinculacion manual con lote ERP ${loteErp.erpId}`,
       }, token);
 
-      onLotesPropiosChange((actuales) => actuales.map((lote) => (lote.id === respuesta.lote.id ? respuesta.lote : lote)));
+      onLotesPropiosChange((actuales) => actualizarRegistroPadron(actuales, respuesta.lote, (item) => item.loteErpId));
       cerrarVinculacion();
       onEstadoChange('Lote vinculado con auditoria.');
       notificar?.({ tipo: 'success', titulo: 'Lote vinculado', mensaje: respuesta.mensaje });

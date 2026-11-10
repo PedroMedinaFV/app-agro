@@ -1,3 +1,5 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import type {
   ActividadApp,
@@ -49,12 +51,12 @@ import { sugerirVinculacion } from '../utils/vinculacionSugerida';
 
 type Notificar = (toast: { tipo: 'success' | 'error' | 'info'; titulo: string; mensaje?: string }) => void;
 type TipoPadron = 'zonas' | 'campos' | 'lotes' | 'especies' | 'actividades' | 'insumos' | 'labores';
-type EstadoFiltro = 'vinculadas' | 'provisorias' | 'todas';
+type EstadoFiltro = 'vinculadas' | 'provisorias' | 'automaticas' | 'todas';
 
 type VinculacionFila = {
   id: string;
   tipo: TipoPadron;
-  estado: 'vinculada' | 'provisoria';
+  estado: 'vinculada' | 'provisoria' | 'automatica';
   padron: string;
   propio: string;
   erp: string;
@@ -98,7 +100,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
   const [estado, setEstado] = useState('Cargando vinculaciones.');
   const [guardando, setGuardando] = useState(false);
   const [tipoFiltro, setTipoFiltro] = useState<TipoPadron | 'todos'>('todos');
-  const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('vinculadas');
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('todas');
   const [busqueda, setBusqueda] = useState('');
   const [vinculacionEnEdicion, setVinculacionEnEdicion] = useState<VinculacionEnEdicion | null>(null);
 
@@ -177,39 +179,39 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
     for (const zona of zonas.filter((item) => item.zonaErpId || item.estadoVinculacion === 'provisorio')) {
       const zonaErp = zonasErpPorId.get(zona.zonaErpId || '');
-      resultado.push(crearFila('zonas', zona.id, 'Zonas', zona.nombre, zonaErp ? `${zonaErp.codigo} - ${zonaErp.nombre}` : zona.zonaErpId || 'Sin vincular', 'Global', zona.updatedAt, Boolean(zona.zonaErpId)));
+      resultado.push(crearFila('zonas', zona.id, 'Zonas', zona.nombre, zonaErp ? `${zonaErp.codigo} - ${zonaErp.nombre}` : zona.zonaErpId || 'Sin vincular', 'Global', zona.updatedAt, Boolean(zona.zonaErpId), zona.vinculoAutomatico));
     }
 
     for (const campo of campos.filter((item) => item.campoErpId || item.estadoVinculacion === 'provisorio')) {
       const campoErp = camposErpPorId.get(campo.campoErpId || '');
-      resultado.push(crearFila('campos', campo.id, 'Campos', campo.nombre, campoErp ? `${campoErp.codigo} - ${campoErp.nombre}` : campo.campoErpId || 'Sin vincular', campo.zonaErpId || 'Sin zona', campo.updatedAt, Boolean(campo.campoErpId)));
+      resultado.push(crearFila('campos', campo.id, 'Campos', campo.nombre, campoErp ? `${campoErp.codigo} - ${campoErp.nombre}` : campo.campoErpId || 'Sin vincular', campo.zonaErpId || 'Sin zona', campo.updatedAt, Boolean(campo.campoErpId), campo.vinculoAutomatico));
     }
 
     for (const lote of lotes.filter((item) => item.loteErpId || item.estadoVinculacion === 'provisorio')) {
       const loteErp = lotesErpPorId.get(lote.loteErpId || '');
       const campo = camposPorId.get(lote.campoAppId);
-      resultado.push(crearFila('lotes', lote.id, 'Lotes', lote.nombre, loteErp ? `${loteErp.codigo} - ${loteErp.nombre}` : lote.loteErpId || 'Sin vincular', campo?.nombre || 'Campo no disponible', lote.updatedAt, Boolean(lote.loteErpId)));
+      resultado.push(crearFila('lotes', lote.id, 'Lotes', lote.nombre, loteErp ? `${loteErp.codigo} - ${loteErp.nombre}` : lote.loteErpId || 'Sin vincular', campo?.nombre || 'Campo no disponible', lote.updatedAt, Boolean(lote.loteErpId), lote.vinculoAutomatico));
     }
 
     for (const especie of especies.filter((item) => item.especieErpId || item.estadoVinculacion === 'provisorio')) {
       const especieErp = especiesErpPorId.get(especie.especieErpId || '');
-      resultado.push(crearFila('especies', especie.id, 'Especies', especie.nombre, especieErp ? `${especieErp.codigo} - ${especieErp.nombre}` : especie.especieErpId || 'Sin vincular', 'Global', especie.updatedAt, Boolean(especie.especieErpId)));
+      resultado.push(crearFila('especies', especie.id, 'Especies', especie.nombre, especieErp ? `${especieErp.codigo} - ${especieErp.nombre}` : especie.especieErpId || 'Sin vincular', 'Global', especie.updatedAt, Boolean(especie.especieErpId), especie.vinculoAutomatico));
     }
 
     for (const actividad of actividades.filter((item) => item.actividadErpId || item.estadoVinculacion === 'provisorio')) {
       const actividadErp = actividadesErpPorId.get(actividad.actividadErpId || '');
       const especie = actividad.especieAppId ? especiesPorId.get(actividad.especieAppId)?.nombre : actividad.especieErpId;
-      resultado.push(crearFila('actividades', actividad.id, 'Actividades', actividad.nombre, actividadErp ? `${actividadErp.codigo} - ${actividadErp.descripcion}` : actividad.actividadErpId || 'Sin vincular', especie || 'Sin especie', actividad.updatedAt, Boolean(actividad.actividadErpId)));
+      resultado.push(crearFila('actividades', actividad.id, 'Actividades', actividad.nombre, actividadErp ? `${actividadErp.codigo} - ${actividadErp.descripcion}` : actividad.actividadErpId || 'Sin vincular', especie || 'Sin especie', actividad.updatedAt, Boolean(actividad.actividadErpId), actividad.vinculoAutomatico));
     }
 
     for (const insumo of insumos.filter((item) => item.insumoErpId || item.estadoVinculacion === 'provisorio')) {
       const insumoErp = insumosErpPorId.get(insumo.insumoErpId || '');
-      resultado.push(crearFila('insumos', insumo.id, 'Insumos', insumo.nombre, insumoErp ? `${insumoErp.codigo} - ${insumoErp.nombre}` : insumo.insumoErpId || 'Sin vincular', insumo.unidad, insumo.updatedAt, Boolean(insumo.insumoErpId)));
+      resultado.push(crearFila('insumos', insumo.id, 'Insumos', insumo.nombre, insumoErp ? `${insumoErp.codigo} - ${insumoErp.nombre}` : insumo.insumoErpId || 'Sin vincular', insumo.unidad, insumo.updatedAt, Boolean(insumo.insumoErpId), insumo.vinculoAutomatico));
     }
 
     for (const labor of labores.filter((item) => item.servicioErpId || item.estadoVinculacion === 'provisorio')) {
       const servicioErp = serviciosErpPorId.get(labor.servicioErpId || '');
-      resultado.push(crearFila('labores', labor.id, 'Labores', labor.nombre, servicioErp ? `${servicioErp.codigo} - ${servicioErp.descripcion}` : labor.servicioErpId || 'Sin vincular', labor.unidadSugerida, labor.updatedAt, Boolean(labor.servicioErpId)));
+      resultado.push(crearFila('labores', labor.id, 'Labores', labor.nombre, servicioErp ? `${servicioErp.codigo} - ${servicioErp.descripcion}` : labor.servicioErpId || 'Sin vincular', labor.unidadSugerida, labor.updatedAt, Boolean(labor.servicioErpId), labor.vinculoAutomatico));
     }
 
     return resultado.sort((a, b) => a.padron.localeCompare(b.padron, 'es') || a.propio.localeCompare(b.propio, 'es'));
@@ -222,7 +224,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       const coincideEstado =
         estadoFiltro === 'todas'
         || (estadoFiltro === 'vinculadas' && fila.estado === 'vinculada')
-        || (estadoFiltro === 'provisorias' && fila.estado === 'provisoria');
+        || (estadoFiltro === 'provisorias' && fila.estado === 'provisoria')
+        || (estadoFiltro === 'automaticas' && fila.estado === 'automatica');
       const coincideBusqueda = !textoBusqueda || normalizarTexto([
         fila.padron,
         fila.estado,
@@ -245,11 +248,11 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
       .trim();
   }
 
-  function crearFila(tipo: TipoPadron, id: string, padron: string, propio: string, erp: string, detalle: string, actualizado: string | undefined, vinculada: boolean): VinculacionFila {
+  function crearFila(tipo: TipoPadron, id: string, padron: string, propio: string, erp: string, detalle: string, actualizado: string | undefined, vinculada: boolean, automatica = false): VinculacionFila {
     return {
       id,
       tipo,
-      estado: vinculada ? 'vinculada' : 'provisoria',
+      estado: automatica ? 'automatica' : vinculada ? 'vinculada' : 'provisoria',
       padron,
       propio,
       erp,
@@ -260,25 +263,25 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
 
   function idsVinculados(tipo: TipoPadron, idActual: string) {
     if (tipo === 'zonas') {
-      return new Set(zonas.filter((zona) => zona.id !== idActual).map((zona) => zona.zonaErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(zonas.filter((zona) => zona.id !== idActual), (zona) => zona.zonaErpId);
     }
     if (tipo === 'campos') {
-      return new Set(campos.filter((campo) => campo.id !== idActual).map((campo) => campo.campoErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(campos.filter((campo) => campo.id !== idActual), (campo) => campo.campoErpId);
     }
     if (tipo === 'lotes') {
-      return new Set(lotes.filter((lote) => lote.id !== idActual).map((lote) => lote.loteErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(lotes.filter((lote) => lote.id !== idActual), (lote) => lote.loteErpId);
     }
     if (tipo === 'especies') {
-      return new Set(especies.filter((especie) => especie.id !== idActual).map((especie) => especie.especieErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(especies.filter((especie) => especie.id !== idActual), (especie) => especie.especieErpId);
     }
     if (tipo === 'actividades') {
-      return new Set(actividades.filter((actividad) => actividad.id !== idActual).map((actividad) => actividad.actividadErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(actividades.filter((actividad) => actividad.id !== idActual), (actividad) => actividad.actividadErpId);
     }
     if (tipo === 'insumos') {
-      return new Set(insumos.filter((insumo) => insumo.id !== idActual).map((insumo) => insumo.insumoErpId).filter((id): id is string => Boolean(id)));
+      return idsErpOcupados(insumos.filter((insumo) => insumo.id !== idActual), (insumo) => insumo.insumoErpId);
     }
 
-    return new Set(labores.filter((labor) => labor.id !== idActual).map((labor) => labor.servicioErpId).filter((id): id is string => Boolean(id)));
+    return idsErpOcupados(labores.filter((labor) => labor.id !== idActual), (labor) => labor.servicioErpId);
   }
 
   function obtenerOpcionesEdicion(fila: VinculacionFila): OpcionEdicion[] {
@@ -434,39 +437,39 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
         const zona = zonas.find((item) => item.id === fila.id);
         if (!zona) throw new Error('No se encontro la zona propia.');
         const respuesta = await guardarZonaApp(zona.id, { zona: { ...zona, zonaErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con zona ERP ${erpId}` : 'Desvinculacion manual de zona ERP' }, sesion.token);
-        setZonas((actuales) => actuales.map((item) => (item.id === respuesta.zona.id ? respuesta.zona : item)));
+        setZonas((actuales) => actualizarRegistroPadron(actuales, respuesta.zona, (item) => item.zonaErpId));
       } else if (fila.tipo === 'campos') {
         const campo = campos.find((item) => item.id === fila.id);
         const campoErp = erpId ? camposErpPorId.get(erpId) : undefined;
         if (!campo) throw new Error('No se encontro el campo propio.');
         const respuesta = await guardarCampoApp(campo.id, { campo: { ...campo, campoErpId: erpId, empresaErpId: campoErp?.empresaErpId || campo.empresaErpId, zonaErpId: erpId ? campoErp?.idZona ? `zona:${campoErp.idZona}` : campo.zonaErpId : campo.zonaErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con campo ERP ${erpId}` : 'Desvinculacion manual de campo ERP' }, sesion.token);
-        setCampos((actuales) => actuales.map((item) => (item.id === respuesta.campo.id ? respuesta.campo : item)));
+        setCampos((actuales) => actualizarRegistroPadron(actuales, respuesta.campo, (item) => item.campoErpId));
       } else if (fila.tipo === 'lotes') {
         const lote = lotes.find((item) => item.id === fila.id);
         if (!lote) throw new Error('No se encontro el lote propio.');
         const respuesta = await guardarLoteApp(lote.id, { lote: { ...lote, loteErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con lote ERP ${erpId}` : 'Desvinculacion manual de lote ERP' }, sesion.token);
-        setLotes((actuales) => actuales.map((item) => (item.id === respuesta.lote.id ? respuesta.lote : item)));
+        setLotes((actuales) => actualizarRegistroPadron(actuales, respuesta.lote, (item) => item.loteErpId));
       } else if (fila.tipo === 'especies') {
         const especie = especies.find((item) => item.id === fila.id);
         if (!especie) throw new Error('No se encontro la especie propia.');
         const respuesta = await guardarEspecieApp(especie.id, { especie: { ...especie, especieErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con especie ERP ${erpId}` : 'Desvinculacion manual de especie ERP' }, sesion.token);
-        setEspecies((actuales) => actuales.map((item) => (item.id === respuesta.especie.id ? respuesta.especie : item)));
+        setEspecies((actuales) => actualizarRegistroPadron(actuales, respuesta.especie, (item) => item.especieErpId));
       } else if (fila.tipo === 'actividades') {
         const actividad = actividades.find((item) => item.id === fila.id);
         const actividadErp = erpId ? actividadesErpPorId.get(erpId) : undefined;
         if (!actividad) throw new Error('No se encontro la actividad propia.');
         const respuesta = await guardarActividadApp(actividad.id, { actividad: { ...actividad, actividadErpId: erpId, especieErpId: erpId ? actividadErp?.idEspecie ? `especie:${actividadErp.idEspecie}` : actividad.especieErpId : actividad.especieErpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con actividad ERP ${erpId}` : 'Desvinculacion manual de actividad ERP' }, sesion.token);
-        setActividades((actuales) => actuales.map((item) => (item.id === respuesta.actividad.id ? respuesta.actividad : item)));
+        setActividades((actuales) => actualizarRegistroPadron(actuales, respuesta.actividad, (item) => item.actividadErpId));
       } else if (fila.tipo === 'insumos') {
         const insumo = insumos.find((item) => item.id === fila.id);
         if (!insumo) throw new Error('No se encontro el insumo propio.');
         const respuesta = await guardarInsumoApp(insumo.id, { insumo: { ...insumo, insumoErpId: erpId, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con insumo ERP ${erpId}` : 'Desvinculacion manual de insumo ERP' }, sesion.token);
-        setInsumos((actuales) => actuales.map((item) => (item.id === respuesta.insumo.id ? respuesta.insumo : item)));
+        setInsumos((actuales) => actualizarRegistroPadron(actuales, respuesta.insumo, (item) => item.insumoErpId));
       } else {
         const labor = labores.find((item) => item.id === fila.id);
         if (!labor) throw new Error('No se encontro la labor propia.');
         const respuesta = await guardarServicioApp(labor.id, { servicio: { ...labor, servicioErpId: erpId, idServicio: erpId ? labor.idServicio : undefined, idTipoServicio: erpId ? labor.idTipoServicio : undefined, idUnidadMedida: erpId ? labor.idUnidadMedida : undefined, idMoneda: erpId ? labor.idMoneda : undefined, imputaDosis: erpId ? labor.imputaDosis : undefined, fechaUltimaActualizacionErp: erpId ? labor.fechaUltimaActualizacionErp : undefined, estadoVinculacion: erpId ? 'vinculado_erp' : 'provisorio', origen: erpId ? 'erp' : 'provisorio', updatedAt: new Date().toISOString() }, origen: 'web', motivo: erpId ? `Edicion de vinculacion con servicio ERP ${erpId}` : 'Desvinculacion manual de servicio ERP' }, sesion.token);
-        setLabores((actuales) => actuales.map((item) => (item.id === respuesta.servicio.id ? respuesta.servicio : item)));
+        setLabores((actuales) => actualizarRegistroPadron(actuales, respuesta.servicio, (item) => item.servicioErpId));
       }
 
       await onVinculacionesActualizadas?.();
@@ -530,7 +533,8 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
             <label className="compact-field">
               Estado
               <select value={estadoFiltro} onChange={(event) => setEstadoFiltro(event.target.value as EstadoFiltro)}>
-                <option value="vinculadas">Vinculadas</option>
+                <option value="vinculadas">Vinculos confirmados</option>
+                <option value="automaticas">Copias ERP automaticas</option>
                 <option value="provisorias">Provisorias sin vincular</option>
                 <option value="todas">Todas</option>
               </select>
@@ -545,7 +549,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
           initialPageSize={25}
           columns={[
             { key: 'padron', label: 'Padron', width: 'minmax(110px, 0.7fr)', render: (fila) => fila.padron },
-            { key: 'estado', label: 'Estado', width: 'minmax(112px, 0.65fr)', render: (fila) => <span className="status-pill">{fila.estado === 'vinculada' ? 'Vinculada' : 'Provisoria'}</span> },
+            { key: 'estado', label: 'Estado', width: 'minmax(112px, 0.65fr)', render: (fila) => <span className="status-pill">{fila.estado === 'automatica' ? 'Copia ERP automatica' : fila.estado === 'vinculada' ? 'Vinculada' : 'Provisoria'}</span> },
             { key: 'propio', label: 'Registro Agro App', width: 'minmax(180px, 1.2fr)', render: (fila) => <><strong>{fila.propio}</strong><span>{fila.detalle}</span></> },
             { key: 'erp', label: 'Registro ERP', width: 'minmax(220px, 1.4fr)', render: (fila) => fila.erp },
             { key: 'actualizado', label: 'Actualizado', width: 'minmax(96px, 0.55fr)', render: (fila) => fila.actualizado },
@@ -555,7 +559,7 @@ export function VinculacionesPadronesScreen({ sesion, puedeConfigurarPlanificaci
               width: 'minmax(170px, 0.8fr)',
               render: (fila) => (
                 <div className="table-icon-actions">
-                  {fila.estado === 'vinculada' ? (
+                  {fila.estado === 'automatica' ? <span className="hint">Disponible para vincular un provisorio</span> : fila.estado === 'vinculada' ? (
                     <>
                       <IconButton icon="edit" label={`Editar vinculacion ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => abrirEdicion(fila)} />
                       <IconButton icon="unlink" label={`Desvincular ${fila.propio}`} disabled={!puedeConfigurarPlanificacion || guardando} onClick={() => desvincular(fila)} />

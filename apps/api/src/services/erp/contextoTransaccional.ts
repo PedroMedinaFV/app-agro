@@ -3,11 +3,14 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 
 const contexto = new AsyncLocalStorage<Prisma.TransactionClient>();
 
-export function conTransaccionErp<T>(tx: Prisma.TransactionClient, tarea: () => Promise<T>) {
+export function conTransaccionCompartida<T>(tx: Prisma.TransactionClient, tarea: () => Promise<T>) {
   return contexto.run(tx, tarea);
 }
 
-// Dentro de una corrida ERP, tambien los servicios llamados indirectamente deben usar
+// Alias conservado para los coordinadores ERP existentes.
+export const conTransaccionErp = conTransaccionCompartida;
+
+// Dentro de una transaccion compartida, los servicios llamados indirectamente deben usar
 // la transaccion protegida. Una transaccion cerrada nunca vuelve al cliente global.
 export function clienteConContextoErp(base: PrismaClient): PrismaClient {
   return new Proxy(base, {

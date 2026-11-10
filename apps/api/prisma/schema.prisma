@@ -505,7 +505,20 @@ model ClienteEmpresaErp {
   @@index([empresaErpId])
 }
 
+// Conserva compatibilidad de IDs al absorber una copia automatica en un registro App.
+model AliasPadronApp {
+  clienteId  String
+  tipo       String
+  anteriorId String
+  actualId   String
+  createdAt  DateTime @default(now())
+
+  @@id([clienteId, tipo, anteriorId])
+  @@index([clienteId, tipo, actualId])
+}
+
 model ZonaApp {
+  @@unique([clienteId, zonaErpId])
   id                String                @id @default(uuid())
   cliente           Cliente               @relation(fields: [clienteId], references: [id])
   clienteId         String
@@ -528,6 +541,7 @@ model ZonaApp {
 }
 
 model CampoApp {
+  @@unique([clienteId, campoErpId])
   id                  String                       @id @default(uuid())
   cliente             Cliente                      @relation(fields: [clienteId], references: [id])
   clienteId           String
@@ -559,6 +573,7 @@ model CampoApp {
 }
 
 model LoteApp {
+  @@unique([clienteId, loteErpId])
   id                   String                       @id @default(uuid())
   cliente              Cliente                      @relation(fields: [clienteId], references: [id])
   clienteId            String
@@ -785,6 +800,7 @@ model ObservacionAdjunto {
 }
 
 model EspecieApp {
+  @@unique([clienteId, especieErpId])
   id                String         @id @default(uuid())
   cliente           Cliente        @relation(fields: [clienteId], references: [id])
   clienteId         String
@@ -807,6 +823,7 @@ model EspecieApp {
 }
 
 model ActividadApp {
+  @@unique([clienteId, actividadErpId])
   id                  String                       @id @default(uuid())
   cliente             Cliente                      @relation(fields: [clienteId], references: [id])
   clienteId           String
@@ -839,6 +856,7 @@ model ActividadApp {
 }
 
 model InsumoApp {
+  @@unique([clienteId, insumoErpId])
   id                     String            @id @default(uuid())
   cliente                Cliente           @relation(fields: [clienteId], references: [id])
   clienteId              String

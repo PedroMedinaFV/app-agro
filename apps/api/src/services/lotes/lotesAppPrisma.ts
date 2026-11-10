@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarLoteAppRequest, GuardarLoteAppResponse, LoteApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -13,6 +15,7 @@ type LotePrisma = Prisma.LoteAppGetPayload<Record<string, never>>;
 function mapearLote(lote: LotePrisma): LoteApp {
   return {
     id: lote.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('lotes', lote),
     clienteId: lote.clienteId,
     campoAppId: lote.campoAppId,
     loteErpId: lote.loteErpId || undefined,
@@ -46,17 +49,6 @@ async function validarLote(lote: LoteApp, usuario?: UsuarioAuditoria) {
       throw crearErrorValidacion('El lote ERP no pertenece al campo ERP vinculado al lote propio.');
     }
 
-    const loteYaVinculado = await prisma.loteApp.findFirst({
-      where: {
-        clienteId: lote.clienteId,
-        loteErpId: lote.loteErpId,
-        id: { not: lote.id },
-      },
-    });
-
-    if (loteYaVinculado) {
-      throw crearErrorValidacion('Ese lote ERP ya esta vinculado a otro lote del cliente.');
-    }
   }
 }
 
@@ -78,7 +70,9 @@ export async function guardarLoteAppPersistido(
   await validarLote(lote, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'lotes', lote, usuario);
     const existente = await tx.loteApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== lote.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = lote.codigoInterno
       ? await tx.loteApp.findFirst({
         where: {
@@ -139,5 +133,5 @@ export async function guardarLoteAppPersistido(
       auditado: true,
       mensaje: existente ? 'Lote actualizado con auditoria.' : 'Lote creado con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

@@ -156,7 +156,7 @@ export function useFormularioLote({
 
     const ahora = new Date().toISOString();
     const campoPreparado: CampoApp = {
-      id: crearIdCampoDesdeErp(campoErp.erpId),
+      id: crearIdCampoDesdeErp(campoErp.erpId, clienteId),
       clienteId,
       empresaErpId: campoErp.empresaErpId,
       campoErpId: campoErp.erpId,

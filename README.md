@@ -95,6 +95,7 @@ GitHub Actions configura ambos controles en PR y push a `main`/`testing`, con Po
 - [Roles y permisos](docs/ROLES_Y_PERMISOS.md), [seguridad](docs/SEGURIDAD.md) y [auditoria](docs/AUDITORIA.md).
 - [Autenticacion y errores](docs/AUTENTICACION.md): validaciones, JWT, configuracion y pruebas HTTP.
 - [Registros offline](docs/OFFLINE.md): aislamiento por propietario, persistencia, adjuntos, reintentos y recuperacion de registros anteriores.
+- [Identidad de padrones App/ERP](docs/IDENTIDAD_PADRONES_ERP.md): selectores sin duplicados, copias automaticas, vinculacion, aliases y vigencia de notificaciones.
 - [Integracion ERP](docs/INTEGRACION_ERP.md), [Supabase](docs/SUPABASE.md) y [pruebas mobile](docs/MOBILE_TESTING.md).
 - [Concurrencia ERP](docs/ERP_CONCURRENCIA.md): reserva persistente, migracion, tiempo maximo, recuperacion y pruebas PostgreSQL.
 - [Pruebas de integracion](docs/PRUEBAS_INTEGRACION.md): HTTP y PostgreSQL reales en schemas efimeros, migraciones desde cero y regresiones de aislamiento.

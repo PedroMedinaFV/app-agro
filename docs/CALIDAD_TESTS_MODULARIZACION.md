@@ -67,6 +67,16 @@ Integracion HTTP/PostgreSQL repetida tras la extraccion: 14 aprobados, 0 fallido
 
 La extraccion API conserva los tests existentes de contratos, guardado/cierre y auditoria; la suite HTTP/PostgreSQL vuelve a ejecutar el recorrido con snapshots. El detalle de responsabilidades y garantias esta en [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md). El recorrido de dispositivo de etapa 3 sigue pendiente.
 
+## Correccion de identidad App/ERP (2026-11-06)
+
+`tests/padrones-identidad.test.js` agrega cuatro regresiones: una sola opcion App/ERP por identidad conservando el nombre editado; IDs nuevos por cliente sin colisiones por separadores; reconocimiento de copias historicas/nuevas y respeto de ediciones; eliminacion de copia absorbida del estado visible. No se fusionan homonimos sin vinculo confirmado.
+
+`tests/padrones-api-rutas.test.js` agrega dos pruebas de los adaptadores reales transpilados: los siete guardados web codifican el ID como un unico segmento de URL sin modificar JSON, y la consulta de ficha mobile conserva el ID escapado y el token. Evita que Express decodifique parte de un ID materializado como si fuera sintaxis de ruta. Los limites de red se sustituyen; los aliases y consultas HTTP reales se cubren en integracion. `pnpm check` completo repetido el 2026-11-10: 285 tests, 284 aprobados/1 omitido, lint/tipos/builds correctos.
+
+La integracion agrega consolidacion y rollback de los siete padrones contra PostgreSQL real, aliases para pendientes offline/consultas con IDs anteriores, aislamiento por cliente, zona provisoria con sugerencia y copia materializada, aceptacion de notificacion y rechazo de copia editada. Tambien verifica idempotencia y ciclos de vinculacion con materializacion de dos clientes. Reproduce los defectos funcionales; no se limita a contar opciones ni a mocks de SQL.
+
+La guia [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) documenta superficies revisadas, contratos, persistencia, transacciones, migracion, preflight y limites manuales. La instalacion operativa requiere aplicar la nueva migracion y reiniciar; los tests usan schemas temporales propios.
+
 ## Principio
 
 Cada feature debe entregar cuatro cosas juntas:

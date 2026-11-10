@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarInsumoAppRequest, GuardarInsumoAppResponse, InsumoApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -13,6 +15,7 @@ type InsumoPrisma = Prisma.InsumoAppGetPayload<Record<string, never>>;
 function mapearInsumo(insumo: InsumoPrisma): InsumoApp {
   return {
     id: insumo.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('insumos', insumo),
     clienteId: insumo.clienteId,
     empresaErpId: insumo.empresaErpId,
     insumoErpId: insumo.insumoErpId || undefined,
@@ -56,17 +59,6 @@ async function validarInsumo(insumo: InsumoApp, usuario?: UsuarioAuditoria) {
       throw crearErrorValidacion('El insumo ERP seleccionado no existe en la cache importada.');
     }
 
-    const insumoYaVinculado = await prisma.insumoApp.findFirst({
-      where: {
-        clienteId: insumo.clienteId,
-        insumoErpId: insumo.insumoErpId,
-        id: { not: insumo.id },
-      },
-    });
-
-    if (insumoYaVinculado) {
-      throw crearErrorValidacion('Ese insumo ERP ya esta vinculado a otro insumo del cliente.');
-    }
   }
 }
 
@@ -88,7 +80,9 @@ export async function guardarInsumoAppPersistido(
   await validarInsumo(insumo, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'insumos', insumo, usuario);
     const existente = await tx.insumoApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== insumo.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = insumo.codigoInterno
       ? await tx.insumoApp.findFirst({
         where: {
@@ -154,5 +148,5 @@ export async function guardarInsumoAppPersistido(
       auditado: true,
       mensaje: existente ? 'Insumo actualizado con auditoria.' : 'Insumo creado con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

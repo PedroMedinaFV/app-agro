@@ -1,3 +1,5 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
+import { idsErpOcupados } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import type { ErpEspecie, EspecieApp, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -90,7 +92,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
   }, [sesion.token, notificar]);
 
   const filtroNormalizado = normalizarCodigo(filtroAplicado);
-  const especiesVinculadas = useMemo(() => new Set(especiesPropias.map((especie) => especie.especieErpId).filter((id): id is string => Boolean(id))), [especiesPropias]);
+  const especiesVinculadas = useMemo(() => idsErpOcupados(especiesPropias, (especie) => especie.especieErpId), [especiesPropias]);
   const especiesErpDisponiblesParaVincular = useMemo(() => especiesErp
     .filter((especie) => !especiesVinculadas.has(especie.erpId))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [especiesErp, especiesVinculadas]);
@@ -161,7 +163,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
       setEspeciesPropias((actuales) => {
         const existe = actuales.some((especie) => especie.id === respuesta.especie.id);
         return existe
-          ? actuales.map((especie) => (especie.id === respuesta.especie.id ? respuesta.especie : especie))
+          ? actualizarRegistroPadron(actuales, respuesta.especie, (item) => item.especieErpId)
           : [respuesta.especie, ...actuales];
       });
       setEspecieEnEdicion(null);
@@ -228,7 +230,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
         motivo: `Vinculacion manual con especie ERP ${especieErp.erpId}`,
       }, sesion.token);
 
-      setEspeciesPropias((actuales) => actuales.map((especie) => (especie.id === respuesta.especie.id ? respuesta.especie : especie)));
+      setEspeciesPropias((actuales) => actualizarRegistroPadron(actuales, respuesta.especie, (item) => item.especieErpId));
       setEspeciePropiaParaVincular(null);
       setEspecieErpVincularId('');
       setEstado('Especie vinculada con auditoria.');
@@ -247,7 +249,7 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
         <article><span>ERP sincronizadas</span><strong>{especiesErp.length}</strong></article>
         <article><span>Propias Agro App</span><strong>{especiesPropias.length}</strong></article>
         <article><span>Provisorias</span><strong>{especiesPropias.filter((especie) => especie.estadoVinculacion === 'provisorio').length}</strong></article>
-        <article><span>Vinculadas</span><strong>{especiesPropias.filter((especie) => especie.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+        <article><span>Vinculos confirmados</span><strong>{especiesPropias.filter((especie) => especie.estadoVinculacion === 'vinculado_erp' && !especie.vinculoAutomatico).length}</strong></article>
       </section>
 
       <Panel

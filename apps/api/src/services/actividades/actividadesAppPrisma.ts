@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { ActividadApp, GuardarActividadAppRequest, GuardarActividadAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -14,6 +16,7 @@ type ActividadPrisma = Prisma.ActividadAppGetPayload<Record<string, never>>;
 function mapearActividad(actividad: ActividadPrisma): ActividadApp {
   return {
     id: actividad.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('actividades', actividad),
     clienteId: actividad.clienteId,
     empresaErpId: actividad.empresaErpId,
     actividadErpId: actividad.actividadErpId || undefined,
@@ -55,17 +58,6 @@ async function validarActividad(actividad: ActividadApp, usuario?: UsuarioAudito
       throw crearErrorValidacion('La actividad ERP no pertenece a la especie seleccionada.');
     }
 
-    const actividadYaVinculada = await prisma.actividadApp.findFirst({
-      where: {
-        clienteId: actividad.clienteId,
-        actividadErpId: actividad.actividadErpId,
-        id: { not: actividad.id },
-      },
-    });
-
-    if (actividadYaVinculada) {
-      throw crearErrorValidacion('Esa actividad ERP ya esta vinculada a otra actividad del cliente.');
-    }
   }
 }
 
@@ -87,7 +79,9 @@ export async function guardarActividadAppPersistida(
   await validarActividad(actividad, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'actividades', actividad, usuario);
     const existente = await tx.actividadApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== actividad.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = actividad.codigoInterno
       ? await tx.actividadApp.findFirst({
         where: {
@@ -153,5 +147,5 @@ export async function guardarActividadAppPersistida(
       auditado: true,
       mensaje: existente ? 'Actividad actualizada con auditoria.' : 'Actividad creada con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

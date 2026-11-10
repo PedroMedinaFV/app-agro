@@ -13,6 +13,7 @@ export { obtenerPermisosRol, permisosPorRol, tienePermiso } from './auth';
 export * from './erp';
 export * from './planificacion';
 export * from './planificacionHelpers';
+export * from './padronesIdentidad';
 export * from './precipitacion';
 export * from './observacion';
 export * from './operativo';

@@ -349,11 +349,11 @@ export type EmpresasErpAdminResponse = {
 };
 
 export async function obtenerEmpresasErpAdmin(clienteId: string, token?: string): Promise<EmpresasErpAdminResponse> {
-  return request<EmpresasErpAdminResponse>(`/admin/empresas-erp/${clienteId}/empresas`, {}, token);
+  return request<EmpresasErpAdminResponse>(`/admin/empresas-erp/${encodeURIComponent(clienteId)}/empresas`, {}, token);
 }
 
 export async function guardarEmpresasErpAdmin(clienteId: string, empresasErpIds: string[], token?: string) {
-  return request<EmpresaErpCliente[]>(`/admin/empresas-erp/${clienteId}/empresas`, {
+  return request<EmpresaErpCliente[]>(`/admin/empresas-erp/${encodeURIComponent(clienteId)}/empresas`, {
     method: 'PUT',
     body: JSON.stringify({ empresasErpIds }),
   }, token);
@@ -411,7 +411,7 @@ export async function obtenerPlanificacionDetalleSnapshot(
   const cache = planificacionDetalleCache.get(planificacionId) || {};
   planificacionDetalleCache.set(planificacionId, cache);
 
-  return obtenerConCache(cache, `/planificacion/${planificacionId}/snapshot`, token, opciones);
+  return obtenerConCache(cache, `/planificacion/${encodeURIComponent(planificacionId)}/snapshot`, token, opciones);
 }
 
 export type CultivosAntecesoresPlanificacionResponse = {
@@ -423,26 +423,26 @@ export async function obtenerCultivosAntecesoresPlanificacion(
   planificacionId: string,
   token?: string,
 ): Promise<CultivosAntecesoresPlanificacionResponse> {
-  return request<CultivosAntecesoresPlanificacionResponse>(`/planificacion/${planificacionId}/cultivos-antecesores`, {}, token);
+  return request<CultivosAntecesoresPlanificacionResponse>(`/planificacion/${encodeURIComponent(planificacionId)}/cultivos-antecesores`, {}, token);
 }
 
 export async function obtenerFichaLoteOperativo(loteAppId: string, token?: string): Promise<FichaLoteOperativoResponse> {
-  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${loteAppId}/ficha`, {}, token);
+  return request<FichaLoteOperativoResponse>(`/operativo/lotes/${encodeURIComponent(loteAppId)}/ficha`, {}, token);
 }
 
 export async function obtenerUltimoMapaNdviLote(loteAppId: string, token?: string): Promise<LoteMapaNdvi | null> {
-  return request<LoteMapaNdvi | null>(`/ndvi/lotes/${loteAppId}/ultimo`, {}, token);
+  return request<LoteMapaNdvi | null>(`/ndvi/lotes/${encodeURIComponent(loteAppId)}/ultimo`, {}, token);
 }
 
 export async function guardarMapaNdviLote(loteAppId: string, datos: GuardarMapaNdviRequest, token?: string): Promise<GuardarMapaNdviResponse> {
-  return request<GuardarMapaNdviResponse>(`/ndvi/lotes/${loteAppId}`, {
+  return request<GuardarMapaNdviResponse>(`/ndvi/lotes/${encodeURIComponent(loteAppId)}`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
 }
 
 export async function guardarPlanificacion(id: string, datos: GuardarPlanificacionRequest, token?: string): Promise<GuardarPlanificacionResponse> {
-  const respuesta = await request<GuardarPlanificacionResponse>(`/planificacion/${id}`, {
+  const respuesta = await request<GuardarPlanificacionResponse>(`/planificacion/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -452,7 +452,7 @@ export async function guardarPlanificacion(id: string, datos: GuardarPlanificaci
 }
 
 export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacionRequest, token?: string): Promise<CerrarPlanificacionResponse> {
-  const respuesta = await request<CerrarPlanificacionResponse>(`/planificacion/${id}/cerrar`, {
+  const respuesta = await request<CerrarPlanificacionResponse>(`/planificacion/${encodeURIComponent(id)}/cerrar`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
@@ -462,7 +462,7 @@ export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacion
 }
 
 export async function guardarPrecioReferencia(id: string, datos: GuardarPrecioReferenciaRequest, token?: string): Promise<GuardarPrecioReferenciaResponse> {
-  const respuesta = await request<GuardarPrecioReferenciaResponse>(`/precios-app/${id}`, {
+  const respuesta = await request<GuardarPrecioReferenciaResponse>(`/precios-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -477,7 +477,7 @@ export async function guardarGastoComercialReferencia(
   datos: GuardarGastosComercialesReferenciaRequest,
   token?: string,
 ): Promise<GuardarGastosComercialesReferenciaResponse> {
-  return request<GuardarGastosComercialesReferenciaResponse>(`/gastos-comerciales-app/${id}`, {
+  return request<GuardarGastosComercialesReferenciaResponse>(`/gastos-comerciales-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -496,7 +496,7 @@ export async function guardarConceptoGastoComercial(
   datos: GuardarConceptoGastoComercialRequest,
   token?: string,
 ): Promise<GuardarConceptoGastoComercialResponse> {
-  return request<GuardarConceptoGastoComercialResponse>(`/conceptos-gastos-comerciales-app/${id}`, {
+  return request<GuardarConceptoGastoComercialResponse>(`/conceptos-gastos-comerciales-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -546,7 +546,7 @@ export async function guardarDestinoVenta(
   datos: GuardarDestinoAppRequest,
   token?: string,
 ): Promise<GuardarDestinoAppResponse> {
-  const respuesta = await request<GuardarDestinoAppResponse>(`/destinos-venta/${id}`, {
+  const respuesta = await request<GuardarDestinoAppResponse>(`/destinos-venta/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -569,10 +569,13 @@ export async function guardarServicioApp(
   datos: GuardarServicioAppRequest,
   token?: string,
 ): Promise<GuardarServicioAppResponse> {
-  return request<GuardarServicioAppResponse>(`/servicios-app/${id}`, {
+  const respuesta = await request<GuardarServicioAppResponse>(`/servicios-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export type InsumosAppResponse = {
@@ -588,10 +591,13 @@ export async function guardarInsumoApp(
   datos: GuardarInsumoAppRequest,
   token?: string,
 ): Promise<GuardarInsumoAppResponse> {
-  return request<GuardarInsumoAppResponse>(`/insumos-app/${id}`, {
+  const respuesta = await request<GuardarInsumoAppResponse>(`/insumos-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export type EspeciesAppResponse = {
@@ -607,10 +613,13 @@ export async function guardarEspecieApp(
   datos: GuardarEspecieAppRequest,
   token?: string,
 ): Promise<GuardarEspecieAppResponse> {
-  return request<GuardarEspecieAppResponse>(`/especies-app/${id}`, {
+  const respuesta = await request<GuardarEspecieAppResponse>(`/especies-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export type ActividadesAppResponse = {
@@ -626,10 +635,13 @@ export async function guardarActividadApp(
   datos: GuardarActividadAppRequest,
   token?: string,
 ): Promise<GuardarActividadAppResponse> {
-  return request<GuardarActividadAppResponse>(`/actividades-app/${id}`, {
+  const respuesta = await request<GuardarActividadAppResponse>(`/actividades-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export type CamposAppResponse = {
@@ -653,10 +665,13 @@ export async function guardarZonaApp(
   datos: GuardarZonaAppRequest,
   token?: string,
 ): Promise<GuardarZonaAppResponse> {
-  return request<GuardarZonaAppResponse>(`/zonas-app/${id}`, {
+  const respuesta = await request<GuardarZonaAppResponse>(`/zonas-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export async function guardarCampoApp(
@@ -664,10 +679,13 @@ export async function guardarCampoApp(
   datos: GuardarCampoAppRequest,
   token?: string,
 ): Promise<GuardarCampoAppResponse> {
-  return request<GuardarCampoAppResponse>(`/campos-app/${id}`, {
+  const respuesta = await request<GuardarCampoAppResponse>(`/campos-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export type LotesAppResponse = {
@@ -683,14 +701,17 @@ export async function guardarLoteApp(
   datos: GuardarLoteAppRequest,
   token?: string,
 ): Promise<GuardarLoteAppResponse> {
-  return request<GuardarLoteAppResponse>(`/lotes-app/${id}`, {
+  const respuesta = await request<GuardarLoteAppResponse>(`/lotes-app/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
+  invalidarPlanificacionSnapshotCache();
+  invalidarCache(protocolosSnapshotCache);
+  return respuesta;
 }
 
 export async function obtenerArchivosGeograficosLote(loteAppId: string, token?: string): Promise<ArchivosGeograficosLoteResponse> {
-  return request<ArchivosGeograficosLoteResponse>(`/lotes-app/${loteAppId}/archivos-geograficos`, {}, token);
+  return request<ArchivosGeograficosLoteResponse>(`/lotes-app/${encodeURIComponent(loteAppId)}/archivos-geograficos`, {}, token);
 }
 
 export async function crearUrlSubidaArchivoGeograficoLote(
@@ -698,7 +719,7 @@ export async function crearUrlSubidaArchivoGeograficoLote(
   datos: CrearUrlSubidaAdjuntoRequest,
   token?: string,
 ): Promise<CrearUrlSubidaAdjuntoResponse> {
-  return request<CrearUrlSubidaAdjuntoResponse>(`/lotes-app/${loteAppId}/archivos-geograficos/upload-url`, {
+  return request<CrearUrlSubidaAdjuntoResponse>(`/lotes-app/${encodeURIComponent(loteAppId)}/archivos-geograficos/upload-url`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
@@ -709,7 +730,7 @@ export async function guardarArchivoGeograficoLote(
   datos: GuardarArchivoGeograficoLoteRequest,
   token?: string,
 ): Promise<GuardarArchivoGeograficoLoteResponse> {
-  return request<GuardarArchivoGeograficoLoteResponse>(`/lotes-app/${loteAppId}/archivos-geograficos`, {
+  return request<GuardarArchivoGeograficoLoteResponse>(`/lotes-app/${encodeURIComponent(loteAppId)}/archivos-geograficos`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
@@ -722,7 +743,7 @@ export async function obtenerProtocolosSnapshot(token?: string, opciones: { forz
 }
 
 export async function guardarProtocolo(id: string, datos: GuardarProtocoloRequest, token?: string): Promise<GuardarProtocoloResponse> {
-  const respuesta = await request<GuardarProtocoloResponse>(`/planificacion/protocolos/${id}`, {
+  const respuesta = await request<GuardarProtocoloResponse>(`/planificacion/protocolos/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
@@ -756,7 +777,7 @@ export async function resolverNotificacionVinculacion(
   datos: ResolverNotificacionVinculacionRequest,
   token?: string,
 ): Promise<ResolverNotificacionVinculacionResponse> {
-  return request<ResolverNotificacionVinculacionResponse>(`/notificaciones/${id}/resolver-vinculacion`, {
+  return request<ResolverNotificacionVinculacionResponse>(`/notificaciones/${encodeURIComponent(id)}/resolver-vinculacion`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
@@ -782,7 +803,7 @@ export async function obtenerRecorridasCampo(token?: string): Promise<Recorridas
 }
 
 export async function obtenerRecorridaCampoDetalle(id: string, token?: string): Promise<RecorridaCampoDetalleResponse> {
-  return request<RecorridaCampoDetalleResponse>(`/recorridas/${id}`, {}, token);
+  return request<RecorridaCampoDetalleResponse>(`/recorridas/${encodeURIComponent(id)}`, {}, token);
 }
 
 export async function crearRecorridaCampo(datos: CrearRecorridaCampoRequest, token?: string): Promise<CrearRecorridaCampoResponse> {
@@ -793,7 +814,7 @@ export async function crearRecorridaCampo(datos: CrearRecorridaCampoRequest, tok
 }
 
 export async function cerrarRecorridaCampo(id: string, datos: CerrarRecorridaCampoRequest, token?: string): Promise<CrearRecorridaCampoResponse> {
-  return request<CrearRecorridaCampoResponse>(`/recorridas/${id}/cerrar`, {
+  return request<CrearRecorridaCampoResponse>(`/recorridas/${encodeURIComponent(id)}/cerrar`, {
     method: 'POST',
     body: JSON.stringify(datos),
   }, token);
@@ -840,7 +861,7 @@ export async function crearUrlLecturaAdjuntoObservacion(
   adjuntoId: string,
   token?: string,
 ): Promise<CrearUrlLecturaAdjuntoResponse> {
-  return request<CrearUrlLecturaAdjuntoResponse>(`/observaciones/adjuntos/${adjuntoId}/signed-url`, {
+  return request<CrearUrlLecturaAdjuntoResponse>(`/observaciones/adjuntos/${encodeURIComponent(adjuntoId)}/signed-url`, {
     method: 'POST',
   }, token);
 }
@@ -854,14 +875,14 @@ export async function guardarUsuarioAdmin(
   datos: GuardarUsuarioAdminRequest,
   token?: string,
 ): Promise<GuardarUsuarioAdminResponse> {
-  return request<GuardarUsuarioAdminResponse>(`/usuarios/${id}`, {
+  return request<GuardarUsuarioAdminResponse>(`/usuarios/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   }, token);
 }
 
 export async function guardarCamposUsuarioAdmin(clienteId: string, usuarioId: string, camposErpIds: string[], token?: string) {
-  return request(`/admin/asignaciones/${clienteId}/usuarios/${usuarioId}/campos`, {
+  return request(`/admin/asignaciones/${encodeURIComponent(clienteId)}/usuarios/${encodeURIComponent(usuarioId)}/campos`, {
     method: 'PUT',
     body: JSON.stringify({ camposErpIds }),
   }, token);

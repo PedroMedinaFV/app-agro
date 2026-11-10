@@ -1,5 +1,7 @@
 # Registros offline y reintentos
 
+Compatibilidad de padrones: si una vinculacion absorbe una copia ERP cuyo campo/lote estaba en un pendiente, la API resuelve el ID anterior mediante un alias del mismo cliente. Se conserva ID local/movil para idempotencia. No se migran ni se borran colas del dispositivo; ver [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md).
+
 Actualizado: 2026-11-06, etapa 3 de estabilizacion. Implementacion y pruebas automaticas disponibles; validacion con fotos reales en dispositivo pendiente.
 
 Etapa 6: la entrada y los hooks de sesion, datos, formularios, fotos y pendientes se separaron sin cambiar el formato de cola ni el coordinador. Ver [MODULOS_MOBILE_PLANIFICACION.md](MODULOS_MOBILE_PLANIFICACION.md) para contratos y ciclo de desmontaje del panel. `tests/mobile-react.test.js` prueba cambios de cuenta, respuestas/fotos anteriores y fallos de persistencia con React real y adaptadores sustituidos; no reemplaza el recorrido de dispositivo.

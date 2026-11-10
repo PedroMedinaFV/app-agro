@@ -1,3 +1,4 @@
+import { idsErpOcupados } from '@agro/tipos';
 export function limpiarTextoVisible(valor: string) {
   return valor.trim().replace(/\s+/g, ' ');
 }
@@ -23,8 +24,8 @@ export function unirPorClave<T>(principales: T[], secundarios: T[], obtenerClave
   return [...mapa.values()];
 }
 
-export function crearSetVinculados<T>(items: T[], obtenerErpId: (item: T) => string | undefined) {
-  return new Set(items.map(obtenerErpId).filter((id): id is string => Boolean(id)));
+export function crearSetVinculados<T extends { vinculoAutomatico?: boolean }>(items: T[], obtenerErpId: (item: T) => string | undefined) {
+  return idsErpOcupados(items, obtenerErpId);
 }
 
 export function crearMapaPorErpId<T>(items: T[], obtenerErpId: (item: T) => string | undefined) {

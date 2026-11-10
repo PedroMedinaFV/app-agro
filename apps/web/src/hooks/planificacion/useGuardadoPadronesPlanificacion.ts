@@ -1,3 +1,4 @@
+import { actualizarRegistroPadron } from '@agro/tipos';
 import { Dispatch, SetStateAction, useState } from 'react';
 import type {
   ConceptoGastoComercial,
@@ -325,7 +326,7 @@ export function useGuardadoPadronesPlanificacion({
         return {
           ...actual,
           serviciosApp: existe
-            ? actual.serviciosApp.map((item) => (item.id === respuesta.servicio.id ? respuesta.servicio : item))
+            ? actualizarRegistroPadron(actual.serviciosApp, respuesta.servicio, (item) => item.servicioErpId)
             : [respuesta.servicio, ...actual.serviciosApp],
         };
       });
@@ -338,6 +339,10 @@ export function useGuardadoPadronesPlanificacion({
 
       return true;
     } catch (error) {
+      if (sesion) {
+        notificar?.({ tipo: 'error', titulo: 'No se guardo la labor', mensaje: error instanceof Error ? error.message : 'No se pudo confirmar el guardado.' });
+        return false;
+      }
       const nombre = limpiarTextoVisible(labor.nombre);
       const laborLocal: ServicioApp = {
         ...labor,
@@ -398,7 +403,7 @@ export function useGuardadoPadronesPlanificacion({
         return {
           ...actual,
           insumosApp: existe
-            ? insumosActuales.map((item) => (item.id === respuesta.insumo.id ? respuesta.insumo : item))
+            ? actualizarRegistroPadron(insumosActuales, respuesta.insumo, (item) => item.insumoErpId)
             : [respuesta.insumo, ...insumosActuales],
         };
       });
@@ -411,6 +416,10 @@ export function useGuardadoPadronesPlanificacion({
 
       return true;
     } catch (error) {
+      if (sesion) {
+        notificar?.({ tipo: 'error', titulo: 'No se guardo el insumo', mensaje: error instanceof Error ? error.message : 'No se pudo confirmar el guardado.' });
+        return false;
+      }
       const nombre = limpiarTextoVisible(insumo.nombre);
       const insumoLocal: InsumoApp = {
         ...insumo,

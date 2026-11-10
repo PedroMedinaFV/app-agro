@@ -2,6 +2,10 @@
 
 Fecha: 2026-11-06. Etapa 5 del plan de estabilizacion.
 
+Ampliacion de identidad App/ERP: la suite incorpora consolidacion/rollback de siete padrones, notificaciones vigentes/obsoletas, aliases para IDs anteriores, aislamiento y ciclos de materializacion/vinculacion. El replay vigente incluye 35 migraciones; [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) explica la migracion nueva, el preflight y la activacion operativa pendiente.
+
+Para diagnosticar un escenario tras compilar API con el mismo runner aislado: `node scripts/run-integration-tests.js "--test-name-pattern=aceptar sugerencia"`. El filtro se pasa al runner nativo de Node; sigue creando/migrando/eliminando un schema temporal y los casos restantes se omiten. Esa corrida no sustituye una suite completa aprobada. Solo se admite ese argumento opcional; en CI se rechaza cualquier filtro. El comando habitual `pnpm test:integration` ejecuta todos los casos.
+
 Etapa 6: `.github/workflows/ci.yml` ejecuta esta suite contra PostgreSQL 16 temporal y tambien el test explicito de bloqueo ERP. No necesita la configuracion privada local ni secretos de proveedores. La primera corrida en GitHub queda pendiente de subir los cambios; operacion y controles en [ENTREGA_Y_RECUPERACION.md](ENTREGA_Y_RECUPERACION.md).
 
 ## Objetivo y alcance

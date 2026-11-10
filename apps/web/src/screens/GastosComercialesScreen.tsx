@@ -1,3 +1,4 @@
+import { idCopiaPadronErp } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActividadApp,
@@ -302,7 +303,7 @@ export function GastosComercialesScreen({
   }
 
   function crearIdActividadDesdeErp(actividadErpId: string) {
-    return `actividad-app-${actividadErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+    return idCopiaPadronErp('actividad-app', actividadErpId, sesion.usuario.clienteId || '');
   }
 
   function crearIdDestinoDesdeNombre(destinoVenta: string) {

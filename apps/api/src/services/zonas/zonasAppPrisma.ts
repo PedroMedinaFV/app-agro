@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarZonaAppRequest, GuardarZonaAppResponse, ZonaApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -13,6 +15,7 @@ type ZonaPrisma = Prisma.ZonaAppGetPayload<Record<string, never>>;
 function mapearZona(zona: ZonaPrisma): ZonaApp {
   return {
     id: zona.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('zonas', zona),
     clienteId: zona.clienteId,
     empresaErpId: zona.empresaErpId,
     zonaErpId: zona.zonaErpId || undefined,
@@ -34,17 +37,6 @@ async function validarZona(zona: ZonaApp, usuario?: UsuarioAuditoria) {
       throw crearErrorValidacion('La zona ERP seleccionada no existe en la cache importada.');
     }
 
-    const zonaYaVinculada = await prisma.zonaApp.findFirst({
-      where: {
-        clienteId: zona.clienteId,
-        zonaErpId: zona.zonaErpId,
-        id: { not: zona.id },
-      },
-    });
-
-    if (zonaYaVinculada) {
-      throw crearErrorValidacion('Esa zona ERP ya esta vinculada a otra zona del cliente.');
-    }
   }
 }
 
@@ -66,7 +58,9 @@ export async function guardarZonaAppPersistida(
   await validarZona(zona, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'zonas', zona, usuario);
     const existente = await tx.zonaApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== zona.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = zona.codigoInterno
       ? await tx.zonaApp.findFirst({
         where: {
@@ -122,5 +116,5 @@ export async function guardarZonaAppPersistida(
       auditado: true,
       mensaje: existente ? 'Zona actualizada con auditoria.' : 'Zona creada con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

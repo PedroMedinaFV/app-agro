@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarServicioAppRequest, GuardarServicioAppResponse, ServicioApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -13,6 +15,7 @@ type ServicioPrisma = Prisma.ServicioAppGetPayload<Record<string, never>>;
 function mapearServicio(servicio: ServicioPrisma): ServicioApp {
   return {
     id: servicio.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('labores', servicio),
     clienteId: servicio.clienteId,
     empresaErpId: servicio.empresaErpId || undefined,
     servicioErpId: servicio.servicioErpId || undefined,
@@ -59,17 +62,6 @@ async function validarServicio(servicio: ServicioApp, usuario?: UsuarioAuditoria
       throw crearErrorValidacion('El servicio ERP seleccionado no existe en la cache importada.');
     }
 
-    const servicioYaVinculado = await prisma.servicioApp.findFirst({
-      where: {
-        clienteId: servicio.clienteId,
-        servicioErpId: servicio.servicioErpId,
-        id: { not: servicio.id },
-      },
-    });
-
-    if (servicioYaVinculado) {
-      throw crearErrorValidacion('Ese servicio ERP ya esta vinculado a otra labor del cliente.');
-    }
   }
 }
 
@@ -91,7 +83,9 @@ export async function guardarServicioAppPersistido(
   await validarServicio(servicio, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'labores', servicio, usuario);
     const existente = await tx.servicioApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== servicio.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = await tx.servicioApp.findUnique({
       where: {
         clienteId_codigo: {
@@ -168,5 +162,5 @@ export async function guardarServicioAppPersistido(
       auditado: true,
       mensaje: existente ? 'Labor actualizada con auditoria.' : 'Labor creada con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

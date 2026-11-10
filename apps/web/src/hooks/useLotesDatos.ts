@@ -43,7 +43,7 @@ export function useLotesDatos({
 
   const camposPropiosPorId = useMemo(() => new Map(camposPropiosActuales.map((campo) => [campo.id, campo])), [camposPropiosActuales]);
   const camposParaFiltrar = useMemo(
-    () => construirCamposSeleccionables(camposPropiosActuales, camposErp, false),
+    () => construirCamposSeleccionables(camposPropiosActuales, camposErp),
     [camposErp, camposPropiosActuales],
   );
   const camposParaFiltrarPorClave = useMemo(

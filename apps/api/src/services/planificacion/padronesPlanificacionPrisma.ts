@@ -1,3 +1,7 @@
+import { esCopiaAutomaticaErp, idCopiaPadronErp } from '@agro/tipos';
+import { randomUUID } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
+import { bloquearPadronesCliente } from './consolidarCopiaErp';
 import type {
   ActividadApp,
   CampoApp,
@@ -19,10 +23,6 @@ type PadronesPlanificacionPersistidos = {
   insumosApp: InsumoApp[];
   serviciosApp: ServicioApp[];
 };
-
-function idDesdeErp(prefijo: string, erpId: string) {
-  return `${prefijo}-${erpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
-}
 
 function normalizarCodigo(valor: string) {
   return valor
@@ -47,6 +47,15 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   clienteId: string,
   camposAsignados: string[] | null,
 ): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await bloquearPadronesCliente(tx, clienteId);
+    await materializarPadrones(clienteId, camposAsignados, tx);
+  }, { timeout: 60000, maxWait: 10000 });
+}
+
+async function materializarPadrones(clienteId: string, camposAsignados: string[] | null, db: Prisma.TransactionClient) {
+  // No reciclar IDs con aliases cuando un usuario desvincula y vuelve a materializar.
+  const nuevaCopiaId = (prefijo: string, erpId: string) => `${idCopiaPadronErp(prefijo, erpId, clienteId)}:${randomUUID()}`;
   const ahora = new Date();
   const empresaErpIds = await obtenerEmpresasCliente(clienteId);
   const filtroCampos = {
@@ -54,28 +63,28 @@ export async function asegurarPadronesPlanificacionDesdeErp(
     activo: true,
     ...(camposAsignados ? { erpId: { in: camposAsignados } } : {}),
   };
-  const camposErp = await prisma.erpCampo.findMany({ where: filtroCampos });
+  const camposErp = await db.erpCampo.findMany({ where: filtroCampos });
   const campoErpIds = camposErp.map((campo) => campo.erpId);
   const idZonasUsadas = Array.from(
     new Set(camposErp.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number')),
   );
   const [zonasErp, lotesErp, especiesErp, actividadesErp, insumosErp, tiposInsumo, serviciosErp, unidadesMedida] = await Promise.all([
-    prisma.erpZona.findMany({ where: { idZona: { in: idZonasUsadas }, activo: true }, distinct: ['idZona'] }),
-    prisma.erpLote.findMany({ where: { campoErpId: { in: campoErpIds }, activo: true } }),
-    prisma.erpEspecie.findMany({ where: { empresaErpId: 'global', activo: true } }),
-    prisma.erpActividad.findMany({ where: { empresaErpId: 'global', activo: true } }),
-    prisma.erpInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
-    prisma.erpTipoInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
-    prisma.erpServicio.findMany({ where: { empresaErpId: 'global', activo: true } }),
-    prisma.erpUnidadMedida.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpZona.findMany({ where: { idZona: { in: idZonasUsadas }, activo: true }, distinct: ['idZona'] }),
+    db.erpLote.findMany({ where: { campoErpId: { in: campoErpIds }, activo: true } }),
+    db.erpEspecie.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpActividad.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpTipoInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpServicio.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpUnidadMedida.findMany({ where: { empresaErpId: 'global', activo: true } }),
   ]);
-  const zonasExistentes = await prisma.zonaApp.findMany({ where: { clienteId, zonaErpId: { not: null } } });
-  const camposExistentes = await prisma.campoApp.findMany({ where: { clienteId, campoErpId: { not: null } } });
-  const lotesExistentes = await prisma.loteApp.findMany({ where: { clienteId, loteErpId: { not: null } } });
-  const especiesExistentes = await prisma.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } } });
-  const actividadesExistentes = await prisma.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } } });
-  const insumosExistentes = await prisma.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } } });
-  const laboresExistentes = await prisma.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } } });
+  const zonasExistentes = await db.zonaApp.findMany({ where: { clienteId, zonaErpId: { not: null } } });
+  const camposExistentes = await db.campoApp.findMany({ where: { clienteId, campoErpId: { not: null } } });
+  const lotesExistentes = await db.loteApp.findMany({ where: { clienteId, loteErpId: { not: null } } });
+  const especiesExistentes = await db.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } } });
+  const actividadesExistentes = await db.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } } });
+  const insumosExistentes = await db.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } } });
+  const laboresExistentes = await db.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } } });
   const zonaPorErpId = new Map(zonasExistentes.map((zona) => [zona.zonaErpId, zona.id]));
   const campoPorErpId = new Map(camposExistentes.map((campo) => [campo.campoErpId, campo.id]));
   const lotePorErpId = new Map(lotesExistentes.map((lote) => [lote.loteErpId, lote.id]));
@@ -86,12 +95,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   const unidadPorId = new Map(unidadesMedida.map((unidad) => [unidad.idUnidadMedida, unidad.codigo]));
   const tipoInsumoPorId = new Map(tiposInsumo.map((tipo) => [tipo.idTipoInsumo, tipo]));
 
-  await prisma.zonaApp.createMany({
+  await db.zonaApp.createMany({
     skipDuplicates: true,
     data: zonasErp
       .filter((zona) => !zonaPorErpId.has(zona.erpId))
       .map((zona) => ({
-        id: idDesdeErp('zona-app', zona.erpId),
+        id: nuevaCopiaId('zona-app', zona.erpId),
         clienteId,
         empresaErpId: 'global',
         zonaErpId: zona.erpId,
@@ -103,12 +112,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       })),
   });
 
-  await prisma.especieApp.createMany({
+  await db.especieApp.createMany({
     skipDuplicates: true,
     data: especiesErp
       .filter((especie) => !especiePorErpId.has(especie.erpId))
       .map((especie) => ({
-        id: idDesdeErp('especie-app', especie.erpId),
+        id: nuevaCopiaId('especie-app', especie.erpId),
         clienteId,
         empresaErpId: 'global',
         especieErpId: especie.erpId,
@@ -120,12 +129,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       })),
   });
 
-  const zonasAppActuales = await prisma.zonaApp.findMany({ where: { clienteId } });
-  const especiesAppActuales = await prisma.especieApp.findMany({ where: { clienteId } });
+  const zonasAppActuales = await db.zonaApp.findMany({ where: { clienteId } });
+  const especiesAppActuales = await db.especieApp.findMany({ where: { clienteId } });
   const zonaIdPorErpId = new Map(zonasAppActuales.map((zona) => [zona.zonaErpId, zona.id]));
   const especieIdPorErpId = new Map(especiesAppActuales.map((especie) => [especie.especieErpId, especie.id]));
 
-  await prisma.campoApp.createMany({
+  await db.campoApp.createMany({
     skipDuplicates: true,
     data: camposErp
       .filter((campo) => !campoPorErpId.has(campo.erpId))
@@ -133,7 +142,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
         const zonaErpId = campo.idZona ? `zona:${campo.idZona}` : null;
 
         return {
-          id: idDesdeErp('campo-app', campo.erpId),
+          id: nuevaCopiaId('campo-app', campo.erpId),
           clienteId,
           empresaErpId: campo.empresaErpId,
           campoErpId: campo.erpId,
@@ -148,7 +157,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       }),
   });
 
-  await prisma.actividadApp.createMany({
+  await db.actividadApp.createMany({
     skipDuplicates: true,
     data: actividadesErp
       .filter((actividad) => !actividadPorErpId.has(actividad.erpId))
@@ -156,7 +165,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
         const especieErpId = actividad.idEspecie ? `especie:${actividad.idEspecie}` : null;
 
         return {
-          id: idDesdeErp('actividad-app', actividad.erpId),
+          id: nuevaCopiaId('actividad-app', actividad.erpId),
           clienteId,
           empresaErpId: 'global',
           actividadErpId: actividad.erpId,
@@ -171,17 +180,17 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       }),
   });
 
-  const camposAppActuales = await prisma.campoApp.findMany({ where: { clienteId } });
+  const camposAppActuales = await db.campoApp.findMany({ where: { clienteId } });
   const campoIdPorErpId = new Map(camposAppActuales.map((campo) => [campo.campoErpId, campo.id]));
 
-  await prisma.loteApp.createMany({
+  await db.loteApp.createMany({
     skipDuplicates: true,
     data: lotesErp
       .filter((lote) => !lotePorErpId.has(lote.erpId))
       .map((lote) => ({
-        id: idDesdeErp('lote-app', lote.erpId),
+        id: nuevaCopiaId('lote-app', lote.erpId),
         clienteId,
-        campoAppId: campoIdPorErpId.get(lote.campoErpId) || idDesdeErp('campo-app', lote.campoErpId),
+        campoAppId: campoIdPorErpId.get(lote.campoErpId)!,
         loteErpId: lote.erpId,
         nombre: lote.nombre,
         codigoInterno: normalizarCodigo(lote.codigo || lote.nombre),
@@ -193,12 +202,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       })),
   });
 
-  await prisma.insumoApp.createMany({
+  await db.insumoApp.createMany({
     skipDuplicates: true,
     data: insumosErp
       .filter((insumo) => !insumoPorErpId.has(insumo.erpId))
       .map((insumo) => ({
-        id: idDesdeErp('insumo-app', insumo.erpId),
+        id: nuevaCopiaId('insumo-app', insumo.erpId),
         clienteId,
         empresaErpId: 'global',
         insumoErpId: insumo.erpId,
@@ -215,12 +224,12 @@ export async function asegurarPadronesPlanificacionDesdeErp(
       })),
   });
 
-  await prisma.servicioApp.createMany({
+  await db.servicioApp.createMany({
     skipDuplicates: true,
     data: serviciosErp
       .filter((servicio) => !laborPorErpId.has(servicio.erpId))
       .map((servicio) => ({
-        id: idDesdeErp('servicio-app', servicio.erpId),
+        id: nuevaCopiaId('servicio-app', servicio.erpId),
         clienteId,
         empresaErpId: 'global',
         servicioErpId: servicio.erpId,
@@ -279,6 +288,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
   return {
     zonasApp: zonas.map((zona) => ({
       id: zona.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('zonas', zona),
       clienteId: zona.clienteId,
       empresaErpId: zona.empresaErpId,
       zonaErpId: zona.zonaErpId || undefined,
@@ -290,6 +300,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     camposApp: campos.map((campo) => ({
       id: campo.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('campos', campo),
       clienteId: campo.clienteId,
       empresaErpId: campo.empresaErpId,
       campoErpId: campo.campoErpId || undefined,
@@ -303,6 +314,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     lotesApp: lotes.filter((lote) => camposPermitidosIds.has(lote.campoAppId)).map((lote) => ({
       id: lote.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('lotes', lote),
       clienteId: lote.clienteId,
       campoAppId: lote.campoAppId,
       loteErpId: lote.loteErpId || undefined,
@@ -316,6 +328,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     especiesApp: especies.map((especie) => ({
       id: especie.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('especies', especie),
       clienteId: especie.clienteId,
       empresaErpId: especie.empresaErpId,
       especieErpId: especie.especieErpId || undefined,
@@ -327,6 +340,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     actividadesApp: actividades.map((actividad) => ({
       id: actividad.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('actividades', actividad),
       clienteId: actividad.clienteId,
       empresaErpId: actividad.empresaErpId,
       actividadErpId: actividad.actividadErpId || undefined,
@@ -340,6 +354,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     insumosApp: insumos.map((insumo) => ({
       id: insumo.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('insumos', insumo),
       clienteId: insumo.clienteId,
       empresaErpId: insumo.empresaErpId,
       insumoErpId: insumo.insumoErpId || undefined,
@@ -355,6 +370,7 @@ export async function obtenerPadronesPlanificacionPersistidos(
     })),
     serviciosApp: labores.map((labor) => ({
       id: labor.id,
+      vinculoAutomatico: esCopiaAutomaticaErp('labores', labor),
       clienteId: labor.clienteId,
       empresaErpId: labor.empresaErpId || undefined,
       servicioErpId: labor.servicioErpId || undefined,

@@ -1,3 +1,5 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { CampoApp, GuardarCampoAppRequest, GuardarCampoAppResponse } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -14,6 +16,7 @@ type CampoPrisma = Prisma.CampoAppGetPayload<Record<string, never>>;
 function mapearCampo(campo: CampoPrisma): CampoApp {
   return {
     id: campo.id,
+    vinculoAutomatico: esCopiaAutomaticaErp('campos', campo),
     clienteId: campo.clienteId,
     empresaErpId: campo.empresaErpId,
     campoErpId: campo.campoErpId || undefined,
@@ -60,17 +63,6 @@ async function validarCampo(campo: CampoApp, usuario?: UsuarioAuditoria) {
       throw crearErrorValidacion('El campo ERP no pertenece a la zona seleccionada.');
     }
 
-    const campoYaVinculado = await prisma.campoApp.findFirst({
-      where: {
-        clienteId: campo.clienteId,
-        campoErpId: campo.campoErpId,
-        id: { not: campo.id },
-      },
-    });
-
-    if (campoYaVinculado) {
-      throw crearErrorValidacion('Ese campo ERP ya esta vinculado a otro campo del cliente.');
-    }
   }
 }
 
@@ -92,7 +84,9 @@ export async function guardarCampoAppPersistido(
   await validarCampo(campo, usuario);
 
   return prisma.$transaction(async (tx) => {
+    await consolidarCopiaErp(tx, 'campos', campo, usuario);
     const existente = await tx.campoApp.findUnique({ where: { id } });
+    if (existente && existente.clienteId !== campo.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = campo.codigoInterno
       ? await tx.campoApp.findFirst({
         where: {
@@ -153,5 +147,5 @@ export async function guardarCampoAppPersistido(
       auditado: true,
       mensaje: existente ? 'Campo actualizado con auditoria.' : 'Campo creado con auditoria.',
     };
-  });
+  }, { timeout: 60000, maxWait: 10000 });
 }

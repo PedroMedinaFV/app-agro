@@ -1,3 +1,4 @@
+import { idCopiaPadronErp } from '@agro/tipos';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp, LoteArchivoGeografico } from '@agro/tipos';
 import type { CampoSeleccionable } from '../../components/lotes/tiposLotes';
 
@@ -42,8 +43,8 @@ export function crearLoteNuevo(clienteId: string, campoAppId: string): LoteApp {
   };
 }
 
-export function crearIdCampoDesdeErp(campoErpId: string) {
-  return `campo-app-${campoErpId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+export function crearIdCampoDesdeErp(campoErpId: string, clienteId: string) {
+  return idCopiaPadronErp('campo-app', campoErpId, clienteId);
 }
 
 export function crearIdArchivoGeografico() {
@@ -89,7 +90,6 @@ export function obtenerTipoArchivoGeografico(archivo: File): LoteArchivoGeografi
 export function construirCamposSeleccionables(
   camposPropios: CampoApp[],
   camposErp: ErpCampo[],
-  excluirCamposErpVinculados = true,
 ): CampoSeleccionable[] {
   const camposVinculados = new Set(camposPropios.map((campo) => campo.campoErpId).filter(Boolean));
   const propios = camposPropios.map((campo) => ({
@@ -102,7 +102,7 @@ export function construirCamposSeleccionables(
     origen: 'agro' as const,
   }));
   const importados = camposErp
-    .filter((campo) => !excluirCamposErpVinculados || !camposVinculados.has(campo.erpId))
+    .filter((campo) => !camposVinculados.has(campo.erpId))
     .map((campo) => ({
       clave: `erp:${campo.erpId}`,
       campoErpId: campo.erpId,

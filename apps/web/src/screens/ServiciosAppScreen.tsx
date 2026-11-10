@@ -1,3 +1,4 @@
+import { idCopiaPadronErp } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import { ErpMoneda, ErpServicio, ErpSnapshot, ErpTipoServicio, ServicioApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -28,8 +29,8 @@ interface ServiciosAppScreenProps {
   notificar?: Notificar;
 }
 
-function crearIdLaborDesdeErp(servicio: ErpServicio) {
-  return `labor-ref-erp-${servicio.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+function crearIdLaborDesdeErp(servicio: ErpServicio, clienteId: string) {
+  return idCopiaPadronErp('servicio-app', servicio.erpId, clienteId);
 }
 
 export function ServiciosAppScreen({
@@ -247,7 +248,7 @@ export function ServiciosAppScreen({
 
     setModoModal('editar');
     setLaborEnEdicion(laborPropia || {
-      id: crearIdLaborDesdeErp(servicioErp),
+      id: crearIdLaborDesdeErp(servicioErp, sesion.usuario.clienteId || ''),
       clienteId: planificacion.planificaciones[0]?.clienteId || planificacion.serviciosApp[0]?.clienteId || '',
       empresaErpId: 'global',
       servicioErpId: servicioErp.erpId,
@@ -339,7 +340,7 @@ export function ServiciosAppScreen({
         <article><span>ERP sincronizadas</span><strong>{serviciosErp.length}</strong></article>
         <article><span>Propias Agro App</span><strong>{laboresOrdenadas.length}</strong></article>
         <article><span>Provisorias</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'provisorio').length}</strong></article>
-        <article><span>Vinculadas</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+        <article><span>Vinculos confirmados</span><strong>{laboresOrdenadas.filter((labor) => labor.estadoVinculacion === 'vinculado_erp' && !labor.vinculoAutomatico).length}</strong></article>
       </section>
 
       <PageHeader

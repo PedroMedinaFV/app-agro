@@ -1,3 +1,7 @@
+import { esCopiaAutomaticaErp } from '@agro/tipos';
+import { cerrarSugerenciasObsoletas, sugerenciaSigueVigente } from './vigenciaSugerencias';
+import { conTransaccionCompartida } from '../erp/contextoTransaccional';
+import { bloquearPadronesCliente } from '../planificacion/consolidarCopiaErp';
 import type { Prisma } from '@prisma/client';
 import type { ResolverNotificacionVinculacionResponse } from '@agro/tipos';
 import { prisma } from '../../prisma';
@@ -242,13 +246,13 @@ export async function generarSugerenciasVinculacionErp(clienteId: string, usuari
   ]);
 
   const usados = {
-    zonas: new Set((await prisma.zonaApp.findMany({ where: { clienteId, zonaErpId: { not: null } }, select: { zonaErpId: true } })).map((item) => item.zonaErpId).filter(Boolean) as string[]),
-    campos: new Set((await prisma.campoApp.findMany({ where: { clienteId, campoErpId: { not: null } }, select: { campoErpId: true } })).map((item) => item.campoErpId).filter(Boolean) as string[]),
-    lotes: new Set((await prisma.loteApp.findMany({ where: { clienteId, loteErpId: { not: null } }, select: { loteErpId: true } })).map((item) => item.loteErpId).filter(Boolean) as string[]),
-    especies: new Set((await prisma.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } }, select: { especieErpId: true } })).map((item) => item.especieErpId).filter(Boolean) as string[]),
-    actividades: new Set((await prisma.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } }, select: { actividadErpId: true } })).map((item) => item.actividadErpId).filter(Boolean) as string[]),
-    insumos: new Set((await prisma.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } }, select: { insumoErpId: true } })).map((item) => item.insumoErpId).filter(Boolean) as string[]),
-    labores: new Set((await prisma.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } }, select: { servicioErpId: true } })).map((item) => item.servicioErpId).filter(Boolean) as string[]),
+    zonas: new Set((await prisma.zonaApp.findMany({ where: { clienteId, zonaErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('zonas', item)).map((item) => item.zonaErpId).filter(Boolean) as string[]),
+    campos: new Set((await prisma.campoApp.findMany({ where: { clienteId, campoErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('campos', item)).map((item) => item.campoErpId).filter(Boolean) as string[]),
+    lotes: new Set((await prisma.loteApp.findMany({ where: { clienteId, loteErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('lotes', item)).map((item) => item.loteErpId).filter(Boolean) as string[]),
+    especies: new Set((await prisma.especieApp.findMany({ where: { clienteId, especieErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('especies', item)).map((item) => item.especieErpId).filter(Boolean) as string[]),
+    actividades: new Set((await prisma.actividadApp.findMany({ where: { clienteId, actividadErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('actividades', item)).map((item) => item.actividadErpId).filter(Boolean) as string[]),
+    insumos: new Set((await prisma.insumoApp.findMany({ where: { clienteId, insumoErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('insumos', item)).map((item) => item.insumoErpId).filter(Boolean) as string[]),
+    labores: new Set((await prisma.servicioApp.findMany({ where: { clienteId, servicioErpId: { not: null } }, })).filter((item) => !esCopiaAutomaticaErp('labores', item)).map((item) => item.servicioErpId).filter(Boolean) as string[]),
   };
 
   const sugerencias: SugerenciaDetectada[] = [];
@@ -327,6 +331,7 @@ export async function generarSugerenciasVinculacionErp(clienteId: string, usuari
   let creadas = 0;
 
   for (const sugerencia of sugerencias) {
+    if (!await sugerenciaSigueVigente(prisma, clienteId, { ...sugerencia, entidadErpId: sugerencia.candidato.erpId })) continue;
     const resultado = await guardarSugerencia(clienteId, sugerencia, usuario);
     if (resultado.creada) creadas += 1;
   }
@@ -338,6 +343,10 @@ export async function generarSugerenciasVinculacionErp(clienteId: string, usuari
 }
 
 export async function listarNotificacionesPendientes(clienteId: string) {
+  await prisma.$transaction(async (tx) => {
+    await bloquearPadronesCliente(tx, clienteId);
+    await cerrarSugerenciasObsoletas(tx, clienteId);
+  }, { timeout: 60000, maxWait: 10000 });
   const notificaciones = await prisma.notificacionUsuario.findMany({
     where: {
       clienteId,
@@ -605,7 +614,7 @@ async function obtenerSugerenciaDesdeNotificacion(clienteId: string, notificacio
   };
 }
 
-export async function resolverNotificacionVinculacionErp(
+async function resolverNotificacionInterna(
   clienteId: string,
   notificacionId: string,
   decision: 'aceptar' | 'descartar',
@@ -619,6 +628,7 @@ export async function resolverNotificacionVinculacionErp(
   }
 
   if (decision === 'aceptar') {
+    if (!await sugerenciaSigueVigente(prisma, clienteId, sugerencia)) throw crearErrorValidacion('La sugerencia ya no esta vigente. Actualiza notificaciones.', 409);
     await aplicarVinculacionSugerida(sugerencia, usuario);
   }
 
@@ -675,4 +685,11 @@ export async function resolverNotificacionVinculacionErp(
       ? 'Sugerencia aceptada, vinculacion aplicada y notificacion resuelta.'
       : 'Sugerencia descartada y notificacion resuelta.',
   };
+}
+
+export async function resolverNotificacionVinculacionErp(clienteId: string, notificacionId: string, decision: 'aceptar' | 'descartar', usuario?: UsuarioAuditoria, motivo?: string) {
+  return prisma.$transaction(async (tx) => conTransaccionCompartida(tx, async () => {
+    await bloquearPadronesCliente(tx, clienteId);
+    return resolverNotificacionInterna(clienteId, notificacionId, decision, usuario, motivo);
+  }), { timeout: 60000, maxWait: 10000 });
 }

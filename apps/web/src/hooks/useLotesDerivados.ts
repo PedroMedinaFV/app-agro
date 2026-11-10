@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { idsErpOcupados } from '@agro/tipos';
 import type { CampoApp, ErpCampo, ErpEmpresa, ErpLote, LoteApp } from '@agro/tipos';
 import {
   construirCamposSeleccionables,
@@ -47,7 +48,7 @@ export function useLotesDerivados({
     [camposSeleccionables],
   );
   const camposParaFiltrar = useMemo(
-    () => construirCamposSeleccionables(camposPropios, camposErp, false),
+    () => construirCamposSeleccionables(camposPropios, camposErp),
     [camposErp, camposPropios],
   );
   const camposParaFiltrarPorClave = useMemo(
@@ -55,7 +56,7 @@ export function useLotesDerivados({
     [camposParaFiltrar],
   );
   const lotesVinculados = useMemo(() => (
-    new Set(lotesPropios.map((lote) => lote.loteErpId).filter((loteErpId): loteErpId is string => Boolean(loteErpId)))
+    idsErpOcupados(lotesPropios, (lote) => lote.loteErpId)
   ), [lotesPropios]);
   const lotesErpDisponiblesParaVincular = useMemo(() => {
     if (!lotePropioParaVincular) {

@@ -1,3 +1,4 @@
+import { idCopiaPadronErp } from '@agro/tipos';
 import { useEffect, useMemo, useState } from 'react';
 import { ErpInsumo, ErpMoneda, ErpSnapshot, ErpTipoInsumo, InsumoApp, PlanificacionSnapshot, SesionUsuario } from '@agro/tipos';
 import { ActionBar } from '../components/ActionBar';
@@ -27,8 +28,8 @@ interface InsumosAppScreenProps {
   notificar?: Notificar;
 }
 
-function crearIdInsumoAppDesdeErp(insumo: ErpInsumo) {
-  return `insumo-app-erp-${insumo.erpId.replace(/[^a-zA-Z0-9]+/g, '-')}`;
+function crearIdInsumoAppDesdeErp(insumo: ErpInsumo, clienteId: string) {
+  return idCopiaPadronErp('insumo-app', insumo.erpId, clienteId);
 }
 
 export function InsumosAppScreen({
@@ -249,7 +250,7 @@ export function InsumosAppScreen({
 
     setModoModal('editar');
     setInsumoEnEdicion(insumoPropio || {
-      id: crearIdInsumoAppDesdeErp(insumoErp),
+      id: crearIdInsumoAppDesdeErp(insumoErp, sesion.usuario.clienteId || ''),
       clienteId: planificacion.planificaciones[0]?.clienteId || insumosOrdenados[0]?.clienteId || '',
       empresaErpId: 'global',
       insumoErpId: insumoErp.erpId,
@@ -330,7 +331,7 @@ export function InsumosAppScreen({
         <article><span>ERP sincronizados</span><strong>{insumosErp.length}</strong></article>
         <article><span>Propios Agro App</span><strong>{insumosOrdenados.length}</strong></article>
         <article><span>Provisorios</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'provisorio').length}</strong></article>
-        <article><span>Vinculados</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'vinculado_erp').length}</strong></article>
+        <article><span>Vinculos confirmados</span><strong>{insumosOrdenados.filter((insumo) => insumo.estadoVinculacion === 'vinculado_erp' && !insumo.vinculoAutomatico).length}</strong></article>
       </section>
 
       <PageHeader

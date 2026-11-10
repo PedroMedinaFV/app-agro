@@ -15,6 +15,14 @@ Fecha de inicio: 2026-11-06. Alcance acordado: estabilizar Agro App por etapas c
 
 La modularizacion necesaria para una correccion se realiza dentro de su etapa. La etapa 6 aborda lo restante; no se posterga la calidad de las etapas anteriores.
 
+## Correccion posterior: identidad de padrones App/ERP
+
+Actualizacion 2026-11-10: implementadas precedencia App en selectores, disponibilidad compartida para siete padrones, distincion visual de copias automaticas/vinculos confirmados, consolidacion transaccional con traslado de referencias, aliases para IDs previos y validacion de vigencia de notificaciones. Se corrigen ademas IDs materializados por cliente y guardados web autenticados que simulaban exito local ante un rechazo API.
+
+La guia funcional/tecnica y los pasos operativos estan en [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md). `pnpm check` completo aprobado el 2026-11-10: 284 aprobados/1 omitido, incluyendo rutas web/mobile con IDs escapados. La corrida de integracion ampliada aprobo 17 de 18; el caso interrumpido por cortes PostgreSQL aprobo despues al repetirse aisladamente. No se presenta esa corrida completa como verde. Evidencia y limites en [ESTABILIDAD_MVP.md](ESTABILIDAD_MVP.md).
+
+Instalacion pendiente verificada con `db:status`: falta aplicar `20261106140000_identidad_padrones_erp` en el schema operativo y reiniciar API/web. No se aplica automaticamente ni se confirma el vinculo de la zona real como parte de las pruebas.
+
 ## Entrega por etapa
 
 - Implementacion acotada a los objetivos de la etapa.

@@ -1,17 +1,29 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-06 (etapas 1 a 6 implementadas; pendiente recorrido de dispositivo de etapa 3 y primera corrida hospedada de CI).
+Fecha de corte: 2026-11-10 (etapas 1 a 6 implementadas y correccion de identidad App/ERP; pendientes instalacion de la nueva migracion, recorrido de dispositivo de etapa 3 y primera corrida hospedada de CI).
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
 
-- Suite rapida: `pnpm test`; 279 tests, 278 aprobados, 0 fallidos, 1 omitido (PostgreSQL ERP opcional).
-- Archivos de suite rapida: 50.
-- Suite de integracion: `pnpm test:integration`; 14 aprobados, 0 fallidos, 0 omitidos, en un archivo HTTP separado.
-- Replay de las 34 migraciones en schema vacio y limpieza final aprobados; fixtures ficticios.
+- Suite rapida: `pnpm test`; 285 tests, 284 aprobados, 0 fallidos, 1 omitido (PostgreSQL ERP opcional), repetida el 2026-11-10.
+- Archivos de suite rapida: 52.
+- Integracion del 2026-11-10: 18 escenarios ejecutados, 17 aprobados y uno interrumpido por cortes de conexion PostgreSQL; ese caso aprobo al repetirse aisladamente. No se presenta la corrida completa como aprobada.
+- Hay 35 migraciones versionadas. Replay de las 35 y limpieza aprobados en la corrida de 17 escenarios; fixtures ficticios.
 - Build API incluido en la suite: `pnpm --filter agro-app-api build`.
 - Catalogo de tests documentado en `docs/CALIDAD_TESTS_MODULARIZACION.md`.
+
+## Correccion de identidad App/ERP: estado al 2026-11-10
+
+`pnpm check` completo aprobado nuevamente: lint, tipos de cuatro workspaces, 284 tests aprobados/1 omitido y builds API/web/mobile. Incluye los ultimos estados visibles de copias automaticas/vinculos confirmados y codificacion de IDs en rutas HTTP de web/mobile. La guia [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) documenta reglas, superficies revisadas, aliases y consolidacion.
+
+`db:status` consultado el 2026-11-10 confirma que falta aplicar `20261106140000_identidad_padrones_erp` en `agro_app`. El codigo y los tests no equivalen a una instalacion operativa: esa migracion debe aplicarse antes de usar las nuevas vinculaciones. No se modificaron datos operativos ni se confirmo automaticamente la zona del usuario. El preflight de solo lectura del 2026-11-06 encontro cero grupos duplicados cliente/ERP, una zona provisoria y seis copias automaticas.
+
+La corrida anterior de integracion aprobo 17/17. La ampliacion del 2026-11-10 aprobo consolidacion/rollback de los siete padrones, aliases offline/body/ruta, traslado de referencias y materializacion/vinculacion/desvinculacion/revinculacion para dos clientes. El caso de aceptar/rechazar notificaciones se interrumpio por conexiones reiniciadas por el host remoto (10054) y una transaccion expirada despues del corte (P2028); no se aumento su timeout ni se oculto el fallo. La ejecucion completa dio 17 aprobados/1 fallido en aproximadamente 593 segundos y confirmo la eliminacion de su schema temporal. El reintento aislado usa el mismo runner, migraciones y fixtures; no equivale a una corrida completa en verde.
+
+Reintento aislado completado el 2026-11-10: `node scripts/run-integration-tests.js "--test-name-pattern=aceptar sugerencia"`, 1 aprobado, 0 fallidos, aproximadamente 58 segundos de test mas migraciones. El runner aplico las 35 migraciones y confirmo la eliminacion de `agro_integration_test_db6439d8a7724b7e8b0efa88405822f7`. Todos los escenarios nuevos tienen evidencia de aprobacion, conservando la limitacion de red observada en la corrida completa. La migracion operativa y el recorrido manual de las pantallas siguen pendientes.
+
+## Evidencia historica de etapas 1 a 6
 
 Verificaciones ejecutadas el 2026-11-06 con Node `v24.18.1` y pnpm `11.18.0` (ahora declaradas en `.nvmrc`/`packageManager`/`engines`):
 
