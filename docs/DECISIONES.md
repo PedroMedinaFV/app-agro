@@ -480,3 +480,13 @@ El pooler produjo un timeout del advisory lock global de Prisma durante una repe
 Las regresiones HTTP demostraron que permisos de admin no bastaban para aislar rutas parametrizadas por cliente y escrituras de planificacion. Se exige cliente de sesion, se valida el propietario persistido y las referencias de linea. No existe un rol superadmin implicito. El cierre de recorridas valida origen y el cierre de planificacion reutiliza el timeout transaccional de 60s del guardado, conservando rollback.
 
 Resultado: 14 recorridos de integracion aprobados y suite rapida en verde. El proveedor ERP de la suite se mantiene mock para no consumir credenciales reales; las pruebas de dispositivo, UI y proveedores externos conservan su alcance separado. Guia de operacion y limites en `PRUEBAS_INTEGRACION.md`.
+
+## 2026-11-13 - Zonas vinculadas: datos maestros ERP
+
+Al confirmar una vinculacion, conservar el ID App y sus relaciones no implica conservar el nombre/codigo provisorios. Para zonas, `ErpZona` gobierna ambos atributos: se proyectan en el guardado transaccional compartido por Padrones y Notificaciones y se refrescan al materializar despues de sincronizar. La proyeccion se centraliza en `services/zonas/datosZonaErp.ts`. Las diferencias se auditan; los provisorios sin vinculo permanecen editables. Las zonas ya vinculadas se corrigen en la siguiente sincronizacion, sin migracion ni cambio de IDs. No se extiende esta decision a atributos propios de otros padrones.
+
+## 2026-11-13 - Revision de los seis padrones restantes
+
+La revision posterior aplica proyecciones tipadas de datos maestros a campos, lotes, especies, actividades, insumos y labores, compartidas por guardado y sincronizacion. Los padres se resuelven por cliente/ID ERP. Los atributos agronomicos exclusivos de actividades se conservan al aceptar sugerencias. El usuario confirma que precios/costos de insumos y labores siguen siendo propios; se conserva tambien su moneda al vincular, desvincular y refrescar. El backend preserva los importes persistidos al cambiar de vinculo, incluso si una pantalla envia valores ERP. La edicion explicita posterior del importe sobre el mismo vinculo continua habilitada.
+
+El refresco carga fuentes/catalogos en lotes, escribe solo diferencias y audita dentro de la transaccion/lock existentes. No se modifican snapshots historicos ni provisorios sin ERP. Una copia nueva solo inicializa importes ERP si puede resolver su moneda; nunca presupone USD. Matriz, responsabilidades, limites y operacion en [AUDITORIA_VINCULACION_PADRONES.md](AUDITORIA_VINCULACION_PADRONES.md). Esta ampliacion reemplaza la conservacion indiscriminada de los nombres/codigos App de padrones vinculados, manteniendo sus IDs y atributos propios.

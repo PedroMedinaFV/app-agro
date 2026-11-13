@@ -296,7 +296,7 @@ export function InsumosAppScreen({
 
     const insumoErp = insumosErp.find((insumo) => insumo.erpId === insumoErpVincularId);
     const unidad = snapshot.unidadesMedida.find((item) => item.idUnidadMedida === insumoErp?.idUnidadMedida);
-    const moneda = monedaPorId.get(insumoErp?.idMonedaPrecioUnitario || 0)?.codigo || insumoPropioParaVincular.moneda || monedaPorDefecto;
+    const moneda = insumoPropioParaVincular.moneda || monedaPorDefecto;
 
     if (!insumoErp) {
       notificar?.({ tipo: 'error', titulo: 'No se encontro el insumo ERP', mensaje: 'Actualiza la pantalla e intenta nuevamente.' });
@@ -312,7 +312,7 @@ export function InsumosAppScreen({
       idTipoInsumo: insumoErp.idTipoInsumo,
       tipo: insumoErp.idTipoInsumo ? tipoInsumoPorId.get(insumoErp.idTipoInsumo)?.descripcion || `Tipo ${insumoErp.idTipoInsumo}` : insumoPropioParaVincular.tipo,
       unidad: unidad?.codigo || insumoPropioParaVincular.unidad,
-      precioUnitarioEstimado: insumoErp.precioUnitario ?? insumoPropioParaVincular.precioUnitarioEstimado,
+      precioUnitarioEstimado: insumoPropioParaVincular.precioUnitarioEstimado,
       moneda,
       estadoVinculacion: 'vinculado_erp',
       updatedAt: new Date().toISOString(),

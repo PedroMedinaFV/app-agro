@@ -514,6 +514,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 Empresa
                 <select
                   value={campoEnEdicion.empresaErpId}
+                  disabled={Boolean(campoEnEdicion.campoErpId)}
                   onChange={(event) => setCampoEnEdicion((actual) => {
                     if (!actual) {
                       return actual;
@@ -539,6 +540,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 Codigo interno
                 <input
                   value={campoEnEdicion.codigoInterno || ''}
+                  readOnly={Boolean(campoEnEdicion.campoErpId)}
                   onChange={(event) => setCampoEnEdicion((actual) => actual && { ...actual, codigoInterno: event.target.value })}
                   placeholder="Se normaliza en mayusculas"
                 />
@@ -547,13 +549,14 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
                 Nombre
                 <input
                   value={campoEnEdicion.nombre}
+                  readOnly={Boolean(campoEnEdicion.campoErpId)}
                   onChange={(event) => setCampoEnEdicion((actual) => actual && { ...actual, nombre: event.target.value })}
                   placeholder="Nombre del campo"
                 />
               </label>
               <label>
                 Zona
-                <select value={obtenerClaveZona(campoEnEdicion)} onChange={(event) => seleccionarZona(event.target.value)}>
+                <select value={obtenerClaveZona(campoEnEdicion)} disabled={Boolean(campoEnEdicion.campoErpId)} onChange={(event) => seleccionarZona(event.target.value)}>
                   <option value="">Sin zona</option>
                   {zonasDisponibles
                     .filter((zona) => zona.empresaErpId === 'global' || zona.empresaErpId === campoEnEdicion.empresaErpId)
@@ -567,7 +570,7 @@ export function CamposScreen({ sesion, empresas, zonasPropias, puedeConfigurarPl
             </div>
 
             <div className="modal-actions">
-              <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
+              <span className="hint">{campoEnEdicion.campoErpId ? 'La empresa, zona, nombre y codigo se actualizan desde el ERP.' : 'La vinculacion con ERP quedara como accion separada y auditada.'}</span>
               <Button variant="primary" disabled={guardando} onClick={guardarCampo}>
                 <span className="button-content">
                   {guardando && <span className="loading-spinner" />}

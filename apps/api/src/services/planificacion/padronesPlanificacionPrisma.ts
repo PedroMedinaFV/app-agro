@@ -13,6 +13,8 @@ import type {
 } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { listarEmpresasErpCliente } from '../erp/empresasCliente';
+import { datosZonaDesdeErp } from '../zonas/datosZonaErp';
+import { sincronizarDatosMaestrosPadrones } from './sincronizarDatosMaestrosPadrones';
 
 type PadronesPlanificacionPersistidos = {
   zonasApp: ZonaApp[];
@@ -50,6 +52,7 @@ export async function asegurarPadronesPlanificacionDesdeErp(
   await prisma.$transaction(async (tx) => {
     await bloquearPadronesCliente(tx, clienteId);
     await materializarPadrones(clienteId, camposAsignados, tx);
+    await sincronizarDatosMaestrosPadrones(tx, clienteId);
   }, { timeout: 60000, maxWait: 10000 });
 }
 
@@ -68,7 +71,7 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
   const idZonasUsadas = Array.from(
     new Set(camposErp.map((campo) => campo.idZona).filter((idZona): idZona is number => typeof idZona === 'number')),
   );
-  const [zonasErp, lotesErp, especiesErp, actividadesErp, insumosErp, tiposInsumo, serviciosErp, unidadesMedida] = await Promise.all([
+  const [zonasErp, lotesErp, especiesErp, actividadesErp, insumosErp, tiposInsumo, serviciosErp, unidadesMedida, monedas] = await Promise.all([
     db.erpZona.findMany({ where: { idZona: { in: idZonasUsadas }, activo: true }, distinct: ['idZona'] }),
     db.erpLote.findMany({ where: { campoErpId: { in: campoErpIds }, activo: true } }),
     db.erpEspecie.findMany({ where: { empresaErpId: 'global', activo: true } }),
@@ -77,6 +80,7 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
     db.erpTipoInsumo.findMany({ where: { empresaErpId: 'global', activo: true } }),
     db.erpServicio.findMany({ where: { empresaErpId: 'global', activo: true } }),
     db.erpUnidadMedida.findMany({ where: { empresaErpId: 'global', activo: true } }),
+    db.erpMoneda.findMany({ where: { empresaErpId: 'global' } }),
   ]);
   const zonasExistentes = await db.zonaApp.findMany({ where: { clienteId, zonaErpId: { not: null } } });
   const camposExistentes = await db.campoApp.findMany({ where: { clienteId, campoErpId: { not: null } } });
@@ -94,6 +98,7 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
   const laborPorErpId = new Map(laboresExistentes.map((labor) => [labor.servicioErpId, labor.id]));
   const unidadPorId = new Map(unidadesMedida.map((unidad) => [unidad.idUnidadMedida, unidad.codigo]));
   const tipoInsumoPorId = new Map(tiposInsumo.map((tipo) => [tipo.idTipoInsumo, tipo]));
+  const monedaPorId = new Map(monedas.map((moneda) => [moneda.idMoneda, moneda.codigo]));
 
   await db.zonaApp.createMany({
     skipDuplicates: true,
@@ -104,8 +109,7 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
         clienteId,
         empresaErpId: 'global',
         zonaErpId: zona.erpId,
-        nombre: zona.nombre,
-        codigoInterno: normalizarCodigo(zona.codigo || zona.nombre),
+        ...datosZonaDesdeErp(zona),
         estadoVinculacion: 'vinculado_erp',
         createdAt: ahora,
         updatedAt: ahora,
@@ -216,8 +220,8 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
         idTipoInsumo: insumo.idTipoInsumo ?? null,
         tipo: insumo.idTipoInsumo ? tipoInsumoPorId.get(insumo.idTipoInsumo)?.descripcion || `Tipo ${insumo.idTipoInsumo}` : null,
         unidad: insumo.idUnidadMedida ? unidadPorId.get(insumo.idUnidadMedida) || 'Unid' : 'Unid',
-        precioUnitarioEstimado: insumo.precioUnitario ?? null,
-        moneda: 'USD',
+        precioUnitarioEstimado: insumo.idMonedaPrecioUnitario !== null && monedaPorId.has(insumo.idMonedaPrecioUnitario) ? insumo.precioUnitario : null,
+        moneda: insumo.idMonedaPrecioUnitario !== null ? monedaPorId.get(insumo.idMonedaPrecioUnitario) ?? null : null,
         estadoVinculacion: 'vinculado_erp',
         createdAt: ahora,
         updatedAt: ahora,
@@ -241,7 +245,7 @@ async function materializarPadrones(clienteId: string, camposAsignados: string[]
         idUnidadMedida: servicio.idUnidadMedida,
         idMoneda: servicio.idMoneda,
         unidadSugerida: servicio.idUnidadMedida ? unidadPorId.get(servicio.idUnidadMedida) || 'Ha' : 'Ha',
-        costoUnitarioSugerido: servicio.precioUnitario,
+        costoUnitarioSugerido: servicio.idMoneda !== null && monedaPorId.has(servicio.idMoneda) ? servicio.precioUnitario : null,
         imputaDosis: servicio.imputaDosis,
         estadoVinculacion: 'vinculado_erp',
         activo: servicio.activo,

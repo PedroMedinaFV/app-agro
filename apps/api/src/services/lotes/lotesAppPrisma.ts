@@ -1,3 +1,4 @@
+import { resolverDatosMaestrosErp } from '../planificacion/datosMaestrosPadronesErp';
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarLoteAppRequest, GuardarLoteAppResponse, LoteApp } from '@agro/tipos';
@@ -71,6 +72,9 @@ export async function guardarLoteAppPersistido(
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'lotes', lote, usuario);
+    if (lote.loteErpId) {
+      Object.assign(lote, await resolverDatosMaestrosErp(tx, lote.clienteId, 'lotes', lote.loteErpId));
+    }
     const existente = await tx.loteApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== lote.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = lote.codigoInterno

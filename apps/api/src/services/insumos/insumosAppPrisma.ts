@@ -1,3 +1,4 @@
+import { resolverDatosMaestrosErp } from '../planificacion/datosMaestrosPadronesErp';
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { GuardarInsumoAppRequest, GuardarInsumoAppResponse, InsumoApp } from '@agro/tipos';
@@ -81,8 +82,16 @@ export async function guardarInsumoAppPersistido(
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'insumos', insumo, usuario);
+    if (insumo.insumoErpId) {
+      Object.assign(insumo, await resolverDatosMaestrosErp(tx, insumo.clienteId, 'insumos', insumo.insumoErpId));
+    }
     const existente = await tx.insumoApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== insumo.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
+    if (existente && insumo.insumoErpId && existente.insumoErpId !== insumo.insumoErpId) {
+      // Vincular no es editar el supuesto economico; tampoco si una UI envia el precio ERP.
+      insumo.precioUnitarioEstimado = existente.precioUnitarioEstimado ?? undefined;
+      insumo.moneda = existente.moneda ?? undefined;
+    }
     const existenteMismoCodigo = insumo.codigoInterno
       ? await tx.insumoApp.findFirst({
         where: {

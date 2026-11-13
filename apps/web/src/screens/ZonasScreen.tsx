@@ -323,7 +323,9 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
               <div>
                 <p className="eyebrow">Padron maestro</p>
                 <h2 id="zona-modal-title">{zonasPropias.some((zona) => zona.id === zonaEnEdicion.id) ? 'Editar zona' : 'Nueva zona'}</h2>
-                <p className="hint">Las zonas propias son globales para el cliente y quedan disponibles para crear campos.</p>
+                <p className="hint">{zonaEnEdicion.zonaErpId
+                  ? 'El nombre y el codigo de esta zona se actualizan desde el ERP. Para modificarlos, realiza el cambio en el ERP y sincroniza.'
+                  : 'Las zonas propias son globales para el cliente y quedan disponibles para crear campos.'}</p>
               </div>
               <Button variant="small" onClick={() => setZonaEnEdicion(null)}>Cerrar</Button>
             </div>
@@ -333,6 +335,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                 Codigo interno
                 <input
                   value={zonaEnEdicion.codigoInterno || ''}
+                  readOnly={Boolean(zonaEnEdicion.zonaErpId)}
                   onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })}
                   placeholder="Se normaliza en mayusculas"
                 />
@@ -341,6 +344,7 @@ export function ZonasScreen({ sesion, puedeConfigurarPlanificacion, notificar }:
                 Nombre
                 <input
                   value={zonaEnEdicion.nombre}
+                  readOnly={Boolean(zonaEnEdicion.zonaErpId)}
                   onChange={(event) => actualizarBorrador({ nombre: event.target.value })}
                   placeholder="Nombre de la zona"
                 />

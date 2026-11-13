@@ -3,7 +3,7 @@ import { cerrarSugerenciasObsoletas, sugerenciaSigueVigente } from './vigenciaSu
 import { conTransaccionCompartida } from '../erp/contextoTransaccional';
 import { bloquearPadronesCliente } from '../planificacion/consolidarCopiaErp';
 import type { Prisma } from '@prisma/client';
-import type { ResolverNotificacionVinculacionResponse } from '@agro/tipos';
+import type { ActividadApp, ResolverNotificacionVinculacionResponse } from '@agro/tipos';
 import { prisma } from '../../prisma';
 import { guardarActividadAppPersistida } from '../actividades/actividadesAppPrisma';
 import { guardarCampoAppPersistido } from '../campos/camposAppPrisma';
@@ -508,6 +508,9 @@ async function aplicarVinculacionSugerida(sugerencia: Awaited<ReturnType<typeof 
         especieErpId: especieErpIdDesdeIdEspecie(actividadErp.idEspecie) || actividad.especieErpId || undefined,
         nombre: actividad.nombre,
         codigoInterno: actividad.codigoInterno || undefined,
+        tipoGrano: actividad.tipoGrano as ActividadApp['tipoGrano'] || undefined,
+        tipoCultivo: actividad.tipoCultivo as ActividadApp['tipoCultivo'] || undefined,
+        epocaSiembra: actividad.epocaSiembra as ActividadApp['epocaSiembra'] || undefined,
         estadoVinculacion: 'vinculado_erp',
         createdAt: actividad.createdAt.toISOString(),
         updatedAt: actividad.updatedAt.toISOString(),
@@ -536,6 +539,7 @@ async function aplicarVinculacionSugerida(sugerencia: Awaited<ReturnType<typeof 
         nombre: insumo.nombre,
         codigoInterno: insumo.codigoInterno || undefined,
         tipo: insumo.tipo || undefined,
+        idTipoInsumo: insumo.idTipoInsumo ?? undefined,
         unidad: insumo.unidad,
         precioUnitarioEstimado: insumo.precioUnitarioEstimado ?? undefined,
         moneda: insumo.moneda || undefined,
@@ -570,7 +574,7 @@ async function aplicarVinculacionSugerida(sugerencia: Awaited<ReturnType<typeof 
         nombre: labor.nombre,
         descripcionAbreviada: labor.descripcionAbreviada || undefined,
         idUnidadMedida: servicioErp.idUnidadMedida ?? labor.idUnidadMedida ?? undefined,
-        idMoneda: servicioErp.idMoneda ?? labor.idMoneda ?? undefined,
+        idMoneda: labor.idMoneda ?? undefined,
         unidadSugerida: labor.unidadSugerida,
         costoUnitarioSugerido: labor.costoUnitarioSugerido ?? undefined,
         imputaDosis: servicioErp.imputaDosis ?? labor.imputaDosis ?? undefined,

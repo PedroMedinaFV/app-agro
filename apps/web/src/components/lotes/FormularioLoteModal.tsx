@@ -34,7 +34,7 @@ export function FormularioLoteModal({
         <div className="modal-header">
           <div>
             <h2>{modo === 'editar' ? 'Editar lote' : modo === 'copiar' ? 'Copiar lote' : 'Nuevo lote'}</h2>
-            <p className="hint">Los lotes propios permiten planificar aunque todavia no existan en ALBOR.</p>
+            <p className="hint">{lote.loteErpId ? 'El campo, nombre, codigo y superficies se actualizan desde el ERP.' : 'Los lotes propios permiten planificar aunque todavia no existan en ALBOR.'}</p>
           </div>
           <Button variant="ghost" onClick={onClose}>Cerrar</Button>
         </div>
@@ -44,6 +44,7 @@ export function FormularioLoteModal({
             Campo
             <select
               value={campoSeleccionadoClave || `agro:${lote.campoAppId}`}
+              disabled={Boolean(lote.loteErpId)}
               onChange={(event) => onSeleccionarCampo(event.target.value)}
             >
               {camposSeleccionables.map((campo) => (
@@ -57,6 +58,7 @@ export function FormularioLoteModal({
             Codigo interno
             <input
               value={lote.codigoInterno || ''}
+              readOnly={Boolean(lote.loteErpId)}
               onChange={(event) => onActualizarLote({ ...lote, codigoInterno: event.target.value })}
               placeholder="Se normaliza en mayusculas"
             />
@@ -65,6 +67,7 @@ export function FormularioLoteModal({
             Nombre
             <input
               value={lote.nombre}
+              readOnly={Boolean(lote.loteErpId)}
               onChange={(event) => onActualizarLote({ ...lote, nombre: event.target.value })}
               placeholder="Nombre del lote"
             />
@@ -73,6 +76,7 @@ export function FormularioLoteModal({
             Superficie total
             <DecimalInput
               value={lote.superficieTotal}
+              disabled={Boolean(lote.loteErpId)}
               onValueChange={(superficieTotal) => onActualizarLote({ ...lote, superficieTotal })}
               commitOnBlur
             />
@@ -81,6 +85,7 @@ export function FormularioLoteModal({
             Superficie productiva
             <DecimalInput
               value={lote.superficieProductiva}
+              disabled={Boolean(lote.loteErpId)}
               onValueChange={(superficieProductiva) => onActualizarLote({ ...lote, superficieProductiva })}
               commitOnBlur
             />

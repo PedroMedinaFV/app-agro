@@ -21,7 +21,9 @@ Actualizacion 2026-11-10: implementadas precedencia App en selectores, disponibi
 
 La guia funcional/tecnica y los pasos operativos estan en [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md). `pnpm check` completo aprobado el 2026-11-10: 284 aprobados/1 omitido, incluyendo rutas web/mobile con IDs escapados. La corrida de integracion ampliada aprobo 17 de 18; el caso interrumpido por cortes PostgreSQL aprobo despues al repetirse aisladamente. No se presenta esa corrida completa como verde. Evidencia y limites en [ESTABILIDAD_MVP.md](ESTABILIDAD_MVP.md).
 
-Instalacion pendiente verificada con `db:status`: falta aplicar `20261106140000_identidad_padrones_erp` en el schema operativo y reiniciar API/web. No se aplica automaticamente ni se confirma el vinculo de la zona real como parte de las pruebas.
+Actualizacion 2026-11-13: el usuario confirma que aplico `20261106140000_identidad_padrones_erp` y resolvio el problema de duplicados/vinculacion. No queda pendiente esa instalacion. Se detecta un problema distinto: las zonas vinculadas conservaban nombre/codigo provisorios; se corrige el guardado y la actualizacion desde cache ERP, segun `IDENTIDAD_PADRONES_ERP.md`.
+
+La revision posterior extiende la correccion a campos, lotes, especies, actividades, insumos y labores. Se conservan clasificaciones de actividades y precios/costos/monedas propios (decision confirmada por el usuario), y se actualizan datos maestros y relaciones desde ERP con auditoria. Matriz, hallazgos, modulos y recorrido manual en [AUDITORIA_VINCULACION_PADRONES.md](AUDITORIA_VINCULACION_PADRONES.md). No agrega migraciones ni ejecuta una sincronizacion operativa automaticamente.
 
 ## Entrega por etapa
 

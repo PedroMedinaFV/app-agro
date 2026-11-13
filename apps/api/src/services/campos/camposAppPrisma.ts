@@ -1,3 +1,4 @@
+import { resolverDatosMaestrosErp } from '../planificacion/datosMaestrosPadronesErp';
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { CampoApp, GuardarCampoAppRequest, GuardarCampoAppResponse } from '@agro/tipos';
@@ -85,6 +86,9 @@ export async function guardarCampoAppPersistido(
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'campos', campo, usuario);
+    if (campo.campoErpId) {
+      Object.assign(campo, await resolverDatosMaestrosErp(tx, campo.clienteId, 'campos', campo.campoErpId));
+    }
     const existente = await tx.campoApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== campo.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = campo.codigoInterno

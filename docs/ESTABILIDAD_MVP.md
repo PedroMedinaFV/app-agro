@@ -1,10 +1,16 @@
 # Estabilidad MVP
 
-Fecha de corte: 2026-11-10 (etapas 1 a 6 implementadas y correccion de identidad App/ERP; pendientes instalacion de la nueva migracion, recorrido de dispositivo de etapa 3 y primera corrida hospedada de CI).
+Fecha de corte historico: 2026-11-10. Actualizacion 2026-11-13: el usuario confirma aplicada la migracion de identidad App/ERP y resuelto el problema de padrones. Siguen pendientes el recorrido de dispositivo de etapa 3 y la primera corrida hospedada de CI. La correccion adicional de datos maestros de zonas se describe en `IDENTIDAD_PADRONES_ERP.md`.
 
 Este documento resume el estado tecnico para dejar una version estable antes de seguir con nuevas features.
 
 ## Estado actual
+
+Revision 2026-11-13 de los seis padrones restantes: `pnpm check` completo aprobado (lint, tipos de cuatro workspaces, 288 tests: 287 aprobados y 1 PostgreSQL opcional omitido, builds API/web y export Expo web/iOS/Android). Integracion nueva filtrada `--test-name-pattern=maestros ERP:`: 2 escenarios aprobados, 0 fallidos/omitidos, aproximadamente 262 segundos; el primer escenario incluye 12 combinaciones de padron/punto de vinculacion. Replay de 35 migraciones y eliminacion de `agro_integration_test_455a40bbb161436188b4a0fce9007520` confirmados. La matriz de datos maestros/atributos propios y limites operativos esta en `AUDITORIA_VINCULACION_PADRONES.md`. Esta evidencia no equivale a una prueba manual de navegador ni a una sincronizacion sobre los padrones operativos.
+
+Cierre de la revision, 2026-11-13: suite completa de integracion ejecutada sin filtros sobre el codigo final; **21 aprobados, 0 fallidos, 0 omitidos**, aproximadamente 674 segundos de tests mas migraciones. Se verificaron los 12 caminos de vinculacion con importes/monedas ERP distintos a los propios, el refresco idempotente de los seis padrones y las regresiones de zonas, aliases, rollback, materializacion/desvinculacion, HTTP, permisos, offline, planificacion y ERP mock. Replay de las 35 migraciones y eliminacion de `agro_integration_test_705ebefcbcaf4f9ca073b886c2269f88` confirmados. Esta corrida completa en verde reemplaza la limitacion de la corrida de 18 escenarios del 2026-11-10; se conserva abajo como evidencia historica. No se modificaron padrones operativos ni se ejecuto una sincronizacion real del cliente. Sigue pendiente el recorrido manual en navegador documentado en `AUDITORIA_VINCULACION_PADRONES.md`.
+
+Actualizacion 2026-11-13, datos maestros de zonas vinculadas: build API, TypeScript web y lint aprobados; `pnpm test` repetido con 284 aprobados, 0 fallidos y 1 opcional omitido. Integracion filtrada `--test-name-pattern=zona provisoria|aceptar sugerencia|zonas: sincronizacion`: 3 aprobados, 0 fallidos/omitidos, aproximadamente 118 segundos mas migraciones. Verifica datos ERP al vincular por HTTP/notificaciones, refresco de vinculos anteriores, aislamiento por cliente, preservacion de provisorios e idempotencia de auditoria. Las 35 migraciones se aplicaron en `agro_integration_test_8601d93f9133407c9a7200a34f7e1e93` y se confirmo su eliminacion. No se repitio la suite completa de integracion ni se modificaron zonas operativas. Node tests y PostgreSQL requirieron ejecucion fuera del sandbox por `spawn EPERM`/TLS, respectivamente. Prueba manual de la zona real: reiniciar API/web y sincronizar ERP, sin nueva migracion.
 
 - Suite rapida: `pnpm test`; 285 tests, 284 aprobados, 0 fallidos, 1 omitido (PostgreSQL ERP opcional), repetida el 2026-11-10.
 - Archivos de suite rapida: 52.

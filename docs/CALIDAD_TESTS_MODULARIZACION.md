@@ -69,6 +69,8 @@ La extraccion API conserva los tests existentes de contratos, guardado/cierre y 
 
 ## Correccion de identidad App/ERP (2026-11-06)
 
+Revision 2026-11-13: `tests/padrones-datos-maestros.test.js` comprueba relaciones por cliente, padres/unidades ausentes, superficies invalidas, valores null/cero y exclusion de precios/costos/monedas de la proyeccion maestra. `tests/integration/padrones-maestros.js` se registra en la suite HTTP: seis padrones por dos puntos de vinculacion (12 casos), datos ERP persistidos, consolidacion y aliases, preservacion de clasificaciones/importes/monedas propios, y refresco sin modificar provisorios ni otros clientes. El origen ERP de nombre/codigo no altera la prioridad del ID App canonico en selectores. Matriz y modulos en `AUDITORIA_VINCULACION_PADRONES.md`.
+
 `tests/padrones-identidad.test.js` agrega cuatro regresiones: una sola opcion App/ERP por identidad conservando el nombre editado; IDs nuevos por cliente sin colisiones por separadores; reconocimiento de copias historicas/nuevas y respeto de ediciones; eliminacion de copia absorbida del estado visible. No se fusionan homonimos sin vinculo confirmado.
 
 `tests/padrones-api-rutas.test.js` agrega dos pruebas de los adaptadores reales transpilados: los siete guardados web codifican el ID como un unico segmento de URL sin modificar JSON, y la consulta de ficha mobile conserva el ID escapado y el token. Evita que Express decodifique parte de un ID materializado como si fuera sintaxis de ruta. Los limites de red se sustituyen; los aliases y consultas HTTP reales se cubren en integracion. `pnpm check` completo repetido el 2026-11-10: 285 tests, 284 aprobados/1 omitido, lint/tipos/builds correctos.

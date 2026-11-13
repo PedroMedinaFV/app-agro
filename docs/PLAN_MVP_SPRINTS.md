@@ -557,6 +557,14 @@ Pendientes tecnicos:
 
 ## Fuera del MVP inicial
 
+### Ampliacion prevista: anexos de planificacion (2026-11-13)
+
+Estado: diseno propuesto; pendiente de priorizar e implementar. Necesidad: incorporar una nueva unidad productiva luego del cierre de la planificacion inicial, con el mismo proceso de armado/validacion/cierre y sin reabrir la original. Se propone un anexo por incorporacion, asociado a la original de la misma campania y cliente, y una consulta consolidada de original mas anexos cerrados. El primer alcance incorpora lotes no incluidos previamente, incluso en campos existentes; cambios sobre lotes ya planificados requieren una revision posterior.
+
+Diseno, responsabilidades, modelo propuesto, transacciones y criterios de aceptacion en [ANEXOS_PLANIFICACION.md](ANEXOS_PLANIFICACION.md). Entrega prevista por bloques: contratos/migracion y alcance, casos de uso API, editor web reutilizado, consulta consolidada y consumidores web/mobile, pruebas/documentacion. No se incluye automaticamente en la primera version: falta priorizar su ejecucion.
+
+### Otras funcionalidades posteriores
+
 Quedan para version posterior:
 
 - automatizacion completa de NDVI e imagenes satelitales;

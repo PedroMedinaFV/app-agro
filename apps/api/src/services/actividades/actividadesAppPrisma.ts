@@ -1,3 +1,4 @@
+import { resolverDatosMaestrosErp } from '../planificacion/datosMaestrosPadronesErp';
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { ActividadApp, GuardarActividadAppRequest, GuardarActividadAppResponse } from '@agro/tipos';
@@ -80,6 +81,9 @@ export async function guardarActividadAppPersistida(
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'actividades', actividad, usuario);
+    if (actividad.actividadErpId) {
+      Object.assign(actividad, await resolverDatosMaestrosErp(tx, actividad.clienteId, 'actividades', actividad.actividadErpId));
+    }
     const existente = await tx.actividadApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== actividad.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = actividad.codigoInterno

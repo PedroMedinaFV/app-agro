@@ -2,7 +2,9 @@
 
 Fecha: 2026-11-06. Etapa 5 del plan de estabilizacion.
 
-Ampliacion de identidad App/ERP: la suite incorpora consolidacion/rollback de siete padrones, notificaciones vigentes/obsoletas, aliases para IDs anteriores, aislamiento y ciclos de materializacion/vinculacion. El replay vigente incluye 35 migraciones; [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) explica la migracion nueva, el preflight y la activacion operativa pendiente.
+Ampliacion de identidad App/ERP: la suite incorpora consolidacion/rollback de siete padrones, notificaciones vigentes/obsoletas, aliases para IDs anteriores, aislamiento y ciclos de materializacion/vinculacion. El replay vigente incluye 35 migraciones; [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) explica la migracion nueva y el preflight. El usuario confirmo aplicada la migracion operativa el 2026-11-13.
+
+Revision de datos maestros 2026-11-13: `padrones-maestros.js` se registra desde `api.integration.test.js` y cubre los seis padrones restantes por HTTP y Notificaciones, consolidacion, valores propios distintos al ERP y sincronizacion de vinculos anteriores con auditoria idempotente y aislamiento. La suite queda en 21 escenarios (18 previos, 1 refresco de zonas y 2 de maestros). No confundir 12 combinaciones de vinculacion dentro de un escenario con 12 tests independientes. Evidencia de ejecucion en `ESTABILIDAD_MVP.md`; reglas en `AUDITORIA_VINCULACION_PADRONES.md`.
 
 Para diagnosticar un escenario tras compilar API con el mismo runner aislado: `node scripts/run-integration-tests.js "--test-name-pattern=aceptar sugerencia"`. El filtro se pasa al runner nativo de Node; sigue creando/migrando/eliminando un schema temporal y los casos restantes se omiten. Esa corrida no sustituye una suite completa aprobada. Solo se admite ese argumento opcional; en CI se rechaza cualquier filtro. El comando habitual `pnpm test:integration` ejecuta todos los casos.
 

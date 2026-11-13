@@ -1,5 +1,6 @@
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
+import { datosZonaDesdeErp } from './datosZonaErp';
 import type { GuardarZonaAppRequest, GuardarZonaAppResponse, ZonaApp } from '@agro/tipos';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../prisma';
@@ -27,19 +28,6 @@ function mapearZona(zona: ZonaPrisma): ZonaApp {
   };
 }
 
-async function validarZona(zona: ZonaApp, usuario?: UsuarioAuditoria) {
-  validarZonaAppBasica(zona, usuario);
-
-  if (zona.zonaErpId) {
-    const zonaErp = await prisma.erpZona.findUnique({ where: { erpId: zona.zonaErpId } });
-
-    if (!zonaErp) {
-      throw crearErrorValidacion('La zona ERP seleccionada no existe en la cache importada.');
-    }
-
-  }
-}
-
 export async function obtenerZonasAppPersistidas(clienteId: string): Promise<ZonaApp[]> {
   const zonas = await prisma.zonaApp.findMany({
     where: { clienteId },
@@ -55,10 +43,16 @@ export async function guardarZonaAppPersistida(
   usuario?: UsuarioAuditoria,
 ): Promise<GuardarZonaAppResponse> {
   const zona = prepararZonaApp({ ...request.zona, id });
-  await validarZona(zona, usuario);
+  validarZonaAppBasica(zona, usuario);
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'zonas', zona, usuario);
+    // Resolver en servidor y dentro de la misma transaccion para ambos puntos de vinculacion.
+    if (zona.zonaErpId) {
+      const zonaErp = await tx.erpZona.findUnique({ where: { erpId: zona.zonaErpId } });
+      if (!zonaErp) throw crearErrorValidacion('La zona ERP seleccionada no existe en la cache importada.');
+      Object.assign(zona, datosZonaDesdeErp(zonaErp));
+    }
     const existente = await tx.zonaApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== zona.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = zona.codigoInterno

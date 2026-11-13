@@ -306,12 +306,12 @@ export function EspeciesAppScreen({ sesion, puedeConfigurarPlanificacion, notifi
               <Button variant="small" onClick={() => setEspecieEnEdicion(null)}>Cerrar</Button>
             </div>
             <div className="reference-modal-grid">
-              <label>Codigo interno<input value={especieEnEdicion.codigoInterno || ''} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
-              <label className="reference-wide">Nombre<input value={especieEnEdicion.nombre} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la especie" /></label>
+              <label>Codigo interno<input value={especieEnEdicion.codigoInterno || ''} readOnly={Boolean(especieEnEdicion.especieErpId)} onChange={(event) => actualizarBorrador({ codigoInterno: event.target.value })} placeholder="Se normaliza en mayusculas" /></label>
+              <label className="reference-wide">Nombre<input value={especieEnEdicion.nombre} readOnly={Boolean(especieEnEdicion.especieErpId)} onChange={(event) => actualizarBorrador({ nombre: event.target.value })} placeholder="Nombre de la especie" /></label>
             </div>
             {existeCodigoDuplicado && <p className="form-error">Ya existe una especie propia con ese codigo interno.</p>}
             <div className="modal-actions">
-              <span className="hint">La vinculacion con ERP quedara como accion separada y auditada.</span>
+              <span className="hint">{especieEnEdicion.especieErpId ? 'El nombre y el codigo se actualizan desde el ERP.' : 'La vinculacion con ERP quedara como accion separada y auditada.'}</span>
               <Button variant="primary" disabled={guardando || !especieEnEdicion.nombre.trim() || existeCodigoDuplicado} onClick={guardarEspecie}>
                 <span className="button-content">{guardando && <LoadingSpinner label="Guardando especie" />}{guardando ? 'Guardando...' : 'Guardar'}</span>
               </Button>

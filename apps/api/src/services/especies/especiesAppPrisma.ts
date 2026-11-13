@@ -1,3 +1,4 @@
+import { resolverDatosMaestrosErp } from '../planificacion/datosMaestrosPadronesErp';
 import { esCopiaAutomaticaErp } from '@agro/tipos';
 import { consolidarCopiaErp } from '../planificacion/consolidarCopiaErp';
 import type { EspecieApp, GuardarEspecieAppRequest, GuardarEspecieAppResponse } from '@agro/tipos';
@@ -59,6 +60,9 @@ export async function guardarEspecieAppPersistida(
 
   return prisma.$transaction(async (tx) => {
     await consolidarCopiaErp(tx, 'especies', especie, usuario);
+    if (especie.especieErpId) {
+      Object.assign(especie, await resolverDatosMaestrosErp(tx, especie.clienteId, 'especies', especie.especieErpId));
+    }
     const existente = await tx.especieApp.findUnique({ where: { id } });
     if (existente && existente.clienteId !== especie.clienteId) throw crearErrorValidacion('El registro pertenece a otro cliente.', 403);
     const existenteMismoCodigo = especie.codigoInterno

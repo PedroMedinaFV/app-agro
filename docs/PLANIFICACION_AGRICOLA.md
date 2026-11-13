@@ -119,6 +119,8 @@ Una misma campania puede tener varias planificaciones porque cada una representa
 
 Regla de escenarios:
 
+Evolucion prevista (2026-11-13, no implementada): [Anexos de planificacion](ANEXOS_PLANIFICACION.md) propone incorporar lotes nuevos despues del cierre sin modificar la original, mediante anexos con su propio armado/cierre y consulta consolidada. Las reglas de escenarios siguientes describen el comportamiento actual; la futura excepcion corresponde exclusivamente a anexos explicitos, no a reactivar escenarios descartados.
+
 - varias planificaciones pueden compartir la misma `campaniaErpId` mientras esten en armado;
 - cada planificacion tiene nombre propio para identificar el escenario;
 - al cerrar una planificacion, esa queda marcada como `escenarioOriginal = true`;

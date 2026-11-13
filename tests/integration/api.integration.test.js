@@ -265,6 +265,12 @@ test('padrones HTTP: zona provisoria puede absorber copia automatica y la notifi
   assert.equal(listado.body.zonas.find((item) => item.id === 'zona-app-zona-98701').vinculoAutomatico, true);
   const guardado = await request(`/zonas-app/${zona.id}`, { usuario: 'adminA', method: 'PUT', body: { zona: { ...zona, zonaErpId: erpId, estadoVinculacion: 'vinculado_erp' }, origen: 'web' } });
   assert.equal(guardado.status, 200, JSON.stringify(guardado.body));
+  assert.equal(guardado.body.zona.id, zona.id);
+  assert.equal(guardado.body.zona.nombre, 'ZONA PRUEBA CANONICA');
+  assert.equal(guardado.body.zona.codigoInterno, '98701');
+  const persistida = await prisma.zonaApp.findUnique({ where: { id: zona.id } });
+  assert.equal(persistida.nombre, 'ZONA PRUEBA CANONICA');
+  assert.equal(persistida.codigoInterno, '98701');
   assert.equal(await prisma.zonaApp.count({ where: { clienteId: clientes.a, zonaErpId: erpId } }), 1);
   assert.equal((await prisma.campoApp.findUnique({ where: { id: campos.a.id } })).zonaAppId, zona.id);
   assert.equal((await request('/notificaciones', { usuario: 'adminA' })).body.notificaciones.some((item) => item.id === notificacion.id), false);
@@ -339,10 +345,37 @@ test('padrones: aceptar sugerencia es atomico; copia editada ocupa vinculo y se 
     const respuesta = await request(`/notificaciones/${notificacion.id}/resolver-vinculacion`, { usuario: 'adminA', body: { decision: 'aceptar' }, timeout: 90000 });
     assert.equal(respuesta.status, editada ? 409 : 200, JSON.stringify(respuesta.body));
     assert.equal((await prisma.zonaApp.findUnique({ where: { id } })).zonaErpId, editada ? null : erpId);
+    if (!editada) assert.equal((await prisma.zonaApp.findUnique({ where: { id } })).codigoInterno, String(numero));
     const pendientes = await request('/notificaciones', { usuario: 'adminA' });
     assert.equal(pendientes.body.notificaciones.some((item) => item.id === notificacion.id), false);
     if (editada) assert.ok(await prisma.zonaApp.findUnique({ where: { id: `zona-app-zona-${numero}` } }));
   }
+});
+
+test('zonas: sincronizacion actualiza datos ERP sin cambiar identidad, provisorios ni otros clientes', async () => {
+  const { asegurarPadronesPlanificacionDesdeErp } = require('../../apps/api/dist/services/planificacion/padronesPlanificacionPrisma');
+  const erpId = 'zona:98706';
+  const id = 'zona-datos-erp-a';
+  await prisma.erpZona.create({ data: { erpId, empresaErpId: 'global', idZona: 98706, codigo: '00006', nombre: 'ZONA REAL' } });
+  await prisma.zonaApp.create({ data: { id, clienteId: clientes.a, empresaErpId: 'global', zonaErpId: erpId, nombre: 'Zona provisoria anterior', codigoInterno: 'ANTERIOR', estadoVinculacion: 'vinculado_erp', createdBy: usuarios.adminA.id } });
+  await prisma.zonaApp.create({ data: { id: 'zona-datos-erp-b', clienteId: clientes.b, empresaErpId: 'global', zonaErpId: erpId, nombre: 'Zona cliente B', codigoInterno: 'CLIENTE-B', estadoVinculacion: 'vinculado_erp' } });
+  await prisma.zonaApp.create({ data: { id: 'zona-datos-provisoria', clienteId: clientes.a, empresaErpId: 'global', nombre: 'ZONA REAL', codigoInterno: 'PROVISORIA' } });
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  const actual = await prisma.zonaApp.findUnique({ where: { id } });
+  assert.equal(actual.nombre, 'ZONA REAL');
+  assert.equal(actual.codigoInterno, '00006');
+  assert.equal(actual.createdBy, usuarios.adminA.id);
+  assert.equal(actual.zonaErpId, erpId);
+  assert.equal((await prisma.zonaApp.findUnique({ where: { id: 'zona-datos-erp-b' } })).nombre, 'Zona cliente B');
+  assert.equal((await prisma.zonaApp.findUnique({ where: { id: 'zona-datos-provisoria' } })).codigoInterno, 'PROVISORIA');
+  const auditorias = () => prisma.auditoriaEvento.count({ where: { entidadId: id, accion: 'sincronizar_datos_erp' } });
+  assert.equal(await auditorias(), 1);
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  assert.equal(await auditorias(), 1, 'sin cambios no se repite la auditoria');
+  await prisma.erpZona.update({ where: { erpId }, data: { nombre: 'ZONA REAL ACTUALIZADA', codigo: '00007' } });
+  await asegurarPadronesPlanificacionDesdeErp(clientes.a, null);
+  assert.equal((await prisma.zonaApp.findUnique({ where: { id } })).codigoInterno, '00007');
+  assert.equal(await auditorias(), 2);
 });
 
 test('padrones: materializacion por cliente es idempotente y no recicla IDs/aliases al desvincular y volver a vincular', async () => {
@@ -374,3 +407,5 @@ test('padrones: materializacion por cliente es idempotente y no recicla IDs/alia
   assert.equal(await prisma.aliasPadronApp.count({ where: { clienteId: clientes.a, tipo: 'especies', actualId: especie.id } }), 2);
   assert.ok(await prisma.especieApp.findUnique({ where: { id: copiaB.id } }));
 });
+
+require('./padrones-maestros')({ prisma, request, clientes, usuarios, campos });

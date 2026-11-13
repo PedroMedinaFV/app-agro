@@ -2,6 +2,8 @@
 
 Implementacion: 2026-11-06. Cierre de validacion: 2026-11-10. Correccion de duplicados en selectores y disponibilidad inconsistente entre padrones y notificaciones.
 
+Revision 2026-11-13: se extiende a los siete padrones la distincion entre datos maestros ERP y atributos propios. Matriz funcional, causas, modulos y operacion en [AUDITORIA_VINCULACION_PADRONES.md](AUDITORIA_VINCULACION_PADRONES.md). Esta revision sustituye la conservacion indiscriminada de nombres/codigos App vinculados; los selectores siguen priorizando el ID App canonico.
+
 ## Problema y regla funcional
 
 La cache ERP conserva datos importados. La planificacion materializa esos registros como entidades App para disponer de IDs operativos y atributos propios. Una especie ERP y su copia App **representan la misma identidad**, aunque se haya editado el nombre o agregado atributos App.
@@ -19,6 +21,18 @@ Se distinguen tres situaciones:
 Esto corrige el caso de una zona provisoria creada antes de sincronizar: la copia materializada de esa zona ERP no debe impedir que el usuario confirme la identidad.
 
 ## Selector y estado de pantalla
+
+### Datos maestros de zonas vinculadas (2026-11-13)
+
+Una zona provisoria usa el nombre/codigo ingresados en Agro App. Al vincularla, el ERP pasa a gobernar `nombre` y `codigoInterno`: el servidor los obtiene de `ErpZona` dentro de la transaccion, tanto desde Padrones como al aceptar una notificacion. No se confia en esos atributos enviados por la pantalla. El codigo se normaliza con la misma regla usada al materializar (conserva ceros iniciales); si falta codigo ERP se usa el nombre normalizado.
+
+Se conservan ID App, cliente, autor de creacion y relaciones operativas. El guardado auditado conserva los valores anteriores como evidencia. Mientras exista `zonaErpId`, un guardado posterior tampoco permite reemplazar los datos maestros por valores locales; al desvincular vuelve a ser provisoria y editable. El formulario de Zonas muestra nombre/codigo como solo lectura cuando hay vinculo, indicando que se modifican en ERP y luego se sincronizan.
+
+La materializacion posterior a sincronizar ERP tambien actualiza nombre/codigo de las zonas ya vinculadas del cliente, incluso si no aparecen entre sus campos activos. Solo escribe cuando hay diferencias y registra `sincronizar_datos_erp` con valores anteriores/nuevos en la misma transaccion. No modifica provisorios sin referencia ERP ni zonas de otros clientes; si la referencia no existe en cache, conserva los datos actuales. No elimina relaciones ni cambia snapshots historicos. La actualizacion automatica no asigna `updatedBy`, para conservar la distincion entre copias automaticas y vinculaciones/ediciones de usuario.
+
+`services/zonas/datosZonaErp.ts` centraliza la proyeccion de zona. La revision de los otros seis padrones mantiene sus atributos propios y comparte proyecciones entre guardado y refresco; ver la matriz de la auditoria enlazada arriba.
+
+Para corregir una zona vinculada antes de esta mejora: reiniciar la API con el codigo actualizado y ejecutar la sincronizacion ERP del cliente. Tambien se actualiza al volver a guardar su vinculo existente. No requiere migracion adicional, desvinculacion ni recrear la zona.
 
 `packages/tipos/src/padronesIdentidad.ts` centraliza identidad, disponibilidad, IDs materializados y reemplazo del estado despues de un guardado. Los DTO de los siete padrones agregan `vinculoAutomatico?: boolean`, calculado exclusivamente por backend; enviar ese flag no concede permiso de consolidar.
 
@@ -77,7 +91,7 @@ Una vinculacion manual desde el padron tambien vuelve obsoletas sus sugerencias 
 
 Migracion nueva: `20261106140000_identidad_padrones_erp`. Crea aliases e indices unicos cliente/ERP en seis padrones; servicios ya tenia ese indice. No vincula registros ni elimina duplicados existentes. El SQL se ejecuta en una transaccion y falla si encuentra duplicados previos en lugar de elegir uno.
 
-Estado operativo comprobado con `db:status` el 2026-11-10: esta migracion sigue pendiente en `agro_app`. Las pruebas aisladas no la aplican en ese schema.
+El 2026-11-10 `db:status` la mostraba pendiente. Actualizacion 2026-11-13: el usuario confirma que ya fue ejecutada y que la vinculacion quedo resuelta. Las pruebas aisladas no aplican migraciones en el schema operativo.
 
 Antes del deploy, revisar por cada tabla el equivalente de esta consulta (solo lectura):
 
@@ -108,6 +122,7 @@ Luego reiniciar API/web y recargar la pantalla. El contador total versionado pas
 - `tests/padrones-identidad.test.js`: prioridad App por vinculo, homonimos separados, IDs por cliente sin colisiones de separadores, copias historicas/nuevas, bloqueo de copias editadas y limpieza del estado visible.
 - `tests/padrones-api-rutas.test.js`: adaptadores web/mobile reales, segmentos de URL con IDs reservados, body sin alteraciones y preservacion del token mobile.
 - `tests/integration/api.integration.test.js`: zona provisoria + copia materializada + referencia de campo + sugerencia; guardado HTTP, traslado, auditoria y retirada del aviso. Consolidacion y rollback reales en los siete padrones, aliases en body/ruta, ingreso offline con IDs anteriores y rechazo de otro cliente. Aceptacion por notificacion, conflicto ante copia editada y ciclo materializar/vincular/desvincular/revincular para dos clientes sin reciclar aliases.
+- Ampliacion 2026-11-13 de integracion: nombre/codigo ERP persistidos al vincular desde Padrones, codigo ERP al aceptar notificacion y refresco de zonas ya vinculadas con ID estable, provisorios/otro cliente intactos y auditoria solo ante cambios. Los tres escenarios se ejecutaron filtrados y aprobaron; schema temporal eliminado. Evidencia en `ESTABILIDAD_MVP.md`.
 - `pnpm check`: lint, contratos/tipos, suite rapida y builds.
 - `pnpm test:integration`: migraciones desde cero y PostgreSQL/HTTP reales en schema temporal; no aplica la migracion al schema operativo.
 
