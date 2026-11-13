@@ -458,6 +458,12 @@ export type PlanificacionAgricolaLinea = {
 };
 
 export type PlanificacionAgricola = {
+  tipoDocumento?: 'base' | 'anexo';
+  planificacionOriginalId?: string;
+  numeroAnexo?: number;
+  motivoIncorporacion?: string;
+  fechaIncorporacion?: string;
+  alcanceLoteIds?: string[];
   id: string;
   clienteId: string;
   campaniaErpId: string;
@@ -481,6 +487,27 @@ export type PlanificacionAgricolaResumen = Omit<PlanificacionAgricola, 'lineas'>
   costoProduccionEstimado: number;
   margenBrutoEstimado: number;
   tieneLineasDuplicadas: boolean;
+};
+
+export type CrearAnexoPlanificacionRequest = {
+  nombre: string;
+  motivoIncorporacion: string;
+  fechaIncorporacion: string;
+  loteAppIds: string[];
+};
+
+export type ConsolidadoPlanificacion = {
+  original: PlanificacionAgricola;
+  anexos: PlanificacionAgricola[];
+  lineas: PlanificacionAgricolaLinea[];
+  totales: {
+    superficieFisica: number;
+    hectareasCultivo: number;
+    ingresoNeto: number;
+    costo: number;
+    margen: number;
+    margenPorHa: number;
+  };
 };
 
 export type PlanificacionesResumenResponse = {

@@ -102,7 +102,7 @@ export function PantallaOperativa({ sesion, sesionActual, onCerrarSesion }: Prop
               <Text style={styles.note}>Planificaciones: {fichaLote?.planificaciones.length ?? (lineaSeleccionada ? 1 : 0)}</Text>
               {fichaLote?.planificaciones.slice(0, 2).map((linea) => (
                 <Text key={linea.id} style={styles.note}>
-                  {linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {linea.margenBrutoEstimado}
+                  {linea.tipoDocumento === 'anexo' ? `Anexo ${linea.numeroAnexo}: ` : ''}{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {linea.margenBrutoEstimado}
                 </Text>
               ))}
               <Text style={styles.note}>

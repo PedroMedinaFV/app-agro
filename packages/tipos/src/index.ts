@@ -14,6 +14,7 @@ export * from './erp';
 export * from './planificacion';
 export * from './planificacionHelpers';
 export * from './padronesIdentidad';
+export * from './consolidadoPlanificacion';
 export * from './precipitacion';
 export * from './observacion';
 export * from './operativo';

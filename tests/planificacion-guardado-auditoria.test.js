@@ -87,6 +87,7 @@ function crearTx(existente) {
   const createManyLineas = [];
 
   const tx = {
+    $queryRaw: async () => [],
     planificacionAgricola: {
       findUnique: async () => existente,
       findFirst: async () => null,

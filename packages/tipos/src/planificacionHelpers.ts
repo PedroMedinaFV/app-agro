@@ -101,6 +101,9 @@ export function resumirPlanificacionLocal(planificacion: PlanificacionAgricola):
   const resumen = calcularResumenPlanificacion(planificacion.lineas);
 
   return {
+    tipoDocumento: planificacion.tipoDocumento, planificacionOriginalId: planificacion.planificacionOriginalId,
+    numeroAnexo: planificacion.numeroAnexo, motivoIncorporacion: planificacion.motivoIncorporacion,
+    fechaIncorporacion: planificacion.fechaIncorporacion, alcanceLoteIds: planificacion.alcanceLoteIds,
     id: planificacion.id,
     clienteId: planificacion.clienteId,
     campaniaErpId: planificacion.campaniaErpId,

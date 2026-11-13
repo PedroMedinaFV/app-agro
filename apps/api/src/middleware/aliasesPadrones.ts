@@ -22,6 +22,12 @@ export async function resolverAliasesPadrones(req: Request, _res: Response, next
       for (const [clave, dato] of Object.entries(registro)) {
         // Los snapshots son evidencia del momento original, no referencias editables.
         if (clave.toLowerCase().includes('snapshot')) continue;
+        if (['alcanceLoteIds', 'loteAppIds'].includes(clave) && Array.isArray(dato)) {
+          dato.forEach((id, indice) => {
+            if (typeof id === 'string') referencias.push({ tipo: 'lotes', id, reemplazar: (actual) => { dato[indice] = actual; } });
+          });
+          continue;
+        }
         const tipo = Object.prototype.hasOwnProperty.call(campos, clave) ? campos[clave]
           : clave === 'id' && objeto && Object.prototype.hasOwnProperty.call(objetos, objeto) ? objetos[objeto] : undefined;
         if (tipo && typeof dato === 'string') referencias.push({ tipo, id: dato, reemplazar: (id) => { registro[clave] = id; } });

@@ -16,6 +16,8 @@ import { obtenerCamposAsignados } from '../services/usuarios/asignacionCampos';
 import { obtenerPadronesPlanificacionPersistidos } from '../services/planificacion/padronesPlanificacionPrisma';
 import { asegurarEstadiosReferenciaSemilla } from '../services/planificacion/estadiosReferenciaPrisma';
 import { prisma } from '../prisma';
+import { crearAnexoPlanificacion, obtenerLotesElegiblesAnexo } from '../services/planificacion/anexosPlanificacion';
+import { obtenerConsolidadoPlanificacion } from '../services/planificacion/consolidadoPlanificacion';
 
 const router = Router();
 type RequestConUsuario = Request & {
@@ -91,14 +93,27 @@ async function obtenerSnapshotPlanificacion(
     cultivosPromise,
   ]);
 
+  const documentoEditor = detalleEditor ? planificaciones[0] : undefined;
+  const ocupados = documentoEditor?.tipoDocumento === 'anexo' ? await prisma.planificacionLoteAprobado.findMany({
+    where: { clienteId, campaniaErpId: documentoEditor.campaniaErpId, planificacionId: { not: documentoEditor.id } },
+    select: { loteAppId: true },
+  }) : [];
+  const lotesOcupados = new Set(ocupados.map((r) => r.loteAppId));
+  const camposPermitidos = new Set(padronesPersistidos.camposApp.map((c) => c.id));
+  const asignaciones = await camposAsignadosPromise;
+  const planesVisibles = asignaciones === null ? planificaciones : planificaciones.map((p) => {
+    const lineas = p.lineas.filter((l) => camposPermitidos.has(l.campoAppId));
+    return { ...p, lineas, alcanceLoteIds: [...new Set(lineas.map((l) => l.loteAppId))] };
+  });
+
   return {
     zonasApp: padronesPersistidos.zonasApp,
     camposApp: padronesPersistidos.camposApp,
-    lotesApp: padronesPersistidos.lotesApp,
+    lotesApp: padronesPersistidos.lotesApp.filter((l) => !lotesOcupados.has(l.id)),
     especiesApp: padronesPersistidos.especiesApp,
     actividadesApp: padronesPersistidos.actividadesApp,
     insumosApp: padronesPersistidos.insumosApp,
-    planificaciones,
+    planificaciones: planesVisibles,
     protocolos: Array.isArray(protocolosPersistidos) ? protocolosPersistidos : protocolosPersistidos.protocolos,
     preciosReferencia: preciosPersistidos,
     destinosReferencia: destinosPersistidos,
@@ -263,6 +278,27 @@ router.put('/:id', requierePermiso('planificacion:editar'), async (req, res, nex
   } catch (error) {
     next(error);
   }
+});
+
+router.post('/:id/anexos', requierePermiso('planificacion:editar'), async (req, res, next) => {
+  try {
+    const { user } = req as RequestConUsuario;
+    res.status(201).json(await crearAnexoPlanificacion(req.params.id, req.body, { id: user?.sub, clienteId: user?.clienteId, email: user?.email }));
+  } catch (error) { next(error); }
+});
+
+router.get('/:id/consolidado', requierePermiso('planificacion:leer'), async (req, res, next) => {
+  try {
+    const { user } = req as RequestConUsuario;
+    res.json(await obtenerConsolidadoPlanificacion(req.params.id, { id: user?.sub, clienteId: user?.clienteId, rol: user?.rol }));
+  } catch (error) { next(error); }
+});
+
+router.get('/:id/lotes-anexo', requierePermiso('planificacion:editar'), async (req, res, next) => {
+  try {
+    const { user } = req as RequestConUsuario;
+    res.json({ lotes: await obtenerLotesElegiblesAnexo(req.params.id, { id: user?.sub, clienteId: user?.clienteId }) });
+  } catch (error) { next(error); }
 });
 
 router.post('/:id/cerrar', requierePermiso('planificacion:cerrar'), async (req, res, next) => {

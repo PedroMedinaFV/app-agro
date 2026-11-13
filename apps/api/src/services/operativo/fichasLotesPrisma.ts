@@ -65,6 +65,9 @@ type CultivoRow = {
 };
 
 type PlanificacionLineaRow = {
+  tipoDocumento?: string;
+  planificacionOriginalId?: string | null;
+  numeroAnexo?: number | null;
   id: string;
   planificacionId: string;
   planificacionNombre: string;
@@ -190,6 +193,9 @@ export function mapearCultivoOperativo(row: CultivoRow): CultivoOperativoResumen
 
 export function mapearLineaPlanificacionOperativa(row: PlanificacionLineaRow): PlanificacionOperativaLineaResumen {
   return {
+    tipoDocumento: row.tipoDocumento as 'base' | 'anexo' | undefined,
+    planificacionOriginalId: row.planificacionOriginalId ?? undefined,
+    numeroAnexo: row.numeroAnexo ?? undefined,
     id: row.id,
     planificacionId: row.planificacionId,
     planificacionNombre: row.planificacionNombre,
@@ -326,6 +332,9 @@ export async function obtenerFichaLoteOperativo(
       linea."planificacionId",
       planificacion."nombre" AS "planificacionNombre",
       planificacion."estado" AS "estadoPlanificacion",
+      planificacion."tipoDocumento",
+      planificacion."planificacionOriginalId",
+      planificacion."numeroAnexo",
       actividad."nombre" AS "actividadNombre",
       protocolo."nombre" AS "protocoloNombre",
       linea."destinoVenta",
@@ -338,6 +347,7 @@ export async function obtenerFichaLoteOperativo(
     LEFT JOIN "ProtocoloProductivo" protocolo ON protocolo."id" = linea."protocoloId"
     WHERE planificacion."clienteId" = ${clienteId}
       AND linea."loteAppId" = ${loteAppId}
+      AND planificacion."estado" = 'cerrada'
     ORDER BY planificacion."createdAt" DESC, linea."createdAt" DESC
     LIMIT 20
   `;

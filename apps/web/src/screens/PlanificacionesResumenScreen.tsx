@@ -11,6 +11,7 @@ import type { PlanificacionAgricolaResumen } from '@agro/tipos';
 import { formatearNumero } from '../utils/formatters';
 
 type PlanificacionesResumenScreenProps = PlanificacionBaseProps & {
+  onVerAnexos: (originalId: string) => void;
   onEditarPlanificacion: (planificacionId: string) => void;
   onNuevoEscenario: (datos: { nombre: string; campaniaErpId: string; descripcion?: string }) => Promise<boolean>;
   onCopiarEscenario: (planificacionId: string) => Promise<boolean>;
@@ -36,6 +37,7 @@ function convertirResumenLocal(item: PlanificacionActiva): PlanificacionAgricola
     descripcion: item.descripcion,
     estado: item.estado,
     escenarioOriginal: item.escenarioOriginal,
+    tipoDocumento: item.tipoDocumento, planificacionOriginalId: item.planificacionOriginalId, numeroAnexo: item.numeroAnexo,
     escenarioBloqueadoPorId: item.escenarioBloqueadoPorId,
     cerradaPor: item.cerradaPor,
     cerradaAt: item.cerradaAt,
@@ -69,6 +71,7 @@ export function PlanificacionesResumenScreen({
   onEditarPlanificacion,
   onNuevoEscenario,
   onCopiarEscenario,
+  onVerAnexos,
 }: PlanificacionesResumenScreenProps) {
   const campaniaInicial = planificacionActiva?.campaniaErpId
     || campaniasDisponibles.find((campania) => campania.esActual)?.erpId
@@ -199,7 +202,7 @@ export function PlanificacionesResumenScreen({
               render: (item) => (
                 <div>
                   <strong>{item.nombre}</strong>
-                  <span>{item.escenarioOriginal ? 'Escenario original' : item.descripcion || 'Sin descripcion'}</span>
+                  <span>{item.tipoDocumento === 'anexo' ? `Anexo ${item.numeroAnexo ?? '(borrador)'} de ${planificacionesListado.find((p) => p.id === item.planificacionOriginalId)?.nombre ?? item.planificacionOriginalId}` : item.escenarioOriginal ? 'Escenario original' : item.descripcion || 'Sin descripcion'}</span>
                 </div>
               ),
             },
@@ -248,8 +251,9 @@ export function PlanificacionesResumenScreen({
 
                 return (
                   <div className="table-icon-actions">
-                    <IconButton icon="edit" label={`Editar ${item.nombre}`} onClick={() => onEditarPlanificacion(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
-                    <IconButton icon="copy" label={`Copiar ${item.nombre}`} onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
+                    <IconButton icon="edit" label={`${item.estado === 'cerrada' || item.estado === 'deshabilitada' ? 'Ver' : 'Editar'} ${item.nombre}`} onClick={() => onEditarPlanificacion(item.id)} />
+                    {item.escenarioOriginal && item.estado === 'cerrada' && <Button variant="small" onClick={() => onVerAnexos(item.id)}>Anexos y consolidado</Button>}
+                    <IconButton icon="copy" label={`Copiar ${item.nombre}`} onClick={() => onCopiarEscenario(item.id)} disabled={!puedeEditarPlanificacionPorPermiso || guardandoPlanificacion || item.tipoDocumento === 'anexo' || item.estado === 'cerrada' || item.estado === 'deshabilitada'} />
                     <IconButton
                       icon="lock"
                       label={`Cerrar ${item.nombre}`}

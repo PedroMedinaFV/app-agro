@@ -46,7 +46,7 @@ export function FichaLoteObservaciones({ fichaLote, onCerrar }: FichaLoteObserva
         <article>
           <h3>Planificacion</h3>
           {fichaLote.planificaciones.length ? fichaLote.planificaciones.slice(0, 4).map((linea) => (
-            <p key={linea.id}>{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {formatearNumero(linea.margenBrutoEstimado, 0)}</p>
+            <p key={linea.id}>{linea.tipoDocumento === 'anexo' ? `Anexo ${linea.numeroAnexo}: ` : ''}{linea.planificacionNombre} - {linea.actividadNombre || 'Sin actividad'} - MB USD {formatearNumero(linea.margenBrutoEstimado, 0)}</p>
           )) : <p>Sin lineas de planificacion asociadas.</p>}
         </article>
 

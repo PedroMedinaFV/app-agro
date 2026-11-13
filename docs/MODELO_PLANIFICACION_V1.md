@@ -301,7 +301,7 @@ Cabecera de planificacion por campania y escenario.
 
 Una misma campania puede tener varias planificaciones en paralelo para simular alternativas productivas y economicas. En este contexto, `escenarioOriginal` no significa "primer escenario creado", sino "escenario final elegido al cerrar la planificacion".
 
-Evolucion prevista, no implementada: [ANEXOS_PLANIFICACION.md](ANEXOS_PLANIFICACION.md) propone documentos de tipo anexo asociados a la original cerrada para incorporar lotes nuevos, conservando sus propios snapshots. La futura migracion diferenciara bases/anexos y alcance por lote; el modelo y las reglas actuales de bloqueo no habilitan todavia ese flujo.
+Ampliacion implementada: [ANEXOS_PLANIFICACION.md](ANEXOS_PLANIFICACION.md) incorpora documentos de tipo anexo asociados a la original cerrada, conservando snapshots propios. La migracion `20261113120000_anexos_planificacion` diferencia bases/anexos, alcance y reservas por lote. Las reglas de escenarios siguientes aplican a bases; los anexos tienen politica de guardado/cierre propia.
 
 Campos sugeridos:
 

@@ -61,9 +61,10 @@ export function useDatosOperativosMobile(sesion: SesionUsuario, sesionActual: Re
 
   const esAdmin = sesion.permisos.includes('erp:configurar');
   const datosOperativos = planificacionOperativa;
-  const planificacionActiva = datosOperativos.planificaciones[0];
+  const planificacionActiva = datosOperativos.planificaciones.find((p) => p.estado === 'cerrada' && p.escenarioOriginal)
+    ?? datosOperativos.planificaciones.find((p) => p.estado === 'cerrada') ?? datosOperativos.planificaciones[0];
   const protocoloActivo = datosOperativos.protocolos[0];
-  const lineasPlanificacion = planificacionActiva?.lineas || [];
+  const lineasPlanificacion = datosOperativos.planificaciones.filter((p) => p.estado === 'cerrada' && p.campaniaErpId === planificacionActiva?.campaniaErpId).flatMap((p) => p.lineas);
   const margenBruto = lineasPlanificacion.reduce((total, linea) => total + linea.margenBrutoEstimado, 0);
   const hectareas = lineasPlanificacion.reduce((total, linea) => total + linea.hectareasPlanificadas, 0);
   const campoSeleccionado = datosOperativos.camposApp.find((campo) => campo.id === campoSeleccionadoId) || datosOperativos.camposApp[0];

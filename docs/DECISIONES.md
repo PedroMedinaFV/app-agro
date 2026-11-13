@@ -1,5 +1,15 @@
 # Decisiones Tecnicas
 
+## 2026-11-13 - Anexos y alcance aprobado de planificacion
+
+Se reutiliza `PlanificacionAgricola` diferenciando base/anexo; los anexos solo se crean mediante el caso de uso asociado a una original cerrada del mismo cliente/campania. Se conserva `escenarioOriginal` exclusivamente para la base elegida. Cada anexo guarda snapshots propios y se agrega al consolidado al cerrar, sin deshabilitar documentos previos.
+
+El alcance se persiste por lote y las reservas aprobadas tienen clave unica cliente/campania/lote. Se comparte el lock de padrones por cliente para serializar guardados/cierres y consolidaciones ERP. La numeracion se asigna al cerrar bajo ese lock; un cierre fallido revierte reservas, numero y snapshots. FK y aliases mantienen la reserva ante consolidacion de lotes.
+
+Un borrador puede tener lineas sin actividad/protocolo. El cierre exige que todas sean validas, incluso una segunda linea del mismo lote; el usuario debe completar o quitar explicitamente los pendientes. No se eliminan automaticamente. El editor actualiza el alcance al quitar la ultima linea y guarda antes de cerrar para usar el estado visible. Originales historicas incompletas requieren revision explicita; no se reescriben para habilitar anexos.
+
+El consolidado reutiliza valores congelados y filtra campos autorizados antes de totalizar. Se separan hectareas de cultivo y superficie maxima planificada por lote; margen por ha usa hectareas de cultivo. No se introducen conversiones monetarias nuevas. El CSV conserva documento de origen y la ficha operativa identifica anexos. Contratos, migracion, instalacion y limites en [ANEXOS_PLANIFICACION.md](ANEXOS_PLANIFICACION.md).
+
 ## 2026-11-06 - Identidad operativa App/ERP y consolidacion explicita
 
 Un registro materializado de ERP no es una segunda opcion de seleccion ni una vinculacion decidida por el usuario. Los selectores conservan App por ID ERP; nombres/codigos parecidos solo sirven para sugerir, nunca para fusionar automaticamente.

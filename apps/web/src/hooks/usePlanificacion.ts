@@ -104,7 +104,14 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
   function actualizarPlanificacionActiva(mutador: (actual: PlanificacionAgricola) => PlanificacionAgricola) {
     setPlanificacion((actual) => ({
       ...actual,
-      planificaciones: actual.planificaciones.map((item) => (item.id === planificacionActiva?.id ? mutador(item) : item)),
+      planificaciones: actual.planificaciones.map((item) => {
+        if (item.id !== planificacionActiva?.id) return item;
+        const siguiente = mutador(item);
+        const anteriores = new Set(item.lineas.map((l) => l.loteAppId));
+        const actuales = new Set(siguiente.lineas.map((l) => l.loteAppId));
+        const conservados = (item.alcanceLoteIds ?? [...anteriores]).filter((id) => !anteriores.has(id) || actuales.has(id));
+        return { ...siguiente, alcanceLoteIds: [...new Set([...conservados, ...actuales])] };
+      }),
     }));
   }
 
@@ -319,7 +326,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
     );
   }
 
-  function actualizarCabeceraPlanificacion(cambios: Partial<Pick<PlanificacionAgricola, 'nombre' | 'descripcion'>>) {
+  function actualizarCabeceraPlanificacion(cambios: Partial<Pick<PlanificacionAgricola, 'nombre' | 'descripcion' | 'motivoIncorporacion' | 'fechaIncorporacion'>>) {
     actualizarPlanificacionActiva((actual) => ({
       ...actual,
       ...cambios,
@@ -328,6 +335,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
   }
 
   function cambiarCampaniaPlanificacion(campaniaErpId: string) {
+    if (planificacionActiva?.tipoDocumento === 'anexo') return;
     const ahora = new Date().toISOString();
 
     actualizarPlanificacionActiva((actual) => ({
@@ -425,6 +433,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
         return;
       }
 
+      await guardarPlanificacion(planificacionObjetivo.id, { planificacion: planificacionObjetivo, origen: 'web', motivo: 'Guardar estado actual antes del cierre' }, sesion.token);
       const respuesta = await cerrarPlanificacion(planificacionObjetivo.id, {
         origen: 'web',
         motivo: 'Cierre de planificacion desde web',
@@ -437,7 +446,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
             return respuesta.planificacion;
           }
 
-          if (item.campaniaErpId === respuesta.planificacion.campaniaErpId && item.estado !== 'deshabilitada') {
+          if (respuesta.planificacion.tipoDocumento !== 'anexo' && item.tipoDocumento !== 'anexo' && item.campaniaErpId === respuesta.planificacion.campaniaErpId && item.estado !== 'deshabilitada' && item.estado !== 'cerrada') {
             return {
               ...item,
               estado: 'deshabilitada',
@@ -455,7 +464,7 @@ export function usePlanificacion(sesion: SesionUsuario | null, snapshot: ErpSnap
       notificar?.({
         tipo: 'success',
         titulo: 'Planificacion cerrada',
-        mensaje: respuesta.auditado ? 'Quedo como escenario original y se deshabilitaron escenarios alternativos de la campania.' : respuesta.mensaje,
+        mensaje: respuesta.mensaje,
       });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : 'No se pudo cerrar la planificacion.';

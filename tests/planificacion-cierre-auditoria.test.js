@@ -68,7 +68,10 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
   const updateManyCalls = [];
 
   const tx = {
+    $queryRaw: async () => [],
+    planificacionLoteAprobado: { createMany: async () => ({count: 1}) },
     loteApp: {
+      count: async () => new Set(existente.lineas.map((l) => l.loteAppId)).size,
       findMany: async () => existente.lineas.map((linea) => ({
         id: linea.loteAppId,
         clienteId: existente.clienteId,
@@ -280,6 +283,7 @@ function crearTx({ existente = crearPlanificacion(), alternativos = [] } = {}) {
     },
     planificacionAgricola: {
       findUnique: async () => existente,
+      findUniqueOrThrow: async () => existente,
       findMany: async () => alternativos,
       updateMany: async (args) => {
         updateManyCalls.push(args);

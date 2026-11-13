@@ -1,5 +1,13 @@
 # Calidad, tests y modularizacion
 
+## Anexos de planificacion (2026-11-13)
+
+`tests/anexos-planificacion.test.js` comprueba cierre rechazado sin borrar lineas, seleccion sin lineas, exclusiones del consolidado, origen de lineas, denominadores y doble cultivo. Las regresiones existentes de cierre/guardado incluyen ahora el bloqueo transaccional y la reserva de alcance.
+
+`tests/integration/anexos-planificacion.js` agrega tres escenarios HTTP/PostgreSQL al runner general: borradores incompletos y retiro explicito antes de cerrar; cierre/consolidado con original intacta y permisos; cierres concurrentes y numeracion sucesiva; y consolidacion de un lote ERP con traslado de reserva/alcance y rechazo de un alias ya aprobado. Los pasos de alta y cierre forman un recorrido ordenado dentro de este bloque; para diagnosticarlo se filtra el conjunto `--test-name-pattern=anexos HTTP:`. El filtro no reemplaza la corrida completa de CI.
+
+La implementacion reutiliza calculos/snapshots y el editor. Las politicas de documento y alcance se separan en `politicaDocumentosPlanificacion.ts`, el alta en `anexosPlanificacion.ts` y los totales puros en `packages/tipos/src/consolidadoPlanificacion.ts`. La migracion es `20261113120000_anexos_planificacion`. La evidencia y el recorrido manual pendiente estan en `ESTABILIDAD_MVP.md` y `ANEXOS_PLANIFICACION.md`.
+
 Este documento define reglas obligatorias para que Agro App pueda crecer sin volverse fragil. Aplica a funcionalidades nuevas y a mejoras sobre funcionalidades existentes.
 
 El estado de corte para version estable queda resumido en `docs/ESTABILIDAD_MVP.md`.

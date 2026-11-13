@@ -15,6 +15,10 @@ Fecha de inicio: 2026-11-06. Alcance acordado: estabilizar Agro App por etapas c
 
 La modularizacion necesaria para una correccion se realiza dentro de su etapa. La etapa 6 aborda lo restante; no se posterga la calidad de las etapas anteriores.
 
+## Funcionalidad posterior: anexos de planificacion
+
+Implementacion 2026-11-13: alta desde original cerrada, editor reutilizado, borradores incompletos, cierre con actividad/protocolo obligatorios, alcance/reservas por lote, numeracion transaccional, lectura consolidada/CSV y fichas operativas web/mobile. La original permanece inmutable; un anexo no deshabilita otros documentos. Instalacion de `20261113120000_anexos_planificacion` y recorrido manual pendientes; guia en [ANEXOS_PLANIFICACION.md](ANEXOS_PLANIFICACION.md). Evidencia automatica en `ESTABILIDAD_MVP.md`.
+
 ## Correccion posterior: identidad de padrones App/ERP
 
 Actualizacion 2026-11-10: implementadas precedencia App en selectores, disponibilidad compartida para siete padrones, distincion visual de copias automaticas/vinculos confirmados, consolidacion transaccional con traslado de referencias, aliases para IDs previos y validacion de vigencia de notificaciones. Se corrigen ademas IDs materializados por cliente y guardados web autenticados que simulaban exito local ante un rechazo API.

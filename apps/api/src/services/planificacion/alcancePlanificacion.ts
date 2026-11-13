@@ -22,7 +22,7 @@ export async function validarAlcanceLineasPlanificacion(tx: RepositoriosAlcance,
     const campo = camposPorId.get(linea.campoAppId);
     const lote = lotesPorId.get(linea.loteAppId);
     if (!campo || campo.empresaErpId !== linea.empresaErpId || !lote || lote.campoAppId !== campo.id
-      || !actividadesIds.has(linea.actividadAppId)
+      || (linea.actividadAppId && !actividadesIds.has(linea.actividadAppId))
       || (linea.protocoloId && !protocolosIds.has(linea.protocoloId))) {
       throw crearErrorValidacion('Las referencias de la linea deben pertenecer al cliente y al campo indicado.', 403);
     }

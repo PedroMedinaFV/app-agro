@@ -6,6 +6,7 @@ type CabeceraPlanificacionEditorProps = {
   descripcion: string;
   campanias: ErpCampania[];
   puedeEditar: boolean;
+  campaniaFija?: boolean;
   onNombreChange: (nombre: string) => void;
   onCampaniaChange: (campaniaErpId: string) => void;
   onDescripcionChange: (descripcion: string) => void;
@@ -17,6 +18,7 @@ export function CabeceraPlanificacionEditor({
   descripcion,
   campanias,
   puedeEditar,
+  campaniaFija,
   onNombreChange,
   onCampaniaChange,
   onDescripcionChange,
@@ -29,7 +31,7 @@ export function CabeceraPlanificacionEditor({
       </label>
       <label>
         Campania
-        <select value={campaniaErpId} onChange={(event) => onCampaniaChange(event.target.value)} disabled={!puedeEditar}>
+        <select value={campaniaErpId} onChange={(event) => onCampaniaChange(event.target.value)} disabled={!puedeEditar || campaniaFija}>
           {campanias.map((campania) => (
             <option key={campania.erpId} value={campania.erpId}>
               {campania.codigo} {campania.esActual ? '(actual)' : ''}

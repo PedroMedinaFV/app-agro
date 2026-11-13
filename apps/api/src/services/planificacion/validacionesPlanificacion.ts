@@ -369,6 +369,10 @@ export function congelarPlanificacionParaCierre(
 }
 
 export function validarCabeceraPlanificacion(planificacion: PlanificacionAgricola) {
+  if (!planificacion || !Array.isArray(planificacion.lineas)) throw crearErrorValidacion('La planificacion debe incluir un arreglo de lineas.');
+  if (planificacion.alcanceLoteIds !== undefined && (!Array.isArray(planificacion.alcanceLoteIds) || planificacion.alcanceLoteIds.some((id) => typeof id !== 'string' || !id))) {
+    throw crearErrorValidacion('El alcance debe ser un arreglo de IDs de lotes.');
+  }
   if (!planificacion.clienteId) {
     throw crearErrorValidacion('La planificacion debe tener clienteId.');
   }
@@ -380,6 +384,7 @@ export function validarCabeceraPlanificacion(planificacion: PlanificacionAgricol
   if (planificacion.estado === 'cerrada' || planificacion.estado === 'deshabilitada') {
     throw crearErrorValidacion('El cierre o deshabilitacion debe ejecutarse por el endpoint especifico de cierre.');
   }
+  if (!['borrador', 'en_revision', 'aprobada'].includes(planificacion.estado)) throw crearErrorValidacion('Estado de planificacion invalido.');
 }
 
 export function validarLineasPlanificacion(
@@ -389,7 +394,7 @@ export function validarLineasPlanificacion(
   const claves = new Set<string>();
 
   for (const linea of planificacion.lineas) {
-    if (!linea.campoAppId || !linea.loteAppId || !linea.actividadAppId) {
+    if (!linea.campoAppId || !linea.loteAppId || (!linea.actividadAppId && !opciones.permitirHectareasCero)) {
       throw crearErrorValidacion('Cada linea debe tener campo, lote y actividad de planificacion.');
     }
 

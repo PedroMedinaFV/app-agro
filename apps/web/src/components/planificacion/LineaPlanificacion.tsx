@@ -48,7 +48,6 @@ export const LineaPlanificacion = memo(function LineaPlanificacion({
   lineaDuplicada,
   hectareasExcedidas,
   puedeEditar,
-  cantidadLineas,
   formatearUsd,
   onCambiarLote,
   onCambiarProtocolo,
@@ -187,7 +186,7 @@ export const LineaPlanificacion = memo(function LineaPlanificacion({
             className="danger-icon"
             label="Quitar linea"
             onClick={() => onEliminarLinea(linea.id)}
-            disabled={!puedeEditar || cantidadLineas === 1}
+            disabled={!puedeEditar}
           />
         </div>
       </div>

@@ -350,6 +350,7 @@ export function mapearGastoComercialReferencia(gasto: {
 
 type PlanificacionPrisma = Prisma.PlanificacionAgricolaGetPayload<{
   include: {
+    alcance: true;
     lineas: {
       orderBy: { createdAt: 'asc' };
     };
@@ -365,7 +366,7 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
     campoErpId: linea.campoErpId || undefined,
     loteAppId: linea.loteAppId,
     loteErpId: linea.loteErpId || undefined,
-    actividadAppId: linea.actividadAppId,
+    actividadAppId: linea.actividadAppId || '',
     actividadErpId: linea.actividadErpId || undefined,
     cultivoErpId: linea.cultivoErpId || undefined,
     padronesSnapshot: mapearPadronesSnapshot(linea.padronesSnapshot),
@@ -397,6 +398,12 @@ function mapearLinea(linea: PlanificacionPrisma['lineas'][number]): Planificacio
 
 export function mapearPlanificacion(planificacion: PlanificacionPrisma): PlanificacionAgricola {
   return {
+    tipoDocumento: (planificacion.tipoDocumento || 'base') as PlanificacionAgricola['tipoDocumento'],
+    planificacionOriginalId: planificacion.planificacionOriginalId || undefined,
+    numeroAnexo: planificacion.numeroAnexo ?? undefined,
+    motivoIncorporacion: planificacion.motivoIncorporacion || undefined,
+    fechaIncorporacion: planificacion.fechaIncorporacion?.toISOString().slice(0, 10),
+    alcanceLoteIds: planificacion.alcance?.map((a) => a.loteAppId) ?? [...new Set(planificacion.lineas.map((l) => l.loteAppId))],
     id: planificacion.id,
     clienteId: planificacion.clienteId,
     campaniaErpId: planificacion.campaniaErpId,

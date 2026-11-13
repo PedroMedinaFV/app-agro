@@ -1,4 +1,6 @@
 import {
+  ConsolidadoPlanificacion,
+  CrearAnexoPlanificacionRequest,
   EmpresaErpCliente,
   ErpActividad,
   ErpEmpresa,
@@ -449,6 +451,22 @@ export async function guardarPlanificacion(id: string, datos: GuardarPlanificaci
   invalidarPlanificacionSnapshotCache();
 
   return respuesta;
+}
+
+export type LoteElegibleAnexo = { id: string; nombre: string; campoNombre: string; superficieProductiva: number; enOtroBorrador: boolean };
+
+export async function obtenerLotesAnexo(id: string, token: string) {
+  return request<{ lotes: LoteElegibleAnexo[] }>(`/planificacion/${encodeURIComponent(id)}/lotes-anexo`, {}, token);
+}
+
+export async function crearAnexoPlanificacion(id: string, datos: CrearAnexoPlanificacionRequest, token: string) {
+  const respuesta = await request<GuardarPlanificacionResponse>(`/planificacion/${encodeURIComponent(id)}/anexos`, { method: 'POST', body: JSON.stringify(datos) }, token);
+  invalidarPlanificacionSnapshotCache();
+  return respuesta;
+}
+
+export async function obtenerConsolidadoPlanificacion(id: string, token: string) {
+  return request<ConsolidadoPlanificacion>(`/planificacion/${encodeURIComponent(id)}/consolidado`, {}, token);
 }
 
 export async function cerrarPlanificacion(id: string, datos: CerrarPlanificacionRequest, token?: string): Promise<CerrarPlanificacionResponse> {

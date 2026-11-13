@@ -92,7 +92,7 @@ GitHub Actions configura ambos controles en PR y push a `main`/`testing`, con Po
 - [Plan de accion](docs/PLAN_ACCION_ESTABILIZACION.md): etapas y criterios de cierre.
 - [Estado de estabilidad](docs/ESTABILIDAD_MVP.md): evidencia de verificaciones y pendientes.
 - [Planificacion agricola](docs/PLANIFICACION_AGRICOLA.md) y [modelo de datos](docs/MODELO_PLANIFICACION_V1.md).
-- [Anexos de planificacion](docs/ANEXOS_PLANIFICACION.md): propuesta para incorporar nuevas unidades despues del cierre, con documentos independientes y consolidado de campania; pendiente de implementar.
+- [Anexos de planificacion](docs/ANEXOS_PLANIFICACION.md): incorporacion de nuevas unidades despues del cierre, editor compartido, reservas por lote y consolidado de campania; requiere migracion de anexos.
 - [Roles y permisos](docs/ROLES_Y_PERMISOS.md), [seguridad](docs/SEGURIDAD.md) y [auditoria](docs/AUDITORIA.md).
 - [Autenticacion y errores](docs/AUTENTICACION.md): validaciones, JWT, configuracion y pruebas HTTP.
 - [Registros offline](docs/OFFLINE.md): aislamiento por propietario, persistencia, adjuntos, reintentos y recuperacion de registros anteriores.

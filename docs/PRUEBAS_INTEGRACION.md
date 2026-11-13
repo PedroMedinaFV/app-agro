@@ -2,6 +2,8 @@
 
 Fecha: 2026-11-06. Etapa 5 del plan de estabilizacion.
 
+Ampliacion de anexos, 2026-11-13: el runner registra `anexos-planificacion.js`; la suite contiene **24 escenarios** y reproduce **36 migraciones**. Cubre borrador incompleto, retiro de lote, cierre con protocolos compatibles, permisos, consolidado sin alterar original, cierres concurrentes, numeracion y aliases/reservas al consolidar un lote ERP. Ver `ANEXOS_PLANIFICACION.md` y evidencia de ejecucion en `ESTABILIDAD_MVP.md`. Las cantidades de las ampliaciones anteriores que siguen abajo son historicas.
+
 Ampliacion de identidad App/ERP: la suite incorpora consolidacion/rollback de siete padrones, notificaciones vigentes/obsoletas, aliases para IDs anteriores, aislamiento y ciclos de materializacion/vinculacion. El replay vigente incluye 35 migraciones; [IDENTIDAD_PADRONES_ERP.md](IDENTIDAD_PADRONES_ERP.md) explica la migracion nueva y el preflight. El usuario confirmo aplicada la migracion operativa el 2026-11-13.
 
 Revision de datos maestros 2026-11-13: `padrones-maestros.js` se registra desde `api.integration.test.js` y cubre los seis padrones restantes por HTTP y Notificaciones, consolidacion, valores propios distintos al ERP y sincronizacion de vinculos anteriores con auditoria idempotente y aislamiento. La suite queda en 21 escenarios (18 previos, 1 refresco de zonas y 2 de maestros). No confundir 12 combinaciones de vinculacion dentro de un escenario con 12 tests independientes. Evidencia de ejecucion en `ESTABILIDAD_MVP.md`; reglas en `AUDITORIA_VINCULACION_PADRONES.md`.

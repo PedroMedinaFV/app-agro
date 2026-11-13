@@ -1,3 +1,5 @@
+import { bloquearPadronesCliente } from './consolidarCopiaErp';
+import { guardarAlcance, normalizarAlcanceDocumento, lotesDelDocumento, validarDisponibilidadAlcance, validarIntegridadCierre, validarPoliticaDocumento } from './politicaDocumentosPlanificacion';
 import type {
   CerrarPlanificacionRequest,
   CerrarPlanificacionResponse,
@@ -73,6 +75,7 @@ async function validarPlanificacion(planificacion: PlanificacionAgricola) {
 
 async function validarPlanificacionParaCierre(planificacion: PlanificacionAgricola, tx: Prisma.TransactionClient) {
   validarPlanificacionTieneLineasParaCierre(planificacion);
+  validarIntegridadCierre(planificacion);
   validarLineasPlanificacion(planificacion, {
     permitirHectareasCero: false,
     lotesPorId: await obtenerLotesSuperficieValidacion(planificacion, tx),
@@ -80,6 +83,7 @@ async function validarPlanificacionParaCierre(planificacion: PlanificacionAgrico
 }
 
 const incluirPlanificacion = {
+  alcance: true,
   lineas: {
     orderBy: { createdAt: 'asc' as const },
   },
@@ -120,6 +124,8 @@ export async function obtenerPlanificacionesResumenPersistidas(clienteId: string
       descripcion: true,
       estado: true,
       escenarioOriginal: true,
+      tipoDocumento: true, planificacionOriginalId: true, numeroAnexo: true, motivoIncorporacion: true, fechaIncorporacion: true,
+      alcance: true,
       escenarioBloqueadoPorId: true,
       cerradaPor: true,
       cerradaAt: true,
@@ -165,6 +171,10 @@ export async function obtenerPlanificacionesResumenPersistidas(clienteId: string
       descripcion: planificacion.descripcion || undefined,
       estado: planificacion.estado as PlanificacionAgricola['estado'],
       escenarioOriginal: planificacion.escenarioOriginal,
+      tipoDocumento: planificacion.tipoDocumento as PlanificacionAgricola['tipoDocumento'],
+      planificacionOriginalId: planificacion.planificacionOriginalId ?? undefined, numeroAnexo: planificacion.numeroAnexo ?? undefined,
+      motivoIncorporacion: planificacion.motivoIncorporacion ?? undefined, fechaIncorporacion: planificacion.fechaIncorporacion?.toISOString().slice(0, 10),
+      alcanceLoteIds: planificacion.alcance.map((a) => a.loteAppId),
       escenarioBloqueadoPorId: planificacion.escenarioBloqueadoPorId || undefined,
       cerradaPor: planificacion.cerradaPor || undefined,
       cerradaAt: serializarFecha(planificacion.cerradaAt),
@@ -183,6 +193,12 @@ export async function obtenerPlanificacionesResumenPersistidas(clienteId: string
 
 function resumirPlanificacionAuditoria(planificacion: PlanificacionAgricola) {
   return {
+    tipoDocumento: planificacion.tipoDocumento,
+    planificacionOriginalId: planificacion.planificacionOriginalId,
+    numeroAnexo: planificacion.numeroAnexo,
+    motivoIncorporacion: planificacion.motivoIncorporacion,
+    fechaIncorporacion: planificacion.fechaIncorporacion,
+    alcanceLoteIds: lotesDelDocumento(planificacion),
     id: planificacion.id,
     clienteId: planificacion.clienteId,
     campaniaErpId: planificacion.campaniaErpId,
@@ -207,10 +223,22 @@ export async function guardarPlanificacionPersistida(
   validarClienteSesion(planificacion.clienteId, usuario);
   await validarPlanificacion(planificacion);
 
-  return prisma.$transaction((tx) => guardarPlanificacionEnTransaccion(tx, id, request, usuario), {
-    maxWait: 10000,
-    timeout: TIMEOUT_TRANSACCION_PLANIFICACION_MS,
-  });
+  try {
+    return await prisma.$transaction((tx) => guardarPlanificacionEnTransaccion(tx, id, request, usuario), {
+      maxWait: 10000,
+      timeout: TIMEOUT_TRANSACCION_PLANIFICACION_MS,
+    });
+  } catch (error) {
+    // La auditoria de un rechazo debe persistir fuera de la transaccion revertida.
+    if ((error as { statusCode?: number }).statusCode === 409) {
+      const bloqueada = await prisma.planificacionAgricola.findFirst({ where: { id, clienteId: planificacion.clienteId, estado: { in: ['cerrada', 'deshabilitada'] } } });
+      if (bloqueada) await registrarAuditoria(prisma, { clienteId: bloqueada.clienteId, usuario, entidad: 'PlanificacionAgricola', entidadId: id,
+        accion: 'bloquear_edicion', origen: request.origen, motivo: 'Intento de modificar documento bloqueado; transaccion revertida.',
+        valoresAntes: { estado: bloqueada.estado, tipoDocumento: bloqueada.tipoDocumento, planificacionOriginalId: bloqueada.planificacionOriginalId },
+      });
+    }
+    throw error;
+  }
 }
 
 export async function guardarPlanificacionEnTransaccion(
@@ -218,9 +246,11 @@ export async function guardarPlanificacionEnTransaccion(
   id: string,
   request: GuardarPlanificacionRequest,
   usuario?: UsuarioAuditoria,
+  opciones: { crearAnexo?: boolean } = {},
 ): Promise<GuardarPlanificacionResponse> {
   const planificacion = { ...request.planificacion, id };
   validarClienteSesion(planificacion.clienteId, usuario);
+  await bloquearPadronesCliente(tx, planificacion.clienteId);
   const existente = await tx.planificacionAgricola.findUnique({
     where: { id },
     include: incluirPlanificacion,
@@ -242,6 +272,9 @@ export async function guardarPlanificacionEnTransaccion(
     throw crearErrorValidacion('La planificacion esta cerrada o deshabilitada y no puede modificarse.', 409);
   }
 
+  await normalizarAlcanceDocumento(tx, planificacion);
+  await validarPoliticaDocumento(tx, planificacion, existente ? mapearPlanificacion(existente) : null, opciones.crearAnexo);
+  await validarDisponibilidadAlcance(tx, planificacion);
   const escenarioOriginalCerrado = await tx.planificacionAgricola.findFirst({
     where: {
       clienteId: planificacion.clienteId,
@@ -252,7 +285,7 @@ export async function guardarPlanificacionEnTransaccion(
     },
   });
 
-  if (escenarioOriginalCerrado) {
+  if (escenarioOriginalCerrado && planificacion.tipoDocumento !== 'anexo') {
     throw crearErrorValidacion('La campania ya tiene una planificacion cerrada como escenario original. No se pueden crear ni editar otros escenarios activos.', 409);
   }
 
@@ -264,6 +297,10 @@ export async function guardarPlanificacionEnTransaccion(
       nombre: planificacion.nombre,
       descripcion: planificacion.descripcion,
       estado: planificacion.estado,
+      tipoDocumento: planificacion.tipoDocumento ?? 'base',
+      planificacionOriginalId: planificacion.planificacionOriginalId ?? null,
+      motivoIncorporacion: planificacion.motivoIncorporacion?.trim() ?? null,
+      fechaIncorporacion: planificacion.fechaIncorporacion ? new Date(planificacion.fechaIncorporacion) : null,
       escenarioOriginal: false,
       escenarioBloqueadoPorId: null,
       updatedBy: usuario?.id,
@@ -275,6 +312,10 @@ export async function guardarPlanificacionEnTransaccion(
       nombre: planificacion.nombre,
       descripcion: planificacion.descripcion,
       estado: planificacion.estado,
+      tipoDocumento: planificacion.tipoDocumento ?? 'base',
+      planificacionOriginalId: planificacion.planificacionOriginalId ?? null,
+      motivoIncorporacion: planificacion.motivoIncorporacion?.trim() ?? null,
+      fechaIncorporacion: planificacion.fechaIncorporacion ? new Date(planificacion.fechaIncorporacion) : null,
       escenarioOriginal: false,
       escenarioBloqueadoPorId: null,
       createdBy: usuario?.id,
@@ -283,6 +324,7 @@ export async function guardarPlanificacionEnTransaccion(
   });
 
   await reemplazarLineas(tx, planificacion);
+  await guardarAlcance(tx, planificacion);
 
   const completo = await tx.planificacionAgricola.findUniqueOrThrow({
     where: { id },
@@ -344,7 +386,15 @@ export async function cerrarPlanificacionEnTransaccion(
     throw crearErrorValidacion('La planificacion ya esta cerrada.', 409);
   }
 
-  const planificacionExistente = mapearPlanificacion(existente);
+  if (existente.estado === 'deshabilitada') throw crearErrorValidacion('La planificacion esta deshabilitada.', 409);
+  await bloquearPadronesCliente(tx, existente.clienteId);
+  // Volver a leer despues del lock: evita cierres con datos leidos antes de otro guardado/cierre.
+  const vigente = await tx.planificacionAgricola.findUniqueOrThrow({ where: { id }, include: incluirPlanificacion });
+  if (vigente.estado === 'cerrada' || vigente.estado === 'deshabilitada') throw crearErrorValidacion('El documento ya no admite cierre.', 409);
+  const planificacionExistente = mapearPlanificacion(vigente);
+  await validarPoliticaDocumento(tx, planificacionExistente, planificacionExistente);
+  await validarDisponibilidadAlcance(tx, planificacionExistente);
+  await validarAlcanceLineasPlanificacion(tx, planificacionExistente);
   await validarPlanificacionParaCierre(planificacionExistente, tx);
   const campoIds = Array.from(new Set(planificacionExistente.lineas.map((linea) => linea.campoAppId).filter(Boolean)));
   const loteIds = Array.from(new Set(planificacionExistente.lineas.map((linea) => linea.loteAppId).filter(Boolean)));
@@ -372,6 +422,15 @@ export async function cerrarPlanificacionEnTransaccion(
     .filter((protocoloId): protocoloId is string => Boolean(protocoloId))));
   const protocolosDetalle = await obtenerProtocolosDetallePorIds(existente.clienteId, protocoloIds, tx);
   const protocolosPorId = new Map(protocolosDetalle.map((protocolo) => [protocolo.id, protocolo]));
+  for (const linea of planificacionExistente.lineas) {
+    const protocolo = protocolosPorId.get(linea.protocoloId!);
+    const campo = camposPorId.get(linea.campoAppId);
+    if (!protocolo || protocolo.campaniaErpId !== vigente.campaniaErpId || protocolo.actividadAppId !== linea.actividadAppId
+      || (protocolo.campoAppId && protocolo.campoAppId !== linea.campoAppId)
+      || (protocolo.zonaAppId && protocolo.zonaAppId !== campo?.zonaAppId)) {
+      throw crearErrorValidacion(`El protocolo de la linea ${linea.id}, lote ${linea.loteAppId}, debe ser compatible con actividad, campo/zona y campania.`, 409);
+    }
+  }
   const destinoIds = Array.from(new Set(planificacionExistente.lineas
     .map((linea) => linea.destinoReferenciaId)
     .filter((destinoId): destinoId is string => typeof destinoId === 'string' && !destinoId.startsWith('puerto-'))));
@@ -393,17 +452,19 @@ export async function cerrarPlanificacionEnTransaccion(
     preciosPorId,
   });
 
-  const escenariosADeshabilitar = await tx.planificacionAgricola.findMany({
+  const esAnexo = vigente.tipoDocumento === 'anexo';
+  const escenariosADeshabilitar = esAnexo ? [] : await tx.planificacionAgricola.findMany({
     where: {
       clienteId: existente.clienteId,
       campaniaErpId: existente.campaniaErpId,
       id: { not: id },
-      estado: { not: 'deshabilitada' },
+      tipoDocumento: 'base',
+      estado: { notIn: ['deshabilitada', 'cerrada'] },
     },
     include: incluirPlanificacion,
   });
 
-  await tx.planificacionAgricola.updateMany({
+  if (!esAnexo) await tx.planificacionAgricola.updateMany({
     where: {
       clienteId: existente.clienteId,
       campaniaErpId: existente.campaniaErpId,
@@ -456,11 +517,18 @@ export async function cerrarPlanificacionEnTransaccion(
     });
   }
 
+  const ultimoAnexo = esAnexo ? await tx.planificacionAgricola.aggregate({
+    where: { planificacionOriginalId: vigente.planificacionOriginalId }, _max: { numeroAnexo: true },
+  }) : null;
+  await tx.planificacionLoteAprobado.createMany({ data: lotesDelDocumento(planificacionExistente).map((loteAppId) => ({
+    clienteId: vigente.clienteId, campaniaErpId: vigente.campaniaErpId, loteAppId, planificacionId: id,
+  })) });
   const cerrada = await tx.planificacionAgricola.update({
     where: { id },
     data: {
       estado: 'cerrada',
-      escenarioOriginal: true,
+      escenarioOriginal: !esAnexo,
+      numeroAnexo: esAnexo ? (ultimoAnexo?._max.numeroAnexo ?? 0) + 1 : null,
       escenarioBloqueadoPorId: null,
       cerradaPor: usuario?.id,
       cerradaAt: new Date(),
@@ -503,7 +571,7 @@ export async function cerrarPlanificacionEnTransaccion(
   return {
     planificacion: planificacionMapeada,
     auditado: true,
-    mensaje: escenariosADeshabilitar.length > 0
+    mensaje: esAnexo ? 'Anexo cerrado e incorporado al consolidado. La original permanece intacta.' : escenariosADeshabilitar.length > 0
       ? `Planificacion cerrada como escenario original. Se deshabilitaron ${escenariosADeshabilitar.length} escenario(s) alternativo(s).`
       : 'Planificacion cerrada como escenario original y bloqueada para edicion.',
   };

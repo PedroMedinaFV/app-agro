@@ -206,11 +206,15 @@ test('planificacion HTTP guarda, aisla clientes, cierra con snapshot y bloquea e
   for (const letra of ['a', 'b']) {
     const id = `test-plan-${letra}`;
     const campo = campos[letra];
+    await prisma.protocoloProductivo.create({ data: {
+      id: `test-protocolo-${letra}`, clienteId: clientes[letra], nombre: `Protocolo ${letra}`, descripcion: 'Fixture ficticio',
+      campaniaErpId: 'test-campania', actividadAppId: `test-actividad-${letra}`, tipoFecha: 'absoluta', costoEstimadoPorHa: 10,
+    } });
     const planificacion = {
       id, clienteId: clientes[letra], campaniaErpId: 'test-campania', nombre: `Plan ${letra}`, estado: 'borrador',
       lineas: [{
         id: `${id}-linea`, planificacionId: id, empresaErpId: campo.empresaErpId,
-        campoAppId: campo.id, campoErpId: campo.campoErpId, loteAppId: lotes[letra], actividadAppId: `test-actividad-${letra}`,
+        campoAppId: campo.id, campoErpId: campo.campoErpId, loteAppId: lotes[letra], actividadAppId: `test-actividad-${letra}`, protocoloId: `test-protocolo-${letra}`,
         destinoVenta: 'Puerto ficticio', precioVentaEstimado: 200, hectareasPlanificadas: 10, rindeEstimado: 3,
         gastosComercialesEstimados: 50, costoProduccionEstimado: 100, ingresoBrutoEstimado: 6000,
         ingresoNetoEstimado: 5950, margenBrutoEstimado: 5850, estado: 'borrador',
@@ -409,3 +413,4 @@ test('padrones: materializacion por cliente es idempotente y no recicla IDs/alia
 });
 
 require('./padrones-maestros')({ prisma, request, clientes, usuarios, campos });
+require('./anexos-planificacion')({ prisma, request, clientes, usuarios, campos });

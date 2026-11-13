@@ -2,13 +2,19 @@
 import { PlanificacionEditorScreen } from './PlanificacionEditorScreen';
 import { PlanificacionesResumenScreen } from './PlanificacionesResumenScreen';
 import { PlanificacionBaseProps } from './planificacionTypes';
+import { AnexosPlanificacionPanel } from '../components/planificacion/AnexosPlanificacionPanel';
 
 export function PlanificacionScreen(props: PlanificacionBaseProps) {
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [originalAnexosId, setOriginalAnexosId] = useState<string>();
+  const [errorEditor, setErrorEditor] = useState('');
 
   async function abrirEditor(planificacionId: string) {
-    await props.asegurarDetallePlanificacion(planificacionId);
+    setErrorEditor('');
+    const detalle = await props.asegurarDetallePlanificacion(planificacionId);
+    if (!detalle) throw new Error('No se pudo cargar el documento. Volve a intentarlo.');
     props.seleccionarPlanificacion(planificacionId);
+    setOriginalAnexosId(undefined);
     setModoEdicion(true);
   }
 
@@ -37,5 +43,9 @@ export function PlanificacionScreen(props: PlanificacionBaseProps) {
     return <PlanificacionEditorScreen {...props} onVolverResumen={() => setModoEdicion(false)} />;
   }
 
-  return <PlanificacionesResumenScreen {...props} onEditarPlanificacion={abrirEditor} onNuevoEscenario={crearYEditarEscenario} onCopiarEscenario={copiarYEditarEscenario} />;
+  return <>
+    {errorEditor && <p role="alert" className="form-error">{errorEditor}</p>}
+    <PlanificacionesResumenScreen {...props} onEditarPlanificacion={(id) => { void abrirEditor(id).catch((e: unknown) => setErrorEditor(e instanceof Error ? e.message : 'No se pudo abrir el documento.')); }} onNuevoEscenario={crearYEditarEscenario} onCopiarEscenario={copiarYEditarEscenario} onVerAnexos={setOriginalAnexosId} />
+    {originalAnexosId && <AnexosPlanificacionPanel key={originalAnexosId} originalId={originalAnexosId} token={props.sesion.token} puedeCrear={props.puedeEditarPlanificacionPorPermiso} onCerrar={() => setOriginalAnexosId(undefined)} onAbrir={abrirEditor} />}
+  </>;
 }

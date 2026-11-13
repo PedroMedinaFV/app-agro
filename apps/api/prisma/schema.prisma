@@ -573,6 +573,8 @@ model CampoApp {
 }
 
 model LoteApp {
+  alcancesPlanificacion PlanificacionAlcanceLote[]
+  aprobacionesPlanificacion PlanificacionLoteAprobado[]
   @@unique([clienteId, loteErpId])
   id                   String                       @id @default(uuid())
   cliente              Cliente                      @relation(fields: [clienteId], references: [id])
@@ -1050,6 +1052,15 @@ model ProtocoloInsumo {
 }
 
 model PlanificacionAgricola {
+  tipoDocumento          String                       @default("base")
+  planificacionOriginalId String?
+  original                PlanificacionAgricola?       @relation("AnexosPlanificacion", fields: [planificacionOriginalId], references: [id], onDelete: Restrict)
+  anexos                  PlanificacionAgricola[]      @relation("AnexosPlanificacion")
+  numeroAnexo             Int?
+  motivoIncorporacion     String?
+  fechaIncorporacion      DateTime?                    @db.Date
+  alcance                 PlanificacionAlcanceLote[]
+  lotesAprobados          PlanificacionLoteAprobado[]
   id                      String                       @id @default(uuid())
   cliente                 Cliente                      @relation(fields: [clienteId], references: [id])
   clienteId               String
@@ -1073,6 +1084,28 @@ model PlanificacionAgricola {
   @@index([estado])
   @@index([escenarioOriginal])
   @@index([escenarioBloqueadoPorId])
+  @@unique([planificacionOriginalId, numeroAnexo])
+}
+
+model PlanificacionAlcanceLote {
+  planificacionId String
+  loteAppId String
+  planificacion PlanificacionAgricola @relation(fields: [planificacionId], references: [id], onDelete: Cascade)
+  lote LoteApp @relation(fields: [loteAppId], references: [id], onDelete: Restrict)
+  @@id([planificacionId, loteAppId])
+  @@index([loteAppId])
+}
+
+model PlanificacionLoteAprobado {
+  clienteId String
+  campaniaErpId String
+  loteAppId String
+  planificacionId String
+  planificacion PlanificacionAgricola @relation(fields: [planificacionId], references: [id], onDelete: Restrict)
+  lote LoteApp @relation(fields: [loteAppId], references: [id], onDelete: Restrict)
+  @@id([clienteId, campaniaErpId, loteAppId])
+  @@index([planificacionId])
+  @@index([loteAppId])
 }
 
 model PlanificacionAgricolaLinea {
@@ -1086,8 +1119,8 @@ model PlanificacionAgricolaLinea {
   loteApp                       LoteApp               @relation(fields: [loteAppId], references: [id])
   loteAppId                     String
   loteErpId                     String?
-  actividadApp                  ActividadApp          @relation(fields: [actividadAppId], references: [id])
-  actividadAppId                String
+  actividadApp                  ActividadApp?         @relation(fields: [actividadAppId], references: [id], onDelete: Restrict)
+  actividadAppId                String?
   actividadErpId                String?
   cultivoErpId                  String?
   padronesSnapshot              Json?

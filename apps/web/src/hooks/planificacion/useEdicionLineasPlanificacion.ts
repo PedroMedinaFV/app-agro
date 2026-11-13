@@ -114,7 +114,7 @@ export function useEdicionLineasPlanificacion({
 
     return planificacion.protocolos
       .filter((protocolo) => {
-        if (!protocolo.activo || protocolo.actividadAppId !== linea.actividadAppId) {
+        if (!protocolo.activo || protocolo.campaniaErpId !== planificacionActiva?.campaniaErpId) {
           return false;
         }
 

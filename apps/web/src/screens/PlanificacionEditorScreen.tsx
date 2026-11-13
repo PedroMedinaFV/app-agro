@@ -9,6 +9,7 @@ import { AccionGuardarPlanificacion } from '../components/planificacion/AccionGu
 import { AccionesMasivasPlanificacion } from '../components/planificacion/AccionesMasivasPlanificacion';
 import { ArbolPlanificacion } from '../components/planificacion/ArbolPlanificacion';
 import { CabeceraPlanificacionEditor } from '../components/planificacion/CabeceraPlanificacionEditor';
+import { Button } from '../components/Button';
 import { EstadoCargaFiltro, FiltrosPlanificacion } from '../components/planificacion/FiltrosPlanificacion';
 import { LineaPlanificacion } from '../components/planificacion/LineaPlanificacion';
 import { MetricasPlanificacion } from '../components/planificacion/MetricasPlanificacion';
@@ -565,7 +566,10 @@ export function PlanificacionEditorScreen({
         onCambiarDestino={cambiarDestino}
         onActualizarLinea={actualizarLinea}
         onCopiarLinea={copiarLineaPlanificacion}
-        onEliminarLinea={eliminarLineaPlanificacion}
+        onEliminarLinea={(id) => {
+          const linea = lineasPlanificacion.find((l) => l.id === id);
+          if (linea) setConfirmacionQuitarAlcance({ etiqueta: `lote ${lotesAppPorId.get(linea.loteAppId)?.nombre ?? linea.loteAppId}`, lineaIds: [id], totalLineas: 1, lineasConDatos: lineaPlanificacionTieneDatos(linea) ? 1 : 0 });
+        }}
       />
     );
   }, [
@@ -626,6 +630,7 @@ export function PlanificacionEditorScreen({
       >
 
         <CabeceraPlanificacionEditor
+          campaniaFija={planificacionActiva?.tipoDocumento === 'anexo'}
           nombre={planificacionActiva?.nombre || ''}
           campaniaErpId={planificacionActiva?.campaniaErpId || ''}
           descripcion={planificacionActiva?.descripcion || ''}
@@ -635,6 +640,18 @@ export function PlanificacionEditorScreen({
           onCampaniaChange={solicitarCambioCampania}
           onDescripcionChange={(descripcion) => actualizarCabeceraPlanificacion({ descripcion })}
         />
+
+        {planificacionActiva?.tipoDocumento === 'anexo' && <div className="reference-modal-grid">
+          <p>Anexo {planificacionActiva.numeroAnexo ?? '(borrador)'} de {planificacion.planificaciones.find((p) => p.id === planificacionActiva.planificacionOriginalId)?.nombre ?? planificacionActiva.planificacionOriginalId}</p>
+          <label>Fecha de incorporacion<input type="date" value={planificacionActiva.fechaIncorporacion ?? ''} disabled={!puedeEditarPlanificacion} onChange={(e) => actualizarCabeceraPlanificacion({ fechaIncorporacion: e.target.value })} /></label>
+          <label className="reference-wide">Motivo de incorporacion<textarea value={planificacionActiva.motivoIncorporacion ?? ''} disabled={!puedeEditarPlanificacion} onChange={(e) => actualizarCabeceraPlanificacion({ motivoIncorporacion: e.target.value })} /></label>
+        </div>}
+
+        {puedeEditarPlanificacion && lineasPlanificacion.some((l) => !l.actividadAppId || !l.protocoloId) && <div className="status-warning">
+          Hay lineas sin actividad/protocolo. Podes guardar el borrador; para cerrar debes completarlas o quitarlas explicitamente.
+          <ul>{lineasPlanificacion.filter((l) => !l.actividadAppId || !l.protocoloId).map((l) => <li key={l.id}>{camposAppPorId.get(l.campoAppId)?.nombre} / {lotesAppPorId.get(l.loteAppId)?.nombre ?? l.loteAppId} — linea {l.id}</li>)}</ul>
+          <Button onClick={() => setFiltroEstadoCarga('pendientes')}>Ver pendientes</Button>
+        </div>}
 
         <MetricasPlanificacion
           hectareasPlanificadas={hectareasPlanificadas}

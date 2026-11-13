@@ -26,7 +26,7 @@ export async function reemplazarLineas(tx: Prisma.TransactionClient, planificaci
       campoErpId: linea.campoErpId,
       loteAppId: linea.loteAppId,
       loteErpId: linea.loteErpId,
-      actividadAppId: linea.actividadAppId,
+      actividadAppId: linea.actividadAppId || null,
       actividadErpId: linea.actividadErpId,
       cultivoErpId: linea.cultivoErpId,
       padronesSnapshot: serializarPadronesSnapshot(linea.padronesSnapshot),

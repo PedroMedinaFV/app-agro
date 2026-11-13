@@ -14,6 +14,9 @@ export type CultivoOperativoResumen = {
 };
 
 export type PlanificacionOperativaLineaResumen = {
+  tipoDocumento?: 'base' | 'anexo';
+  planificacionOriginalId?: string;
+  numeroAnexo?: number;
   id: string;
   planificacionId: string;
   planificacionNombre: string;
